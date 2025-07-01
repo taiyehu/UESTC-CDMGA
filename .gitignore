@@ -1,4 +1,4 @@
 *.log
 *.txt
-!dev1.txt
+!dev*.txt
 temp/
