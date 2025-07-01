@@ -1,3 +1,4 @@
 *.log
 *.txt
+!dev1.txt
 temp/
