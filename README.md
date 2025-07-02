@@ -9,14 +9,14 @@ demo.html 文件就是主题的网页框架
 
 本地开发的时候每次 commit 最好带上信息，方便查看已经完成了哪些功能
 
-提交到仓库的时候，先 push origin main（或者你本地分支的名字），然后在网站中 pull request 那里找到自己提交的分支，并 create new pull request，输入完成的信息
+我们统一把仓库fork一份自己的仓库，本地进行一些开发之后上传到自己的仓库里，然后创建并提交pull request
 
-看到其他人的 pull request 后可以在网站上清楚的看到其他人修改了哪一部分，并且可以留言
+请不要直接提交到taiyehu的仓库！！！
 
 我看到之后会确认合并，这样本地工作就可以提交到远程仓库了
 
 工作前记得 pull 或者 fetch！
 
-测试链接（ETL1224）
+2025.7.2 测试链接（ETL1224）
 
-test cikasy10
+2025.7.2 test cikasy10
