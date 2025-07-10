@@ -1,16 +1,29 @@
 package com.cdmga.uestc.webpage.Entity;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name = "identity")
 public class Identity {
+    /**
+     * Id
+     */
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotEmpty(message = "用户名不能为空")
+    @Size(min = 1, max = 20, message = "用户名长度在1到20个字符之间")
     private String account;
+
+    @NotEmpty(message = "密码不能为空")
+    @Size(min = 6, message = "密码长度必须至少为6个字符")
     private String password;
 
     public long getId(){

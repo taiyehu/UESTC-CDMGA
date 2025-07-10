@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cdmga.uestc.webpage.Entity.Identity;
@@ -21,6 +22,29 @@ public class IdentityController {
 
     @Autowired
     private IdentityService identityService;
+
+    //注册
+    @PostMapping("/register")
+    public String register(@RequestParam String account, @RequestParam String password) {
+        try {
+            identityService.registerIdentity(account, password);
+            return "注册成功";
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+    }
+    
+    //登录
+    @PostMapping("/login")
+    public String login(@RequestParam String account, @RequestParam String password) {
+        try {
+            identityService.validateLogin(account, password);
+            return "登录成功";
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+    }
+    
 
     // 获取用户信息
     @GetMapping("/{account}")

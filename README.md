@@ -38,3 +38,27 @@ demo.html 文件就是主题的网页框架
         注意：vscode由于maven插件原因，在执行junittest之后不会正常执行System.out.println，如要进行调试可自行打断点查看获得的数据
         如果使用idea无此问题。问题解决请进行更新
     pom.xml中编写全局配置，如添加mysql依赖用于访问mysql等
+
+        webpage-application/                # 根目录
+    ├── src/                             # 源代码目录
+    │   ├── main/                        # 主源代码目录
+    │   │   ├── java/                    # Java 源代码
+    │   │   │   └── com/cdmga/uestc/     # 基于包结构的目录（根据你的包名来组织）
+    │   │   │       ├── webpage/         # 项目的模块或功能包
+    │   │   │       │   ├── WebpageApplication.java      # 启动类
+    │   │   │       │   ├── controller/  # 控制器层
+    │   │   │       │   ├── model/       # 实体类（模型类）
+    │   │   │       │   ├── repository/  # 数据库访问层（JPA接口）
+    │   │   │       │   ├── service/     # 服务层
+    │   │   │       │   └── WebpageService.java  # 服务类
+    │   │   ├── resources/                # 资源文件目录
+    │   │   │   ├── application.properties  # 配置文件
+    │   │   │   ├── static/               # 静态资源（CSS, JavaScript, 图片等）
+    │   │   │   ├── templates/            # Thymeleaf 模板（如果使用）
+    │   │   │   └── data.sql              # 数据库初始化脚本（如果需要）
+    │   └── test/                         # 测试代码
+    │       ├── java/                    # 测试源代码
+    │       └── resources/                # 测试资源文件
+    ├── pom.xml                          # Maven 配置文件
+    └── README.md                        # 项目的 README 文件
+
