@@ -22,6 +22,9 @@ class WebpageApplicationTests {
 	@Autowired
 	private HelloController helloController;
 
+	@Autowired
+	private IdentityRepository identityRepository;
+
 	@Test
 	public void helloControllerTest(){
 		String hello = helloController.Sayhello();
@@ -51,6 +54,12 @@ class WebpageApplicationTests {
 
         // 验证 repository 方法是否被调用
         Mockito.verify(mockRepository).findByAccount(account);
+	}
+
+	@Test
+	public void getAccountAllTest(){
+		Identity identity = identityRepository.findByAccount("taiyehu");
+		System.out.println(identity);
 	}
 
 }
