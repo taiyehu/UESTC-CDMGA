@@ -3,6 +3,7 @@ package com.cdmga.uestc.webpage.Controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -10,12 +11,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cdmga.uestc.webpage.Entity.Identity;
+import com.cdmga.uestc.webpage.Entity.LoginRequest;
 import com.cdmga.uestc.webpage.Service.IdentityService;
 
+@CrossOrigin(origins = "http://localhost:8081")
 @RestController
 @RequestMapping("/api/identity")
 public class IdentityController {
@@ -23,9 +25,10 @@ public class IdentityController {
     @Autowired
     private IdentityService identityService;
 
+    
     //注册
     @PostMapping("/register")
-    public String register(@RequestParam String account, @RequestParam String password) {
+    public String register(@RequestBody String account, @RequestBody String password) {
         try {
             identityService.registerIdentity(account, password);
             return "注册成功";
@@ -35,15 +38,18 @@ public class IdentityController {
     }
     
     //登录
+    // 修改为接收 JSON 请求体
+    @CrossOrigin(origins = "http://localhost:8081")
     @PostMapping("/login")
-    public String login(@RequestParam String account, @RequestParam String password) {
+    public String login(@RequestBody LoginRequest loginRequest) {
         try {
-            identityService.validateLogin(account, password);
+            identityService.validateLogin(loginRequest.getAccount(), loginRequest.getPassword());
             return "登录成功";
         } catch (Exception e) {
             return e.getMessage();
         }
-    }
+}
+
     
 
     // 获取用户信息
