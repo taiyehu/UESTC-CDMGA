@@ -62,3 +62,13 @@ demo.html 文件就是主题的网页框架
     ├── pom.xml                          # Maven 配置文件
     └── README.md                        # 项目的 README 文件
 
+2025.7.11 完成前后端的对接测试
+    请务必更新到本地！方法：git pull
+    本地调试步骤：
+        1.先确保你的依赖全部安装，后端依赖文件位于webpage/pom.xml
+        2.前端需要配置npm, node.js, element, axios, Vue CLI等
+        3.后端需要配置maven, springboot, junittest等
+        4.如果出现本地运行时的错误，请对照报错添加相关的依赖或库文件，网上很全。上面漏写的及时修改readme并且pullrequest
+        5.运行webpage/main/java/com/cdmga/uestc/webpage/WebpageApplication.java
+        6.在终端切换到vueproject目录下，执行npm run serve, 并打开网页localhost:8081/login
+        7.目前输入任何用户名密码都会显示黄底提示消息登录失败，按f12打开控制台，确保控制台没有出现404，403，500，401等错误信息，而是200
