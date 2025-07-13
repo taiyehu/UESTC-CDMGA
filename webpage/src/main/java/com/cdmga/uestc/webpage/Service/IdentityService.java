@@ -16,14 +16,17 @@ public class IdentityService {
     private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     //注册用户
-    public Identity registerIdentity(String account, String password){
+    public Identity register(String account, String password) throws Exception {
+        // 检查账号是否已存在
         Identity existingIdentity = identityRepository.findByAccount(account);
-        if(existingIdentity != null){
-            throw new IllegalArgumentException("用户名已存在");
+        if (existingIdentity != null) {
+            throw new Exception("账号已存在"); // 抛出异常，由控制器捕获
         }
+        // 创建新用户并加密密码
         Identity newIdentity = new Identity();
         newIdentity.setAccount(account);
-        newIdentity.setPassword(passwordEncoder.encode(password));
+        newIdentity.setPassword(passwordEncoder.encode(password)); // 密码加密
+        // 保存用户并返回完整的 Identity 对象（包含 ID 等信息）
         return identityRepository.save(newIdentity);
     }
 

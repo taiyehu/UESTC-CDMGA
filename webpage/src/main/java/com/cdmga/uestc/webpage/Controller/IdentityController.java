@@ -1,5 +1,6 @@
 package com.cdmga.uestc.webpage.Controller;
 
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.cdmga.uestc.webpage.Entity.Identity;
 import com.cdmga.uestc.webpage.Entity.LoginRequest;
+import com.cdmga.uestc.webpage.Entity.RegisterRequest;
 import com.cdmga.uestc.webpage.Service.IdentityService;
+import com.cdmga.uestc.webpage.common.Result;
 
 @CrossOrigin(origins = "http://localhost:8081")
 @RestController
@@ -26,18 +29,22 @@ public class IdentityController {
     private IdentityService identityService;
 
     
-    //注册
+    // 注册接口
+    @CrossOrigin(origins = "http://localhost:8081")
     @PostMapping("/register")
-    public String register(@RequestBody String account, @RequestBody String password) {
+    public Result register(@RequestBody RegisterRequest registerRequest) {
         try {
-            identityService.registerIdentity(account, password);
-            return "注册成功";
+            // 调用服务层注册，获取注册成功的用户信息（可选，根据业务需求）
+            Identity newIdentity = identityService.register(
+                    registerRequest.getAccount(),
+                    registerRequest.getPassword());
+            // 成功时返回 code=0，携带用户信息（或成功提示）
+            return Result.success(newIdentity); // 若无需用户信息，可改为 Result.success("注册成功")
         } catch (Exception e) {
-            return e.getMessage();
+            // 失败时返回 code=1，携带错误信息（如“账号已存在”）
+            return Result.error(e.getMessage());
         }
     }
-    
-    //登录
     // 修改为接收 JSON 请求体
     @CrossOrigin(origins = "http://localhost:8081")
     @PostMapping("/login")
