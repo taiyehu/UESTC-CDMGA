@@ -56,51 +56,53 @@ export default {
   },
   methods: {
     submitForm(formName) {
-      this.$refs[formName].validate((valid) => {
-        if (valid) {
-          console.log("表单验证成功");
-          this.loading = true;
-          this.axios({
-            url: "http://localhost:8080/api/identity/login",
-            method: "post",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            data: {
-              account: this.ruleForm.account,
-              password: this.ruleForm.password,
-            },
-          })
-            .then((res) => {
-              this.loading = false;
-              if (res.data.code === 0) {
-                sessionStorage.setItem("userInfo", JSON.stringify(res.data.data));
-                this.$router.push('/home');
-                this.$message({
-                  message: res.data.msg || '登录成功',
-                  type: "success",
-                });
-              } else {
-                this.$message({
-                  message: res.data.msg || '登录失败',
-                  type: "warning",
-                });
-              }
-            })
-            .catch((error) => {
-              this.loading = false;
-              console.error("Request failed:", error);
+    this.$refs[formName].validate((valid) => {
+      if (valid) {
+        console.log("表单验证成功");
+        this.loading = true;
+        this.axios({
+          url: "http://localhost:8080/api/identity/login",
+          method: "post",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          data: {
+            account: this.ruleForm.account,
+            password: this.ruleForm.password,
+          },
+        })
+          .then((res) => {
+            this.loading = false;
+            if (res.data.code === 0) {
+              // 登录成功，将用户信息存入 sessionStorage
+              sessionStorage.setItem("userInfo", JSON.stringify(res.data.data));
+              this.$router.push('/home');
               this.$message({
-                message: error.response ? error.response.data.message : "登录请求失败，请稍后再试。",
-                type: "error",
+                message: res.data.msg || '登录成功',
+                type: "success",
               });
+            } else {
+              this.$message({
+                message: res.data.msg || '登录失败',
+                type: "warning",
+              });
+            }
+          })
+          .catch((error) => {
+            this.loading = false;
+            console.error("Request failed:", error);
+            this.$message({
+              message: error.response ? error.response.data.message : "登录请求失败，请稍后再试。",
+              type: "error",
             });
-        } else {
-          console.log("表单验证失败！");
-          return false;
-        }
-      });
-    },
+          });
+      } else {
+        console.log("表单验证失败！");
+        return false;
+      }
+    });
+  }
+  ,
     resetForm(formName) {
       this.$refs[formName].resetFields();
     },

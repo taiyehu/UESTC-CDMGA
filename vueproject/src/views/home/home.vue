@@ -1,8 +1,16 @@
 <template>
-  <div>
-    <h2>欢迎{{ user.uname }}！您的 uid 为{{ user.uid }}</h2>
-    <el-button @click="logout"> 登出 </el-button>
-  </div>
+  <el-card class="box-card" v-if="user.id !== null">
+    <h2>欢迎，{{ user.account }}！您的 ID 为 {{ user.id }}</h2>
+    <div class="btnGroup">
+      <el-button type="primary" @click="logout" size="large">登出</el-button>
+    </div>
+  </el-card>
+  <el-card class="box-card" v-else>
+    <h2>加载用户信息失败</h2>
+    <div class="btnGroup">
+      <el-button @click="redirectToLogin" size="large">重新登录</el-button>
+    </div>
+  </el-card>
 </template>
 
 <script>
@@ -10,27 +18,64 @@ export default {
   data() {
     return {
       user: {
-        uname: "",
-        uid: null,
+        account: "",
+        id: null,
       },
+      loading: true,
     };
   },
   methods: {
-    logout(){
-      // 移除本地用户登录信息
+    logout() {
+      // 清除本地存储中的用户信息
       sessionStorage.removeItem('userInfo');
-      // 跳转页面到登录页
+      // 跳转到登录页面
+      this.$router.push('/login');
+    },
+    redirectToLogin() {
       this.$router.push('/login');
     }
   },
   mounted() {
-    if (sessionStorage.getItem('userInfo')) {
-      // 将用户信息存储到sessionStorage中
-      this.user = JSON.parse(sessionStorage.getItem('userInfo'));
+    const userInfo = sessionStorage.getItem('userInfo');
+    if (userInfo) {
+      // 解析存储的 JSON 数据
+      this.user = JSON.parse(userInfo);
+    } else {
+      this.user = {
+        account: "",
+        id: null,
+      };
     }
+    this.loading = false;
   },
 };
 </script>
 
 <style scoped>
+.box-card {
+  margin: auto;
+  width: 400px;
+  padding: 20px;
+}
+
+h2 {
+  font-size: 24px;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.btnGroup {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.el-button {
+  margin-top: 20px;
+}
+
+.el-button:hover {
+  background-color: #409EFF;
+  color: white;
+}
 </style>
