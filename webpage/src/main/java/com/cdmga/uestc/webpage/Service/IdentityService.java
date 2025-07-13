@@ -31,12 +31,17 @@ public class IdentityService {
     }
 
     //登录
-    public boolean validateLogin(String account, String password){
+    public Identity validateLogin(String account, String password) {
         Identity identity = identityRepository.findByAccount(account);
-        if(identity == null){
-            return false;
+        // 验证用户是否存在
+        if (identity == null) {
+            throw new RuntimeException("用户不存在"); // 直接抛 RuntimeException
         }
-        return passwordEncoder.matches(password, identity.getPassword());
+        // 验证密码
+        if (!passwordEncoder.matches(password, identity.getPassword())) {
+            throw new RuntimeException("密码错误"); // 直接抛 RuntimeException
+        }
+        return identity;
     }
 
     public IdentityService(IdentityRepository identityRepository) {

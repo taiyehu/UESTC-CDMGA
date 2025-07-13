@@ -73,7 +73,7 @@ export default {
           })
             .then((res) => {
               this.loading = false;
-              if (res.data.code === "0") {
+              if (res.data.code === 0) {
                 sessionStorage.setItem("userInfo", JSON.stringify(res.data.data));
                 this.$router.push('/home');
                 this.$message({

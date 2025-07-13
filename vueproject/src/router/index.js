@@ -3,8 +3,9 @@
 import VueRouter from "vue-router"
 
 // 引入组件
-import Login from '../views/login/Login'
+import Login from '../views/login/Login.vue'
 import Register from "@/views/register/Register.vue"
+import Home from "@/views/home/home.vue"
 // 创建并暴露一个路由器
 export default new VueRouter({
     mode: 'history',    // 路由模式，该模式不会在地址中显示井号#
@@ -20,6 +21,10 @@ export default new VueRouter({
         {
             path: '/register',   //路径
             component: Register  //跳转到的组件
+        },
+        {
+            path: '/home',   //路径
+            component: Home  //跳转到的组件
         }
     ]
 })

@@ -48,14 +48,21 @@ public class IdentityController {
     // 修改为接收 JSON 请求体
     @CrossOrigin(origins = "http://localhost:8081")
     @PostMapping("/login")
-    public String login(@RequestBody LoginRequest loginRequest) {
+    public Result login(@RequestBody LoginRequest loginRequest) {
         try {
-            identityService.validateLogin(loginRequest.getAccount(), loginRequest.getPassword());
-            return "登录成功";
+            // 调用服务层验证登录
+            Identity user = identityService.validateLogin(
+                    loginRequest.getAccount(),
+                    loginRequest.getPassword());
+
+            // 验证成功，返回包含用户信息的成功响应
+            return Result.success(user);
+
         } catch (Exception e) {
-            return e.getMessage();
+            // 验证失败，返回错误响应
+            return Result.error(e.getMessage());
         }
-}
+    }
 
     
 
