@@ -1,5 +1,5 @@
 CREATE TABLE `course` (
-                        `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '课题主键',
+                        `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '课题主键',
                         `title` VARCHAR(100) NOT NULL COMMENT '课题名称',
                         `category` VARCHAR(50) DEFAULT NULL COMMENT '课题类别',
                         `start_time` DATETIME NOT NULL COMMENT '开始时间',

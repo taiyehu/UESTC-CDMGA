@@ -1,7 +1,7 @@
 CREATE TABLE `score` (
-                         `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '成绩记录主键',
-                         `course_id` BIGINT NOT NULL COMMENT '所属课题ID',
-                         `identity_id` BIGINT NOT NULL COMMENT '所属用户ID',
+                         `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '成绩记录主键',
+                         `course_id` INT NOT NULL COMMENT '所属课题ID',
+                         `identity_id` INT NOT NULL COMMENT '所属用户ID',
                          `upload_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
                          `image` VARCHAR(255) NOT NULL COMMENT '成绩图路径',
                          `score` FLOAT NOT NULL DEFAULT 0 COMMENT '成绩得分',

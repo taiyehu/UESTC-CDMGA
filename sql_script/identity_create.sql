@@ -1,5 +1,5 @@
 CREATE TABLE `identity` (
-                        `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '用户主键',
+                        `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '用户主键',
                         `name` VARCHAR(50) NOT NULL COMMENT '用户名',
                         `password` VARCHAR(100) NOT NULL COMMENT '密码',
                         `role` ENUM('admin', 'user') NOT NULL DEFAULT 'user' COMMENT '角色：管理员或普通用户',
