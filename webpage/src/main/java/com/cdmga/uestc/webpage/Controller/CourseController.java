@@ -9,10 +9,10 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.cdmga.uestc.webpage.Common.CourseRequest;
+import com.cdmga.uestc.webpage.Common.Result;
 import com.cdmga.uestc.webpage.Entity.Course;
 import com.cdmga.uestc.webpage.Service.CourseService;
-import com.cdmga.uestc.webpage.common.CourseRequest;
-import com.cdmga.uestc.webpage.common.Result;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;

@@ -1,4 +1,4 @@
-package com.cdmga.uestc.webpage.common;
+package com.cdmga.uestc.webpage.Common;
 
 import java.time.LocalDateTime;
 

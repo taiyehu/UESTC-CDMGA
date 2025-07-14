@@ -34,32 +34,49 @@ demo.html 文件就是主题的网页框架
         static         //存放静态资源如css，jpg
         templates      //存放模板
         application.properties存放配置，如数据库连接配置
+        使用nodeJS，并且node_modules中的文件已被添加进.gitignore中，请自行下载！
     src/test/.../文件夹中存放着测试用文件，完成功能后可以编写测试
         注意：vscode由于maven插件原因，在执行junittest之后不会正常执行System.out.println，如要进行调试可自行打断点查看获得的数据
         如果使用idea无此问题。问题解决请进行更新
     pom.xml中编写全局配置，如添加mysql依赖用于访问mysql等
 
-        webpage-application/                # 根目录
-    ├── src/                             # 源代码目录
-    │   ├── main/                        # 主源代码目录
-    │   │   ├── java/                    # Java 源代码
-    │   │   │   └── com/cdmga/uestc/     # 基于包结构的目录（根据你的包名来组织）
-    │   │   │       ├── webpage/         # 项目的模块或功能包
-    │   │   │       │   ├── WebpageApplication.java      # 启动类
-    │   │   │       │   ├── controller/  # 控制器层
-    │   │   │       │   ├── model/       # 实体类（模型类）
-    │   │   │       │   ├── repository/  # 数据库访问层（JPA接口）
-    │   │   │       │   ├── service/     # 服务层
-    │   │   │       │   └── WebpageService.java  # 服务类
-    │   │   ├── resources/                # 资源文件目录
-    │   │   │   ├── application.properties  # 配置文件
-    │   │   │   ├── static/               # 静态资源（CSS, JavaScript, 图片等）
-    │   │   │   ├── templates/            # Thymeleaf 模板（如果使用）
-    │   │   │   └── data.sql              # 数据库初始化脚本（如果需要）
-    │   └── test/                         # 测试代码
-    │       ├── java/                    # 测试源代码
-    │       └── resources/                # 测试资源文件
-    ├── pom.xml                          # Maven 配置文件
+2025.7.14更新项目结构
+    root/                                    # 根目录
+    ├── vueproject/                          # 前端代码
+        ├── public/                          # 直接供浏览器访问的文件
+        ├── src/                             # 源代码目录
+            ├── assets/                      # 静态文件，包括图片，css
+            ├── components/                  # 组件
+            ├── router/                      # router文件
+            └── views/                       # vue源代码
+                ├── home/                    # 主页源代码
+                ├── login/                   # 登录源代码
+                └── register/                # 注册源代码
+        ├── ...                              # 各类文件
+        └── vue.config.js                    # 配置文件
+    ├── webpage/                             # 后端代码
+    |   ├── src/                             # 源代码目录
+    |   │   ├── main/                        # 主源代码目录
+    |   │   │   ├── java/                    # Java 源代码
+    |   │   │   │   └── com/cdmga/uestc/     # 基于包结构的目录（根据你的包名来组织）
+    |   │   │   │       ├── webpage/         # 项目的模块或功能包
+    |   │   │   │       │   ├── WebpageApplication.java      # 启动类
+    |   │   │   │       │   ├── Common       # 用于接口传递的各种类
+    |   │   │   │       │   ├── Configuration       # 网页和安全配置（security配置可改）
+    |   │   │   │       │   ├── Controller/  # 控制器层
+    |   │   │   │       │   ├── Entity/      # 实体类（模型类）
+    |   │   │   │       │   ├── Repository/  # 数据库访问层（JPA接口）
+    |   │   │   │       │   ├── service/     # 服务层
+    |   │   │   │       │   └── Service/     # 服务层
+    |   │   │   ├── resources/                # 资源文件目录
+    |   │   │   │   ├── application.properties  # 配置文件
+    |   │   │   │   ├── static/               # 静态资源（CSS, JavaScript, 图片等）
+    |   │   │   │   ├── templates/            # Thymeleaf 模板（如果使用）
+    |   │   │   │   └── data.sql              # 数据库初始化脚本（如果需要）
+    |   │   └── test/                         # 测试代码
+    |   │       ├── java/                    # 测试源代码
+    |   │       └── resources/                # 测试资源文件
+    |   └── pom.xml                          # Maven 配置文件
     └── README.md                        # 项目的 README 文件
 
 2025.7.11 完成前后端的对接测试

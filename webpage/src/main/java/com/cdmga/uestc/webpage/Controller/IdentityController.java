@@ -14,11 +14,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.cdmga.uestc.webpage.Common.LoginRequest;
+import com.cdmga.uestc.webpage.Common.RegisterRequest;
+import com.cdmga.uestc.webpage.Common.Result;
 import com.cdmga.uestc.webpage.Entity.Identity;
 import com.cdmga.uestc.webpage.Service.IdentityService;
-import com.cdmga.uestc.webpage.common.LoginRequest;
-import com.cdmga.uestc.webpage.common.RegisterRequest;
-import com.cdmga.uestc.webpage.common.Result;
 
 @CrossOrigin(origins = "http://localhost:8081")
 @RestController
