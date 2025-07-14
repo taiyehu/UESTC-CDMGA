@@ -72,3 +72,7 @@ demo.html 文件就是主题的网页框架
         5.运行webpage/main/java/com/cdmga/uestc/webpage/WebpageApplication.java
         6.在终端切换到vueproject目录下，执行npm run serve, 并打开网页localhost:8081/login
         7.目前输入任何用户名密码都会显示黄底提示消息登录失败，按f12打开控制台，确保控制台没有出现404，403，500，401等错误信息，而是200
+
+2025.7.11 完成注册功能
+2025.7.13 完成登录功能
+2025.7.14 完成课题后端部分
