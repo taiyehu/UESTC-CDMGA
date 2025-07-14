@@ -1,9 +1,13 @@
 package com.cdmga.uestc.webpage.Entity;
 
+import java.util.List;
+
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
@@ -25,6 +29,12 @@ public class Identity {
     @NotEmpty(message = "密码不能为空")
     @Size(min = 6, message = "密码长度必须至少为6个字符")
     private String password;
+
+    /**
+     * identity关联score
+     */
+    @OneToMany(mappedBy = "identity", fetch = FetchType.LAZY)
+    private List<Score> scores;
 
     public long getId(){
         return id;

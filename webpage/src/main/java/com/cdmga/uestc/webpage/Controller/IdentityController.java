@@ -15,9 +15,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cdmga.uestc.webpage.Entity.Identity;
-import com.cdmga.uestc.webpage.Entity.LoginRequest;
-import com.cdmga.uestc.webpage.Entity.RegisterRequest;
 import com.cdmga.uestc.webpage.Service.IdentityService;
+import com.cdmga.uestc.webpage.common.LoginRequest;
+import com.cdmga.uestc.webpage.common.RegisterRequest;
 import com.cdmga.uestc.webpage.common.Result;
 
 @CrossOrigin(origins = "http://localhost:8081")
@@ -45,7 +45,7 @@ public class IdentityController {
             return Result.error(e.getMessage());
         }
     }
-    // 修改为接收 JSON 请求体
+    // 接收 JSON 请求体
     @CrossOrigin(origins = "http://localhost:8081")
     @PostMapping("/login")
     public Result login(@RequestBody LoginRequest loginRequest) {

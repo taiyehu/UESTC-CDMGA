@@ -1,7 +1,14 @@
 package com.cdmga.uestc.webpage;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+import java.time.format.DateTimeFormatter;
+
+import com.cdmga.uestc.webpage.Entity.Course;
 import com.cdmga.uestc.webpage.Entity.Identity;
 
 import org.junit.jupiter.api.Test;
@@ -9,8 +16,11 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import com.cdmga.uestc.webpage.Controller.CourseController;
 import com.cdmga.uestc.webpage.Controller.HelloController;
+import com.cdmga.uestc.webpage.Repository.CourseRepository;
 import com.cdmga.uestc.webpage.Repository.IdentityRepository;
+import com.cdmga.uestc.webpage.Service.CourseService;
 import com.cdmga.uestc.webpage.Service.IdentityService;
 
 @SpringBootTest
@@ -24,6 +34,12 @@ class WebpageApplicationTests {
 
 	@Autowired
 	private IdentityRepository identityRepository;
+
+	@Autowired
+	private CourseRepository courseRepository;
+
+	@Autowired
+	private CourseService courseService;
 
 	@Test
 	public void helloControllerTest(){
@@ -60,6 +76,26 @@ class WebpageApplicationTests {
 	public void getAccountAllTest(){
 		Identity identity = identityRepository.findByAccount("taiyehu");
 		System.out.println(identity);
+	}
+
+	@Test
+    void testGetAllCourse() {
+        List<Course> courses = courseService.getAllCourse();
+		System.out.println(courses);
+    }
+
+	@Test
+	void testPostNewCourse() {
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-M-d HH:mm");
+
+		Course course = courseService.postNewCourse("测试课题2", "arc", 
+			LocalDateTime.parse("2025-07-14 20:37", formatter), 
+			LocalDateTime.parse("2025-08-01 00:00", formatter), 
+			"用于测试的课题2", "NULL",
+			LocalDateTime.parse("2025-07-14 20:37", formatter),
+			LocalDateTime.parse("2025-07-14 20:41", formatter));
+
+		assertNotNull(course, "The course should not be null");
 	}
 
 }

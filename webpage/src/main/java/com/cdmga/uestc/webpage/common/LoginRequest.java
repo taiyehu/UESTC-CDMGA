@@ -1,4 +1,4 @@
-package com.cdmga.uestc.webpage.Entity;
+package com.cdmga.uestc.webpage.common;
 
 public class LoginRequest {
     private String account;
