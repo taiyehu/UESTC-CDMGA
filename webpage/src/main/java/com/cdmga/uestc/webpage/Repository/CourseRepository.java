@@ -27,4 +27,5 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     // 查找 start_time 最晚且没有超过 end_time 的课程，只返回一个
     @Query("SELECT c FROM Course c WHERE c.startTime <= c.endTime AND c.isDeleted = false ORDER BY c.startTime DESC")
     Course findLatestStartTimeCourseBeforeEndTime();
+    
 }
