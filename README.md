@@ -40,7 +40,7 @@ demo.html 文件就是主题的网页框架
         如果使用idea无此问题。问题解决请进行更新
     pom.xml中编写全局配置，如添加mysql依赖用于访问mysql等
 
-2025.7.14更新项目结构
+2025.7.15 更新项目结构
     root/                                    # 根目录
     ├── vueproject/                          # 前端代码
         ├── public/                          # 直接供浏览器访问的文件
@@ -59,25 +59,26 @@ demo.html 文件就是主题的网页框架
     |   │   ├── main/                        # 主源代码目录
     |   │   │   ├── java/                    # Java 源代码
     |   │   │   │   └── com/cdmga/uestc/     # 基于包结构的目录（根据你的包名来组织）
-    |   │   │   │       ├── webpage/         # 项目的模块或功能包
+    |   │   │   │       ├── webpage/          # 项目的模块或功能包
     |   │   │   │       │   ├── WebpageApplication.java      # 启动类
-    |   │   │   │       │   ├── Common       # 用于接口传递的各种类
+    |   │   │   │       │   ├── Common        # 用于接口传递的各种类
     |   │   │   │       │   ├── Configuration       # 网页和安全配置（security配置可改）
-    |   │   │   │       │   ├── Controller/  # 控制器层
-    |   │   │   │       │   ├── Entity/      # 实体类（模型类）
-    |   │   │   │       │   ├── Repository/  # 数据库访问层（JPA接口）
-    |   │   │   │       │   ├── service/     # 服务层
-    |   │   │   │       │   └── Service/     # 服务层
+    |   │   │   │       │   ├── Controller/   # 控制器层
+    |   │   │   │       │   ├── Entity/       # 实体类（模型类）
+    |   │   │   │       │   ├── Repository/   # 数据库访问层（JPA接口）
+    |   │   │   │       │   ├── service/      # 服务层
+    |   │   │   │       │   └── Service/      # 服务层
     |   │   │   ├── resources/                # 资源文件目录
     |   │   │   │   ├── application.properties  # 配置文件
     |   │   │   │   ├── static/               # 静态资源（CSS, JavaScript, 图片等）
     |   │   │   │   ├── templates/            # Thymeleaf 模板（如果使用）
     |   │   │   │   └── data.sql              # 数据库初始化脚本（如果需要）
     |   │   └── test/                         # 测试代码
-    |   │       ├── java/                    # 测试源代码
+    |   │       ├── java/                     # 测试源代码
     |   │       └── resources/                # 测试资源文件
-    |   └── pom.xml                          # Maven 配置文件
-    └── README.md                        # 项目的 README 文件
+    |   └── pom.xml                           # Maven 配置文件
+    ├── sql_srcipt/                           # sql文件
+    └── README.md                             # 项目的 README 文件
 
 2025.7.11 完成前后端的对接测试
     请务必更新到本地！方法：git pull
