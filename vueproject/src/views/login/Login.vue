@@ -61,7 +61,7 @@ export default {
           console.log("表单验证成功");
           this.loading = true;
           this.axios({
-            url: "http://localhost:8080/api/identity/login",
+            url: "http://localhost:8091/api/identity/login",
             method: "post",
             headers: {
               "Content-Type": "application/json",

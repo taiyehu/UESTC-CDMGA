@@ -1,5 +1,8 @@
 package com.cdmga.uestc.webpage.Entity;
 
+import org.springframework.stereotype.Service;
+
+@Service
 public class LoginRequest {
     private String account;
     private String password;
