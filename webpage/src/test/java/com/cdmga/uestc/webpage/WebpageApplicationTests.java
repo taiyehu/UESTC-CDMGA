@@ -1,10 +1,7 @@
 package com.cdmga.uestc.webpage;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
 import java.time.format.DateTimeFormatter;
 
@@ -16,9 +13,8 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import com.cdmga.uestc.webpage.Controller.CourseController;
 import com.cdmga.uestc.webpage.Controller.HelloController;
-import com.cdmga.uestc.webpage.Repository.CourseRepository;
+//import com.cdmga.uestc.webpage.Repository.CourseRepository;
 import com.cdmga.uestc.webpage.Repository.IdentityRepository;
 import com.cdmga.uestc.webpage.Service.CourseService;
 import com.cdmga.uestc.webpage.Service.IdentityService;
@@ -35,8 +31,8 @@ class WebpageApplicationTests {
 	@Autowired
 	private IdentityRepository identityRepository;
 
-	@Autowired
-	private CourseRepository courseRepository;
+	/*@Autowired
+	private CourseRepository courseRepository;*/
 
 	@Autowired
 	private CourseService courseService;
