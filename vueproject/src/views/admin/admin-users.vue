@@ -2,18 +2,18 @@
     <div>
         <!-- 用户列表 -->
         <el-table :data="users" style="width: 100%" border>
-        <el-table-column label="用户名" prop="account"></el-table-column>
-        <el-table-column label="ID" prop="id"></el-table-column>
-        <el-table-column label="角色" prop="role"></el-table-column>
-        <el-table-column label="操作">
-            <template slot-scope="scope">
-            <el-button @click="viewUser(scope.row.id)" size="small" type="primary">查看</el-button>
-            <el-button @click="deleteUser(scope.row.id)" size="small" type="danger" style="margin-left: 10px">删除</el-button>
-            </template>
-        </el-table-column>
+            <el-table-column label="用户名" prop="account"></el-table-column>
+            <el-table-column label="ID" prop="id"></el-table-column>
+            <el-table-column label="角色" prop="role"></el-table-column>
+            <el-table-column label="操作">
+                <template slot-scope="scope">
+                    <el-button @click="viewUser(scope.row.id)" size="small" type="primary">查看</el-button>
+                    <el-button @click="deleteUser(scope.row.id)" size="small" type="danger" style="margin-left: 10px">删除</el-button>
+                </template>
+            </el-table-column>
         </el-table>
 
-    <!-- 如果没有用户，显示提示 -->
+        <!-- 如果没有用户，显示提示 -->
         <div v-if="users.length === 0" style="text-align: center; margin-top: 20px;">
             <p>暂无用户数据。</p>
         </div>
@@ -21,14 +21,7 @@
 </template>
 
 <script>
-import { ElTable, ElTableColumn, ElButton } from 'element-ui'; // element-plus -> element-ui
-
 export default {
-    components: {
-        ElTable,
-        ElTableColumn,
-        ElButton,
-    },
     data() {
         return {
             users: [],  // 存储从后端获取的用户数据
@@ -54,7 +47,7 @@ export default {
                 type: 'warning'
             }).then(() => {
                 // 后端接口为 DELETE /api/identity/{userId}
-                this.$axios.delete(`/api/identity/${userId}`).then(() => {
+                this.$axios.delete(`/api/api/identity/${userId}`).then(() => {
                     // 删除成功后，重新获取用户列表
                     this.fetchUsers();
                     this.$message.success('用户删除成功！');
@@ -75,21 +68,20 @@ export default {
     mounted() {
         const userInfo = sessionStorage.getItem('userInfo');
         if (userInfo) {
-        // 解析存储的 JSON 数据
-        this.user = JSON.parse(userInfo);
+            // 解析存储的 JSON 数据
+            this.user = JSON.parse(userInfo);
         } else {
-        this.user = {
-            account: "",
-            id: null,
-            role: "", // 确保这里也有 role 字段
-        };
+            this.user = {
+                account: "",
+                id: null,
+                role: "", // 确保这里也有 role 字段
+            };
         }
         this.loading = false;
         // 页面加载时获取用户数据
         this.fetchUsers();
     },
 };
-
 </script>
 
 <style scoped>

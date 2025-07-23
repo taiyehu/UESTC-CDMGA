@@ -1,6 +1,5 @@
 package com.cdmga.uestc.webpage.Controller;
 
-
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +30,6 @@ public class IdentityController {
     @Autowired
     private IdentityService identityService;
 
-    
     // 注册接口
     @CrossOrigin(origins = "http://localhost:8081")
     @PostMapping("/register")
@@ -48,6 +46,7 @@ public class IdentityController {
             return Result.error(e.getMessage());
         }
     }
+
     // 接收 JSON 请求体
     @CrossOrigin(origins = "http://localhost:8081")
     @PostMapping("/login")
@@ -70,20 +69,19 @@ public class IdentityController {
     @GetMapping("/")
     public ResponseEntity<List<Identity>> getCourse() {
         List<Identity> currentIdentity = identityService.getAllAccount();
-        if(currentIdentity != null){
+        if (currentIdentity != null) {
             return ResponseEntity.ok(currentIdentity);
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }
-    
 
     // 获取用户信息
     @GetMapping("/{account}")
-    public ResponseEntity<Object> getIdentity(@PathVariable String account, 
-                                            @RequestParam(value = "role", required = false) Boolean getRole) {
+    public ResponseEntity<Object> getIdentity(@PathVariable String account,
+            @RequestParam(value = "role", required = false) Boolean getRole) {
         Identity identity = identityService.getIdentityByAccount(account);
-        
+
         if (identity != null) {
             if (getRole != null && getRole) {
                 return ResponseEntity.ok(identity.getRole()); // 返回 role
@@ -94,7 +92,6 @@ public class IdentityController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }
-
 
     // 创建用户
     @PostMapping("/")
