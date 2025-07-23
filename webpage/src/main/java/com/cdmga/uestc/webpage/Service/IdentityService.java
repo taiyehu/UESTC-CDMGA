@@ -1,5 +1,7 @@
 package com.cdmga.uestc.webpage.Service;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -44,6 +46,10 @@ public class IdentityService {
         return identity;
     }
 
+    public List<Identity> getAllAccount(){
+        return identityRepository.findAllAccount();
+    }
+
     public IdentityService(IdentityRepository identityRepository) {
         this.identityRepository = identityRepository;
     }
@@ -66,5 +72,15 @@ public class IdentityService {
     // 删除用户
     public void deleteIdentity(Long id) {
         identityRepository.deleteById(id);
+    }
+
+    public Boolean checkIfAdmin(String account) {
+        Identity identity = identityRepository.findByAccount(account);
+        if(identity.getRole() == "admin"){
+            return true;
+        }
+        else{
+            return false;
+        }
     }
 }

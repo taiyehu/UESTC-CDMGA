@@ -1,6 +1,8 @@
 package com.cdmga.uestc.webpage.Controller;
 
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cdmga.uestc.webpage.Common.LoginRequest;
@@ -64,18 +67,34 @@ public class IdentityController {
         }
     }
 
-    
-
-    // 获取用户信息
-    @GetMapping("/{account}")
-    public ResponseEntity<Identity> getIdentity(@PathVariable String account) {
-        Identity identity = identityService.getIdentityByAccount(account);
-        if (identity != null) {
-            return ResponseEntity.ok(identity);
+    @GetMapping("/")
+    public ResponseEntity<List<Identity>> getCourse() {
+        List<Identity> currentIdentity = identityService.getAllAccount();
+        if(currentIdentity != null){
+            return ResponseEntity.ok(currentIdentity);
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }
+    
+
+    // 获取用户信息
+    @GetMapping("/{account}")
+    public ResponseEntity<Object> getIdentity(@PathVariable String account, 
+                                            @RequestParam(value = "role", required = false) Boolean getRole) {
+        Identity identity = identityService.getIdentityByAccount(account);
+        
+        if (identity != null) {
+            if (getRole != null && getRole) {
+                return ResponseEntity.ok(identity.getRole()); // 返回 role
+            } else {
+                return ResponseEntity.ok(identity); // 返回整个 identity
+            }
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+    }
+
 
     // 创建用户
     @PostMapping("/")

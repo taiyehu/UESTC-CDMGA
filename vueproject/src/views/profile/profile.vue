@@ -1,17 +1,35 @@
 <template>
-  <el-card class="box-card" v-if="user.id !== null">
-    <h2>欢迎，{{ user.account }}！您的 ID 为 {{ user.id }}</h2>
-    <div class="btnGroup">
-      <el-button type="primary" @click="logout" size="large">登出</el-button>
+  <div>
+    <el-card class="box-card" v-if="user.id !== null">
+      <h2>欢迎，{{ user.account }}！您的 ID 为 {{ user.id }}</h2>
+      <div class="btnGroup">
+        <el-button type="primary" @click="logout" size="large">登出</el-button>
+      </div>
+    </el-card>
+    <el-card class="box-card" v-else>
+      <h2>加载用户信息失败</h2>
+      <div class="btnGroup">
+        <el-button @click="redirectToLogin" size="large">重新登录</el-button>
+      </div>
+    </el-card>
+
+    <!-- 根据用户角色显示不同的按钮 -->
+    <div v-if="user.role === 'admin'">
+      <router-link to="/admin-users">
+        <el-button style="margin-left:10px">用户管理</el-button>
+      </router-link>
+      <router-link to="/admin-courses">
+        <el-button style="margin-left:10px">课题管理</el-button>
+      </router-link>
     </div>
-  </el-card>
-  <el-card class="box-card" v-else>
-    <h2>加载用户信息失败</h2>
-    <div class="btnGroup">
-      <el-button @click="redirectToLogin" size="large">重新登录</el-button>
+
+    <div>
+      <router-link to="/home">
+        <el-button style="margin-left:10px">返回主页</el-button>
+      </router-link>
     </div>
-  </el-card>
-  
+  </div>
+  <!-- 如果有其他角色，可以继续添加条件判断 -->
 </template>
 
 <script>
@@ -21,6 +39,7 @@ export default {
       user: {
         account: "",
         id: null,
+        role: "", // 角色信息
       },
       loading: true,
     };
@@ -45,6 +64,7 @@ export default {
       this.user = {
         account: "",
         id: null,
+        role: "", // 确保这里也有 role 字段
       };
     }
     this.loading = false;

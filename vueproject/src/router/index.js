@@ -8,7 +8,7 @@ import Login from '../views/login/Login.vue'
 import Register from '@/views/register/Register.vue'
 import Home from '@/views/home/home.vue'
 import Profile from '@/views/profile/profile.vue'
-
+import adminUsers from '@/views/admin/admin-users.vue'
 // 使用VueRouter插件
 Vue.use(VueRouter)
 
@@ -35,6 +35,10 @@ const router = new VueRouter({
         {
             path:'/profile',
             component: Profile
+        },
+        {
+            path:'/admin-users',
+            component: adminUsers
         }
     ]
 })
