@@ -55,4 +55,9 @@ public class CourseController {
         }
     }
     
+    @GetMapping("/allcourse")
+    public ResponseEntity<List<Course>> getAllIdentities() {
+        List<Course> courses = courseService.getAllCourse();
+        return courses.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(courses);
+    }
 }

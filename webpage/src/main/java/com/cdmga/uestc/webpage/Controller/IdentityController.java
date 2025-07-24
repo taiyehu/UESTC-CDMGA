@@ -69,9 +69,9 @@ public class IdentityController {
 
     @GetMapping("/allaccount")
     public ResponseEntity<List<Identity>> getAllIdentities() {
-    List<Identity> identities = identityService.getAllIdentities();
-    return identities.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(identities);
-}
+        List<Identity> identities = identityService.getAllIdentities();
+        return identities.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(identities);
+    }
     
 
     // 获取用户信息

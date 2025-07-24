@@ -1,5 +1,7 @@
 package com.cdmga.uestc.webpage.Controller;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,8 +23,8 @@ public class HomeController {
 
     //显示当前课题
     @GetMapping("/")
-    public ResponseEntity<Course> getCurrentCourse() {
-        Course currentCourse = courseService.getCurrentCourse();
+    public ResponseEntity<List<Course>> getCourse() {
+        List<Course> currentCourse = courseService.getAllCourse();
         if(currentCourse != null){
             return ResponseEntity.ok(currentCourse);
         } else {

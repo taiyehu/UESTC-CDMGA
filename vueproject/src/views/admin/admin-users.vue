@@ -98,21 +98,27 @@ export default {
 h2 {
   font-size: 24px;
   color: #333;
+  margin-bottom: 40px;
+}
+
+.user-item p{
   margin-bottom: 20px;
 }
 
-.user-item {
-  margin-bottom: 20px;
+.user-item p {
+  text-align: left; /* 使用户信息文字左对齐 */
 }
 
 .btnGroup {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   margin-top: 10px;
 }
 
 .el-button {
   margin-left: 10px;
+  position: relative;
+  top: -42px;
 }
 
 .el-button:hover {

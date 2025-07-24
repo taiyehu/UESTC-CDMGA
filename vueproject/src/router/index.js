@@ -9,6 +9,7 @@ import Register from '@/views/register/Register.vue'
 import Home from '@/views/home/home.vue'
 import Profile from '@/views/profile/profile.vue'
 import adminUsers from '@/views/admin/admin-users.vue'
+import adminCourses from '@/views/admin/admin-courses.vue'
 // 使用VueRouter插件
 Vue.use(VueRouter)
 
@@ -39,6 +40,10 @@ const router = new VueRouter({
         {
             path:'/admin-users',
             component: adminUsers
+        },
+        {
+            path:'/admin-courses',
+            component: adminCourses
         }
     ]
 })
