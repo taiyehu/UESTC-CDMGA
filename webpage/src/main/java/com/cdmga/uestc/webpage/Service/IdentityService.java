@@ -46,7 +46,7 @@ public class IdentityService {
         return identity;
     }
 
-    public List<Identity> getAllAccount(){
+    public List<Identity> getAllIdentities(){
         return identityRepository.findAllAccount();
     }
 

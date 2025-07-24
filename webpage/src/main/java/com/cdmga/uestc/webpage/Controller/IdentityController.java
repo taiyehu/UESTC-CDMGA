@@ -67,15 +67,11 @@ public class IdentityController {
         }
     }
 
-    @GetMapping("/")
-    public ResponseEntity<List<Identity>> getCourse() {
-        List<Identity> currentIdentity = identityService.getAllAccount();
-        if(currentIdentity != null){
-            return ResponseEntity.ok(currentIdentity);
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        }
-    }
+    @GetMapping("/allaccount")
+    public ResponseEntity<List<Identity>> getAllIdentities() {
+    List<Identity> identities = identityService.getAllIdentities();
+    return identities.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(identities);
+}
     
 
     // 获取用户信息

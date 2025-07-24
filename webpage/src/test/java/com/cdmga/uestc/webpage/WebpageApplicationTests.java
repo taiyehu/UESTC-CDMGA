@@ -94,4 +94,9 @@ class WebpageApplicationTests {
 		assertNotNull(course, "The course should not be null");
 	}
 
+	@Test
+	void testFindAllAccount(){
+		List<Identity> identity = identityRepository.findAllAccount();
+		System.out.println(identity);
+	}
 }
