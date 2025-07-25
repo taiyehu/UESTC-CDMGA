@@ -12,11 +12,3 @@ export const fetchCourses = (params) => {
         }
     })
 }
-
-export const fetchCourseDetail = (id) => {
-    return axios.get(`${API_BASE_URL}/course/${id}`)
-}
-
-export const fetchCategories = () => {
-    return axios.get(`${API_BASE_URL}/course/categories`)
-}

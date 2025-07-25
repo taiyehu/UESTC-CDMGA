@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -15,6 +16,7 @@ import com.cdmga.uestc.webpage.Entity.Course;
 import com.cdmga.uestc.webpage.Service.CourseService;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -59,5 +61,19 @@ public class CourseController {
     public ResponseEntity<List<Course>> getAllIdentities() {
         List<Course> courses = courseService.getAllCourse();
         return courses.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(courses);
+    }
+    
+    @DeleteMapping("/{courseId}")
+    public ResponseEntity<Void> deleteCourse(@PathVariable Long courseId) {
+        try {
+            Course deletedCourse = courseService.deleteCourse(courseId); // 接收 Course 类型
+            if (deletedCourse != null) {
+                return ResponseEntity.noContent().build(); // 成功：204
+            } else {
+                return ResponseEntity.notFound().build(); // 失败（课程不存在）：404
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(500).build(); // 服务器异常：500
+        }
     }
 }
