@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 
 
@@ -58,7 +60,7 @@ public class CourseController {
     }
     
     @GetMapping("/allcourse")
-    public ResponseEntity<List<Course>> getAllIdentities() {
+    public ResponseEntity<List<Course>> getAllCourses() {
         List<Course> courses = courseService.getAllCourse();
         return courses.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(courses);
     }
@@ -76,4 +78,11 @@ public class CourseController {
             return ResponseEntity.status(500).build(); // 服务器异常：500
         }
     }
+
+    @GetMapping("/availablecourse")
+    public ResponseEntity<List<Course>> getAvaliableCourses() {
+        List<Course> courses = courseService.getAvailableCourse();
+        return courses.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(courses);
+    }
+    
 }
