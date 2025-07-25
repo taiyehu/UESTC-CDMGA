@@ -22,12 +22,17 @@
         <el-button style="margin-left:10px">课题管理</el-button>
       </router-link>
     </div>
-
+    <div>
+      <router-link to="/score">
+        <el-button style="margin-left:10px">成绩提交</el-button>
+      </router-link>
+    </div>
     <div>
       <router-link to="/home">
         <el-button style="margin-left:10px">返回主页</el-button>
       </router-link>
     </div>
+    
   </div>
   <!-- 如果有其他角色，可以继续添加条件判断 -->
 </template>

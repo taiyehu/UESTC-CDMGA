@@ -10,6 +10,7 @@ import Home from '@/views/home/home.vue'
 import Profile from '@/views/profile/profile.vue'
 import adminUsers from '@/views/admin/admin-users.vue'
 import adminCourses from '@/views/admin/admin-courses.vue'
+import score from '@/views/score/score.vue'
 // 使用VueRouter插件
 Vue.use(VueRouter)
 
@@ -44,6 +45,10 @@ const router = new VueRouter({
         {
             path:'/admin-courses',
             component: adminCourses
+        }, 
+        {
+            path: '/score',
+            component: score
         }
     ]
 })
