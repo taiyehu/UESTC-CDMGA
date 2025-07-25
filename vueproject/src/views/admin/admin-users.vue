@@ -69,7 +69,7 @@ export default {
       try {
         // 调用删除用户的 API
         const response = await this.$axios.delete(`http://localhost:8080/api/identity/${userId}`);
-        if (response.status === 200) {
+        if (response.status === 204) {
           this.$message.success('用户删除成功');
           // 删除成功后，刷新用户列表
           this.fetchUsers();
