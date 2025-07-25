@@ -36,7 +36,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
-import axios from 'axios';
+import {fetchCourseData} from "@/api/course";
 
 // 定义响应式变量
 const courses = ref([]);
@@ -49,7 +49,7 @@ let scrollInterval = null;
 onMounted(async () => {
 
   try {
-    const response = await axios.get('http://localhost:8080/api/course/');
+    const response = await fetchCourseData();
     courses.value = response.data;
   } catch (err) {
     error.value = err.message;

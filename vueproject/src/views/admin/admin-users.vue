@@ -37,7 +37,8 @@
 </template>
 
 <script>
-import axios from 'axios';
+import {fetchUsersData, deleteUserData} from "@/api/user";
+
 export default {
   data() {
     return {
@@ -50,7 +51,7 @@ export default {
     async fetchUsers() {
         console.log(this.$axios);
       try {
-        const response = await this.$axios.get('http://localhost:8080/api/identity/allaccount');
+        const response = await fetchUsersData({ page: 1, pageSize: 10 });
         this.users = response.data || [];
       } catch (error) {
         console.error('获取用户信息失败:', error);
@@ -68,7 +69,7 @@ export default {
     async deleteUser(userId) {
       try {
         // 调用删除用户的 API
-        const response = await this.$axios.delete(`http://localhost:8080/api/identity/${userId}`);
+        const response = await deleteUserData(userId);
         if (response.status === 204) {
           this.$message.success('用户删除成功');
           // 删除成功后，刷新用户列表

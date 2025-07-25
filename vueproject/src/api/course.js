@@ -1,14 +1,28 @@
-import axios from 'axios'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
-
-export const fetchCourses = (params) => {
-    return axios.get(`${API_BASE_URL}/course/`, {
+// src/api/course.js
+import request from "@/utils/request";
+export const fetchAllCourseData = (params) => {
+    return request({
+        url: '/course/allcourse', // 简洁路径
+        method: 'get',
         params: {
-            page: params.page - 1, // 后端从0开始计数
+            page: params.page - 1,
             size: params.pageSize,
             title: params.searchQuery,
             category: params.categoryFilter
         }
+    })
+}
+
+export const deleteCourseData = (courseId) => {
+    return request({
+        url: `/course/${courseId}`, // 简洁路径
+        method: 'delete'
+    })
+}
+
+export const fetchCourseData = () => {
+    return request({
+        url: '/course/', // 简洁路径
+        method: 'get'
     })
 }
