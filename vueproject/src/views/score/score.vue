@@ -95,7 +95,7 @@ export default {
   methods: {
     async fetchCourses() {
       try {
-        const response = await axios.get('http://localhost:8080/api/course/allcourse'); // 获取课题信息
+        const response = await axios.get('http://localhost:8080/api/course/availablecourse'); // 获取课题信息
         this.courses = response.data || [];
       } catch (error) {
         console.error('获取课题信息失败:', error);

@@ -33,7 +33,8 @@ public class CourseService {
     }
 
     public List<Course> getAvailableCourse(){
-        return courseRepository.findLatestStartTimeCoursesBeforeEndTime();
+        LocalDateTime currentDateTime = LocalDateTime.now();
+        return courseRepository.findAvailableCourse(currentDateTime);
     }
 
     public Course postNewCourse(String title, String category,

@@ -1,5 +1,6 @@
 package com.cdmga.uestc.webpage.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -28,4 +29,6 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     @Query("SELECT c FROM Course c WHERE c.startTime <= c.endTime AND c.isDeleted = false ORDER BY c.startTime DESC")
     Course findLatestStartTimeCourseBeforeEndTime();
     
+    @Query("SELECT c FROM Course c WHERE c.startTime <= :currentDateTime AND c.endTime >= :currentDateTime AND c.isDeleted = false ORDER BY c.startTime DESC")
+    List<Course> findAvailableCourse(LocalDateTime currentDateTime);
 }
