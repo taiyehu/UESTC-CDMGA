@@ -26,4 +26,7 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     
     // 按 id、identity_id 或 course_id 查找（OR 查询）
     List<Score> findByIdOrIdentityIdOrCourseId(Long id, int identityId, int courseId);
+    
+    boolean existsByIdentityIdAndCourseId(int identityId, int courseId);
+    
 }

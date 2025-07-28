@@ -76,4 +76,9 @@ public class ScoreService {
         }
         return null;
     }
+    
+    public boolean existsByIdentityIdAndCourseId(int identityId, int courseId) {
+        return scoreRepository.existsByIdentityIdAndCourseId(identityId, courseId);
+    }
+    
 }
