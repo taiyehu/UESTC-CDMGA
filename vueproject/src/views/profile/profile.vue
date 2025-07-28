@@ -21,6 +21,9 @@
       <router-link to="/admin-courses">
         <el-button style="margin-left:10px">课题管理</el-button>
       </router-link>
+      <router-link to="/review">
+        <el-button style="margin-left:10px">成绩管理</el-button>
+      </router-link>
     </div>
     <div>
       <router-link to="/score">

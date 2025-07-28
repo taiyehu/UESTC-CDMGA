@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cdmga.uestc.webpage.Common.Result;
@@ -69,5 +70,12 @@ public class ScoreController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(e.getMessage()));
         }
     }
-
+    @GetMapping("/exists")
+        public ResponseEntity<?> checkScoreExists(
+                @RequestParam("identityId") int identityId,
+                @RequestParam("courseId") int courseId) {
+            
+            boolean exists = scoreService.existsByIdentityIdAndCourseId(identityId, courseId);
+            return ResponseEntity.ok(exists);
+        }
 }

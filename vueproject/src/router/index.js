@@ -11,6 +11,7 @@ import Profile from '@/views/profile/profile.vue'
 import adminUsers from '@/views/admin/admin-users.vue'
 import adminCourses from '@/views/admin/admin-courses.vue'
 import score from '@/views/score/score.vue'
+import review from '@/views/review/review.vue'
 // 使用VueRouter插件
 Vue.use(VueRouter)
 
@@ -27,13 +28,13 @@ const router = new VueRouter({
             component: Login    // 跳转到的组件
         },
         {
-            path: '/register',  // 路径
-            component: Register // 跳转到的组件
-        },
-        {
             path: '/home',      // 路径
             component: Home     // 跳转到的组件
         },
+        {
+            path: '/register',
+            component: Register
+        }, 
         {
             path:'/profile',
             component: Profile
@@ -45,6 +46,10 @@ const router = new VueRouter({
         {
             path:'/admin-courses',
             component: adminCourses
+        }, 
+        {
+            path: '/review',
+            component: review
         }, 
         {
             path: '/score',
