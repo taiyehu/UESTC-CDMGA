@@ -49,12 +49,12 @@
 </template>
 
 <script>
-import axios from 'axios';
+import { fetchAllCourseData, deleteCourseData } from '@/api/course'
 
 export default {
 
 openDialog(course) {
-  this.selectedCourse = { 
+  this.selectedCourse = {
     ...course,
     start_time: dayjs(course.start_time).format('YYYY-MM-DD HH:mm:ss'), // 格式化开始时间
     end_time: dayjs(course.end_time).format('YYYY-MM-DD HH:mm:ss'),     // 格式化结束时间
@@ -73,7 +73,7 @@ openDialog(course) {
   methods: {
     async fetchCourses() {
       try {
-        const response = await axios.get('http://localhost:8080/api/course/allcourse'); // 获取课题信息
+        const response = await fetchAllCourseData({ page: 1, pageSize: 10 }) // 获取课题信息
         this.courses = response.data || [];
       } catch (error) {
         console.error('获取课题信息失败:', error);
@@ -91,7 +91,7 @@ openDialog(course) {
     async deleteCourse(courseId) {
       try {
         // 调用删除课题的 API
-        const response = await axios.delete(`http://localhost:8080/api/course/${courseId}`);
+        const response = await deleteCourseData(courseId);
         if (response.status === 204) {
           this.$message.success('课题删除成功');
           // 删除成功后，刷新课题列表
