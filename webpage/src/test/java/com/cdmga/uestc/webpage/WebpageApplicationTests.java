@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter;
 
 import com.cdmga.uestc.webpage.Entity.Course;
 import com.cdmga.uestc.webpage.Entity.Identity;
+import com.cdmga.uestc.webpage.Entity.Score;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -18,6 +19,7 @@ import com.cdmga.uestc.webpage.Controller.HelloController;
 import com.cdmga.uestc.webpage.Repository.IdentityRepository;
 import com.cdmga.uestc.webpage.Service.CourseService;
 import com.cdmga.uestc.webpage.Service.IdentityService;
+import com.cdmga.uestc.webpage.Service.ScoreService;
 
 @SpringBootTest
 class WebpageApplicationTests {
@@ -36,6 +38,9 @@ class WebpageApplicationTests {
 
 	@Autowired
 	private CourseService courseService;
+
+	@Autowired
+	private ScoreService scoreService;
 
 	@Test
 	public void helloControllerTest(){
@@ -98,5 +103,18 @@ class WebpageApplicationTests {
 	void testFindAllAccount(){
 		List<Identity> identity = identityRepository.findAllAccount();
 		System.out.println(identity);
+	}
+
+	@Test
+	void testPostNewScore(){
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-M-d HH:mm");
+		
+		Score score = scoreService.postNewScore(2,
+		20, LocalDateTime.parse("2025-07-28 16:42", formatter),
+		"null", 0, false, null, 
+		LocalDateTime.parse("2025-07-28 16:42", formatter),
+		LocalDateTime.parse("2025-07-28 16:42", formatter));
+
+		assertNotNull(score, "the score should not be null");
 	}
 }
