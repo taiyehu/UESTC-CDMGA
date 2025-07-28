@@ -44,7 +44,7 @@
         <el-button @click="closeViewDialog">退出</el-button>
       </div>
     </el-dialog>
-    
+
     <!-- 成绩提交弹窗（简化版） -->
     <el-dialog :visible.sync="submitDialogVisible" title="成绩提交" width="40%" @close="closeSubmitDialog">
       <el-form :model="submitForm" label-width="100px">
@@ -60,7 +60,7 @@
         <el-button type="primary" @click="handleSubmit">确认提交</el-button>
       </div>
     </el-dialog>
-    
+
     <!-- 操作结果提示 -->
     <el-message-box
       :visible.sync="resultVisible"
@@ -73,7 +73,8 @@
 </template>
 
 <script>
-import axios from 'axios';
+import {fetchAllCourseData} from "@/api/course";
+import {handleSubmitScore} from "@/api/score";
 
 export default {
   data() {
@@ -95,7 +96,7 @@ export default {
   methods: {
     async fetchCourses() {
       try {
-        const response = await axios.get('http://localhost:8080/api/course/allcourse'); // 获取课题信息
+        const response = await fetchAllCourseData({page: 1, pageSize: 10}) // 获取课题信息
         this.courses = response.data || [];
       } catch (error) {
         console.error('获取课题信息失败:', error);
@@ -104,7 +105,7 @@ export default {
     },
     openViewDialog(course) {
       // 打开查看弹窗并填充选中的课题信息
-      this.selectedCourse = { 
+      this.selectedCourse = {
         ...course,
         start_time: this.formatDateTime(course.start_time),
         end_time: this.formatDateTime(course.end_time),
@@ -134,16 +135,14 @@ export default {
     async handleSubmit() {
       try {
         // 模拟成绩提交API调用（仅传递课题ID）
-        const response = await axios.post('http://localhost:8080/api/score/submit', {
-          course_id: this.submitForm.course_id
-        });
-        
+        const response = await handleSubmitScore(this.submitForm.id)
+
         // 显示提交成功消息
         this.resultTitle = '提交成功';
         this.resultMessage = `课题 "${this.submitForm.course_title}" 的成绩提交请求已发送！`;
         this.resultType = 'success';
         this.resultVisible = true;
-        
+
         // 关闭提交窗口
         this.closeSubmitDialog();
       } catch (error) {
@@ -205,4 +204,4 @@ h2 {
 .el-form-item {
   margin-bottom: 20px;
 }
-</style>    
+</style>

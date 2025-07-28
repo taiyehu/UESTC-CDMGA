@@ -7,8 +7,6 @@ export const fetchAllCourseData = (params) => {
         params: {
             page: params.page - 1,
             size: params.pageSize,
-            title: params.searchQuery,
-            category: params.categoryFilter
         }
     })
 }

@@ -7,8 +7,6 @@ export const fetchUsersData = (params) => {
         params: {
             page: params.page - 1,  // 后端从0开始计数
             size: params.pageSize,
-            title: params.searchQuery,
-            category: params.categoryFilter
         }
     })
 }

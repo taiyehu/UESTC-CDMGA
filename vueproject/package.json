@@ -39,7 +39,9 @@
     "parserOptions": {
       "parser": "@babel/eslint-parser"
     },
-    "rules": {}
+    "rules": {
+      "eslint-disable-next-line no-empty": false
+    }
   },
   "browserslist": [
     "> 1%",
