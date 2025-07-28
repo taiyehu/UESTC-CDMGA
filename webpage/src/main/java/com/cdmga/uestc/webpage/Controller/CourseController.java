@@ -80,7 +80,7 @@ public class CourseController {
     }
 
     @GetMapping("/availablecourse")
-    public ResponseEntity<List<Course>> getAvaliableCourses() {
+    public ResponseEntity<List<Course>> getAvailableCourses() {
         List<Course> courses = courseService.getAvailableCourse();
         return courses.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(courses);
     }
