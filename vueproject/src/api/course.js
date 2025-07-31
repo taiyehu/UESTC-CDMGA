@@ -6,7 +6,7 @@ export const fetchAllCourseData = (params) => {
         method: 'get',
         params: {
             page: params.page - 1,
-            size: params.pageSize,
+            size: params.pageSize
         }
     })
 }
@@ -31,7 +31,30 @@ export const fetchAvailablecourseData = (params) => {
         method: 'get',
         params: {
             page: params.page - 1,
-            size: params.pageSize,
+            size: params.pageSize
         }
+    })
+}
+/**
+ *
+ * @param {Object} courseRequest
+ * @param {String} courseRequest.title
+ * @param {String} courseRequest.category
+ * @param {Date} courseRequest.startTime
+ * @param {Date} courseRequest.endTime
+ * @param {String} courseRequest.description
+ * @param {String} courseRequest.image
+ * @param {Date} courseRequest.createTime
+ * @param {Date} courseRequest.updateTime
+ * @returns
+ */
+export const postCourseData = (courseRequest) => {
+    return request({
+        url: '/course/post',
+        method: 'post',
+        headers : {
+            "Content-Type" : 'application/json'
+        },
+        data: courseRequest
     })
 }

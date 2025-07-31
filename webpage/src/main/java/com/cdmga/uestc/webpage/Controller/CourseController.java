@@ -41,7 +41,7 @@ public class CourseController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }
-    
+
     //上传课题
     @PostMapping("/post")
     public Result postCourse(@RequestBody CourseRequest courseRequest) {
@@ -57,13 +57,13 @@ public class CourseController {
             return Result.error(e.getMessage());
         }
     }
-    
+
     @GetMapping("/allcourse")
     public ResponseEntity<List<Course>> getAllCourses() {
         List<Course> courses = courseService.getAllCourse();
         return courses.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(courses);
     }
-    
+
     @DeleteMapping("/{courseId}")
     public ResponseEntity<Void> deleteCourse(@PathVariable Long courseId) {
         try {
@@ -83,5 +83,5 @@ public class CourseController {
         List<Course> courses = courseService.getAvailableCourse();
         return courses.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(courses);
     }
-    
+
 }
