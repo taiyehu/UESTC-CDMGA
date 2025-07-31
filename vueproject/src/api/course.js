@@ -7,8 +7,6 @@ export const fetchAllCourseData = (params) => {
         params: {
             page: params.page - 1,
             size: params.pageSize,
-            title: params.searchQuery,
-            category: params.categoryFilter
         }
     })
 }
@@ -24,5 +22,16 @@ export const fetchCourseData = () => {
     return request({
         url: '/course/', // 简洁路径
         method: 'get'
+    })
+}
+
+export const fetchAvailablecourseData = (params) => {
+    return request({
+        url: '/course/availablecourse',
+        method: 'get',
+        params: {
+            page: params.page - 1,
+            size: params.pageSize,
+        }
     })
 }

@@ -30,8 +30,8 @@
         </el-form-item>
       </el-form>
       <div class="btnGroup">
-        <el-button 
-          type="primary" 
+        <el-button
+          type="primary"
           @click="submitForm('ruleForm')"
           :loading="loading"
         >提交</el-button>
@@ -59,7 +59,7 @@ export default {
         callback();
       }
     };
-    
+
     var validatePass2 = (rule, value, callback) => {
       if (value === "") {
         callback(new Error("请再次输入密码"));
@@ -69,7 +69,7 @@ export default {
         callback();
       }
     };
-    
+
     return {
       loading: false,
       ruleForm: {
@@ -92,51 +92,63 @@ export default {
     };
   },
   methods: {
-    submitForm(formName) {
-      this.$refs[formName].validate((valid) => {
-        if (valid) {
-          this.loading = true;
-          this.axios({
-            url: "http://localhost:8080/api/identity/register",
-            method: "post",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            data: JSON.stringify({
-                    account: this.ruleForm.account,
-                    password: this.ruleForm.password
-                }),
-                 withCredentials: true
-          })
-          .then((res) => {
-            this.loading = false;
-            if (res.data.code === 0) {
-              this.$message({
-                message: "注册成功，请登录",
-                type: "success",
-              });
-              this.$router.push("/login");
-            } else {
-              this.$message({
-                message: res.data.msg || "注册失败",
-                type: "error",
-              });
-            }
-          })
-          .catch((error) => {
-            this.loading = false;
-            console.error("注册请求失败:", error);
-            this.$message({
-              message: error.response ? error.response.data.message : "注册请求失败，请稍后再试",
-              type: "error",
-            });
-          });
-        } else {
-          console.log("表单验证失败");
-          return false;
-        }
+    async submitForm(formName) {
+      try {
+        const valid = await this.$refs[formName].validate();
+        if (!valid) return;
+
+        this.loading = true;
+
+        // 调用提取的API方法
+        const response = await register({
+          account: this.ruleForm.account,
+          password: this.ruleForm.password
+        });
+
+        this.handleRegistrationResponse(response);
+      } catch (error) {
+        this.handleRegistrationError(error);
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    handleRegistrationResponse(response) {
+      if (response.data.code === 0) {
+        this.$message({
+          message: "注册成功，请登录",
+          type: "success",
+          duration: 2000
+        });
+        setTimeout(() => {
+          this.$router.push("/login");
+        }, 1500);
+      } else {
+        this.$message({
+          message: response.data.msg || "注册失败",
+          type: "error",
+          duration: 3000
+        });
+      }
+    },
+
+    handleRegistrationError(error) {
+      console.error("注册请求失败:", error);
+
+      let errorMessage = "注册请求失败，请稍后再试";
+      if (error.response) {// 优先获取后端返回的错误信息
+        errorMessage = error.response.data.message ||
+            error.response.data.msg ||
+            errorMessage;
+      }
+
+      this.$message({
+        message: errorMessage,
+        type: "error",
+        duration: 3000
       });
     },
+
     resetForm(formName) {
       this.$refs[formName].resetFields();
     }
