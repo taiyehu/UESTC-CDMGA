@@ -1,5 +1,6 @@
 <template>
   <div>
+    <!-- 课题管理部分 -->
     <el-card class="box-card" v-if="courses.length > 0">
       <h2>课题管理</h2>
       <div v-for="(course, index) in courses" :key="course.id" class="course-item">
@@ -14,6 +15,7 @@
       <h2>没有课题信息</h2>
     </el-card>
 
+    <el-button type="primary" @click="openUploadDialog" style="margin-top: 20px">上传课题</el-button>
     <!-- 课题信息查看弹窗 -->
     <el-dialog :visible.sync="dialogVisible" width="50%" @close="closeDialog">
       <h3>课题信息</h3>
@@ -45,35 +47,70 @@
         <el-button type="primary" @click="closeDialog">确定</el-button>
       </div>
     </el-dialog>
+
+    <!-- 上传课题信息部分 -->
+    <el-card class="box-card" v-if="showUploadForm">
+      <h2>上传课题</h2>
+      <el-form :model="newCourse" label-width="100px">
+        <el-form-item label="课题名称">
+          <el-input v-model="newCourse.title" placeholder="请输入课题名称"></el-input>
+        </el-form-item>
+        <el-form-item label="课题类别">
+          <el-input v-model="newCourse.category" placeholder="请输入课题种类"></el-input>
+        </el-form-item>
+        <el-form-item label="截止时间">
+          <el-date-picker v-model="newCourse.end_time" type="datetime" placeholder="选择截止时间"></el-date-picker>
+        </el-form-item>
+        <el-form-item label="上传图片">
+          <el-upload
+            action="/api/upload" 
+            :on-success="handleImageUploadSuccess"
+            :before-upload="beforeImageUpload"
+            :file-list="imageFileList"
+            list-type="picture-card">
+            <el-button>点击上传</el-button>
+          </el-upload>
+        </el-form-item>
+        <div slot="footer" class="dialog-footer">
+          <el-button @click="showUploadForm = false">取消</el-button>
+          <el-button type="primary" @click="uploadCourse">提交课题</el-button>
+        </div>
+      </el-form>
+    </el-card>
+
+    <!-- 返回主页按钮 -->
+    <div>
+      <router-link to="/profile">
+        <el-button type="warning" style="margin-top: 20px">返回主页</el-button>
+      </router-link>
+    </div>
   </div>
 </template>
 
 <script>
-import { fetchAllCourseData, deleteCourseData } from '@/api/course'
+import { fetchAllCourseData, deleteCourseData, uploadCourseData } from '@/api/course'
+import dayjs from 'dayjs'
 
 export default {
-
-openDialog(course) {
-  this.selectedCourse = {
-    ...course,
-    start_time: dayjs(course.start_time).format('YYYY-MM-DD HH:mm:ss'), // 格式化开始时间
-    end_time: dayjs(course.end_time).format('YYYY-MM-DD HH:mm:ss'),     // 格式化结束时间
-    updated_at: dayjs(course.updated_at).format('YYYY-MM-DD HH:mm:ss')  // 格式化更新时间
-  };
-  this.dialogVisible = true;
-},
-
   data() {
     return {
       courses: [], // 存储课题信息
       dialogVisible: false, // 控制弹窗显示
-      selectedCourse: {} // 存储当前查看的课题信息
+      selectedCourse: {}, // 存储当前查看的课题信息
+      showUploadForm: false, // 控制上传课题表单显示
+      newCourse: {
+        title: '',
+        category: '',
+        end_time: '',
+        image: '' // 存储上传图片的路径
+      },
+      imageFileList: [] // 存储上传的图片文件
     };
   },
   methods: {
     async fetchCourses() {
       try {
-        const response = await fetchAllCourseData({ page: 1, pageSize: 10 }) // 获取课题信息
+        const response = await fetchAllCourseData({ page: 1, pageSize: 10 })
         this.courses = response.data || [];
       } catch (error) {
         console.error('获取课题信息失败:', error);
@@ -81,8 +118,12 @@ openDialog(course) {
       }
     },
     openDialog(course) {
-      // 打开弹窗并填充选中的课题信息
-      this.selectedCourse = { ...course }; // 使用对象拷贝避免直接引用
+      this.selectedCourse = {
+        ...course,
+        start_time: dayjs(course.start_time).format('YYYY-MM-DD HH:mm:ss'),
+        end_time: dayjs(course.end_time).format('YYYY-MM-DD HH:mm:ss'),
+        updated_at: dayjs(course.updated_at).format('YYYY-MM-DD HH:mm:ss')
+      };
       this.dialogVisible = true;
     },
     closeDialog() {
@@ -90,11 +131,9 @@ openDialog(course) {
     },
     async deleteCourse(courseId) {
       try {
-        // 调用删除课题的 API
         const response = await deleteCourseData(courseId);
         if (response.status === 204) {
           this.$message.success('课题删除成功');
-          // 删除成功后，刷新课题列表
           this.fetchCourses();
         } else {
           this.$message.error('删除失败');
@@ -104,10 +143,39 @@ openDialog(course) {
         this.$message.error('删除失败');
       }
     },
+    openUploadDialog(){
+      this.showUploadForm = true;
+    },
+    /*handleImageUploadSuccess(response, file, fileList) {
+      // 这里可以处理上传成功后的逻辑，例如将图片路径保存到课题数据中
+      this.newCourse.image = response.data.imageUrl; // 假设返回的图片URL是response.data.imageUrl
+    },
+    beforeImageUpload(file) {
+      const isImage = file.type.startsWith('image/');
+      if (!isImage) {
+        this.$message.error('只能上传图片文件');
+      }
+      return isImage;
+    },*/
+    async uploadCourse() {
+      try {
+        const response = await uploadCourseData(this.newCourse); // 提交上传课题
+        if (response.status === 200) {
+          this.$message.success('课题上传成功');
+          this.showUploadForm = false; // 关闭上传表单
+          this.fetchCourses(); // 刷新课题列表
+        } else {
+          this.$message.error('上传失败');
+        }
+      } catch (error) {
+        console.error('上传课题失败:', error);
+        this.$message.error('上传失败');
+      }
+    }
   },
   mounted() {
-    this.fetchCourses(); // 在页面加载时获取课题信息
-  },
+    this.fetchCourses(); // 页面加载时获取课题信息
+  }
 };
 </script>
 
@@ -126,7 +194,7 @@ h2 {
 
 .course-item p {
   margin-bottom: 20px;
-  text-align: left; /* 使课题信息文字左对齐 */
+  text-align: left;
 }
 
 .btnGroup {

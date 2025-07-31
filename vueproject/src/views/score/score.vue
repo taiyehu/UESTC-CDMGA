@@ -102,6 +102,11 @@
         <el-button type="primary" @click="handleUpdate">确认更新</el-button>
       </div>
     </el-dialog>
+    <div>
+      <router-link to="/profile">
+        <el-button style="margin-left: 10px">返回主页</el-button>
+      </router-link>
+    </div>
   </div>
 </template>
 

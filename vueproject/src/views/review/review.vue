@@ -19,7 +19,13 @@
     <el-card v-else>
       <h2>没有未审核的成绩信息</h2>
     </el-card>
+    <div>
+      <router-link to="/profile">
+        <el-button style="margin-left:10px">返回主页</el-button>
+      </router-link>
   </div>
+  </div>
+  
 </template>
 
 <script>
