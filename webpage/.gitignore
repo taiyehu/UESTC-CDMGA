@@ -3,6 +3,7 @@ target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+vueproject/src/node_modules/
 
 ### STS ###
 .apt_generated
