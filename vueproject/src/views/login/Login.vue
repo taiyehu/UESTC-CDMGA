@@ -36,6 +36,8 @@
 </template>
 
 <script>
+import {login} from "@/api/auth"
+
 export default {
   data() {
     return {
@@ -59,53 +61,66 @@ export default {
     this.$refs[formName].validate((valid) => {
       if (valid) {
         console.log("表单验证成功");
-        this.loading = true;
-        this.axios({
-          url: "http://localhost:8080/api/identity/login",
-          method: "post",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          data: {
-            account: this.ruleForm.account,
-            password: this.ruleForm.password,
-          },
-        })
-          .then((res) => {
-            this.loading = false;
-            if (res.data.code === 0) {
-              // 登录成功，将用户信息存入 sessionStorage
-              sessionStorage.setItem("userInfo", JSON.stringify(res.data.data));
-              this.$router.push('/home');
-              this.$message({
-                message: res.data.msg || '登录成功',
-                type: "success",
-              });
-            } else {
-              this.$message({
-                message: res.data.msg || '登录失败',
-                type: "warning",
-              });
-            }
-          })
-          .catch((error) => {
-            this.loading = false;
-            console.error("Request failed:", error);
-            this.$message({
-              message: error.response ? error.response.data.message : "登录请求失败，请稍后再试。",
-              type: "error",
-            });
-          });
+        this.handleLogin();
       } else {
         console.log("表单验证失败！");
         return false;
       }
-    });
-  }
-  ,
-    resetForm(formName) {
-      this.$refs[formName].resetFields();
+      });
     },
+    async handleLogin(){
+      this.loading = true;
+
+      try {
+        // 调用 API 文件中的登录方法
+        const response = await login({
+          account: this.ruleForm.account,
+          password: this.ruleForm.password
+        });
+
+        this.handleLoginSuccess(response);
+      } catch (error) {
+        this.handleLoginError(error);
+      } finally {
+        this.loading = false;
+      }
+    },
+    handleLoginSuccess(response) {
+      if (response.data.code === 0) {
+        sessionStorage.setItem("userInfo", JSON.stringify(response.data.data));
+        this.$router.push('/home');
+        this.$message({
+          message: response.data.msg || '登录成功',
+          type: "success",
+        });
+      } else {
+        this.$message({
+          message: response.data.msg || '登录失败',
+          type: "warning",
+        });
+      }
+    },
+    handleLoginError(error) {
+      console.error("Request failed:", error);
+
+      let errorMessage = "登录请求失败，请稍后再试。";
+      if (error.response) {
+        // 优先使用后端返回的错误信息
+        errorMessage = error.response.data.message ||
+            error.response.data.msg ||
+            error.response.statusText;
+      } else if (error.request) {
+        errorMessage = "无法连接到服务器，请检查网络连接";
+      } else {
+        errorMessage = error.message || error.toString();
+      }
+
+      this.$message({
+        message: errorMessage,
+        type: "error",
+      });
+    }
+
   },
 };
 </script>

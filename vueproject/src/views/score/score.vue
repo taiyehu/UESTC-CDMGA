@@ -59,11 +59,11 @@
         <!-- 简化后的上传区域，仅保留样式，无需实际校验 -->
         <el-form-item label="上传图片">
           <el-upload
-            action=""
-            :auto-upload="false"
-            :file-list="fileList"
-            list-type="picture"
-            :limit="1">
+              action=""
+              :auto-upload="false"
+              :file-list="fileList"
+              list-type="picture"
+              :limit="1">
             <el-button size="small" type="primary">点击上传</el-button>
             <div slot="tip" class="el-upload__tip">仅作展示，实际提交固定内容</div>
           </el-upload>
@@ -87,11 +87,11 @@
         <!-- 简化后的上传区域，仅保留样式，无需实际校验 -->
         <el-form-item label="上传图片">
           <el-upload
-            action=""
-            :auto-upload="false"
-            :file-list="fileList"
-            list-type="picture"
-            :limit="1">
+              action=""
+              :auto-upload="false"
+              :file-list="fileList"
+              list-type="picture"
+              :limit="1">
             <el-button size="small" type="primary">点击上传</el-button>
             <div slot="tip" class="el-upload__tip">仅作展示，实际提交固定内容</div>
           </el-upload>
@@ -112,6 +112,8 @@
 
 <script>
 import axios from 'axios';
+import {fetchAvailablecourseData} from "@/api/course";
+import {checkSubmitted, handleSubmitScore, handleUpdateScore} from "@/api/score";
 
 export default {
   data() {
@@ -139,7 +141,7 @@ export default {
     // 获取课题列表
     async fetchCourses() {
       try {
-        const response = await axios.get('http://localhost:8080/api/course/availablecourse');
+        const response = await fetchAvailablecourseData({page : 1, size: 10})
         this.courses = response.data || [];
         await this.checkSubmittedCourses();
       } catch (error) {
@@ -156,12 +158,7 @@ export default {
         return;
       }
       for (const course of this.courses) {
-        const response = await axios.get('http://localhost:8080/api/score/exists', {
-          params: {
-            identityId: identityId,
-            courseId: course.id
-          }
-        });
+        const response = await checkSubmitted(identityId,course.id)
         if (response.data) {
           this.submittedCourses.push(course.id);
         }
@@ -173,7 +170,7 @@ export default {
     },
     // 打开查看弹窗
     openViewDialog(course) {
-      this.selectedCourse = { 
+      this.selectedCourse = {
         ...course,
         start_time: this.formatDateTime(course.start_time),
         end_time: this.formatDateTime(course.end_time),
@@ -237,8 +234,7 @@ export default {
         };
 
         // 4. 发送请求
-        await axios.post('http://localhost:8080/api/score/post', submitData);
-
+        await handleSubmitScore(submitData)
         // 5. 处理成功
         this.$message.success(`课题 "${this.submitForm.course_title}" 的成绩提交成功！`);
         this.closeSubmitDialog();
@@ -270,7 +266,7 @@ export default {
         };
 
         // 4. 发送请求
-        await axios.put(`http://localhost:8080/api/score/update/${this.updateForm.course_id}`, updateData);
+        await handleUpdateScore(updateData,this.updateForm.course_id)
 
         // 5. 处理成功
         this.$message.success(`课题 "${this.updateForm.course_title}" 的成绩更新成功！`);
@@ -286,7 +282,7 @@ export default {
       try {
         const userInfo = sessionStorage.getItem('userInfo');
         if (!userInfo) return null;
-        
+
         const user = JSON.parse(userInfo);
         return user.id ? Number(user.id) : null;
       } catch (error) {
@@ -296,7 +292,7 @@ export default {
     }
   },
   mounted() {
-    this.fetchCourses();
+    this.fetchCourses()S;
   }
 };
 </script>
