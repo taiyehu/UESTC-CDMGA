@@ -292,7 +292,7 @@ export default {
     }
   },
   mounted() {
-    this.fetchCourses()S;
+    this.fetchCourses();
   }
 };
 </script>

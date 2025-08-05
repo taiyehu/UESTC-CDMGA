@@ -1,19 +1,31 @@
 package com.cdmga.uestc.webpage.Controller;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
+import java.nio.file.Path;
+
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.cdmga.uestc.webpage.Common.CourseRequest;
 import com.cdmga.uestc.webpage.Common.Result;
 import com.cdmga.uestc.webpage.Entity.Course;
 import com.cdmga.uestc.webpage.Service.CourseService;
+
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,6 +42,10 @@ public class CourseController {
 
     @Autowired
     private CourseService courseService;
+
+    // 配置图片存储目录路径
+    @Value("${upload.directory}")
+    private String uploadDir;
 
     //显示所有课题
     @GetMapping("/")
@@ -57,6 +73,39 @@ public class CourseController {
             return Result.error(e.getMessage());
         }
     }
+
+    // 上传图片
+    @PostMapping("/upload")
+    public Result postImage(@RequestParam("image") MultipartFile image) {
+        try {
+            // 生成一个唯一的文件名
+            String fileName = UUID.randomUUID().toString() + "." + getFileExtension(image.getOriginalFilename());
+            Path targetLocation = Paths.get(uploadDir, fileName);
+
+            // 确保文件存储目录存在
+            Files.createDirectories(targetLocation.getParent());
+
+            // 保存图片到指定目录
+            Files.copy(image.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+
+            // 假设你有一个基础 URL（例如：http://localhost:8081/images/），可以返回相对路径
+            String imageUrl = "/images/" + fileName;
+
+            return Result.success(imageUrl);  // 返回图片的URL
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    // 获取文件扩展名
+    private String getFileExtension(String fileName) {
+        int index = fileName.lastIndexOf('.');
+        if (index == -1) {
+            return ""; // 没有扩展名
+        }
+        return fileName.substring(index + 1);
+    }
+
     
     @GetMapping("/allcourse")
     public ResponseEntity<List<Course>> getAllCourses() {
