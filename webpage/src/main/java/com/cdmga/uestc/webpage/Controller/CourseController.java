@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.ModelAttribute;
 
 import com.cdmga.uestc.webpage.Common.CourseRequest;
 import com.cdmga.uestc.webpage.Common.Result;
@@ -60,7 +61,7 @@ public class CourseController {
     
     //上传课题
     @PostMapping("/post")
-    public Result postCourse(@RequestBody CourseRequest courseRequest) {
+    public Result postCourse(@ModelAttribute CourseRequest courseRequest) {
         //上传课题，包括title, category, end_time, image
         try{
             Course newCourse = courseService.postNewCourse(
