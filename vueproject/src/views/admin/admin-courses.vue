@@ -59,16 +59,22 @@
         <el-form-item label="课题类别">
           <el-input v-model="newCourse.category" placeholder="请输入课题种类"></el-input>
         </el-form-item>
+        <el-form-item label="开始时间">
+          <el-date-picker v-model="newCourse.start_time" type="datetime" placeholder="选择开始时间"></el-date-picker>
+        </el-form-item>
         <el-form-item label="截止时间">
           <el-date-picker v-model="newCourse.end_time" type="datetime" placeholder="选择截止时间"></el-date-picker>
+        </el-form-item>
+        <el-form-item label="课题描述">
+          <el-input v-model="newCourse.description" placeholder="请输入课题描述"></el-input>
         </el-form-item>
         <el-form-item label="上传图片">
           <el-upload
             action="/api/course/upload"
-            :before-upload="beforeUpload"
+            name="image"
             :file-list="imageFileList"
             list-type="picture-card"
-            @success="handleImageUploadSuccess"
+            :on-success="handleImageUploadSuccess"
           >
             <el-button>点击上传</el-button>
           </el-upload>
@@ -102,8 +108,10 @@ export default {
       newCourse: {
         title: '',
         category: '',
+        start_time: '',
         end_time: '',
-        image: '' // 存储上传图片的路径
+        description: '',
+        image: ''
       },
       imageFileList: [] // 存储上传的图片文件
     };
@@ -151,55 +159,62 @@ export default {
 
     // 图片上传成功后的回调
     handleImageUploadSuccess(response, file, fileList) {
-      // 假设返回的图片URL是response.data
-      this.newCourse.image = response.data;  // 将图片URL保存到newCourse.image
-    },
+      // 直接打印 response，确认结构
+      console.log('图片上传返回：', response);
 
-    // 文件上传前的操作
-    beforeUpload(file) {
-      const formData = new FormData();
-      formData.append('image', file);  // 添加图片到formData
+      // 兼容 axios 和原生结构
+      let url = '';
+      if (response && response.code === 0) {
+        url = response.data;
+      } else if (response && response.data && response.data.code === 0) {
+        url = response.data.data;
+      }
 
-      // 上传文件时，手动将 FormData 提交
-      this.$axios.post('/api/course/upload', formData)
-        .then(response => {
-          console.log('上传成功', response);
-          this.handleImageUploadSuccess(response, file);  // 处理上传成功后的回调
-        })
-        .catch(error => {
-          console.error('上传失败', error);
-        });
-
-      return false;  // 阻止默认上传行为
+      if (url) {
+        this.newCourse.image = url;
+        this.imageFileList = fileList;
+        this.$message.success('图片上传成功');
+      } else {
+        this.$message.error((response.message || (response.data && response.data.message)) || '图片上传失败');
+      }
     },
 
     // 上传课题信息，包括图片URL
     async uploadCourse() {
-      if (!this.newCourse.title || !this.newCourse.category || !this.newCourse.end_time || !this.newCourse.image) {
+      console.log('提交前的newCourse:', this.newCourse);
+      const formattedStartTime = dayjs(this.newCourse.start_time).format('YYYY-MM-DDTHH:mm:ss');
+      const formattedEndTime = dayjs(this.newCourse.end_time).format('YYYY-MM-DDTHH:mm:ss');
+      const now = dayjs().format('YYYY-MM-DDTHH:mm:ss');
+      if (
+        !this.newCourse.title ||
+        !this.newCourse.category ||
+        !this.newCourse.start_time ||
+        !this.newCourse.end_time ||
+        !this.newCourse.description ||
+        !this.newCourse.image
+      ) {
         this.$message.error('请填写所有必填项');
         return;
       }
 
       try {
-        // 使用 FormData 提交数据
-        const formData = new FormData();
-        formData.append('title', this.newCourse.title);
-        formData.append('category', this.newCourse.category);
-        formData.append('end_time', dayjs(this.newCourse.end_time).format('YYYY-MM-DD HH:mm:ss'));
-        formData.append('image', this.newCourse.image);  // 将图片URL添加到formData
-
-        const response = await axios.post('/api/course/post', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',  // 确保Content-Type是multipart/form-data
-          },
+        const response = await axios.post('/api/course/post', {
+          title: this.newCourse.title,
+          category: this.newCourse.category,
+          startTime: formattedStartTime,
+          endTime: formattedEndTime,
+          description: this.newCourse.description,
+          image: this.newCourse.image,
+          createTime: now,
+          updateTime: now
         });
-
-        if (response.data.success) {
+        console.log('课题上传响应：', response);
+        if (response.data.code === 0) {
           this.$message.success('课题上传成功');
-          this.showUploadForm = false;  // 关闭上传表单
-          this.fetchCourses();  // 刷新课题列表
+          this.showUploadForm = false;
+          this.fetchCourses();
         } else {
-          this.$message.error('课题上传失败');
+          this.$message.error(response.data.message || '课题上传失败');
         }
       } catch (error) {
         this.$message.error('上传过程中发生错误');
