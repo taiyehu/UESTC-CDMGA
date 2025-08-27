@@ -21,20 +21,24 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-            // 关闭 CSRF
-            .csrf(csrf -> csrf.disable())
+        // 关闭 CSRF
+        http.csrf(csrf -> csrf.disable());
 
+        // ======================= 修改部分开始 =======================
+        // 只有在 corsFilter Bean 存在时 (即开发环境) 才添加它
+        if (corsFilter != null) {
             // 将CORS过滤器添加到UsernamePasswordAuthenticationFilter之前
             // 确保在进行身份认证前，跨域问题已经被处理
-            .addFilterBefore(corsFilter, UsernamePasswordAuthenticationFilter.class)
+            http.addFilterBefore(corsFilter, UsernamePasswordAuthenticationFilter.class);
+        }
+        // ======================= 修改部分结束 =======================
 
-            // 配置请求授权规则
-            .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/**").permitAll() // 允许所有路径无需认证
-                .anyRequest().authenticated()
-            );
-            
+        // 配置请求授权规则
+        http.authorizeHttpRequests(authz -> authz
+            .requestMatchers("/**").permitAll() // 允许所有路径无需认证
+            .anyRequest().authenticated()
+        );
+
         return http.build();
     }
 }
