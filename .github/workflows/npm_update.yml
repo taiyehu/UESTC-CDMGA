@@ -1,10 +1,14 @@
+name: npm-update 
 on: push
 
 jobs:
   npm-build:
+    name: npm build
     runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: vueproject
     steps:
-    - run: cd vueproject
     - uses: actions/checkout@v4
     - run: npm install
     - run: npm run build
