@@ -4,6 +4,7 @@ jobs:
   npm-build:
     runs-on: ubuntu-22.04
     steps:
+    - run: cd vueproject
     - uses: actions/checkout@v4
     - run: npm install
     - run: npm run build
