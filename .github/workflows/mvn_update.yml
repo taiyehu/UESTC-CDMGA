@@ -1,0 +1,29 @@
+name: mvn-update 
+on: push
+
+jobs:
+  mvn-build:
+    name: mvn build
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: webpage
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17' # 根据您的项目需求调整Java版本
+        distribution: 'temurin'
+        cache: 'maven'
+    
+    - name: Build with Maven
+      run: mvn clean package -P prod
+      
+    # # 可选：上传构建产物
+    # - name: Upload JAR artifact
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: spring-boot-app
+    #     path: springbootproject/target/*.jar # 替换为您的实际JAR文件路径
