@@ -4,7 +4,7 @@ jobs:
   npm-build:
     runs-on: ubuntu-22.04
     steps:
-    - uses: action/checkout@v4
+    - uses: actions/checkout@v4
     - run: npm install
     - run: npm run build
 
