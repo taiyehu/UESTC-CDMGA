@@ -1,0 +1,10 @@
+on: push
+
+jobs:
+  npm-build:
+    runs-on: ubuntu-2204
+    steps:
+    - uses: action/checkout@v4
+    - run: npm install
+    - run: npm run build
+
