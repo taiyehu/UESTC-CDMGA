@@ -22,7 +22,18 @@
         <p>开始时间: {{ formatDate(course.startTime) }}</p>
         <p>结束时间: {{ formatDate(course.endTime) }}</p>
         <p>描述: {{ course.description }}</p>
-        <img :src="course.image" alt="课程图片" v-if="course.image" />
+        <img
+          :src="getImageUrl(course.image)"
+          alt="课程图片"
+          v-if="course.image"
+          class="course-image"
+        />
+        <el-button
+          v-if="course.image"
+          size="mini"
+          @click="handleImageClick(getImageUrl(course.image))"
+          style="margin-top: 10px;"
+        >查看</el-button>
       </div>
     </div>
 
@@ -31,7 +42,14 @@
     <router-link to="/profile">
       <el-button style="margin-left:10px">个人中心</el-button>
     </router-link>
+    
+    <!-- 图片预览弹窗 -->
+    <el-dialog :visible.sync="previewVisible" width="auto" :show-close="true" center>
+      <img :src="previewImage" alt="预览图片" style="max-width:90vw;max-height:80vh;display:block;margin:auto;" />
+    </el-dialog>
   </div>
+
+  
 </template>
 
 <script setup>
@@ -44,7 +62,13 @@ const loading = ref(true);
 const error = ref(null);
 const courseContainer = ref(null);
 let scrollInterval = null;
+const previewVisible = ref(false);
+const previewImage = ref('');
 
+const handleImageClick = (imgUrl) => {
+  previewImage.value = imgUrl;
+  previewVisible.value = true;
+};
 // 获取课程数据
 onMounted(async () => {
 
@@ -92,6 +116,22 @@ const formatDate = (date) => {
   const options = { year: 'numeric', month: 'long', day: 'numeric' };
   return d.toLocaleDateString('zh-CN', options);
 };
+
+// 处理图片URL
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return '';
+  // 如果 imagePath 已经是完整URL则直接返回，否则拼接API服务器地址
+  if (/^https?:\/\//.test(imagePath)) {
+    return imagePath;
+  }
+  // 修改为你的后端图片基础URL
+  // 保证不会出现 //images/xxx.jpg
+  if (imagePath.startsWith('/')) {
+    return `http://localhost:8080${imagePath}`;
+  } else {
+    return `http://localhost:8080/${imagePath}`;
+  }
+};
 </script>
 
 <style scoped>
@@ -116,4 +156,15 @@ const formatDate = (date) => {
 .el-button {
   margin-left: 10px;
 }
+
+.course-image {
+  max-width: 200px;
+  max-height: 150px;
+  width: auto;
+  height: auto;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
 </style>
+

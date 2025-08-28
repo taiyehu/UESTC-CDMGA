@@ -33,13 +33,10 @@
           <el-input v-model="selectedCourse.description" disabled></el-input>
         </el-form-item>
         <el-form-item label="开始时间">
-          <el-input v-model="selectedCourse.start_time" disabled></el-input>
+          <el-input v-model="selectedCourse.startTime" disabled></el-input>
         </el-form-item>
         <el-form-item label="结束时间">
-          <el-input v-model="selectedCourse.end_time" disabled></el-input>
-        </el-form-item>
-        <el-form-item label="更新时间">
-          <el-input v-model="selectedCourse.updated_at" disabled></el-input>
+          <el-input v-model="selectedCourse.endTime" disabled></el-input>
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -47,7 +44,7 @@
       </div>
     </el-dialog>
 
-    <!-- 成绩提交弹窗（简化图片上传逻辑） -->
+    <!-- 成绩提交弹窗-->
     <el-dialog :visible.sync="submitDialogVisible" title="成绩提交" width="40%" @close="closeSubmitDialog">
       <el-form :model="submitForm" label-width="100px" ref="submitFormRef">
         <el-form-item label="课题名称">
@@ -56,16 +53,15 @@
         <el-form-item label="课题ID">
           <el-input v-model="submitForm.course_id" disabled></el-input>
         </el-form-item>
-        <!-- 简化后的上传区域，仅保留样式，无需实际校验 -->
         <el-form-item label="上传图片">
           <el-upload
-              action=""
-              :auto-upload="false"
-              :file-list="fileList"
-              list-type="picture"
-              :limit="1">
-            <el-button size="small" type="primary">点击上传</el-button>
-            <div slot="tip" class="el-upload__tip">仅作展示，实际提交固定内容</div>
+              action="/api/score/upload"
+              name="image"
+              :file-list="imageFileList"
+              list-type="picture-card"
+              :on-success="handleImageUploadSuccess"
+              >
+            <el-button>点击上传</el-button>
           </el-upload>
         </el-form-item>
       </el-form>
@@ -75,7 +71,7 @@
       </div>
     </el-dialog>
 
-    <!-- 成绩更新弹窗（简化图片上传逻辑） -->
+    <!-- 成绩更新弹窗 -->
     <el-dialog :visible.sync="updateDialogVisible" title="成绩更新" width="40%" @close="closeUpdateDialog">
       <el-form :model="updateForm" label-width="100px" ref="updateFormRef">
         <el-form-item label="课题名称">
@@ -84,16 +80,15 @@
         <el-form-item label="课题ID">
           <el-input v-model="updateForm.course_id" disabled></el-input>
         </el-form-item>
-        <!-- 简化后的上传区域，仅保留样式，无需实际校验 -->
         <el-form-item label="上传图片">
           <el-upload
-              action=""
-              :auto-upload="false"
-              :file-list="fileList"
-              list-type="picture"
-              :limit="1">
-            <el-button size="small" type="primary">点击上传</el-button>
-            <div slot="tip" class="el-upload__tip">仅作展示，实际提交固定内容</div>
+              action="/api/score/updateImage/{updateForm.id}"
+              name="image"
+              :file-list="imageFileList"
+              list-type="picture-card"
+              :on-success="handleImageUpdateSuccess"
+              >
+            <el-button>点击上传</el-button>
           </el-upload>
         </el-form-item>
       </el-form>
@@ -126,13 +121,27 @@ export default {
       submitForm: {
         course_id: '',       // 课程ID
         course_title: '',    // 仅前端显示
-        upload_time: ''      // 上传时间
+        upload_time: '',     // 上传时间
+        image: ''            // 上传的图片
       },
       updateForm: {
         course_id: '',       // 课程ID
         course_title: '',    // 仅前端显示
-        upload_time: ''      // 上传时间
+        upload_time: '',     // 上传时间
+        image: ''            // 上传的图片
       },
+      newScore: {
+        course_id: '',
+        identity_id: '',
+        upload_time: '',
+        image: '',
+        point: 0,
+        is_scored: false,
+        remark: '',
+        created_at: '',
+        updated_at: ''
+      },
+      imageFileList: [],
       fileList: [],
       submittedCourses: []
     };
@@ -186,9 +195,10 @@ export default {
       this.submitForm = {
         course_id: course.id,
         course_title: course.title,
-        upload_time: ''
+        upload_time: '',
+        image: ''
       };
-      this.fileList = [];
+      this.imageFileList = [];
       this.submitDialogVisible = true;
     },
     closeSubmitDialog() {
@@ -199,9 +209,10 @@ export default {
       this.updateForm = {
         course_id: course.id,
         course_title: course.title,
-        upload_time: ''
+        upload_time: '',
+        image: ''
       };
-      this.fileList = [];
+      this.imageFileList = [];
       this.updateDialogVisible = true;
     },
     closeUpdateDialog() {
@@ -225,12 +236,12 @@ export default {
         // 2. 补充时间字段（ISO格式）
         this.submitForm.upload_time = new Date().toISOString();
 
-        // 3. 构造提交数据，image 固定为 'test'
+        // 3. 构造提交数据
         const submitData = {
           course_id: this.submitForm.course_id,
-          identity_id: identityId,  // 使用正确的用户ID
+          identity_id: identityId,
           upload_time: this.submitForm.upload_time,
-          image: 'test' // 固定提交 'test' 字符串
+          image: this.submitForm.image
         };
 
         // 4. 发送请求
@@ -258,11 +269,12 @@ export default {
         // 2. 补充时间字段（ISO格式）
         this.updateForm.upload_time = new Date().toISOString();
 
-        // 3. 构造更新数据，image 固定为 'test'
+        // 3. 构造提交数据
         const updateData = {
-          point: 0, // 假设这里的分数为0，可根据实际情况修改
-          is_scored: false, // 假设这里的评分状态为false，可根据实际情况修改
-          remark: null // 假设这里的备注为空，可根据实际情况修改
+          course_id: this.updateForm.course_id,
+          identity_id: identityId,
+          upload_time: this.updateForm.upload_time,
+          image: this.updateForm.image
         };
 
         // 4. 发送请求
@@ -276,6 +288,47 @@ export default {
         console.error('更新失败:', error);
         const errorMsg = error.response?.data?.message || '成绩更新失败，请重试';
         this.$message.error(errorMsg);
+      }
+    },
+    // 图片上传成功后的回调
+    handleImageUploadSuccess(response, file, fileList) {
+      // 直接打印 response，确认结构
+      console.log('图片上传返回：', response);
+
+      // 兼容 axios 和原生结构
+      let url = '';
+      if (response && response.code === 0) {
+        url = response.data;
+      } else if (response && response.data && response.data.code === 0) {
+        url = response.data.data;
+      }
+
+      if (url) {
+        this.submitForm.image = url;
+        this.imageFileList = fileList;
+        this.$message.success('图片上传成功');
+      } else {
+        this.$message.error((response.message || (response.data && response.data.message)) || '图片上传失败');
+      }
+    },
+    handleImageUpdateSuccess(response, file, fileList) {
+      // 直接打印 response，确认结构
+      console.log('图片上传返回：', response);
+
+      // 兼容 axios 和原生结构
+      let url = '';
+      if (response && response.code === 0) {
+        url = response.data;
+      } else if (response && response.data && response.data.code === 0) {
+        url = response.data.data;
+      }
+
+      if (url) {
+        this.updateForm.image = url;
+        this.imageFileList = fileList;
+        this.$message.success('图片上传成功');
+      } else {
+        this.$message.error((response.message || (response.data && response.data.message)) || '图片上传失败');
       }
     },
     getCurrentIdentityId() {
