@@ -2,7 +2,7 @@ on: push
 
 jobs:
   npm-build:
-    runs-on: ubuntu-2204
+    runs-on: ubuntu-22.04
     steps:
     - uses: action/checkout@v4
     - run: npm install
