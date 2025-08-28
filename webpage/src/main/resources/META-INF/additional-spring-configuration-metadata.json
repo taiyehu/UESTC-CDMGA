@@ -1,5 +1,12 @@
-{"properties": [{
-  "name": "upload.directory",
-  "type": "java.lang.String",
-  "description": "A description for 'upload.directory'"
-}]}
+{"properties": [
+  {
+    "name": "score.upload.directory",
+    "type": "java.lang.String",
+    "description": "A description for 'score.upload.directory'"
+  },
+  {
+    "name": "course.upload.directory",
+    "type": "java.lang.String",
+    "description": "A description for 'course.upload.directory'"
+  }
+]}

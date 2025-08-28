@@ -45,6 +45,7 @@
 </template>
 
 <script>
+import {register} from "@/api/auth"
 export default {
   data() {
     var validatePass = (rule, value, callback) => {
@@ -96,14 +97,17 @@ export default {
       try {
         const valid = await this.$refs[formName].validate();
         if (!valid) return;
-
+        console.log("表单验证成功");
         this.loading = true;
+        
 
         // 调用提取的API方法
         const response = await register({
           account: this.ruleForm.account,
           password: this.ruleForm.password
         });
+
+        console.log("注册请求成功:", response);
 
         this.handleRegistrationResponse(response);
       } catch (error) {

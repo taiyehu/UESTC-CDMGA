@@ -44,7 +44,7 @@ public class CourseController {
     private CourseService courseService;
 
     // 配置图片存储目录路径
-    @Value("${upload.directory}")
+    @Value("${course.upload.directory}")
     private String uploadDir;
 
     //显示所有课题

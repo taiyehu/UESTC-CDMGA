@@ -1,14 +1,21 @@
 package com.cdmga.uestc.webpage.Controller;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.cdmga.uestc.webpage.Common.Result;
 import com.cdmga.uestc.webpage.Common.ScoreRequest;
@@ -28,6 +35,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 public class ScoreController {
     @Autowired
     private ScoreService scoreService;
+
+    // 配置图片存储目录路径
+    @Value("${score.upload.directory}")
+    private String uploadDir;
 
     @GetMapping("/")
     public ResponseEntity<List<Score>> getScore() {
@@ -51,6 +62,53 @@ public class ScoreController {
         }
     }
 
+    // 上传图片
+    @PostMapping("/upload")
+    public Result postImage(@RequestParam("image") MultipartFile image) {
+        try {
+            // 生成一个唯一的文件名
+            String fileName = UUID.randomUUID().toString() + "." + getFileExtension(image.getOriginalFilename());
+            Path targetLocation = Paths.get(uploadDir, fileName);
+
+            // 确保文件存储目录存在
+            Files.createDirectories(targetLocation.getParent());
+
+            // 保存图片到指定目录
+            Files.copy(image.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+
+            // 假设你有一个基础 URL（例如：http://localhost:8081/scores/），可以返回相对路径
+            String imageUrl = "/scores/" + fileName;
+
+            return Result.success(imageUrl);  // 返回图片的URL
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @PutMapping("/updateImage/{id}")
+    public ResponseEntity<Result> updateScoreImage(
+            @PathVariable Long id,
+            @RequestBody ScoreRequest scoreRequest) {
+        try {
+            Score updatedScore = scoreService.updateScoreImage(id, scoreRequest.getImage());
+            if (updatedScore != null) {
+                return ResponseEntity.ok(Result.success(updatedScore));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Result.error("Score not found"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(e.getMessage()));
+        }
+    }
+    
+    // 获取文件扩展名
+    private String getFileExtension(String fileName) {
+        int index = fileName.lastIndexOf('.');
+        if (index == -1) {
+            return ""; // 没有扩展名
+        }
+        return fileName.substring(index + 1);
+    }
     
     // 根据id更新Score
     @PutMapping("/update/{id}")
