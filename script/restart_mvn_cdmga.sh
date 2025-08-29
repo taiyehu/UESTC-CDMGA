@@ -8,7 +8,7 @@ PID=$(lsof -t -i:8080)
 
 if [ -n "$PID" ]; then
   echo "发现占用8080端口的进程 PID=$PID，正在结束..."
-  kill -9 $PID
+  sudo kill -9 $PID
   echo "进程 $PID 已结束"
 else
   echo "未发现占用8080端口的进程"
