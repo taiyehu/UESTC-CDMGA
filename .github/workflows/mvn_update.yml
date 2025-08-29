@@ -34,7 +34,7 @@ jobs:
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT || 22 }}  
-        source: "target/*.jar"  # 上传打包好的JAR文件
+        source: "webpage/target/*.jar"  # 上传打包好的JAR文件
         target: /var/www/app-jars/  # 服务器上存放JAR包的目录
         debug: true
 
