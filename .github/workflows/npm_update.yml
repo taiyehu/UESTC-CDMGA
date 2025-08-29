@@ -46,7 +46,7 @@ jobs:
         rm: true  # 可选：上传前删除目标目录中的旧文件
 
     - name: Run deployment script via SSH
-      uses: appleboy/ssh-action@v0.1.3
+      uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_SUDO }}
