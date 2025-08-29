@@ -36,7 +36,6 @@ jobs:
         port: ${{ secrets.SSH_PORT || 22 }}  
         source: "webpage/target/*.jar"  # 上传打包好的JAR文件
         target: /var/www/app-jars/  # 服务器上存放JAR包的目录
-        debug: true
 
     - name: Run deployment script via SSH
       uses: appleboy/ssh-action@v0.1.3
@@ -45,4 +44,43 @@ jobs:
         username: ${{ secrets.SSH_SUDO }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT || 22 }}  
-        script: /var/www/script/restart_mvn_cdmga.sh
+        script: |
+          #!/bin/bash
+          
+          # 设置JAR包路径
+          JAR_PATH="/var/www/app-jars/webpage-0.0.1-SNAPSHOT.jar"
+          
+          # 确保日志目录存在
+          sudo mkdir -p /var/www/logs
+          sudo chmod 755 /var/www/logs
+          
+          # 查找占用8080端口的进程
+          PID=$(sudo lsof -t -i:8080)
+          
+          if [ -n "$PID" ]; then
+            echo "发现占用8080端口的进程 PID=$PID，正在结束..."
+            sudo kill -9 $PID
+            echo "进程 $PID 已结束"
+            # 等待一段时间确保进程完全终止
+            sleep 3
+          else
+            echo "未发现占用8080端口的进程"
+          fi
+          
+          # 启动新的Java程序
+          echo "正在启动新的程序: $JAR_PATH"
+          # 使用nohup在后台运行，并将输出重定向到日志文件
+          nohup java -jar $JAR_PATH > /var/www/logs/web.log 2>&1 &
+          
+          # 记录进程ID以便后续管理
+          echo $! > /tmp/webapp.pid
+          echo "新程序已启动，PID: $(cat /tmp/webapp.pid)，日志输出到 /var/www/logs/web.log"
+          
+          # 等待几秒然后检查应用是否启动成功
+          sleep 5
+          if curl -f http://localhost:8080/actuator/health > /dev/null 2>&1; then
+            echo "应用启动成功!"
+          else
+            echo "警告: 应用可能未正常启动，请检查日志"
+            exit 1
+          fi
