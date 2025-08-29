@@ -16,6 +16,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: List json file  # 帮助确认JAR包的位置和名称
+      run: ls -la package-lock.json
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
