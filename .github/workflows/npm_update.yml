@@ -13,31 +13,39 @@ jobs:
         working-directory: vueproject
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'  # 根据你的项目需求调整Node.js版本
-          cache: 'npm'
-          cache-dependency-path: vue-project/package-lock.json
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'  # 根据你的项目需求调整Node.js版本
+        cache: 'npm'
+        cache-dependency-path: package-lock.json
 
-      - name: Install dependencies and build
-        run: |
-          npm ci
-          npm run build
+    - name: Install dependencies and build
+      run: |
+        npm ci
+        npm run build
 
-      - name: List build output  # 帮助确认构建产物的位置
-        run: ls -la dist/  # 通常Vue项目构建输出到dist目录，请根据实际情况调整
+    - name: List build output  # 帮助确认构建产物的位置
+      run: ls -la dist/  # 通常Vue项目构建输出到dist目录，请根据实际情况调整
 
-      - name: Deploy to Aliyun ECS via SSH
-        uses: appleboy/scp-action@v0.1.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}  
-          source: "dist/*"  # 要上传的源文件或目录，根据你的实际构建输出目录调整
-          target: /var/www # 服务器上目标路径，例如Web服务器根目录
-          script: /var/www/script/restart_vue_cdmga.sh
+    - name: Deploy to Aliyun ECS via SSH
+      uses: appleboy/scp-action@v0.1.3
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: ${{ secrets.SSH_PORT || 22 }}  
+        source: "dist/*"  # 要上传的源文件或目录，根据你的实际构建输出目录调整
+        target: /var/www # 服务器上目标路径，例如Web服务器根目录
+
+    - name: Run deployment script via SSH
+      uses: appleboy/ssh-action@v0.1.3
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: ${{ secrets.SSH_PORT || 22 }}  
+        script: /var/www/script/restart_vue_cdmga.sh
