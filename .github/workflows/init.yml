@@ -50,6 +50,7 @@ jobs:
             # 创建目标目录
             # mkdir -p /var/www/script/
             mkdir -p /var/www/app-jars/
+            mkdir -p /var/www/log/
             echo "All dependencies installed successfully!"
 
       - name: Transfer script files to server

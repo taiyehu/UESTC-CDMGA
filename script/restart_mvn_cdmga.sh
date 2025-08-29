@@ -16,5 +16,5 @@ fi
 
 # 启动新的 Java 程序
 echo "正在启动新的程序: $JAR_PATH"
-nohup java -jar $JAR_PATH > /var/www/log/web.log 2>&1 &
+nohup java -jar $JAR_PATH > /var/www/logs/web.log 2>&1 &
 echo "新程序已启动，日志输出到 web.log"
