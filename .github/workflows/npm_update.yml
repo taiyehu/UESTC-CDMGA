@@ -41,7 +41,7 @@ jobs:
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT || 22 }}  
-        source: "dist/*"  # 要上传的源文件或目录，根据你的实际构建输出目录调整
+        source: "vueproject/dist/*"  # 要上传的源文件或目录，根据你的实际构建输出目录调整
         target: /var/www # 服务器上目标路径，例如Web服务器根目录
 
     - name: Run deployment script via SSH
