@@ -31,7 +31,7 @@ jobs:
       uses: appleboy/scp-action@v0.1.3
       with:
         host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USER }}
+        username: ${{ secrets.SSH_SUDO }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT || 22 }}  
         source: "webpage/target/*.jar"  # 上传打包好的JAR文件
@@ -42,7 +42,7 @@ jobs:
       uses: appleboy/ssh-action@v0.1.3
       with:
         host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USER }}
+        username: ${{ secrets.SSH_SUDO }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT || 22 }}  
         script: /var/www/script/restart_mvn_cdmga.sh
