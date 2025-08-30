@@ -1,0 +1,102 @@
+name: mvn-update 
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'webpage/**'
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+    paths:
+      - 'webpage/**'
+  workflow_dispatch:
+
+jobs:
+  mvn-build:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    name: mvn build
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: webpage
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: 'maven'
+    
+    - name: Build with Maven
+      run: mvn clean package -P prod
+      
+    - name: List JAR file
+      run: ls -la target/*.jar
+
+    - name: Create backup timestamp
+      id: backup-time
+      run: echo "date=$(date +'%Y%m%d_%H%M%S')" >> $GITHUB_OUTPUT
+
+    - name: Deploy JAR to server via SCP
+      uses: appleboy/scp-action@v0.1.3
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_SUDO }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: ${{ secrets.SSH_PORT || 22 }}  
+        source: "webpage/target/*.jar"
+        target: "/var/www/upload/"  # 先上传到临时目录
+        strip_components: 2 
+
+    - name: Deploy and restart service
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_SUDO }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: ${{ secrets.SSH_PORT || 22 }}  
+        script: |
+            # 停止服务
+            systemctl stop webserver.service
+            
+            # 备份旧版本（可选）
+            TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+            if [ -f "/var/www/app-jars/webpage-0.0.1-SNAPSHOT.jar" ]; then
+                mv /var/www/app-jars/webpage-0.0.1-SNAPSHOT.jar "/var/www/app-jars-backup/webpage_${{ steps.backup-time.outputs.date }}.jar.$TIMESTAMP"
+            fi
+          
+            # 清理旧备份（保留最近7天）
+            find /var/www/app-jars-backup/ -name "webpage_*.tar.gz" -mtime +7 -exec sudo rm -f {} \; || true
+            echo "已清理7天前的旧备份"
+
+            # 移动新版本到应用目录
+            mv /var/www/upload/webpage-0.0.1-SNAPSHOT.jar /var/www/app-jars/
+            
+            # 设置正确的权限
+            chown www-data:www-data /var/www/app-jars/webpage-0.0.1-SNAPSHOT.jar
+            chmod 750 /var/www/app-jars/webpage-0.0.1-SNAPSHOT.jar
+            
+            # 启动服务
+            systemctl start webserver.service
+            
+            # 等待并检查服务状态
+            sleep 5
+            systemctl status webserver.service --no-pager
+            
+            # 检查应用是否健康
+             echo "等待应用启动..."
+            sleep 10
+            if sudo lsof -t -i:8080 > /dev/null 2>&1; then
+                echo "应用启动成功!"
+            else
+                echo "警告: 应用可能未正常启动，请检查日志"
+                journalctl -u webserver.service -n 50 --no-pager
+                exit 1
+            fi

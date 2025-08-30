@@ -1,0 +1,45 @@
+[Unit]
+Description=WebServer Java Application
+After=network.target nginx.service
+Wants=network.target
+
+[Service]
+# 使用 www-data 用户和组
+User=www-data
+Group=www-data
+
+# 工作目录设置为 JAR 文件所在目录
+WorkingDirectory=/var/www/app-jars
+
+# 启动命令
+ExecStart=/usr/bin/java -jar /var/www/app-jars/webpage-0.0.1-SNAPSHOT.jar
+
+# 环境变量（根据需要调整）
+Environment="JAVA_OPTS=-Xms256m -Xmx1024m"
+
+
+# 重启策略
+Restart=always
+RestartSec=10
+StartLimitInterval=60
+StartLimitBurst=3
+
+# 安全设置
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+ReadWritePaths=/var/www/logs
+
+# 日志配置
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=webserver-app
+
+# 资源限制（可选）
+MemoryMax=512M
+CPUQuota=80%
+
+
+[Install]
+WantedBy=multi-user.target
