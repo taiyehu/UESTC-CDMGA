@@ -98,6 +98,9 @@ jobs:
               ln -s /etc/nginx/sites-available/cdmga_nginx.conf /etc/nginx/sites-enabled/
             fi
             
+            # 写入实际主机名字
+            sed -i "s/server_name localhost;/server_name ${{ secrets.SSH_HOST }};/" /etc/nginx/sites-available/cdmga_nginx.conf
+
             # 测试 Nginx 配置
             nginx -t
             
