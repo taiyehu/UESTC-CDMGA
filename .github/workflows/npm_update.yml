@@ -43,7 +43,6 @@ jobs:
         port: ${{ secrets.SSH_PORT || 22 }}
         source: "vueproject/dist/*"  
         target: /var/www/  # 修改为目标路径
-        rm: true  # 可选：上传前删除目标目录中的旧文件
         strip_components: 1
 
 
