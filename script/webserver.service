@@ -1,0 +1,51 @@
+[Unit]
+Description=WebServer Java Application
+Documentation=https://github.com/your-username/your-repo
+After=network.target nginx.service
+Wants=network.target
+
+[Service]
+# 使用 www-data 用户和组
+User=www-data
+Group=www-data
+
+# 工作目录设置为 JAR 文件所在目录
+WorkingDirectory=/var/www/app-jars
+
+# 启动命令
+ExecStart=/usr/bin/java -jar /var/www/app-jars/webpage-0.0.1-SNAPSHOT.jar
+
+# 环境变量（根据需要调整）
+Environment=SPRING_PROFILES_ACTIVE=prod
+Environment=JAVA_OPTS=-Xms256m -Xmx512m
+Environment=SPRING_CONFIG_LOCATION=file:/var/www/config/application-prod.properties
+
+# 重启策略
+Restart=always
+RestartSec=10
+StartLimitInterval=60
+StartLimitBurst=3
+
+# 安全设置
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+ReadWritePaths=/var/www/logs
+
+# 日志配置
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=webserver-app
+
+# 资源限制（可选）
+MemoryMax=512M
+CPUQuota=80%
+
+# 确保服务在启动前目录存在
+ExecStartPre=/bin/mkdir -p /var/www/logs
+ExecStartPre=/bin/chown www-data:www-data /var/www/logs
+ExecStartPre=/bin/chmod 755 /var/www/logs
+
+[Install]
+WantedBy=multi-user.target
