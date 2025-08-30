@@ -41,9 +41,6 @@ SyslogIdentifier=webserver-app
 MemoryMax=512M
 CPUQuota=80%
 
-# 确保服务在启动前目录存在
-ExecStartPre=/bin/mkdir -p /var/www/logs
-ExecStartPre=/bin/chmod 755 /var/www/logs
 
 [Install]
 WantedBy=multi-user.target

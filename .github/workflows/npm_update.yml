@@ -81,14 +81,18 @@ jobs:
                 find /var/www/CDMGA-backup/ -name "CDMGA-ui_*.tar.gz" -mtime +7 -exec sudo rm -f {} \; || true
                 echo "已清理7天前的旧备份"
 
+                # 清理文件夹
+                rm -rf /var/www/CDMGA-ui/
+                echo "旧部署文件已清理"
+
                 # 列出当前备份
                 echo "当前备份文件:"
                 sudo ls -la /var/www/CDMGA-backup/ || echo "备份目录尚不存在"
             else
                 echo "警告: 源目录 /var/www/CDMGA-ui/ 不存在，跳过备份"
             fi
-
-            mv -r /var/www/dist/ /var/www/CDMGA-ui/
+ 
+            mv -f /var/www/dist/ /var/www/CDMGA-ui/
             echo "部署到目标目录"
 
             # 设置正确的文件权限
