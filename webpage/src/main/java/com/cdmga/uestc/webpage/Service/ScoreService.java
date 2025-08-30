@@ -34,8 +34,8 @@ public class ScoreService {
         return scoreRepository.findAllNotDeleted();
     }
 
-    public Score postNewScore(int course_id, int identity_id, 
-        LocalDateTime upload_time, String image, 
+    public Score postNewScore(int course_id, int identity_id,
+        LocalDateTime upload_time, String image,
         float point, Boolean is_scored, String remark,
         LocalDateTime created_at, LocalDateTime updated_at
         ){
@@ -44,14 +44,14 @@ public class ScoreService {
 
             score.setCourse(courseRepository.findById((long) course_id).orElse(null));
             score.setIdentity(identityRepository.findById((long) identity_id).orElse(null));
-            
+
             score.setUploadTime(upload_time);
             score.setImage(image);
             score.setScore(point);
             score.setIsScored(is_scored);
             score.setRemark(remark);
             score.setUpdatedAt(updated_at);
-            
+
             return scoreRepository.save(score);
     }
 
@@ -88,9 +88,13 @@ public class ScoreService {
         }
         return null;
     }
-    
+
+    public List<Score> getUnscoredScores() {
+        return scoreRepository.findByIsScoredFalseAndIsDeletedFalse();
+    }
+
     public boolean existsByIdentityIdAndCourseId(int identityId, int courseId) {
         return scoreRepository.existsByIdentityIdAndCourseId(identityId, courseId);
     }
-    
+
 }
