@@ -1,8 +1,8 @@
 name: mvn-update 
-on: 
-  push:
-    paths:
-      - 'webpage/**'
+on: push
+#   push:
+#     paths:
+#       - 'webpage/**'
 
 jobs:
   mvn-build:
