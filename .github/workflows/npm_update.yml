@@ -42,8 +42,12 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT || 22 }}
         source: "vueproject/dist/"  # 移除了星号，上传整个目录
-        target: /var/www/CDMGA-ui/  # 修改为目标路径
+        target: /var/www/dist  # 修改为目标路径
         rm: true  # 可选：上传前删除目标目录中的旧文件
+
+    - name: Create backup timestamp
+      id: backup-time
+      run: echo "date=$(date +'%Y%m%d_%H%M%S')" >> $GITHUB_OUTPUT
 
     - name: Run deployment script via SSH
       uses: appleboy/ssh-action@v1.0.3
@@ -52,4 +56,48 @@ jobs:
         username: ${{ secrets.SSH_SUDO }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT || 22 }}  
-        script: systemctl restart nginx
+        script: |
+            # 创建备份目录（如果不存在）
+            sudo mkdir -p /var/www/CDMGA-backup
+            sudo chmod 755 /var/www/CDMGA-backup
+            
+            # 如果当前部署目录存在，则创建备份
+            if [ -d "/var/www/CDMGA-ui/" ]; then
+                # 创建带时间戳的备份文件
+                BACKUP_FILE="/var/www/CDMGA-backup/CDMGA-ui_${{ steps.backup-time.outputs.date }}.tar.gz"
+
+                # 切换到父目录，然后压缩目录内容
+                sudo tar -czf "$BACKUP_FILE" /var/www/CDMGA-ui/
+
+                echo "备份完成: $BACKUP_FILE"
+
+                # 显示备份文件信息
+                echo "备份文件大小:"
+                sudo du -h "$BACKUP_FILE"
+
+                # 清理旧备份（保留最近7天）
+                find /var/www/CDMGA-backup/ -name "CDMGA-ui_*.tar.gz" -mtime +7 -exec sudo rm -f {} \; || true
+                echo "已清理7天前的旧备份"
+
+                # 列出当前备份
+                echo "当前备份文件:"
+                sudo ls -la /var/www/CDMGA-backup/ || echo "备份目录尚不存在"
+            else
+                echo "警告: 源目录 /var/www/CDMGA-ui/ 不存在，跳过备份"
+            fi
+
+            mv -r /var/www/dist/ /var/www/CDMGA-ui/
+            echo "部署到目标目录"
+
+            # 设置正确的文件权限
+            sudo chown -R www-data:www-data /var/www/dist
+            sudo chmod -R 755 /var/www/dist
+            echo "文件权限已设置"
+
+            # 重启nginx使新部署生效
+            sudo systemctl restart nginx
+            echo "Nginx 已重启，新版本已部署"
+
+            echo "最新备份文件: /var/www/CDMGA-backup/dist_${{ steps.backup-time.outputs.date }}.tar.gz"
+            echo "部署完成时间: $(date)"
+            

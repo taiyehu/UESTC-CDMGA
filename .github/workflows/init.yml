@@ -10,12 +10,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # 获取所有历史记录，确保所有文件都可访问
+          fetch-depth: 0
 
       - name: Verify files exist
         run: |
           echo "Checking if required files exist..."
           ls -la script/ || echo "script/ directory not found"
+          ls -la script/webserver.service || echo "webserver.service not found"
           ls -la script/cdmga_nginx.conf || echo "cdmga_nginx.conf not found"
 
       - name: Install dependencies on remote server via SSH
@@ -33,24 +34,19 @@ jobs:
             apt-get install -y openjdk-17-jdk
             java -version
             
-            # # 安装 Node.js 和 npm
-            # curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-            # apt-get install -y nodejs
-            # npm -v
-            # node -v
-            
-            # # 安装 Maven
-            # apt-get install -y maven
-            # mvn -v
-            
             # 安装 Nginx
             apt-get install -y nginx
             nginx -v
             
-            # 创建目标目录
-            # mkdir -p /var/www/script/
+            # 创建应用目录和日志目录
             mkdir -p /var/www/app-jars/
-            mkdir -p /var/www/log/
+            mkdir -p /var/www/app-jars-backup/
+            mkdir -p /var/www/CDMGA-ui/
+            mkdir -p /var/www/CDMGA-backup/
+            mkdir -p /var/www/logs/
+            mkdir -p /var/www/config/
+            
+            
             echo "All dependencies installed successfully!"
 
       - name: Transfer script files to server
@@ -62,7 +58,25 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           source: "script/*"
           target: "/var/www/"
-          # strip_components: 1 # 移除源路径的第一级目录
+
+      - name: Deploy and enable Systemd service
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_SUDO }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            # 复制 Systemd 服务文件到正确位置
+            cp /var/www/script/webserver.service /etc/systemd/system/
+            
+            # 重新加载 Systemd 配置
+            systemctl daemon-reload
+            
+            # 启用服务（开机自启）
+            systemctl enable webserver.service
+            
+            echo "Systemd service deployed and enabled successfully!"
 
       - name: Copy and enable Nginx configuration
         uses: appleboy/ssh-action@v1.0.3
@@ -72,9 +86,9 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
-            #添加执行权限
-            chmod +x /var/www/script/restart_vue_cdmga.sh
-            chmod +x /var/www/script/restart_mvn_cdmga.sh
+            # 添加执行权限
+            # chmod +x /var/www/script/restart_vue_cdmga.sh
+            # chmod +x /var/www/script/restart_mvn_cdmga.sh
 
             # 复制 Nginx 配置文件
             cp /var/www/script/cdmga_nginx.conf /etc/nginx/sites-available/
@@ -104,17 +118,14 @@ jobs:
             echo "Java version:"
             java -version
             echo ""
-            # echo "Node.js version:"
-            # node -v
-            # echo ""
-            # echo "npm version:"
-            # npm -v
-            # echo ""
-            # echo "Maven version:"
-            # mvn -v
-            echo ""
             echo "Nginx status:"
             systemctl status nginx --no-pager
             echo ""
-            echo "Script directory contents:"
-            ls -la /var/www/script/
+            echo "Webserver service status:"
+            systemctl status webserver.service --no-pager
+            echo ""
+            echo "Directory permissions:"
+            ls -la /var/www/
+            echo ""
+            echo "Systemd service file:"
+            ls -la /etc/systemd/system/webserver.service
