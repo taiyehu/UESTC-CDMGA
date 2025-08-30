@@ -39,7 +39,8 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT || 22 }}  
         source: "webpage/target/*.jar"
-        target: /tmp/  # 先上传到临时目录
+        target: "/var/www/upload/"  # 先上传到临时目录
+        strip_components: 2 
 
     - name: Deploy and restart service
       uses: appleboy/ssh-action@v1.0.3
@@ -63,7 +64,7 @@ jobs:
             echo "已清理7天前的旧备份"
 
             # 移动新版本到应用目录
-            mv /tmp/webpage-0.0.1-SNAPSHOT.jar /var/www/app-jars/
+            mv /var/www/upload/webpage-0.0.1-SNAPSHOT.jar /var/www/app-jars/
             
             # 设置正确的权限
             chown www-data:www-data /var/www/app-jars/webpage-0.0.1-SNAPSHOT.jar
