@@ -78,7 +78,7 @@ jobs:
             # 如果当前部署目录存在，则创建备份
             if [ -d "/var/www/CDMGA-ui/" ]; then
                 # 创建带时间戳的备份文件
-                BACKUP_FILE="/var/www/CDMGA-backup/CDMGA-ui_${{ steps.backup-time.outputs.date }}.tar.gz"
+                sudo BACKUP_FILE="/var/www/CDMGA-backup/CDMGA-ui_${{ steps.backup-time.outputs.date }}.tar.gz"
 
                 # 切换到父目录，然后压缩目录内容
                 sudo tar -czf "$BACKUP_FILE" /var/www/CDMGA-ui/
@@ -104,7 +104,7 @@ jobs:
                 echo "警告: 源目录 /var/www/CDMGA-ui/ 不存在，跳过备份"
             fi
  
-            mv -f /var/www/dist/ /var/www/CDMGA-ui/
+            sudo mv -f /var/www/dist/ /var/www/CDMGA-ui/
             echo "部署到目标目录"
 
             # 设置正确的文件权限
