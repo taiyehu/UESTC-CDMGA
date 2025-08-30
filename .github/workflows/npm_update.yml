@@ -1,11 +1,24 @@
 name: npm-update 
-on: push
-  # push:
-    # paths:
-    #   - 'vueproject/**'
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'webpage/**'
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+    paths:
+      - 'webpage/**'
+  workflow_dispatch:
 
 jobs:
   npm-build-deploy:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     name: npm build
     runs-on: ubuntu-22.04
     defaults:
