@@ -1,6 +1,5 @@
 [Unit]
 Description=WebServer Java Application
-Documentation=https://github.com/your-username/your-repo
 After=network.target nginx.service
 Wants=network.target
 
@@ -44,7 +43,6 @@ CPUQuota=80%
 
 # 确保服务在启动前目录存在
 ExecStartPre=/bin/mkdir -p /var/www/logs
-ExecStartPre=/bin/chown www-data:www-data /var/www/logs
 ExecStartPre=/bin/chmod 755 /var/www/logs
 
 [Install]
