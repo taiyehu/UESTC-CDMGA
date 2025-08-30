@@ -28,23 +28,23 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
             # 更新包管理器
-            apt-get update -y
+            sudo apt-get update -y
             
             # 安装 Java 17
-            apt-get install -y openjdk-17-jdk
+            sudo apt-get install -y openjdk-17-jdk
             java -version
             
             # 安装 Nginx
-            apt-get install -y nginx
+            sudo apt-get install -y nginx
             nginx -v
             
             # 创建应用目录和日志目录
-            mkdir -p /var/www/app-jars/
-            mkdir -p /var/www/app-jars-backup/
-            mkdir -p /var/www/CDMGA-ui/
-            mkdir -p /var/www/CDMGA-backup/
-            mkdir -p /var/www/logs/
-            mkdir -p /var/www/config/
+            sudo mkdir -p /var/www/app-jars/
+            sudo mkdir -p /var/www/app-jars-backup/
+            sudo mkdir -p /var/www/CDMGA-ui/
+            sudo mkdir -p /var/www/CDMGA-backup/
+            sudo mkdir -p /var/www/logs/
+            sudo mkdir -p /var/www/config/
             
             
             echo "All dependencies installed successfully!"
@@ -68,13 +68,13 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
             # 复制 Systemd 服务文件到正确位置
-            cp /var/www/script/webserver.service /etc/systemd/system/
+            sudo cp /var/www/script/webserver.service /etc/systemd/system/
             
             # 重新加载 Systemd 配置
-            systemctl daemon-reload
+            sudo systemctl daemon-reload
             
             # 启用服务（开机自启）
-            systemctl enable webserver.service
+            sudo systemctl enable webserver.service
             
             echo "Systemd service deployed and enabled successfully!"
 
@@ -87,25 +87,25 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
             # 添加执行权限
-            # chmod +x /var/www/script/restart_vue_cdmga.sh
-            # chmod +x /var/www/script/restart_mvn_cdmga.sh
+            sudo chmod +x /var/www/script/restart_vue_cdmga.sh
+            sudo chmod +x /var/www/script/restart_mvn_cdmga.sh
 
             # 复制 Nginx 配置文件
-            cp /var/www/script/cdmga_nginx.conf /etc/nginx/sites-available/
+            sudo cp /var/www/script/cdmga_nginx.conf /etc/nginx/sites-available/
             
             # 创建符号链接以启用站点（如果尚未存在）
             if [ ! -f /etc/nginx/sites-enabled/cdmga_nginx.conf ]; then
-              ln -s /etc/nginx/sites-available/cdmga_nginx.conf /etc/nginx/sites-enabled/
+              sudo ln -s /etc/nginx/sites-available/cdmga_nginx.conf /etc/nginx/sites-enabled/
             fi
             
             # 写入实际主机名字
-            sed -i "s/server_name localhost;/server_name ${{ secrets.SSH_HOST }};/" /etc/nginx/sites-available/cdmga_nginx.conf
+            sudo sed -i "s/server_name localhost;/server_name ${{ secrets.SSH_DOMIAN }};/" /etc/nginx/sites-available/cdmga_nginx.conf
 
             # 测试 Nginx 配置
-            nginx -t
+            sudo nginx -t
             
             # 重启 Nginx 服务
-            systemctl restart nginx
+            sudo systemctl restart nginx
             
             echo "Nginx configuration applied successfully!"
 
