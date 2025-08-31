@@ -54,7 +54,7 @@ public class ScoreController {
             Score newScore = scoreService.postNewScore(
                     scoreRequest.getCourse_id(), scoreRequest.getIdentity_id(),
                     scoreRequest.getUpload_time(), scoreRequest.getImage(),
-                    0, false, null,
+                    0, false, null, 
                     scoreRequest.getCreated_at(), scoreRequest.getUpdated_at());
             return ResponseEntity.ok(Result.success(newScore));
         } catch (Exception e) {
@@ -100,7 +100,7 @@ public class ScoreController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(e.getMessage()));
         }
     }
-
+    
     // 获取文件扩展名
     private String getFileExtension(String fileName) {
         int index = fileName.lastIndexOf('.');
@@ -109,7 +109,7 @@ public class ScoreController {
         }
         return fileName.substring(index + 1);
     }
-
+    
     // 根据id更新Score
     @PutMapping("/update/{id}")
     public ResponseEntity<Result> updateScore(
@@ -132,13 +132,8 @@ public class ScoreController {
         public ResponseEntity<?> checkScoreExists(
                 @RequestParam("identityId") int identityId,
                 @RequestParam("courseId") int courseId) {
-
+            
             boolean exists = scoreService.existsByIdentityIdAndCourseId(identityId, courseId);
             return ResponseEntity.ok(exists);
         }
-    //获取所有未评分的成绩数据
-    @GetMapping("/unscored")
-    public List<Score> getUnscoredScores() {
-        return scoreService.getUnscoredScores();
-    }
 }
