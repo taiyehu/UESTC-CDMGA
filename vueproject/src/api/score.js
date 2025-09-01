@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-
+import types from '@/api/types'
 /**
  * 模拟成绩提交
  * @param {Object} handleScore - 模拟成绩
@@ -50,15 +50,22 @@ export const handleSubmitScore = (handleScore) => {
 /**
  *
  * @param {Object} updateData
- * @param {Number} updateData.point
- * @param {Boolean} updateData.is_scored
- * @param {String} updateData.remark
  * @Param {String} course_id
  */
 export const handleUpdateScore = (updateData,course_id) => {
     return request({
         url: `/score/update/${course_id}`,
-        method: 'post',
+        method: 'patch',
         data: updateData
+    })
+}
+export const fetchScore = (params) => {
+    return request({
+        url: '/score/',
+        method: 'get' ,
+        params: {
+            page: params.page - 1,
+            size: params.pageSize,
+        }
     })
 }

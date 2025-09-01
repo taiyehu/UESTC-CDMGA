@@ -16,7 +16,7 @@
     </el-card>
 
     <el-button type="primary" @click="openUploadDialog" style="margin-top: 20px">上传课题</el-button>
-    
+
     <!-- 课题信息查看弹窗 -->
     <el-dialog :visible.sync="dialogVisible" width="50%" @close="closeDialog">
       <h3>课题信息</h3>
@@ -143,7 +143,7 @@ export default {
         const response = await deleteCourseData(courseId);
         if (response.status === 204) {
           this.$message.success('课题删除成功');
-          this.fetchCourses();
+          await this.fetchCourses();
         } else {
           this.$message.error('删除失败');
         }
@@ -212,7 +212,7 @@ export default {
         if (response.data.code === 0) {
           this.$message.success('课题上传成功');
           this.showUploadForm = false;
-          this.fetchCourses();
+          await this.fetchCourses();
         } else {
           this.$message.error(response.data.message || '课题上传失败');
         }

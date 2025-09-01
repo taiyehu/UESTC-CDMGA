@@ -283,7 +283,7 @@ export default {
         // 5. 处理成功
         this.$message.success(`课题 "${this.updateForm.course_title}" 的成绩更新成功！`);
         this.closeUpdateDialog();
-        this.fetchCourses();
+        await this.fetchCourses();
       } catch (error) {
         console.error('更新失败:', error);
         const errorMsg = error.response?.data?.message || '成绩更新失败，请重试';
