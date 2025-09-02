@@ -67,13 +67,12 @@ jobs:
             sudo systemctl stop webserver.service
             
             # 备份旧版本（可选）
-            TIMESTAMP=$(date +%Y%m%d_%H%M%S)
             if [ -f "/var/www/app-jars/webpage-0.0.1-SNAPSHOT.jar" ]; then
-                sudo mv /var/www/app-jars/webpage-0.0.1-SNAPSHOT.jar "/var/www/app-jars-backup/webpage_${{ steps.backup-time.outputs.date }}.jar.$TIMESTAMP"
+                sudo mv /var/www/app-jars/webpage-0.0.1-SNAPSHOT.jar "/var/www/app-jars-backup/webpage_${{ steps.backup-time.outputs.date }}.jar"
             fi
           
             # 清理旧备份（保留最近7天）
-            find /var/www/app-jars-backup/ -name "webpage_*.tar.gz" -mtime +7 -exec sudo rm -f {} \; || true
+            find /var/www/app-jars-backup/ -name "webpage_*.jar" -mtime +7 -exec sudo rm -f {} \; || true
             echo "已清理7天前的旧备份"
 
             # 移动新版本到应用目录
