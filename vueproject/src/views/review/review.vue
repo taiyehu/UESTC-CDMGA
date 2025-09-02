@@ -2,47 +2,120 @@
   <div>
     <el-card class="box-card" v-if="unscoredScores.length > 0">
       <h2>未审核成绩查看</h2>
+
       <el-table :data="unscoredScores" stripe>
         <el-table-column prop="id" label="成绩ID"></el-table-column>
         <el-table-column prop="course.title" label="课题名称"></el-table-column>
-        <el-table-column prop="identity.name" label="用户姓名"></el-table-column>
+        <el-table-column prop="identity.account" label="用户名"></el-table-column>
         <el-table-column prop="uploadTime" label="上传时间" :formatter="formatDateTime"></el-table-column>
         <el-table-column prop="score" label="分数"></el-table-column>
+        <el-table-column label="图片" width="200">
+          <template #default="scope">
+            <img
+                v-if="scope.row.image"
+                :src="getImageUrl(scope.row.image)"
+                alt="点击查看"
+                style="width: 120px; height: auto; border-radius: 4px; cursor: pointer"
+                @click="handleImageClick(getImageUrl(scope.row.image))"
+            />
+          </template>
+        </el-table-column>
         <el-table-column prop="isScored" label="是否评分">
           <template #default="scope">
             {{ scope.row.isScored ? '是' : '否' }}
           </template>
         </el-table-column>
-        <el-table-column prop="remark" label="备注"></el-table-column>
+        <el-table-column prop="remark" label="备注" width="250"></el-table-column>
+        <el-table-column fixed="right" label="操作" width="120">
+          <template #default="scope">
+            <el-button @click="openDialog(scope.row)" type="primary" icon="el-icon-edit" circle size="small"></el-button>
+            <el-button @click="openDeleteDialog(scope.row)" type="danger" icon="el-icon-delete" circle size="small"></el-button>
+          </template>
+        </el-table-column>
       </el-table>
     </el-card>
     <el-card v-else>
       <h2>没有未审核的成绩信息</h2>
     </el-card>
+
+    <el-dialog :visible.sync="dialogVisible" width="70%" @close="dialogVisible = false">
+      <h3>编辑分数</h3>
+      <el-table :data="[selectedScore]" >
+        <el-table-column prop="course.title" label="课题名称"></el-table-column>
+        <el-table-column prop="identity.account" label="用户姓名"></el-table-column>
+        <el-table-column label="成绩图片" width="200">
+          <template #default="scope">
+            <img
+                v-if="scope.row.image"
+                :src="getImageUrl(scope.row.image)"
+                alt="成绩图片"
+                style="width: 120px; height: auto; border-radius: 4px; cursor: pointer"
+                @click="handleImageClick(getImageUrl(scope.row.image))"
+            />
+          </template>
+        </el-table-column>
+        <el-table-column label="分数">
+          <el-input-number v-model="selectedScore.score" placeholder="请输入得分"></el-input-number>
+        </el-table-column>
+      </el-table>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="updateScore(selectedScore)">确 定</el-button>
+      </span>
+    </el-dialog>
+
+    <el-dialog :visible.sync="previewVisible" width="auto" :show-close="true" center>
+      <img
+          :src="previewImage"
+          alt="预览图片"
+          style="max-width: 90vw; max-height: 80vh; display: block; margin: auto;"
+      />
+    </el-dialog>
     <div>
       <router-link to="/profile">
         <el-button style="margin-left:10px">返回主页</el-button>
       </router-link>
+    </div>
   </div>
-  </div>
-  
+
 </template>
 
 <script>
-import axios from 'axios';
+import {fetchScore, handleUpdateScore} from "@/api/score";
+import dayjs from "dayjs";
+
 
 export default {
   data() {
     return {
       scores: [],
-      unscoredScores: []
+      unscoredScores: [],
+      selectedScore: {},
+      dialogVisible: false,
+      previewVisible: false,
+      previewImage: '',
     };
   },
   methods: {
+    getImageUrl(imagePath) {   // ✅ 放到 methods
+      if (!imagePath) return '';
+      if (/^https?:\/\//.test(imagePath)) {
+        return imagePath;
+      }
+      if (imagePath.startsWith('/')) {
+        return `${process.env.VUE_APP_API_BASE_URL}${imagePath}`;
+      } else {
+        return `${process.env.VUE_APP_API_BASE_URL}/${imagePath}`;
+      }
+    },
+    handleImageClick(imgUrl) {
+      this.previewImage = imgUrl;
+      this.previewVisible = true;
+    },
     // 获取所有成绩信息
     async fetchScores() {
       try {
-        const response = await axios.get('http://localhost:8080/api/score/');
+        const response = await fetchScore({ page: 1, pageSize: 10 });
         this.scores = response.data || [];
         // 过滤出未被审核的成绩
         this.unscoredScores = this.scores.filter(score =>!score.isScored);
@@ -53,12 +126,48 @@ export default {
         this.unscoredScores = [];
       }
     },
+    async updateScore(score) {
+      try {
+        const updateScore = {
+          id: score.id,
+          point: score.score,
+          is_scored: true,
+          remark: score.remark,
+        }
+        await handleUpdateScore(updateScore, updateScore.id)
+        // 5. 处理成功
+        this.$message.success(`成绩提交成功！`);
+
+        this.dialogVisible = false;
+        await this.fetchScores({page: 1, pageSize: 10});
+      }catch(error) {
+        console.error('提交失败:', error);
+        const errorMsg = error.response?.data?.message || '成绩提交失败，请重试';
+        this.$message.error(errorMsg);
+      }
+    },
     // 格式化日期时间
     formatDateTime(row, column, cellValue) {
       if (!cellValue) return '';
       return new Date(cellValue).toLocaleString();
-    }
+    },
+    openDialog(score) {
+      console.log(score);
+      this.selectedScore = {
+        ...score,
+        uploadTime: dayjs(score.uploadTime).format('YYYY-MM-DD HH:mm:ss'),
+        createAt: dayjs(score.createAt).format('YYYY-MM-DD HH:mm:ss'),
+        updateAt: dayjs(score.updateAt).format('YYYY-MM-DD HH:mm:ss'),
+      };
+      this.dialogVisible = true;
+    },
+    openDeleteDialog(score) {
+      this.$message.warning(`还没做!`);
+      //TODO:删除功能和确认弹框
+    },
+
   },
+
   mounted() {
     this.fetchScores();
   }
@@ -68,7 +177,7 @@ export default {
 <style scoped>
 .box-card {
   margin: auto;
-  width: 800px;
+  width: 1280px;
   padding: 20px;
 }
 
@@ -78,7 +187,4 @@ h2 {
   margin-bottom: 20px;
 }
 
-.el-table {
-  margin-top: 20px;
-}
 </style>

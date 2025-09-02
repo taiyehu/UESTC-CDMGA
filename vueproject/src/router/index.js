@@ -34,7 +34,7 @@ const router = new VueRouter({
         {
             path: '/register',
             component: Register
-        }, 
+        },
         {
             path:'/profile',
             component: Profile
@@ -46,11 +46,11 @@ const router = new VueRouter({
         {
             path:'/admin-courses',
             component: adminCourses
-        }, 
+        },
         {
             path: '/review',
             component: review
-        }, 
+        },
         {
             path: '/score',
             component: score

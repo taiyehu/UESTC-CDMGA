@@ -31,7 +31,7 @@ public class IdentityController {
     @Autowired
     private IdentityService identityService;
 
-    
+
     // 注册接口
     @CrossOrigin(origins = "http://localhost:8081")
     @PostMapping("/register")
@@ -70,16 +70,16 @@ public class IdentityController {
     @GetMapping("/allaccount")
     public ResponseEntity<List<Identity>> getAllIdentities() {
         List<Identity> identities = identityService.getAllIdentities();
-        return identities.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(identities);
+        return ResponseEntity.ok(identities);
     }
-    
+
 
     // 获取用户信息
     @GetMapping("/{account}")
-    public ResponseEntity<Object> getIdentity(@PathVariable String account, 
+    public ResponseEntity<Object> getIdentity(@PathVariable String account,
                                             @RequestParam(value = "role", required = false) Boolean getRole) {
         Identity identity = identityService.getIdentityByAccount(account);
-        
+
         if (identity != null) {
             if (getRole != null && getRole) {
                 return ResponseEntity.ok(identity.getRole()); // 返回 role

@@ -17,32 +17,57 @@
     </el-card>
 
     <!-- 课题信息查看弹窗 -->
-    <el-dialog :visible.sync="viewDialogVisible" width="50%" @close="closeViewDialog">
-      <h3>课题信息</h3>
-      <el-form :model="selectedCourse" label-width="100px">
-        <el-form-item label="课题名称">
-          <el-input v-model="selectedCourse.title" disabled></el-input>
-        </el-form-item>
-        <el-form-item label="课题ID">
-          <el-input v-model="selectedCourse.id" disabled></el-input>
-        </el-form-item>
-        <el-form-item label="课题类别">
-          <el-input v-model="selectedCourse.category" disabled></el-input>
-        </el-form-item>
-        <el-form-item label="课题描述">
-          <el-input v-model="selectedCourse.description" disabled></el-input>
-        </el-form-item>
-        <el-form-item label="开始时间">
-          <el-input v-model="selectedCourse.startTime" disabled></el-input>
-        </el-form-item>
-        <el-form-item label="结束时间">
-          <el-input v-model="selectedCourse.endTime" disabled></el-input>
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="closeViewDialog">退出</el-button>
-      </div>
+    <!-- 课题详情弹窗 -->
+    <el-dialog :visible.sync="viewDialogVisible" title="课题详情" width="50%" @close="closeViewDialog()">
+      <el-descriptions border :column="1">
+
+        <el-descriptions-item label="课题名称">
+          {{ selectedCourse.title || '-' }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="课题类别">
+          {{ selectedCourse.category || '-' }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="课题描述">
+          {{ selectedCourse.description || '-' }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="开始时间">
+          {{ formatDateTime(selectedCourse.start_time) || '-' }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="结束时间">
+          {{ formatDateTime(selectedCourse.end_time) || '-' }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="最后更新时间">
+          {{ formatDateTime(selectedCourse.updated_at) || '-' }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="课题图片">
+          <template v-if="selectedCourse.image">
+            <img
+                :src="getImageUrl(selectedCourse.image)"
+                alt="课题图片"
+                style="width: 160px; height: auto; border-radius: 4px; cursor: pointer"
+                @click="handleImageClick(getImageUrl(selectedCourse.image))"
+            />
+          </template>
+          <template v-else>-</template>
+        </el-descriptions-item>
+      </el-descriptions>
+
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="viewDialogVisible = false">关闭</el-button>
+      </span>
     </el-dialog>
+
+    <!-- 图片预览弹窗 -->
+    <el-dialog :visible.sync="previewVisible" width="auto" :show-close="true" center>
+      <img :src="previewImage" alt="预览图片" style="max-width:90vw;max-height:80vh;display:block;margin:auto;" />
+    </el-dialog>
+
 
     <!-- 成绩提交弹窗-->
     <el-dialog :visible.sync="submitDialogVisible" title="成绩提交" width="40%" @close="closeSubmitDialog">
@@ -109,6 +134,7 @@
 import axios from 'axios';
 import {fetchAvailablecourseData} from "@/api/course";
 import {checkSubmitted, handleSubmitScore, handleUpdateScore} from "@/api/score";
+import dayjs from "dayjs";
 
 export default {
   data() {
@@ -117,6 +143,8 @@ export default {
       viewDialogVisible: false,
       submitDialogVisible: false,
       updateDialogVisible: false,
+      previewVisible: false,
+      previewImage: '',
       selectedCourse: {},
       submitForm: {
         course_id: '',       // 课程ID
@@ -147,6 +175,21 @@ export default {
     };
   },
   methods: {
+    getImageUrl(imagePath) {   // ✅ 放到 methods
+      if (!imagePath) return '';
+      if (/^https?:\/\//.test(imagePath)) {
+        return imagePath;
+      }
+      if (imagePath.startsWith('/')) {
+        return `${process.env.VUE_APP_API_BASE_URL}${imagePath}`;
+      } else {
+        return `${process.env.VUE_APP_API_BASE_URL}/${imagePath}`;
+      }
+    },
+    handleImageClick(imgUrl) {
+      this.previewImage = imgUrl;
+      this.previewVisible = true;
+    },
     // 获取课题列表
     async fetchCourses() {
       try {
@@ -181,9 +224,9 @@ export default {
     openViewDialog(course) {
       this.selectedCourse = {
         ...course,
-        start_time: this.formatDateTime(course.start_time),
-        end_time: this.formatDateTime(course.end_time),
-        updated_at: this.formatDateTime(course.updated_at)
+        start_time: dayjs(course.start_time).format('YYYY-MM-DD'),
+        end_time: dayjs(course.end_time).format('YYYY-MM-DD'),
+        updated_at: dayjs(course.updated_at).format('YYYY-MM-DD'),
       };
       this.viewDialogVisible = true;
     },
@@ -283,7 +326,7 @@ export default {
         // 5. 处理成功
         this.$message.success(`课题 "${this.updateForm.course_title}" 的成绩更新成功！`);
         this.closeUpdateDialog();
-        this.fetchCourses();
+        await this.fetchCourses();
       } catch (error) {
         console.error('更新失败:', error);
         const errorMsg = error.response?.data?.message || '成绩更新失败，请重试';

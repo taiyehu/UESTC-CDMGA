@@ -11,22 +11,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.cdmga.uestc.webpage.Common.Result;
 import com.cdmga.uestc.webpage.Common.ScoreRequest;
 import com.cdmga.uestc.webpage.Entity.Score;
 import com.cdmga.uestc.webpage.Service.ScoreService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-
 
 
 @CrossOrigin(origins = "https://localhost:8081")
@@ -54,7 +45,7 @@ public class ScoreController {
             Score newScore = scoreService.postNewScore(
                     scoreRequest.getCourse_id(), scoreRequest.getIdentity_id(),
                     scoreRequest.getUpload_time(), scoreRequest.getImage(),
-                    0, false, null, 
+                    0, false, null,
                     scoreRequest.getCreated_at(), scoreRequest.getUpdated_at());
             return ResponseEntity.ok(Result.success(newScore));
         } catch (Exception e) {
@@ -100,7 +91,7 @@ public class ScoreController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(e.getMessage()));
         }
     }
-    
+
     // 获取文件扩展名
     private String getFileExtension(String fileName) {
         int index = fileName.lastIndexOf('.');
@@ -109,9 +100,9 @@ public class ScoreController {
         }
         return fileName.substring(index + 1);
     }
-    
+
     // 根据id更新Score
-    @PutMapping("/update/{id}")
+    @PatchMapping("/update/{id}")
     public ResponseEntity<Result> updateScore(
             @PathVariable Long id,
             @RequestBody ScoreRequest scoreRequest) {
@@ -132,8 +123,13 @@ public class ScoreController {
         public ResponseEntity<?> checkScoreExists(
                 @RequestParam("identityId") int identityId,
                 @RequestParam("courseId") int courseId) {
-            
+
             boolean exists = scoreService.existsByIdentityIdAndCourseId(identityId, courseId);
             return ResponseEntity.ok(exists);
         }
+    @GetMapping("/unscored")
+    public ResponseEntity<List<Score>> getUnscoredScores() {
+        List<Score> scores = scoreService.getUnscoredScores();
+        return ResponseEntity.ok(scores);
+    }
 }
