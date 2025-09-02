@@ -7,7 +7,7 @@
         <p>课题名称：{{ course.title }} | 课题ID：{{ course.id }}</p>
         <div class="btnGroup">
           <el-button type="primary" @click="openDialog(course)" size="small">查看</el-button>
-          <el-button type="danger" @click="deleteCourse(course.id)" size="small">删除</el-button>
+          <el-button type="danger" @click="deleteConfirm(course.id)" size="small">删除</el-button>
         </div>
       </div>
     </el-card>
@@ -15,38 +15,59 @@
       <h2>没有课题信息</h2>
     </el-card>
 
-    <el-button type="primary" @click="openUploadDialog" style="margin-top: 20px">上传课题</el-button>
+    <el-dialog
+        title="警告"
+        :visible.sync="confirmDialogVisible"
+        width="30%"
+        @close="confirmDialogVisible = false">
+      <span>确定删除?</span>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="deleteCourse(selectedCourse.id)">取 消</el-button>
+        <el-button type="danger" @click="confirmDialogVisible = false">确 定</el-button>
+      </span>
+    </el-dialog>
 
+    <el-button type="primary" @click="openUploadDialog" style="margin-top: 20px">上传课题</el-button>
     <!-- 课题信息查看弹窗 -->
-    <el-dialog :visible.sync="dialogVisible" width="50%" @close="closeDialog">
-      <h3>课题信息</h3>
-      <el-form :model="selectedCourse" label-width="100px">
-        <el-form-item label="课题名称">
-          <el-input v-model="selectedCourse.title" disabled></el-input>
-        </el-form-item>
-        <el-form-item label="课题ID">
-          <el-input v-model="selectedCourse.id" disabled></el-input>
-        </el-form-item>
-        <el-form-item label="课题类别">
-          <el-input v-model="selectedCourse.category" disabled></el-input>
-        </el-form-item>
-        <el-form-item label="课题描述">
-          <el-input v-model="selectedCourse.description" disabled></el-input>
-        </el-form-item>
-        <el-form-item label="开始时间">
-          <el-input v-model="selectedCourse.start_time" disabled></el-input>
-        </el-form-item>
-        <el-form-item label="结束时间">
-          <el-input v-model="selectedCourse.end_time" disabled></el-input>
-        </el-form-item>
-        <el-form-item label="更新时间">
-          <el-input v-model="selectedCourse.updated_at" disabled></el-input>
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="closeDialog">取消</el-button>
-        <el-button type="primary" @click="closeDialog">确定</el-button>
-      </div>
+    <el-dialog :visible.sync="dialogVisible" title="课题详情" width="50%" @close="closeDialog">
+      <el-descriptions border :column="1">
+
+        <el-descriptions-item label="课题名称">
+          {{ selectedCourse.title || '-' }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="课题类别">
+          {{ selectedCourse.category || '-' }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="课题描述">
+          {{ selectedCourse.description || '-' }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="开始时间">
+          {{ selectedCourse.start_time || '-' }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="结束时间">
+          {{ selectedCourse.end_time || '-' }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="最后更新时间">
+          {{ selectedCourse.updated_at || '-' }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="课题图片">
+          <template v-if="selectedCourse.image">
+            <img
+                :src="getImageUrl(selectedCourse.image)"
+                alt="课题图片"
+                style="width: 160px; height: auto; border-radius: 4px; cursor: pointer"
+                @click="handleImageClick(getImageUrl(selectedCourse.image))"
+            />
+          </template>
+          <template v-else>-</template>
+        </el-descriptions-item>
+      </el-descriptions>
     </el-dialog>
 
     <!-- 上传课题信息部分 -->
@@ -105,6 +126,7 @@ export default {
       dialogVisible: false, // 控制弹窗显示
       selectedCourse: {}, // 存储当前查看的课题信息
       showUploadForm: false, // 控制上传课题表单显示
+      confirmDialogVisible: false,
       newCourse: {
         title: '',
         category: '',
@@ -117,6 +139,21 @@ export default {
     };
   },
   methods: {
+    getImageUrl(imagePath) {   // ✅ 放到 methods
+      if (!imagePath) return '';
+      if (/^https?:\/\//.test(imagePath)) {
+        return imagePath;
+      }
+      if (imagePath.startsWith('/')) {
+        return `${process.env.VUE_APP_API_BASE_URL}${imagePath}`;
+      } else {
+        return `${process.env.VUE_APP_API_BASE_URL}/${imagePath}`;
+      }
+    },
+    handleImageClick(imgUrl) {
+      this.previewImage = imgUrl;
+      this.previewVisible = true;
+    },
     async fetchCourses() {
       try {
         const response = await fetchAllCourseData({ page: 1, pageSize: 10 })
@@ -137,6 +174,12 @@ export default {
     },
     closeDialog() {
       this.dialogVisible = false;
+    },
+    deleteConfirm(course){
+      this.selectedCourse = {
+        ...course
+      };
+      this.confirmDialogVisible = true;
     },
     async deleteCourse(courseId) {
       try {

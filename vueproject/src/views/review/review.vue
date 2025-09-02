@@ -42,7 +42,7 @@
       <h3>编辑分数</h3>
       <el-table :data="[selectedScore]" >
         <el-table-column prop="course.title" label="课题名称"></el-table-column>
-        <el-table-column prop="identity.name" label="用户姓名"></el-table-column>
+        <el-table-column prop="identity.account" label="用户姓名"></el-table-column>
         <el-table-column label="成绩图片" width="200">
           <template #default="scope">
             <img
