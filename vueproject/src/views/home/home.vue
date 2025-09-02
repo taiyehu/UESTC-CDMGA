@@ -42,14 +42,14 @@
     <router-link to="/profile">
       <el-button style="margin-left:10px">个人中心</el-button>
     </router-link>
-    
+
     <!-- 图片预览弹窗 -->
     <el-dialog :visible.sync="previewVisible" width="auto" :show-close="true" center>
       <img :src="previewImage" alt="预览图片" style="max-width:90vw;max-height:80vh;display:block;margin:auto;" />
     </el-dialog>
   </div>
 
-  
+
 </template>
 
 <script setup>
@@ -64,6 +64,7 @@ const courseContainer = ref(null);
 let scrollInterval = null;
 const previewVisible = ref(false);
 const previewImage = ref('');
+const baseURL = process.env.VUE_APP_API_BASE_URL;
 
 const handleImageClick = (imgUrl) => {
   previewImage.value = imgUrl;
@@ -127,9 +128,9 @@ const getImageUrl = (imagePath) => {
   // 修改为你的后端图片基础URL
   // 保证不会出现 //images/xxx.jpg
   if (imagePath.startsWith('/')) {
-    return `http://localhost:8080${imagePath}`;
+    return `${baseURL}${imagePath}`;
   } else {
-    return `http://localhost:8080/${imagePath}`;
+    return `${baseURL}${imagePath}`;
   }
 };
 </script>

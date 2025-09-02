@@ -6,9 +6,20 @@
       <el-table :data="unscoredScores" stripe>
         <el-table-column prop="id" label="成绩ID"></el-table-column>
         <el-table-column prop="course.title" label="课题名称"></el-table-column>
-        <el-table-column prop="identity.name" label="用户姓名"></el-table-column>
+        <el-table-column prop="identity.account" label="用户名"></el-table-column>
         <el-table-column prop="uploadTime" label="上传时间" :formatter="formatDateTime"></el-table-column>
         <el-table-column prop="score" label="分数"></el-table-column>
+        <el-table-column label="图片" width="200">
+          <template #default="scope">
+            <img
+                v-if="scope.row.image"
+                :src="getImageUrl(scope.row.image)"
+                alt="点击查看"
+                style="width: 120px; height: auto; border-radius: 4px; cursor: pointer"
+                @click="handleImageClick(getImageUrl(scope.row.image))"
+            />
+          </template>
+        </el-table-column>
         <el-table-column prop="isScored" label="是否评分">
           <template #default="scope">
             {{ scope.row.isScored ? '是' : '否' }}
@@ -16,9 +27,10 @@
         </el-table-column>
         <el-table-column prop="remark" label="备注" width="250"></el-table-column>
         <el-table-column fixed="right" label="操作" width="120">
-          <div v-for="score in unscoredScores" :key="score.id" class="score-item">
-            <el-button @click="openDialog(score)" type="text" size="small">查看</el-button>
-          </div>
+          <template #default="scope">
+            <el-button @click="openDialog(scope.row)" type="primary" icon="el-icon-edit" circle size="small"></el-button>
+            <el-button @click="openDeleteDialog(scope.row)" type="danger" icon="el-icon-delete" circle size="small"></el-button>
+          </template>
         </el-table-column>
       </el-table>
     </el-card>
@@ -31,8 +43,16 @@
       <el-table :data="[selectedScore]" >
         <el-table-column prop="course.title" label="课题名称"></el-table-column>
         <el-table-column prop="identity.name" label="用户姓名"></el-table-column>
-        <el-table-column label="图片">
-          <el-button @click="openPhoto(selectedScore.image)" type="text" size="small"></el-button>
+        <el-table-column label="成绩图片" width="200">
+          <template #default="scope">
+            <img
+                v-if="scope.row.image"
+                :src="getImageUrl(scope.row.image)"
+                alt="成绩图片"
+                style="width: 120px; height: auto; border-radius: 4px; cursor: pointer"
+                @click="handleImageClick(getImageUrl(scope.row.image))"
+            />
+          </template>
         </el-table-column>
         <el-table-column label="分数">
           <el-input-number v-model="selectedScore.score" placeholder="请输入得分"></el-input-number>
@@ -42,6 +62,14 @@
         <el-button @click="dialogVisible = false">取 消</el-button>
         <el-button type="primary" @click="updateScore(selectedScore)">确 定</el-button>
       </span>
+    </el-dialog>
+
+    <el-dialog :visible.sync="previewVisible" width="auto" :show-close="true" center>
+      <img
+          :src="previewImage"
+          alt="预览图片"
+          style="max-width: 90vw; max-height: 80vh; display: block; margin: auto;"
+      />
     </el-dialog>
     <div>
       <router-link to="/profile">
@@ -56,6 +84,7 @@
 import {fetchScore, handleUpdateScore} from "@/api/score";
 import dayjs from "dayjs";
 
+
 export default {
   data() {
     return {
@@ -63,10 +92,26 @@ export default {
       unscoredScores: [],
       selectedScore: {},
       dialogVisible: false,
-      photoVisible: false,
+      previewVisible: false,
+      previewImage: '',
     };
   },
   methods: {
+    getImageUrl(imagePath) {   // ✅ 放到 methods
+      if (!imagePath) return '';
+      if (/^https?:\/\//.test(imagePath)) {
+        return imagePath;
+      }
+      if (imagePath.startsWith('/')) {
+        return `${process.env.VUE_APP_API_BASE_URL}${imagePath}`;
+      } else {
+        return `${process.env.VUE_APP_API_BASE_URL}/${imagePath}`;
+      }
+    },
+    handleImageClick(imgUrl) {
+      this.previewImage = imgUrl;
+      this.previewVisible = true;
+    },
     // 获取所有成绩信息
     async fetchScores() {
       try {
@@ -116,10 +161,13 @@ export default {
       };
       this.dialogVisible = true;
     },
-    openPhoto(image) {
-      //TODO:添加显示图片的弹窗
-    }
+    openDeleteDialog(score) {
+      this.$message.warning(`还没做!`);
+      //TODO:删除功能和确认弹框
+    },
+
   },
+
   mounted() {
     this.fetchScores();
   }

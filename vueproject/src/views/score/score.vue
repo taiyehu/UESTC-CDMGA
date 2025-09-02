@@ -38,6 +38,8 @@
         <el-form-item label="结束时间">
           <el-input v-model="selectedCourse.endTime" disabled></el-input>
         </el-form-item>
+        <el-form-item label="图片">
+        </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="closeViewDialog">退出</el-button>
