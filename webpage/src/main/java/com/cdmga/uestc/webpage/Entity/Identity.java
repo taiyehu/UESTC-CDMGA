@@ -23,7 +23,7 @@ public class Identity {
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @NotEmpty(message = "用户名不能为空")
     @Size(min = 1, max = 20, message = "用户名长度在1到20个字符之间")
@@ -61,7 +61,7 @@ public class Identity {
     public long getId(){
         return id;
     }
-    public void setId(Long id){
+    public void setId(Integer id){
         this.id = id;
     }
 
