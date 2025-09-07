@@ -32,4 +32,6 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
 
     boolean existsByIdentityIdAndCourseId(int identityId, int courseId);
 
+    Score findByIdentityIdAndCourseId(Long identityId, Long courseId);
+
 }

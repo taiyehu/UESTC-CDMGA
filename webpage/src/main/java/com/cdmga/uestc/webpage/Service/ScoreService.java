@@ -60,7 +60,6 @@ public class ScoreService {
         Score score = scoreRepository.findById(scoreId).orElse(null);
         if (score != null) {
             score.setScore(point);
-            score.setIsScored(is_scored);
             score.setRemark(remark);
             score.setUpdatedAt(LocalDateTime.now()); // 更新时间
             return scoreRepository.save(score); // 保存更新后的Score
@@ -97,4 +96,8 @@ public class ScoreService {
         return scoreRepository.existsByIdentityIdAndCourseId(identityId, courseId);
     }
 
+    public Score getScoreByIdentityIdAndCourseId(Long identityId, Long courseId) {
+        return scoreRepository.findByIdentityIdAndCourseId(identityId, courseId);
+
+    }
 }

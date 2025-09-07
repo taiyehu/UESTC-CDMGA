@@ -133,4 +133,19 @@ public class CourseController {
         return ResponseEntity.ok(courses);
     }
 
+    // 删除对应id的课题
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<Result> deleteCourseData(@PathVariable Long id) {
+        try {
+            Course deletedCourse = courseService.deleteCourse(id);
+            if (deletedCourse != null) {
+                return ResponseEntity.ok(Result.success(deletedCourse));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Result.error("Course not found"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(e.getMessage()));
+        }
+    }
+
 }

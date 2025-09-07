@@ -1,8 +1,8 @@
 import request from '@/utils/request'
 import types from '@/api/types'
 /**
- * Ä£Äâ³É¼¨Ìá½»
- * @param {Object} handleScore - Ä£Äâ³É¼¨
+ * Ä£ï¿½ï¿½É¼ï¿½ï¿½á½»
+ * @param {Object} handleScore - Ä£ï¿½ï¿½É¼ï¿½
  * @param {Number} handleScore.course_id
  * @returns {Promise}
  */
@@ -34,7 +34,7 @@ export const  checkSubmitted = (identityId,courseId) => {
 }
 /**
  *
- * @param {Object} handleScore - Ìá½»µÄ³É¼¨ĞÅÏ¢
+ * @param {Object} handleScore - ï¿½á½»ï¿½Ä³É¼ï¿½ï¿½ï¿½Ï¢
  * @Param {String} handleScore.course_id
  * @Param {Number} handleScore.identity_id
  * @param {String} handleScore.upload_time
@@ -52,12 +52,12 @@ export const handleSubmitScore = (handleScore) => {
  * @param {Object} updateData
  * @Param {String} course_id
  */
-export const handleUpdateScore = (updateData,course_id) => {
+export const handleUpdateScore = (updateData, score_id) => {
     return request({
-        url: `/score/update/${course_id}`,
-        method: 'patch',
+        url: `/score/update/${score_id}`,
+        method: 'put',
         data: updateData
-    })
+    });
 }
 export const fetchScore = (params) => {
     return request({

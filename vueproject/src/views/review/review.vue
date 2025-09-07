@@ -64,6 +64,14 @@
       </span>
     </el-dialog>
 
+    <el-dialog :visible.sync="deleteDialogVisible" title="确认删除成绩" width="30%">
+      <span>确定要取消他本次课题的资格吗？此操作不可恢复。</span>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="deleteDialogVisible = false">取消</el-button>
+        <el-button type="danger" @click="handleDeleteScore">确定删除</el-button>
+      </span>
+    </el-dialog>
+
     <el-dialog :visible.sync="previewVisible" width="auto" :show-close="true" center>
       <img
           :src="previewImage"
@@ -94,6 +102,8 @@ export default {
       dialogVisible: false,
       previewVisible: false,
       previewImage: '',
+      deleteDialogVisible: false,
+      deleteScoreId: null,
     };
   },
   methods: {
@@ -162,10 +172,19 @@ export default {
       this.dialogVisible = true;
     },
     openDeleteDialog(score) {
-      this.$message.warning(`还没做!`);
-      //TODO:删除功能和确认弹框
+      this.deleteScoreId = score.id;
+      this.deleteDialogVisible = true;
     },
-
+    async handleDeleteScore() {
+      try {
+        await this.$axios.delete(`/api/score/delete/${this.deleteScoreId}`);
+        this.$message.success('成绩删除成功');
+        this.deleteDialogVisible = false;
+        await this.fetchScores();
+      } catch (error) {
+        this.$message.error('成绩删除失败');
+      }
+    },
   },
 
   mounted() {

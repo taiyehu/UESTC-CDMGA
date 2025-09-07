@@ -7,7 +7,7 @@
         <p>课题名称：{{ course.title }} | 课题ID：{{ course.id }}</p>
         <div class="btnGroup">
           <el-button type="primary" @click="openDialog(course)" size="small">查看</el-button>
-          <el-button type="danger" @click="deleteConfirm(course.id)" size="small">删除</el-button>
+          <el-button type="danger" @click="deleteConfirm(course)" size="small">删除</el-button>
         </div>
       </div>
     </el-card>
@@ -22,8 +22,8 @@
         @close="confirmDialogVisible = false">
       <span>确定删除?</span>
       <span slot="footer" class="dialog-footer">
-        <el-button @click="deleteCourse(selectedCourse.id)">取 消</el-button>
-        <el-button type="danger" @click="confirmDialogVisible = false">确 定</el-button>
+        <el-button type="danger" @click="deleteCourse(selectedCourse.id)" @click.native="confirmDialogVisible = false">确定</el-button>
+        <el-button @click="confirmDialogVisible = false">取消</el-button>
       </span>
     </el-dialog>
 

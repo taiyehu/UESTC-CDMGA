@@ -78,6 +78,14 @@
         <el-form-item label="课题ID">
           <el-input v-model="submitForm.course_id" disabled></el-input>
         </el-form-item>
+        <el-form-item label="补充说明">
+          <el-input
+              type="textarea"
+              v-model="updateForm.remark"
+              placeholder="可选，填写补充说明"
+              :rows="3"
+          ></el-input>
+        </el-form-item>
         <el-form-item label="上传图片">
           <el-upload
               action="/api/score/upload"
@@ -105,14 +113,22 @@
         <el-form-item label="课题ID">
           <el-input v-model="updateForm.course_id" disabled></el-input>
         </el-form-item>
+        <el-form-item label="补充说明">
+          <el-input
+            type="textarea"
+            v-model="updateForm.remark"
+            placeholder="可选，填写补充说明"
+            :rows="3"
+          ></el-input>
+        </el-form-item>
         <el-form-item label="上传图片">
           <el-upload
-              action="/api/score/updateImage/{updateForm.id}"
-              name="image"
-              :file-list="imageFileList"
-              list-type="picture-card"
-              :on-success="handleImageUpdateSuccess"
-              >
+            action="/api/score/upload"
+            name="image"
+            :file-list="imageFileList"
+            list-type="picture-card"
+            :on-success="handleImageUpdateSuccess"
+          >
             <el-button>点击上传</el-button>
           </el-upload>
         </el-form-item>
@@ -150,12 +166,14 @@ export default {
         course_id: '',       // 课程ID
         course_title: '',    // 仅前端显示
         upload_time: '',     // 上传时间
+        remark: '',
         image: ''            // 上传的图片
       },
       updateForm: {
         course_id: '',       // 课程ID
         course_title: '',    // 仅前端显示
         upload_time: '',     // 上传时间
+        remark: '',
         image: ''            // 上传的图片
       },
       newScore: {
@@ -195,11 +213,13 @@ export default {
       try {
         const response = await fetchAvailablecourseData({page : 1, size: 10})
         this.courses = response.data || [];
+        this.submittedCourses = []; // 清空
         await this.checkSubmittedCourses();
       } catch (error) {
         console.error('获取课题信息失败:', error);
         this.$message.error('获取课题列表失败，请稍后重试');
         this.courses = [];
+        this.submittedCourses = [];
       }
     },
     // 检查课程是否已提交
@@ -248,8 +268,18 @@ export default {
       this.submitDialogVisible = false;
     },
     // 打开更新弹窗
-    openUpdateDialog(course) {
+    async openUpdateDialog(course) {
+      const identityId = this.getCurrentIdentityId();
+      // 调用后端接口获取score_id
+      const response = await axios.get('/api/score/find', {
+        params: {
+          identity_id: identityId,
+          course_id: course.id
+        }
+      });
+      const score_id = response.data.data;
       this.updateForm = {
+        score_id,
         course_id: course.id,
         course_title: course.title,
         upload_time: '',
@@ -284,7 +314,8 @@ export default {
           course_id: this.submitForm.course_id,
           identity_id: identityId,
           upload_time: this.submitForm.upload_time,
-          image: this.submitForm.image
+          image: this.submitForm.image,
+          remark: this.submitForm.remark,
         };
 
         // 4. 发送请求
@@ -302,33 +333,21 @@ export default {
     // 更新处理
     async handleUpdate() {
       try {
-        // 1. 获取当前用户ID（从sessionStorage获取，与用户信息页面保持一致）
-        const identityId = this.getCurrentIdentityId();
-        if (!identityId) {
-          this.$message.error('未获取到用户信息，请重新登录');
-          return;
-        }
-
-        // 2. 补充时间字段（ISO格式）
+        // ...获取identityId等...
         this.updateForm.upload_time = new Date().toISOString();
 
-        // 3. 构造提交数据
+        // 只需传 image 字段和需要的其他字段
         const updateData = {
-          course_id: this.updateForm.course_id,
-          identity_id: identityId,
-          upload_time: this.updateForm.upload_time,
           image: this.updateForm.image
+          // 其他字段可选
         };
+        // 这里必须用成绩ID
+        await handleUpdateScore(updateData, this.updateForm.score_id);
 
-        // 4. 发送请求
-        await handleUpdateScore(updateData,this.updateForm.course_id)
-
-        // 5. 处理成功
         this.$message.success(`课题 "${this.updateForm.course_title}" 的成绩更新成功！`);
         this.closeUpdateDialog();
         await this.fetchCourses();
       } catch (error) {
-        console.error('更新失败:', error);
         const errorMsg = error.response?.data?.message || '成绩更新失败，请重试';
         this.$message.error(errorMsg);
       }

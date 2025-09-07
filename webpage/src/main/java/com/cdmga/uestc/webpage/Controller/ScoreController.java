@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.cdmga.uestc.webpage.Common.Result;
 import com.cdmga.uestc.webpage.Common.ScoreRequest;
 import com.cdmga.uestc.webpage.Entity.Score;
+import com.cdmga.uestc.webpage.Repository.ScoreRepository;
 import com.cdmga.uestc.webpage.Service.ScoreService;
 
 
@@ -45,7 +46,7 @@ public class ScoreController {
             Score newScore = scoreService.postNewScore(
                     scoreRequest.getCourse_id(), scoreRequest.getIdentity_id(),
                     scoreRequest.getUpload_time(), scoreRequest.getImage(),
-                    0, false, null,
+                    0, false, scoreRequest.getRemark(),
                     scoreRequest.getCreated_at(), scoreRequest.getUpdated_at());
             return ResponseEntity.ok(Result.success(newScore));
         } catch (Exception e) {
@@ -76,22 +77,31 @@ public class ScoreController {
         }
     }
 
-    @PutMapping("/updateImage/{id}")
-    public ResponseEntity<Result> updateScoreImage(
-            @PathVariable Long id,
-            @RequestBody ScoreRequest scoreRequest) {
-        try {
-            Score updatedScore = scoreService.updateScoreImage(id, scoreRequest.getImage());
-            if (updatedScore != null) {
-                return ResponseEntity.ok(Result.success(updatedScore));
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Result.error("Score not found"));
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(e.getMessage()));
+    // @PutMapping("/update/{id}")
+    // public ResponseEntity<Result> updateScoreImage(
+    //         @PathVariable Long id,
+    //         @RequestBody ScoreRequest scoreRequest) {
+    //     try {
+    //         Score updatedScore = scoreService.updateScoreImage(id, scoreRequest.getImage());
+    //         if (updatedScore != null) {
+    //             return ResponseEntity.ok(Result.success(updatedScore));
+    //         } else {
+    //             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Result.error("Score not found"));
+    //         }
+    //     } catch (Exception e) {
+    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(e.getMessage()));
+    //     }
+    // }
+
+    @GetMapping("/find")
+    public Result findScoreId(@RequestParam Long identity_id, @RequestParam Long course_id) {
+        Score score = scoreService.getScoreByIdentityIdAndCourseId(identity_id, course_id);
+        if (score != null) {
+            return Result.success(score.getId());
+        } else {
+            return Result.error("Score not found");
         }
     }
-
     // 获取文件扩展名
     private String getFileExtension(String fileName) {
         int index = fileName.lastIndexOf('.');
@@ -102,7 +112,7 @@ public class ScoreController {
     }
 
     // 根据id更新Score
-    @PatchMapping("/update/{id}")
+    @PutMapping("/update/{id}")
     public ResponseEntity<Result> updateScore(
             @PathVariable Long id,
             @RequestBody ScoreRequest scoreRequest) {
@@ -131,5 +141,11 @@ public class ScoreController {
     public ResponseEntity<List<Score>> getUnscoredScores() {
         List<Score> scores = scoreService.getUnscoredScores();
         return ResponseEntity.ok(scores);
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public Result deleteScore(@PathVariable Long id) {
+        scoreService.deleteScore(id);
+        return Result.success("删除成功");
     }
 }
