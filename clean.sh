@@ -8,7 +8,7 @@ DB_HOST="47.109.27.209"
 DB_PORT="3306"
 DB_NAME="CDMGA"
 DB_USER="Admin_2025"
-DB_PASS="Cdmga@2025"
+DB_PASS=""
 
 # 日志文件
 LOG_FILE="/var/log/mysql_cleanup.log"
@@ -64,4 +64,6 @@ main() {
 }
 
 # 执行主程序
+read -s -p "Enter MySQL password for user Admin_2025: " DB_PASS
+echo
 main
