@@ -91,7 +91,7 @@ jobs:
             
             # 检查应用是否健康
             echo "等待应用启动..."
-            sudo sleep 10
+            sudo sleep 60
             if sudo lsof -t -i:8080 > /dev/null 2>&1; then
                 echo "应用启动成功!"
             else
