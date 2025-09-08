@@ -48,7 +48,6 @@ jobs:
 
             sudo chown -R webserver:webserver /opt/webserver /var/webserver
             sudo chmod -R 750 /opt/webserver /var/webserver
-            sudo chown -R www-data:www-data /var/webserver
 
             # 创建前端目录结构
             sudo mkdir -p /var/www/CDMGA-ui /var/www/backup
