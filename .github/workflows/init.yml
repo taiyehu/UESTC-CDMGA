@@ -43,11 +43,24 @@ jobs:
             fi
 
             # 创建后端目录结构
+            # 1. 创建目录结构 (不变)
             sudo mkdir -p /opt/webserver/app /opt/webserver/upload /opt/webserver/backup
-            sudo mkdir -p /var/webserver/images /var/webserver/courses /var/webserver/log  /var/webserver//scores/
+            sudo mkdir -p /var/webserver/images /var/webserver/courses /var/webserver/log /var/webserver/scores/
 
-            sudo chown -R webserver:webserver /opt/webserver /var/webserver
+            # 2. 将 'webserver' 用户加入 'www-data' 组
+            # -a 表示追加（Append），-G 指定要加入的组
+            sudo usermod -a -G www-data webserver
+
+            # 3. 设置目录的所有权和权限（这是关键）
+            # 将文件的所有者设为 webserver，组设为 www-data
+            sudo chown -R webserver:www-data /opt/webserver /var/webserver
+
+            # 设置权限：所有者有全部权限(rwx)，组有全部权限(rwx)，其他人无权限(---)
             sudo chmod -R 750 /opt/webserver /var/webserver
+
+            # 4. （极其重要的一步）设置 SetGID 位
+            # 这能保证今后在这些目录中创建的任何新文件或子目录，其属组都会自动继承父目录的 'www-data' 组。
+            sudo chmod -R g+s /opt/webserver /var/webserver
 
             # 创建前端目录结构
             sudo mkdir -p /var/www/CDMGA-ui /var/www/backup
