@@ -71,7 +71,7 @@ public class ScoreController {
             Files.copy(image.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
             // 假设你有一个基础 URL（例如：http://localhost:8081/scores/），可以返回相对路径
-            String imageUrl = "/var/webserver/scores/" + fileName;
+            String imageUrl = "/scores/" + fileName;
 
             return Result.success(imageUrl);  // 返回图片的URL
         } catch (Exception e) {
