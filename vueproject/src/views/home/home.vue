@@ -64,7 +64,7 @@ const courseContainer = ref(null);
 let scrollInterval = null;
 const previewVisible = ref(false);
 const previewImage = ref('');
-const baseURL = process.env.VUE_APP_API_BASE_URL;
+//const baseURL = process.env.VUE_APP_API_BASE_URL;
 
 const handleImageClick = (imgUrl) => {
   previewImage.value = imgUrl;
@@ -121,17 +121,11 @@ const formatDate = (date) => {
 // 处理图片URL
 const getImageUrl = (imagePath) => {
   if (!imagePath) return '';
-  // 如果 imagePath 已经是完整URL则直接返回，否则拼接API服务器地址
   if (/^https?:\/\//.test(imagePath)) {
     return imagePath;
   }
-  // 修改为你的后端图片基础URL
-  // 保证不会出现 //images/xxx.jpg
-  if (imagePath.startsWith('/')) {
-    return `${baseURL}${imagePath}`;
-  } else {
-    return `${baseURL}${imagePath}`;
-  }
+  // 直接返回相对路径
+  return imagePath.startsWith('/') ? imagePath : '/' + imagePath;
 };
 </script>
 

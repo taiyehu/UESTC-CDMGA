@@ -107,16 +107,14 @@ export default {
     };
   },
   methods: {
-    getImageUrl(imagePath) {   // ✅ 放到 methods
+    getImageUrl(imagePath) {
+      console.log('原始图片路径:', imagePath);
       if (!imagePath) return '';
       if (/^https?:\/\//.test(imagePath)) {
         return imagePath;
       }
-      if (imagePath.startsWith('/')) {
-        return `${process.env.VUE_APP_API_BASE_URL}${imagePath}`;
-      } else {
-        return `${process.env.VUE_APP_API_BASE_URL}/${imagePath}`;
-      }
+      // 只返回相对路径，nginx会自动代理
+      return imagePath.startsWith('/') ? imagePath : '/' + imagePath;
     },
     handleImageClick(imgUrl) {
       this.previewImage = imgUrl;
