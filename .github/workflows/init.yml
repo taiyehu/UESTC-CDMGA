@@ -50,9 +50,9 @@ jobs:
             sudo chmod -R 750 /opt/webserver /var/webserver
 
             # 创建前端目录结构
-            sudo mkdir -p /var/webserver/ui /var/webserver/backup/ui
-            sudo chown -R www-data:www-data /var/webserver/ui /var/webserver/backup/ui
-            sudo chmod -R 755 /var/webserver/ui /var/webserver/backup/ui
+            sudo mkdir -p /var/www/CDMGA-ui /var/www/backup
+            sudo chown -R www-data:www-data /var/www/CDMGA-ui /var/www/backup
+            sudo chmod -R 755 /var/www/CDMGA-ui /var/www/backup
 
             echo "All dependencies and directories initialized successfully!"
 

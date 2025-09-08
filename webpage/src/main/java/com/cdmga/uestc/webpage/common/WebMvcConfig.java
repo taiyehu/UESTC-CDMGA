@@ -9,8 +9,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/images/**")
-                .addResourceLocations("file:/home/www/images/");
+                .addResourceLocations("file:/var/webserver/images/");
         registry.addResourceHandler("/scores/**")
-                .addResourceLocations("file:/home/www/scores/");
+                .addResourceLocations("file:/var/webserver/scores/");
     }
 }
