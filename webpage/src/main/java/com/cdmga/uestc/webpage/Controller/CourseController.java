@@ -89,11 +89,12 @@ public class CourseController {
             Files.copy(image.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
             // 假设你有一个基础 URL（例如：http://localhost:8081/images/），可以返回相对路径
-            String imageUrl = "/var/webserver/images/" + fileName;
+            String imageUrl = "/images/" + fileName;
 
             return Result.success(imageUrl);  // 返回图片的URL
         } catch (Exception e) {
-            return Result.error( e.getMessage()+ e.printStackTrace());
+            e.printStackTrace();
+            return Result.error( e.getMessage());
         }
     }
 
