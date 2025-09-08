@@ -93,7 +93,7 @@ public class CourseController {
 
             return Result.success(imageUrl);  // 返回图片的URL
         } catch (Exception e) {
-            return Result.error( e.getMessage()+ e.printStackTrace(););
+            return Result.error( e.getMessage()+ e.printStackTrace());
         }
     }
 
