@@ -140,6 +140,7 @@ export default {
   },
   methods: {
     getImageUrl(imagePath) {   // ✅ 放到 methods
+      console.log('原始图片路径:', imagePath);
       if (!imagePath) return '';
       if (/^https?:\/\//.test(imagePath)) {
         return imagePath;
