@@ -62,6 +62,8 @@ public class ScoreController {
             String fileName = UUID.randomUUID().toString() + "." + getFileExtension(image.getOriginalFilename());
             Path targetLocation = Paths.get(uploadDir, fileName);
 
+            System.out.println("图片上传目录：" + uploadDir);
+
             // 确保文件存储目录存在
             Files.createDirectories(targetLocation.getParent());
 
