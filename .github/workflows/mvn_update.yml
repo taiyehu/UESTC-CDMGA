@@ -1,4 +1,4 @@
-name: mvn-update 
+name: mvn-update
 on:
   push:
     branches:
@@ -45,57 +45,56 @@ jobs:
       run: echo "date=$(date +'%Y%m%d_%H%M%S')" >> $GITHUB_OUTPUT
 
     - name: Deploy JAR to server via SCP
-      uses: appleboy/scp-action@v0.1.3
+      uses: appleboy/scp-action@v1.0.0
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_SUDO }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: ${{ secrets.SSH_PORT || 22 }}  
+        port: ${{ secrets.SSH_PORT || 22 }}
         source: "webpage/target/*.jar"
-        target: "/var/www/upload/"  # 先上传到临时目录
-        strip_components: 2 
+        target: "/opt/webserver/upload/"
+        strip_components: 2
 
     - name: Deploy and restart service
-      uses: appleboy/ssh-action@v1.0.3
+      uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_SUDO }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: ${{ secrets.SSH_PORT || 22 }}  
+        port: ${{ secrets.SSH_PORT || 22 }}
         script: |
-            # 停止服务
-            sudo systemctl stop webserver.service
-            
-            # 备份旧版本（可选）
-            if [ -f "/var/www/app-jars/webpage-0.0.1-SNAPSHOT.jar" ]; then
-                sudo mv /var/www/app-jars/webpage-0.0.1-SNAPSHOT.jar "/var/www/app-jars-backup/webpage_${{ steps.backup-time.outputs.date }}.jar"
-            fi
-          
-            # 清理旧备份（保留最近7天）
-            find /var/www/app-jars-backup/ -name "webpage_*.jar" -mtime +7 -exec sudo rm -f {} \; || true
-            echo "已清理7天前的旧备份"
+          # 停止服务
+          sudo systemctl stop webserver.service
 
-            # 移动新版本到应用目录
-            sudo mv /var/www/upload/webpage-0.0.1-SNAPSHOT.jar /var/www/app-jars/
-            
-            # 设置正确的权限
-            sudo chown www-data:www-data /var/www/app-jars/webpage-0.0.1-SNAPSHOT.jar
-            sudo chmod 750 /var/www/app-jars/webpage-0.0.1-SNAPSHOT.jar
-            
-            # 启动服务
-            sudo systemctl start webserver.service
-            
-            # 等待并检查服务状态
-            sleep 5
-            sudo systemctl status webserver.service --no-pager
-            
-            # 检查应用是否健康
-            echo "等待应用启动..."
-            sudo sleep 30
-            if sudo lsof -t -i:8080 > /dev/null 2>&1; then
-                echo "应用启动成功!"
-            else
-                echo "警告: 应用可能未正常启动，请检查日志"
-                sudo journalctl -u webserver.service -n 50 --no-pager
-                exit 1
-            fi
+          # 备份旧版本
+          if [ -f "/opt/webserver/app/webpage-0.0.1-SNAPSHOT.jar" ]; then
+              sudo mv /opt/webserver/app/webpage-0.0.1-SNAPSHOT.jar "/opt/webserver/backup/webpage_${{ steps.backup-time.outputs.date }}.jar"
+          fi
+
+          # 清理7天前的备份
+          find /opt/webserver/backup/ -name "webpage_*.jar" -mtime +7 -exec sudo rm -f {} \; || true
+          echo "Old backups cleaned."
+
+          # 移动新版本
+          sudo mv /opt/webserver/upload/webpage-0.0.1-SNAPSHOT.jar /opt/webserver/app/
+
+          # 权限调整
+          sudo chown webserver:webserver /opt/webserver/app/webpage-0.0.1-SNAPSHOT.jar
+          sudo chmod 750 /opt/webserver/app/webpage-0.0.1-SNAPSHOT.jar
+
+          # 启动服务
+          sudo systemctl start webserver.service
+
+          # 检查服务
+          sleep 5
+          sudo systemctl status webserver.service --no-pager
+
+          echo "等待应用启动..."
+          sleep 30
+          if sudo lsof -t -i:8080 > /dev/null 2>&1; then
+              echo "应用启动成功!"
+          else
+              echo "警告: 应用可能未正常启动，请检查日志"
+              sudo journalctl -u webserver.service -n 50 --no-pager
+              exit 1
+          fi
