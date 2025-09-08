@@ -44,7 +44,7 @@ jobs:
 
             # 创建后端目录结构
             sudo mkdir -p /opt/webserver/app /opt/webserver/upload /opt/webserver/backup
-            sudo mkdir -p /var/webserver/images /var/webserver/courses /var/webserver/log
+            sudo mkdir -p /var/webserver/images /var/webserver/courses /var/webserver/log  /var/webserver//scores/
 
             sudo chown -R webserver:webserver /opt/webserver /var/webserver
             sudo chmod -R 750 /opt/webserver /var/webserver
