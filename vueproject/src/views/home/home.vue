@@ -53,7 +53,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted ,nextTick} from 'vue';
 import {fetchCourseData} from "@/api/course";
 
 // 定义响应式变量
@@ -80,6 +80,7 @@ onMounted(async () => {
     error.value = err.message;
   } finally {
     loading.value = false;
+    await nextTick();
     startAutoScroll();
   }
 
@@ -94,14 +95,23 @@ onUnmounted(() => {
 
 // 启动自动滚动
 const startAutoScroll = () => {
-  if (courseContainer.value) {
-    scrollInterval = setInterval(() => {
-      courseContainer.value.scrollTop += 1;
-      if (courseContainer.value.scrollTop >= courseContainer.value.scrollHeight - courseContainer.value.clientHeight) {
-        courseContainer.value.scrollTop = 0;
-      }
-    }, 20);
-  }
+  if (!courseContainer.value) return; // 判空
+  scrollInterval = setInterval(() => {
+    if (!courseContainer.value) return; // 判空
+    courseContainer.value.scrollTop += 1;
+    if (
+      courseContainer.value.scrollTop >=
+      courseContainer.value.scrollHeight - courseContainer.value.clientHeight
+    ) {
+      clearInterval(scrollInterval);
+      setTimeout(() => {
+        if (courseContainer.value) {
+          courseContainer.value.scrollTop = 0;
+          startAutoScroll();
+        }
+      }, 2000); // 停留2秒
+    }
+  }, 20);
 };
 
 // 停止自动滚动
