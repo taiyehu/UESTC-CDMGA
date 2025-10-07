@@ -181,7 +181,8 @@ export default {
           this.$message.success('用户资料删除成功');
           await this.fetchProfiles();
         } else {
-          this.$message.error('删除成功');
+          this.$message.success('删除成功');
+          this.dialogVisible = false;
         }
       } catch (error) {
         this.$message.error('删除失败');
@@ -199,7 +200,9 @@ export default {
           this.dialogVisible = false;
           await this.fetchProfiles();
         } else {
-          this.$message.error('操作成功');
+          this.$message.success('操作成功');
+          this.dialogVisible = false;
+          await this.fetchProfiles();
         }
       } catch (error) {
         this.$message.error('操作失败');
