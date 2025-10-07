@@ -32,7 +32,7 @@ ProtectHome=read-only
 PrivateTmp=yes
 
 # 允许写入的目录
-ReadWritePaths=/var/webserver/log /var/webserver/images /var/webserver/courses /opt/webserver /opt/webserver/backup /var/webserver/scores
+ReadWritePaths=/var/webserver/log /var/webserver/images /var/webserver/courses /opt/webserver /opt/webserver/backup /var/webserver/scores /var/webserver/avatars
 
 # 日志输出
 StandardOutput=journal
