@@ -2,13 +2,20 @@ package com.cdmga.uestc.webpage.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.cdmga.uestc.webpage.Dto.UserScoreDto;
+import com.cdmga.uestc.webpage.Entity.Profile;
 import com.cdmga.uestc.webpage.Entity.Score;
 import com.cdmga.uestc.webpage.Repository.ScoreRepository;
 import com.cdmga.uestc.webpage.Repository.CourseRepository;
 import com.cdmga.uestc.webpage.Repository.IdentityRepository;
+import com.cdmga.uestc.webpage.Repository.ProfileRepository;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ScoreService {
@@ -21,6 +28,9 @@ public class ScoreService {
 
     @Autowired
     private IdentityRepository identityRepository;
+
+    @Autowired
+    private ProfileRepository profileRepository;
 
     public List<Score> getScoreByCourse(int courseId){
         return scoreRepository.findByCourse_Id(courseId);
@@ -62,6 +72,7 @@ public class ScoreService {
             score.setScore(point);
             score.setRemark(remark);
             score.setUpdatedAt(LocalDateTime.now()); // 更新时间
+            score.setIsScored(is_scored);
             return scoreRepository.save(score); // 保存更新后的Score
         }
         return null; // 如果没有找到Score，返回null
@@ -99,5 +110,37 @@ public class ScoreService {
     public Score getScoreByIdentityIdAndCourseId(Long identityId, Long courseId) {
         return scoreRepository.findByIdentityIdAndCourseId(identityId, courseId);
 
+    }
+
+    public List<UserScoreDto> calculateTotalScoreForAllUsers() {
+        List<Score> scores = scoreRepository.findByIsScoredTrueAndIsDeletedFalse();
+        Map<Integer, Float> userScoreMap = new HashMap<>();
+        Map<Integer, String> userAvatarMap = new HashMap<>();
+        Map<Integer, String> userAccountMap = new HashMap<>();
+
+        for (Score score : scores) {
+            Integer identityId = score.getIdentity().getId();
+            float point = score.getScore();
+            userScoreMap.put(identityId, userScoreMap.getOrDefault(identityId, 0f) + point);
+
+            // 只要有一次就记录
+            if (!userAvatarMap.containsKey(identityId)) {
+                // 通过 profileRepository 查询 status=1 的有效头像
+                Profile profile = profileRepository.findPassedProfileByIdentityId(identityId);
+                userAvatarMap.put(identityId, profile != null ? profile.getAvatar() : null);
+            }
+            if (!userAccountMap.containsKey(identityId)) {
+                userAccountMap.put(identityId, score.getIdentity().getAccount());
+            }
+        }
+        List<UserScoreDto> result = new ArrayList<>();
+        for (Map.Entry<Integer, Float> entry : userScoreMap.entrySet()) {
+            Integer identityId = entry.getKey();
+            Float totalScore = entry.getValue();
+            String avatar = userAvatarMap.get(identityId);
+            String account = userAccountMap.get(identityId);
+            result.add(new UserScoreDto(identityId, totalScore, avatar, account));
+        }
+        return result;
     }
 }

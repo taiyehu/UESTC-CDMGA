@@ -47,95 +47,146 @@
     <el-dialog :visible.sync="previewVisible" width="auto" :show-close="true" center>
       <img :src="previewImage" alt="预览图片" style="max-width:90vw;max-height:80vh;display:block;margin:auto;" />
     </el-dialog>
+    <!-- 用户总分排行榜 -->
+    <div style="margin-top:40px;">
+      <h2 style="text-align:center;margin-bottom:20px;">用户总分排行榜</h2>
+      <el-table
+        :data="pagedRankData"
+        style="width: 500px; margin: 0 auto;"
+        border
+        :default-sort="{prop: 'totalScore', order: 'descending'}"
+      >
+        <el-table-column label="排名" width="80" align="center">
+          <template #default="scope">
+            {{ (rankCurrentPage - 1) * rankPageSize + scope.$index + 1 }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="account" label="用户名" width="200" align="center" />
+        <el-table-column prop="totalScore" label="总分" width="120" align="center" />
+      </el-table>
+      <div style="text-align:center;margin-top:20px;">
+        <el-pagination
+          background
+          layout="prev, pager, next"
+          :total="rankSortedData.length"
+          :page-size="rankPageSize"
+          :current-page="rankCurrentPage"
+          @current-change="handleRankPageChange"
+        />
+      </div>
+    </div>
   </div>
-
-
 </template>
 
-<script setup>
-import { ref, onMounted, onUnmounted ,nextTick} from 'vue';
-import {fetchCourseData} from "@/api/course";
+<script>
+import axios from 'axios';
+import { fetchCourseData } from "@/api/course";
 
-// 定义响应式变量
-const courses = ref([]);
-const loading = ref(true);
-const error = ref(null);
-const courseContainer = ref(null);
-let scrollInterval = null;
-const previewVisible = ref(false);
-const previewImage = ref('');
-//const baseURL = process.env.VUE_APP_API_BASE_URL;
-
-const handleImageClick = (imgUrl) => {
-  previewImage.value = imgUrl;
-  previewVisible.value = true;
-};
-// 获取课程数据
-onMounted(async () => {
-
-  try {
-    const response = await fetchCourseData();
-    courses.value = response.data;
-  } catch (err) {
-    error.value = err.message;
-  } finally {
-    loading.value = false;
-    await nextTick();
-    startAutoScroll();
-  }
-
-});
-
-// 组件卸载时清除定时器
-onUnmounted(() => {
-  if (scrollInterval) {
-    clearInterval(scrollInterval);
-  }
-});
-
-// 启动自动滚动
-const startAutoScroll = () => {
-  if (!courseContainer.value) return; // 判空
-  scrollInterval = setInterval(() => {
-    if (!courseContainer.value) return; // 判空
-    courseContainer.value.scrollTop += 1;
-    if (
-      courseContainer.value.scrollTop >=
-      courseContainer.value.scrollHeight - courseContainer.value.clientHeight
-    ) {
-      clearInterval(scrollInterval);
-      setTimeout(() => {
-        if (courseContainer.value) {
-          courseContainer.value.scrollTop = 0;
-          startAutoScroll();
-        }
-      }, 2000); // 停留2秒
+export default {
+  data() {
+    return {
+      courses: [],
+      loading: true,
+      error: null,
+      previewVisible: false,
+      previewImage: '',
+      rankAllData: [],
+      rankSortedData: [],
+      pagedRankData: [],
+      rankPageSize: 10,
+      rankCurrentPage: 1,
+      scrollInterval: null,
+    };
+  },
+  mounted() {
+    this.fetchCourses();
+    this.fetchRankData();
+  },
+  watch: {
+    rankCurrentPage() {
+      this.setPagedRankData();
     }
-  }, 20);
-};
-
-// 停止自动滚动
-const stopAutoScroll = () => {
-  if (scrollInterval) {
-    clearInterval(scrollInterval);
+  },
+  methods: {
+    async fetchCourses() {
+      try {
+        const response = await fetchCourseData();
+        this.courses = response.data;
+      } catch (err) {
+        this.error = err.message;
+      } finally {
+        this.loading = false;
+        this.$nextTick(() => {
+          this.startAutoScroll();
+        });
+      }
+    },
+    async fetchRankData() {
+      try {
+        const res = await axios.get('/api/score/user-total-scores');
+        let data = res.data.data || [];
+        data.sort((a, b) => b.totalScore - a.totalScore);
+        this.rankAllData = data;
+        this.rankSortedData = data;
+        this.setPagedRankData();
+      } catch (e) {
+        this.$message ? this.$message.error('获取排行榜失败') : alert('获取排行榜失败');
+      }
+    },
+    setPagedRankData() {
+      const start = (this.rankCurrentPage - 1) * this.rankPageSize;
+      this.pagedRankData = this.rankSortedData.slice(start, start + this.rankPageSize);
+    },
+    handleRankPageChange(page) {
+      this.rankCurrentPage = page;
+      this.setPagedRankData();
+    },
+    handleImageClick(imgUrl) {
+      this.previewImage = imgUrl;
+      this.previewVisible = true;
+    },
+    startAutoScroll() {
+      if (!this.$refs.courseContainer) return;
+      this.scrollInterval = setInterval(() => {
+        if (!this.$refs.courseContainer) return;
+        this.$refs.courseContainer.scrollTop += 1;
+        if (
+          this.$refs.courseContainer.scrollTop >=
+          this.$refs.courseContainer.scrollHeight - this.$refs.courseContainer.clientHeight
+        ) {
+          clearInterval(this.scrollInterval);
+          setTimeout(() => {
+            if (this.$refs.courseContainer) {
+              this.$refs.courseContainer.scrollTop = 0;
+              this.startAutoScroll();
+            }
+          }, 2000);
+        }
+      }, 20);
+    },
+    stopAutoScroll() {
+      if (this.scrollInterval) {
+        clearInterval(this.scrollInterval);
+      }
+    },
+    formatDate(date) {
+      const d = new Date(date);
+      const options = { year: 'numeric', month: 'long', day: 'numeric' };
+      return d.toLocaleDateString('zh-CN', options);
+    },
+    getImageUrl(imagePath) {
+      if (!imagePath) return '';
+      if (/^https?:\/\//.test(imagePath)) {
+        return imagePath;
+      }
+      return imagePath.startsWith('/') ? imagePath : '/' + imagePath;
+    }
+  },
+  beforeDestroy() {
+    if (this.scrollInterval) {
+      clearInterval(this.scrollInterval);
+    }
   }
-};
-
-// 格式化日期
-const formatDate = (date) => {
-  const d = new Date(date);
-  const options = { year: 'numeric', month: 'long', day: 'numeric' };
-  return d.toLocaleDateString('zh-CN', options);
-};
-
-// 处理图片URL
-const getImageUrl = (imagePath) => {
-  if (!imagePath) return '';
-  if (/^https?:\/\//.test(imagePath)) {
-    return imagePath;
-  }
-  // 直接返回相对路径
-  return imagePath.startsWith('/') ? imagePath : '/' + imagePath;
 };
 </script>
 

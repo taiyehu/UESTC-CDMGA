@@ -30,6 +30,9 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     // 查询所有 isScored = false 且 isDeleted = false 的成绩
     List<Score> findByIsScoredFalseAndIsDeletedFalse();
 
+    // 根据identity_id 查找所有 isScored = true 且 isDeleted = false 的成绩
+    List<Score> findByIsScoredTrueAndIsDeletedFalse();
+
     boolean existsByIdentityIdAndCourseId(int identityId, int courseId);
 
     Score findByIdentityIdAndCourseId(Long identityId, Long courseId);

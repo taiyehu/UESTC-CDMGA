@@ -17,4 +17,7 @@ public interface ProfileRepository extends JpaRepository<Profile, Integer> {
     List<Profile> findPassedProfiles();
 
     List<Profile> findByIdentity_IdAndStatus(Integer identityId, Integer status);
+
+    @Query("SELECT p FROM Profile p WHERE p.identity.id = :identityId AND p.status = 1")
+    Profile findPassedProfileByIdentityId(Integer identityId);
 }

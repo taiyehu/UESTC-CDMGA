@@ -16,8 +16,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.cdmga.uestc.webpage.Common.Result;
 import com.cdmga.uestc.webpage.Common.ScoreRequest;
+import com.cdmga.uestc.webpage.Dto.UserScoreDto;
 import com.cdmga.uestc.webpage.Entity.Score;
-import com.cdmga.uestc.webpage.Repository.ScoreRepository;
 import com.cdmga.uestc.webpage.Service.ScoreService;
 
 
@@ -131,6 +131,7 @@ public class ScoreController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(e.getMessage()));
         }
     }
+    
     @GetMapping("/exists")
         public ResponseEntity<?> checkScoreExists(
                 @RequestParam("identityId") int identityId,
@@ -149,5 +150,15 @@ public class ScoreController {
     public Result deleteScore(@PathVariable Long id) {
         scoreService.deleteScore(id);
         return Result.success("删除成功");
+    }
+
+    @GetMapping("/user-total-scores")
+    public Result getUserTotalScores() {
+        try {
+            List<UserScoreDto> userScores = scoreService.calculateTotalScoreForAllUsers();
+            return Result.success(userScores);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
     }
 }
