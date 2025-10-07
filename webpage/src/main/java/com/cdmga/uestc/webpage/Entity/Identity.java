@@ -58,7 +58,7 @@ public class Identity {
 
     // ========== Getter 和 Setter ==========
 
-    public long getId(){
+    public Integer getId(){
         return id;
     }
     public void setId(Integer id){

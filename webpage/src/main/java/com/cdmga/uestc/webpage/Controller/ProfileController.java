@@ -1,0 +1,100 @@
+package com.cdmga.uestc.webpage.Controller;
+
+import com.cdmga.uestc.webpage.Common.Result;
+import com.cdmga.uestc.webpage.Entity.Profile;
+import com.cdmga.uestc.webpage.Service.ProfileService;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Map;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+@RestController
+@RequestMapping("/api/profile")
+public class ProfileController {
+    @Autowired
+    private ProfileService profileService;
+
+    @Value("${avatar.upload.directory}")
+    private String uploadDir;
+
+    @GetMapping("/{id}")
+    public Profile getProfile(@PathVariable Integer id) {
+        return profileService.getProfileById(id);
+    }
+
+    @GetMapping("/identity/{identityId}")
+    public Profile getProfileByIdentity(@PathVariable Integer identityId) {
+        return profileService.getProfileByIdentityId(identityId);
+    }
+
+    @PostMapping("/")
+    public Profile createProfile(@RequestBody Profile profile) {
+        return profileService.saveProfile(profile);
+    }
+
+    @PutMapping("/{id}")
+    public Profile updateProfile(@PathVariable Integer id, @RequestBody Profile profile) {
+        // 不要 profile.setId(id); // 只在创建时设置主键
+        // 应该只更新 identityId、avatar、description、status 等
+        Profile dbProfile = profileService.getProfileByIdentityId(profile.getIdentityId());
+        if (dbProfile == null) {
+            dbProfile = new Profile();
+            dbProfile.setIdentityId(profile.getIdentityId());
+        }
+        dbProfile.setAvatar(profile.getAvatar());
+        dbProfile.setDescription(profile.getDescription());
+        dbProfile.setStatus(profile.getStatus());
+        return profileService.saveProfile(dbProfile);
+    }
+
+    @DeleteMapping("/{id}")
+    public void deleteProfile(@PathVariable Integer id) {
+        profileService.deleteProfile(id);
+    }
+
+    // 获取文件扩展名
+    private String getFileExtension(String fileName) {
+        int index = fileName.lastIndexOf('.');
+        if (index == -1) {
+            return ""; // 没有扩展名
+        }
+        return fileName.substring(index + 1);
+    }
+
+    @PostMapping("/upload-avatar")
+    public Result uploadAvatar(@RequestParam("avatar") MultipartFile avatar) {
+        try {
+            String fileName = UUID.randomUUID().toString() + "." + getFileExtension(avatar.getOriginalFilename());
+            Path targetLocation = Paths.get(uploadDir, fileName);
+            Files.createDirectories(targetLocation.getParent());
+            Files.copy(avatar.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+            String avatarUrl = "/avatars/" + fileName;
+            return Result.success(avatarUrl);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @PostMapping("/submit-avatar-review")
+    public Result submitAvatarReview(@RequestBody Map<String, Object> payload) {
+        Integer userId = (Integer) payload.get("userId");
+        String avatarUrl = (String) payload.get("avatar");
+        Profile profile = profileService.getProfileByIdentityId(userId);
+        if (profile == null) {
+            profile = new Profile();
+            profile.setIdentityId(userId);
+        }
+        profile.setAvatar(avatarUrl);
+        profile.setStatus(0); // 0=审核中
+        profileService.saveProfile(profile);
+        return Result.success("已提交审核");
+    }
+}

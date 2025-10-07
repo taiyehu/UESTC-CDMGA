@@ -5,16 +5,37 @@
         <div class="avatar-select-group">
           <el-avatar
             :size="64"
-            :icon="avatarIcon"
+            :src="profileStatus === 1 ? getImageUrl(profile.avatar) : defaultAvatar"
             style="background: #409EFF; color: #fff; cursor: pointer;"
-            @click.native="onAvatarClick"
+            @click="openEditDialog"
           />
+          <div class="avatar-upload-text">点击头像修改</div>
         </div>
         <div class="profile-info">
           <h2>欢迎，{{ user.account }}！</h2>
           <p v-if="user.role">角色：<span class="role">{{ user.role }}</span></p>
         </div>
       </div>
+      <div class="profile-signature">
+        <el-input
+          v-model="profile.description"
+          maxlength="50"
+          show-word-limit
+          placeholder="输入你的个性签名（50字以内）"
+          :disabled="true"
+        />
+      </div>
+      <div class="profile-status">
+        <el-tag v-if="profileStatus === 0" type="warning">审核中</el-tag>
+        <el-tag v-else-if="profileStatus === 1" type="success">已通过</el-tag>
+        <el-tag v-else type="info">未提交</el-tag>
+      </div>
+      <div v-if="profileStatus !== 1" style="color:#f56c6c;margin-bottom:10px;">
+        资料审核通过后才会显示头像和签名
+      </div>
+      <el-button type="primary" @click="openEditDialog" style="margin-bottom: 16px;">
+        修改个人资料
+      </el-button>
       <div class="profile-actions">
         <el-button type="primary" @click="logout" class="profile-btn">登出</el-button>
         <router-link to="/score">
@@ -46,26 +67,43 @@
         <el-button @click="redirectToLogin" type="primary" size="large">重新登录</el-button>
       </div>
     </el-card>
-      <el-dialog title="选择头像" :visible.sync="avatarDialogVisible" width="320px">
-      <div class="avatar-options">
-        <div
-          v-for="item in avatarOptions"
-          :key="item.value"
-          style="display: inline-block;"
-          @click="selectAvatar(item.value)"
+    <el-dialog title="修改个人资料" :visible.sync="editDialogVisible" width="400px">
+      <div class="edit-profile-dialog">
+        <el-upload
+          class="avatar-uploader"
+          action="/api/profile/upload-avatar"
+          name="avatar"
+          :show-file-list="false"
+          :on-success="handleDialogAvatarUploadSuccess"
+          :before-upload="beforeAvatarUpload"
+          :data="{identityId: user.id}"
         >
           <el-avatar
-            :icon="item.value"
-            :size="48"
-            style="margin: 8px; background: #409EFF; color: #fff; cursor: pointer;"
+            :size="64"
+            :src="getImageUrl(editProfile.avatar)"
+            style="background: #409EFF; color: #fff; cursor: pointer;"
           />
-        </div>
+          <div class="avatar-upload-text">点击头像上传</div>
+        </el-upload>
+        <el-input
+          v-model="editProfile.description"
+          maxlength="50"
+          show-word-limit
+          placeholder="输入你的个性签名（50字以内）"
+          style="margin-top: 16px;"
+        />
       </div>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="editDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitEditProfile">提交审核</el-button>
+      </span>
     </el-dialog>
   </div>
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   data() {
     return {
@@ -74,19 +112,35 @@ export default {
         id: null,
         role: "",
       },
-      loading: true,
-      avatarIcon: 'el-icon-user-solid', // 默认头像
-      avatarDialogVisible: false,
-      avatarOptions: [
-        { label: '默认', value: 'el-icon-user-solid' },
-        { label: '男孩', value: 'el-icon-user' },
-        { label: '女孩', value: 'el-icon-user-filled' },
-        { label: '星星', value: 'el-icon-star-on' },
-        { label: '消息', value: 'el-icon-message' }
-      ]
+      profile: {
+        avatar: "",
+        description: "",
+        status: -1,
+      },
+      profileStatus: -1, // 0审核中 1通过 -1未提交
+      defaultAvatar: require('@/assets/default-avatar.png'),
+      editDialogVisible: false,
+      editProfile: {
+        avatar: "",
+        description: ""
+      }
     };
   },
   methods: {
+    getImageUrl(imagePath) {
+      if (!imagePath) return this.defaultAvatar;
+      if (/^https?:\/\//.test(imagePath)) {
+        return imagePath;
+      }
+      // 直接返回相对路径
+      return imagePath.startsWith('/') ? imagePath : '/' + imagePath;
+    },
+    openEditDialog() {
+      // 打开弹窗时同步当前资料
+      this.editProfile.avatar = this.profile.avatar;
+      this.editProfile.description = this.profile.description;
+      this.editDialogVisible = true;
+    },
     logout() {
       sessionStorage.removeItem('userInfo');
       this.$router.push('/login');
@@ -94,121 +148,91 @@ export default {
     redirectToLogin() {
       this.$router.push('/login');
     },
-    selectAvatar(icon) {
-      this.avatarIcon = icon;
-      this.avatarDialogVisible = false;
+    fetchProfile() {
+      if (!this.user.id) return;
+      axios.get(`/api/profile/identity/${this.user.id}`).then(res => {
+        if (res.data && res.data.avatar !== undefined) {
+          this.profile = res.data;
+          this.profileStatus = res.data.status;
+        }
+      });
     },
-    onAvatarClick() {
-      this.avatarDialogVisible = true;
-      console.log('click');
+    handleDialogAvatarUploadSuccess(response) {
+      if (response.code === 0) {
+        this.editProfile.avatar = response.data;
+        this.$message.success('头像上传成功');
+      } else {
+        this.$message.error('头像上传失败');
+      }
+    },
+    beforeAvatarUpload(file) {
+      const isJPG = file.type === 'image/jpeg' || file.type === 'image/png';
+      const isLt2M = file.size / 1024 / 1024 < 2;
+      if (!isJPG) {
+        this.$message.error('只能上传 JPG/PNG 格式图片!');
+      }
+      if (!isLt2M) {
+        this.$message.error('图片大小不能超过 2MB!');
+      }
+      return isJPG && isLt2M;
+    },
+    submitEditProfile() {
+      if (!this.editProfile.description || this.editProfile.description.length > 50) {
+        this.$message.error('签名不能为空且不能超过50字');
+        return;
+      }
+      // 提交头像和签名审核
+      axios.put(`/api/profile/${this.user.id}`, {
+        avatar: this.editProfile.avatar,
+        description: this.editProfile.description,
+        status: 0,
+        identityId: this.user.id
+      }).then(() => {
+        this.$message.success('资料已提交审核，请等待管理员处理');
+        this.editDialogVisible = false;
+        this.fetchProfile();
+      });
+    },
+    fetchProfile() {
+      if (!this.user.id) return;
+      axios.get(`/api/profile/identity/${this.user.id}`).then(res => {
+        console.log('接口返回:', res.data);
+        if (res.data && res.data.avatar !== undefined) {
+          this.profile = res.data;
+          this.profileStatus = res.data.status;
+        }
+      });
     }
   },
   mounted() {
     const userInfo = sessionStorage.getItem('userInfo');
     if (userInfo) {
       this.user = JSON.parse(userInfo);
-    } else {
-      this.user = {
-        account: "",
-        id: null,
-        role: "",
-      };
+      this.fetchProfile();
     }
-    this.loading = false;
-  },
+  }
 };
 </script>
 
 <style scoped>
-.avatar-options {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-}
-
-.avatar-select-group .el-avatar {
-  z-index: 10;
-}
-
-.profile-container {
+.avatar-uploader {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: 80vh;
-  background: #f5f7fa;
 }
-.box-card {
-  width: 420px;
-  padding: 32px 24px;
-  border-radius: 12px;
-  box-shadow: 0 4px 24px rgba(64,158,255,0.08);
-  margin-bottom: 24px;
+.avatar-upload-text {
+  font-size: 12px;
+  color: #888;
+  margin-top: 4px;
 }
-.admin-card {
-  width: 420px;
-  padding: 24px 24px;
-  border-radius: 12px;
-  box-shadow: 0 4px 24px rgba(255,193,7,0.08);
-  margin-bottom: 24px;
-}
-.profile-header {
-  display: flex;
-  align-items: center;
-  justify-content: center; /* 水平居中 */
-  margin-bottom: 18px;
-}
-.profile-info {
+.profile-signature {
+  margin: 18px 0 8px 0;
   display: flex;
   flex-direction: column;
-  align-items: center; /* 垂直居中 */
-  margin-left: 18px;
+  align-items: center;
 }
-.role {
-  color: #409EFF;
-  font-weight: bold;
-}
-.profile-actions, .admin-actions {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 18px;
-  gap: 12px;
-}
-.profile-btn {
-  width: 120px;
-  height: 40px;
-  font-size: 16px;
-}
-.el-divider {
-  margin: 24px 0 12px 0;
-}
-h2 {
-  font-size: 24px;
-  color: #333;
-  margin-bottom: 8px;
-}
-.btnGroup {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
-}
-
-.box-card h2,
-.admin-card h2 {
-  margin-bottom: 40px;
-}
-
-.profile-actions,
-.admin-actions {
-  margin-top: 0;
-  gap: 12px;
+.profile-status {
   margin-bottom: 12px;
-}
-
-.avatar-select-group {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-right: 18px;
+  text-align: center;
 }
 </style>

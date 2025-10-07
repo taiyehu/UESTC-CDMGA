@@ -12,5 +12,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .addResourceLocations("file:/var/webserver/images/");
         registry.addResourceHandler("/scores/**")
                 .addResourceLocations("file:/var/webserver/scores/");
+        registry.addResourceHandler("/avatars/**")
+                .addResourceLocations("file:/var/webserver/avatars/");
     }
 }
