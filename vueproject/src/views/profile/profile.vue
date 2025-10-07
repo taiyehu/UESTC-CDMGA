@@ -163,14 +163,6 @@ export default {
         }
       });
     },
-    handleDialogAvatarUploadSuccess(response) {
-      if (response.code === 0) {
-        this.editProfile.avatar = response.data;
-        this.$message.success('头像上传成功');
-      } else {
-        this.$message.error('头像上传失败');
-      }
-    },
     beforeAvatarUpload(file) {
       const isJPG = file.type === 'image/jpeg' || file.type === 'image/png';
       const isLt2M = file.size / 1024 / 1024 < 2;
