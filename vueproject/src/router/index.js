@@ -12,6 +12,7 @@ import adminUsers from '@/views/admin/admin-users.vue'
 import adminCourses from '@/views/admin/admin-courses.vue'
 import score from '@/views/score/score.vue'
 import review from '@/views/review/review.vue'
+import adminProfiles from '@/views/admin/admin-profiles.vue'
 // 使用VueRouter插件
 Vue.use(VueRouter)
 
@@ -54,6 +55,10 @@ const router = new VueRouter({
         {
             path: '/score',
             component: score
+        },
+        {
+            path: '/admin-profiles',
+            component: adminProfiles
         }
     ]
 })

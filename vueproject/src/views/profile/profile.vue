@@ -3,64 +3,69 @@
     <el-card class="box-card" shadow="hover" v-if="user.id !== null">
       <div class="profile-header">
         <div class="avatar-select-group">
-          <el-avatar
-            :size="64"
-            :src="profileStatus === 1 ? getImageUrl(profile.avatar) : defaultAvatar"
-            style="background: #409EFF; color: #fff; cursor: pointer;"
-            @click="openEditDialog"
-          />
-          <div class="avatar-upload-text">点击头像修改</div>
+          <el-tooltip content="点击头像修改" placement="bottom">
+            <div style="display:inline-block;cursor:pointer;" @click="openEditDialog">
+              <el-avatar
+                :size="128"
+                :src="profileStatus === 1 ? getImageUrl(profile.avatar) : defaultAvatar"
+                style="background: #409EFF; color: #fff;"
+              />
+            </div>
+          </el-tooltip>
         </div>
-        <div class="profile-info">
-          <h2>欢迎，{{ user.account }}！</h2>
-          <p v-if="user.role">角色：<span class="role">{{ user.role }}</span></p>
+        <div class="profile-right">
+          <div class="profile-info">
+            <h2>{{ user.account }}</h2>
+          </div>
+          <el-tooltip
+            :content="getStatusText()"
+            placement="bottom"
+            effect="dark"
+          >
+            <div class="profile-signature">
+              <el-input
+                v-model="profile.description"
+                maxlength="50"
+                show-word-limit
+                placeholder="输入你的个性签名（50字以内）"
+                :disabled="true"
+              />
+            </div>
+          </el-tooltip>
+          <div v-if="profileStatus !== 1" style="color:#f56c6c;margin-bottom:10px;">
+            资料审核通过后才会显示头像和签名
+          </div>
         </div>
-      </div>
-      <div class="profile-signature">
-        <el-input
-          v-model="profile.description"
-          maxlength="50"
-          show-word-limit
-          placeholder="输入你的个性签名（50字以内）"
-          :disabled="true"
-        />
-      </div>
-      <div class="profile-status">
-        <el-tag v-if="profileStatus === 0" type="warning">审核中</el-tag>
-        <el-tag v-else-if="profileStatus === 1" type="success">已通过</el-tag>
-        <el-tag v-else type="info">未提交</el-tag>
-      </div>
-      <div v-if="profileStatus !== 1" style="color:#f56c6c;margin-bottom:10px;">
-        资料审核通过后才会显示头像和签名
-      </div>
-      <el-button type="primary" @click="openEditDialog" style="margin-bottom: 16px;">
-        修改个人资料
-      </el-button>
-      <div class="profile-actions">
-        <el-button type="primary" @click="logout" class="profile-btn">登出</el-button>
-        <router-link to="/score">
-          <el-button type="success" class="profile-btn">成绩提交</el-button>
-        </router-link>
-        <router-link to="/home">
-          <el-button type="info" class="profile-btn">返回主页</el-button>
-        </router-link>
+        <el-card class="admin-card" shadow="hover" v-if="user.role === 'admin'">
+          <h2>管理员功能</h2>
+          <div class="admin-actions">
+            <router-link to="/admin-users">
+              <el-button type="warning" class="profile-btn">用户管理</el-button>
+            </router-link>
+            <router-link to="/admin-courses">
+              <el-button type="warning" class="profile-btn">课题管理</el-button>
+            </router-link>
+            <router-link to="/review">
+              <el-button type="warning" class="profile-btn">成绩管理</el-button>
+            </router-link>
+            <router-link to="/admin-profiles">
+              <el-button type="warning" class="profile-btn">资料审核</el-button>
+            </router-link>
+          </div>
+        </el-card>
       </div>
       <el-divider></el-divider>
+    <div class="profile-actions">
+      <el-button type="primary" @click="logout" class="profile-btn">登出</el-button>
+      <router-link to="/score">
+        <el-button type="success" class="profile-btn">成绩提交</el-button>
+      </router-link>
+      <router-link to="/home">
+        <el-button type="info" class="profile-btn">返回主页</el-button>
+      </router-link>
+    </div>
     </el-card>
-    <el-card class="admin-card" shadow="hover" v-if="user.role === 'admin'">
-      <h2>管理员功能</h2>
-      <div class="admin-actions">
-        <router-link to="/admin-users">
-          <el-button type="warning" class="profile-btn">用户管理</el-button>
-        </router-link>
-        <router-link to="/admin-courses">
-          <el-button type="warning" class="profile-btn">课题管理</el-button>
-        </router-link>
-        <router-link to="/review">
-          <el-button type="warning" class="profile-btn">成绩管理</el-button>
-        </router-link>
-      </div>
-    </el-card>
+    
     <el-card class="box-card" shadow="hover" v-else>
       <h2>加载用户信息失败</h2>
       <div class="btnGroup">
@@ -104,6 +109,7 @@
 </template>
 
 <script>
+import router from '@/router';
 import axios from 'axios';
 
 export default {
@@ -130,6 +136,11 @@ export default {
     };
   },
   methods: {
+    getStatusText() {
+      if (this.profileStatus === 0) return '审核中';
+      if (this.profileStatus === 1) return '已通过';
+      return '未提交';
+    },
     getImageUrl(imagePath) {
       if (!imagePath) return this.defaultAvatar;
       if (/^https?:\/\//.test(imagePath)) {
@@ -231,19 +242,37 @@ export default {
   flex-direction: column;
   align-items: center;
 }
-.avatar-upload-text {
-  font-size: 12px;
-  color: #888;
-  margin-top: 4px;
+.profile-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
 }
-.profile-signature {
-  margin: 18px 0 8px 0;
+.avatar-select-group {
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin-right: 32px;
 }
-.profile-status {
-  margin-bottom: 12px;
-  text-align: center;
+.profile-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center; /* 新增：让子元素居中 */
+  margin-top: 16px;
+}
+.profile-info {
+  margin-bottom: 16px;
+}
+.profile-signature {
+  width: 100px;
+  max-width: 100%;
+  margin-bottom: 16px;
+}
+.admin-actions .profile-btn {
+  margin-right: 16px;
+}
+.profile-actions .profile-btn {
+  margin-right: 16px;
 }
 </style>

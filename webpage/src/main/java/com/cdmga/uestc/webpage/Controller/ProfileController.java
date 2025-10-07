@@ -1,6 +1,7 @@
 package com.cdmga.uestc.webpage.Controller;
 
 import com.cdmga.uestc.webpage.Common.Result;
+import com.cdmga.uestc.webpage.Dto.ProfileDto;
 import com.cdmga.uestc.webpage.Entity.Profile;
 import com.cdmga.uestc.webpage.Service.ProfileService;
 
@@ -8,6 +9,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -30,6 +33,42 @@ public class ProfileController {
         return profileService.getProfileById(id);
     }
 
+    @GetMapping("/all")
+    public List<ProfileDto> getAllProfiles() {
+        List<Profile> profiles = profileService.getAllNotPassedProfiles();
+        List<ProfileDto> dtos = new ArrayList<>();
+        for (Profile p : profiles) {
+            ProfileDto dto = new ProfileDto();
+            dto.setId(p.getId());
+            dto.setIdentityId(p.getIdentity() != null ? p.getIdentity().getId() : null);
+            dto.setAccount(p.getIdentity() != null ? p.getIdentity().getAccount() : null);
+            dto.setAvatar(p.getAvatar());
+            dto.setDescription(p.getDescription());
+            dto.setTitle(p.getTitle());
+            dto.setStatus(p.getStatus());
+            dtos.add(dto);
+        }
+        return dtos;
+    }
+
+    @GetMapping("/all-passed")
+    public List<ProfileDto> getAllPassedProfiles() {
+        List<Profile> profiles = profileService.getAllPassedProfiles();
+        List<ProfileDto> dtos = new ArrayList<>();
+        for (Profile p : profiles) {
+            ProfileDto dto = new ProfileDto();
+            dto.setId(p.getId());
+            dto.setIdentityId(p.getIdentity() != null ? p.getIdentity().getId() : null);
+            dto.setAccount(p.getIdentity() != null ? p.getIdentity().getAccount() : null);
+            dto.setAvatar(p.getAvatar());
+            dto.setDescription(p.getDescription());
+            dto.setTitle(p.getTitle());
+            dto.setStatus(p.getStatus());
+            dtos.add(dto);
+        }
+        return dtos;
+    }
+
     @GetMapping("/identity/{identityId}")
     public Profile getProfileByIdentity(@PathVariable Integer identityId) {
         return profileService.getProfileByIdentityId(identityId);
@@ -42,8 +81,6 @@ public class ProfileController {
 
     @PutMapping("/{id}")
     public Profile updateProfile(@PathVariable Integer id, @RequestBody Profile profile) {
-        // 不要 profile.setId(id); // 只在创建时设置主键
-        // 应该只更新 identityId、avatar、description、status 等
         Profile dbProfile = profileService.getProfileByIdentityId(profile.getIdentityId());
         if (dbProfile == null) {
             dbProfile = new Profile();
@@ -52,6 +89,12 @@ public class ProfileController {
         dbProfile.setAvatar(profile.getAvatar());
         dbProfile.setDescription(profile.getDescription());
         dbProfile.setStatus(profile.getStatus());
+
+        // 如果本次是审核通过（status==1），先将旧的status=1设为2
+        if (profile.getStatus() != null && profile.getStatus() == 1) {
+            profileService.setOldProfilesToHistory(profile.getIdentityId());
+        }
+
         return profileService.saveProfile(dbProfile);
     }
 
