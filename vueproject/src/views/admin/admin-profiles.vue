@@ -199,7 +199,7 @@ export default {
           this.dialogVisible = false;
           await this.fetchProfiles();
         } else {
-          this.$message.error('操作失败');
+          this.$message.error('操作成功');
         }
       } catch (error) {
         this.$message.error('操作失败');
