@@ -91,9 +91,9 @@ public class ProfileController {
         dbProfile.setStatus(profile.getStatus());
 
         // 如果本次是审核通过（status==1），先将旧的status=1设为2
-        if (profile.getStatus() != null && profile.getStatus() == 1) {
-            profileService.setOldProfilesToHistory(profile.getIdentityId());
-        }
+        //if (profile.getStatus() != null && profile.getStatus() == 1) {
+        //    profileService.setOldProfilesToHistory(profile.getIdentityId());
+        //}
 
         return profileService.saveProfile(dbProfile);
     }
