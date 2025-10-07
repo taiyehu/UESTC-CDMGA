@@ -73,18 +73,20 @@
           class="avatar-uploader"
           action="/api/profile/upload-avatar"
           name="avatar"
-          :show-file-list="false"
-          :on-success="handleDialogAvatarUploadSuccess"
+          :file-list="avatarFileList"
+          list-type="picture-card"
+          :on-success="handleAvatarUploadSuccess"
+          :on-remove="handleAvatarRemove"
           :before-upload="beforeAvatarUpload"
           :data="{identityId: user.id}"
         >
-          <el-avatar
-            :size="64"
-            :src="getImageUrl(editProfile.avatar)"
-            style="background: #409EFF; color: #fff; cursor: pointer;"
-          />
-          <div class="avatar-upload-text">点击头像上传</div>
+          <i class="el-icon-plus"></i>
         </el-upload>
+        <el-avatar
+          :size="64"
+          :src="getImageUrl(editProfile.avatar)"
+          style="background: #409EFF; color: #fff; margin-top: 10px;"
+        />
         <el-input
           v-model="editProfile.description"
           maxlength="50"
@@ -123,7 +125,8 @@ export default {
       editProfile: {
         avatar: "",
         description: ""
-      }
+      },
+      avatarFileList: [],
     };
   },
   methods: {
@@ -136,9 +139,12 @@ export default {
       return imagePath.startsWith('/') ? imagePath : '/' + imagePath;
     },
     openEditDialog() {
-      // 打开弹窗时同步当前资料
       this.editProfile.avatar = this.profile.avatar;
       this.editProfile.description = this.profile.description;
+      // 如果有头像，初始化 fileList
+      this.avatarFileList = this.profile.avatar
+        ? [{ name: '头像', url: this.getImageUrl(this.profile.avatar) }]
+        : [];
       this.editDialogVisible = true;
     },
     logout() {
@@ -192,6 +198,19 @@ export default {
         this.editDialogVisible = false;
         this.fetchProfile();
       });
+    },
+    handleAvatarUploadSuccess(response, file, fileList) {
+      if (response.code === 0) {
+        this.editProfile.avatar = response.data;
+        this.avatarFileList = fileList;
+        this.$message.success('头像上传成功');
+      } else {
+        this.$message.error('头像上传失败');
+      }
+    },
+    handleAvatarRemove(file, fileList) {
+      this.editProfile.avatar = '';
+      this.avatarFileList = fileList;
     },
     fetchProfile() {
       if (!this.user.id) return;
