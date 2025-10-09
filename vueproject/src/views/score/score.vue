@@ -337,7 +337,7 @@ export default {
         // 只需传 image 字段和需要的其他字段
         const updateData = {
           image: this.updateForm.image,
-          is_scored: 0,
+          is_scored: false,
           id: this.updateForm.score_id,
           remark: this.updateForm.remark,
           //后端方法是put,需要把这里传递的信息补全
