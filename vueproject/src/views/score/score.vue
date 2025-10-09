@@ -275,9 +275,9 @@ export default {
           course_id: course.id
         }
       });
-      const score_id = response.data.data;
+
       this.updateForm = {
-        score_id,
+        score_id :response.data.data,
         course_id: course.id,
         course_title: course.title,
         upload_time: '',
@@ -336,8 +336,11 @@ export default {
 
         // 只需传 image 字段和需要的其他字段
         const updateData = {
-          image: this.updateForm.image
-          // 其他字段可选
+          image: this.updateForm.image,
+          is_scored: false,
+          id: this.updateForm.score_id,
+          remark: this.updateForm.remark,
+          //后端方法是put,需要把这里传递的信息补全
         };
         // 这里必须用成绩ID
         await handleUpdateScore(updateData, this.updateForm.score_id);
