@@ -37,7 +37,7 @@
     <el-card v-else>
       <h2>没有未审核的成绩信息</h2>
     </el-card>
-
+    <!--TODO:优化表单结构-->
     <el-dialog :visible.sync="dialogVisible" width="70%" @close="dialogVisible = false">
       <h3>编辑分数</h3>
       <el-table :data="[selectedScore]" >
