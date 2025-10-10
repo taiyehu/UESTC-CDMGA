@@ -65,18 +65,22 @@ public class ScoreService {
             return scoreRepository.save(score);
     }
 
-    public Score updateScore(Long scoreId, float point, Boolean is_scored, String remark) {
+    public Score updateScore(Long scoreId, LocalDateTime upload_time, String image,
+                             float point, Boolean is_scored, String remark) {
         // 查找Score
         Score score = scoreRepository.findById(scoreId).orElse(null);
         if (score != null) {
+            score.setUploadTime(upload_time);
+            score.setImage(image);
             score.setScore(point);
+            score.setIsScored(is_scored);
             score.setRemark(remark);
             score.setUpdatedAt(LocalDateTime.now()); // 更新时间
-            score.setIsScored(is_scored);
             return scoreRepository.save(score); // 保存更新后的Score
         }
         return null; // 如果没有找到Score，返回null
     }
+
 
     public Score updateScoreImage(Long scoreId, String image) {
         // 查找Score

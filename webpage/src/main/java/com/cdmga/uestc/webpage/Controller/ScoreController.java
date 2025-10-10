@@ -120,8 +120,12 @@ public class ScoreController {
             @RequestBody ScoreRequest scoreRequest) {
         try {
             Score updatedScore = scoreService.updateScore(
-                    id, scoreRequest.getPoint(), scoreRequest.getIs_scored(), scoreRequest.getRemark());
-
+                    id, scoreRequest.getUpload_time(),
+                    scoreRequest.getImage(),
+                    scoreRequest.getPoint(),
+                    scoreRequest.getIs_scored(),
+                    scoreRequest.getRemark()
+            );
             if (updatedScore != null) {
                 return ResponseEntity.ok(Result.success(updatedScore));
             } else {
@@ -131,7 +135,7 @@ public class ScoreController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(e.getMessage()));
         }
     }
-    
+
     @GetMapping("/exists")
         public ResponseEntity<?> checkScoreExists(
                 @RequestParam("identityId") int identityId,

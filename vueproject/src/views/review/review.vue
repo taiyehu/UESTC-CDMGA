@@ -138,6 +138,8 @@ export default {
       try {
         const updateScore = {
           id: score.id,
+          upload_time: score.upload_time,
+          image: score.image,
           point: score.score,
           is_scored: true,
           remark: score.remark,
