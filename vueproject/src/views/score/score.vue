@@ -280,6 +280,7 @@ export default {
         score_id :response.data.data,
         course_id: course.id,
         course_title: course.title,
+        create_at: course.created_at,
         upload_time: '',
         image: ''
       };
@@ -336,7 +337,10 @@ export default {
 
         // 只需传 image 字段和需要的其他字段
         const updateData = {
+          upload_time: this.updateForm.upload_time,
+          created_at: this.updateForm.create_at,
           image: this.updateForm.image,
+          score: 0,
           is_scored: false,
           id: this.updateForm.score_id,
           remark: this.updateForm.remark,
