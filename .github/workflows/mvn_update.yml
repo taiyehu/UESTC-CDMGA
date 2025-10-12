@@ -17,8 +17,7 @@ jobs:
   mvn-build:
     if: |
       github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'push' ||
-      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+      github.event_name == 'push' 
     name: mvn build
     runs-on: ubuntu-22.04
     defaults:

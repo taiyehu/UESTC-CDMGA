@@ -17,8 +17,7 @@ jobs:
   npm-build-deploy:
     if: |
       github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'push' ||
-      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+      github.event_name == 'push' 
     name: npm build
     runs-on: ubuntu-22.04
     defaults:
@@ -69,7 +68,7 @@ jobs:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_SUDO }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: ${{ secrets.SSH_PORT || 22 }}  
+        port: ${{ secrets.SSH_PORT || 22 }}
         script: |
             # 创建备份目录（如果不存在）
             sudo mkdir -p /var/www/backup/
