@@ -322,7 +322,7 @@ export default {
         // 5. 处理成功
         this.$message.success(`课题 "${this.submitForm.course_title}" 的成绩提交成功！`);
         this.closeSubmitDialog();
-        this.fetchCourses();
+        await this.fetchCourses();
       } catch (error) {
         console.error('提交失败:', error);
         const errorMsg = error.response?.data?.message || '成绩提交失败，请重试';
