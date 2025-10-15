@@ -3,3 +3,5 @@ webpage/src/main/resources/application.properties
 vueproject/src/views/login/Login.vue
 vueproject/vue.config.js
 /.idea
+vueproject/dist
+vueproject/.env
