@@ -165,4 +165,15 @@ public class ScoreController {
             return Result.error(e.getMessage());
         }
     }
+
+    @GetMapping("/user-scored-scores")
+    public Result getUserScoredScores(@RequestParam("identityId") int identityId) {
+        try {
+            List<Score> scoredScores = scoreService.getScoredScoresByIdentityId(identityId);
+            return Result.success(scoredScores);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
 }

@@ -105,6 +105,30 @@
         <el-button type="primary" @click="submitEditProfile">提交审核</el-button>
       </span>
     </el-dialog>
+    <el-card class="box-card" shadow="hover" v-if="scoredScores.length > 0" style="margin-top: 20px;">
+      <h3>已完成课题及分数</h3>
+      <el-table :data="scoredScores" border style="width: 100%; margin-top: 10px;">
+        <el-table-column prop="course.title" label="课题名称" />
+        <el-table-column prop="course.image" label="课题图片" width="120">
+          <template slot-scope="scope">
+            <img
+              v-if="scope.row.course && scope.row.course.image"
+              :src="getImageUrl(scope.row.course.image)"
+              alt="课题图片"
+              style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;"
+            />
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="uploadTime" label="完成时间" width="180">
+          <template slot-scope="scope">
+            {{ scope.row.uploadTime ? scope.row.uploadTime.replace('T', ' ') : '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="score" label="分数" width="100" />
+        <el-table-column prop="remark" label="备注" />
+      </el-table>
+    </el-card>
   </div>
 </template>
 
@@ -133,6 +157,7 @@ export default {
         description: ""
       },
       avatarFileList: [],
+      scoredScores: []
     };
   },
   methods: {
@@ -215,6 +240,14 @@ export default {
       this.editProfile.avatar = '';
       this.avatarFileList = fileList;
     },
+    fetchScoredScores() {
+      if (!this.user.id) return;
+      axios.get(`/api/score/user-scored-scores?identityId=${this.user.id}`).then(res => {
+        if (res.data && res.data.code === 0) {
+          this.scoredScores = res.data.data || [];
+        }
+      });
+    },
     fetchProfile() {
       if (!this.user.id) return;
       axios.get(`/api/profile/identity/${this.user.id}`).then(res => {
@@ -231,6 +264,7 @@ export default {
     if (userInfo) {
       this.user = JSON.parse(userInfo);
       this.fetchProfile();
+      this.fetchScoredScores();
     }
   }
 };

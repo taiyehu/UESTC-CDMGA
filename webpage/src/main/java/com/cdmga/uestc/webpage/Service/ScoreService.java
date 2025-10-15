@@ -147,4 +147,8 @@ public class ScoreService {
         }
         return result;
     }
+
+    public List<Score> getScoredScoresByIdentityId(int identityId) {
+        return scoreRepository.findByIdentity_IdAndIsScoredTrueAndIsDeletedFalse(identityId);
+    }
 }
