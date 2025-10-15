@@ -140,7 +140,7 @@ export default {
           id: score.id,
           upload_time: score.upload_time,
           image: score.image,
-          point: score.score,
+          score: score.score,
           is_scored: true,
           remark: score.remark,
         }
