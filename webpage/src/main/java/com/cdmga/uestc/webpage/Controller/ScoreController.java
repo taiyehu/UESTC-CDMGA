@@ -101,7 +101,7 @@ public class ScoreController {
         if (score != null) {
             return ResponseEntity.ok(score.getId());
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            return ResponseEntity.ok(null);
         }
     }
     // 获取文件扩展名
