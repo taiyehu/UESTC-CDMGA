@@ -15,7 +15,7 @@
         </div>
         <div class="profile-right">
           <div class="profile-info">
-            <h2>{{ user.account }}</h2>
+            <h2>{{ profile.account || user.account }}</h2>
           </div>
           <el-tooltip
             :content="getStatusText()"
@@ -157,10 +157,39 @@ export default {
         description: ""
       },
       avatarFileList: [],
-      scoredScores: []
+      scoredScores: [],
+      viewUserId: null, // 当前查看的用户id
+      isSelf: false,    // 是否是自己
     };
   },
   methods: {
+    loadProfile() {
+      // 如果有路由参数，优先用参数，否则用当前登录用户
+      const routeId = this.$route.params.id;
+      let userInfo = sessionStorage.getItem('userInfo');
+      if (routeId) {
+        // 查看别人
+        this.viewUserId = parseInt(routeId);
+        if (userInfo) {
+          this.user = JSON.parse(userInfo); // ← 新增
+          this.isSelf = this.user.id == routeId;
+        } else {
+          this.isSelf = false;
+        }
+      } else if (userInfo) {
+        // 查看自己
+        this.user = JSON.parse(userInfo); // ← 新增
+        this.viewUserId = this.user.id;
+        this.isSelf = true;
+      } else {
+        this.viewUserId = null;
+        this.isSelf = false;
+      }
+      if (this.viewUserId) {
+        this.fetchProfile();
+        this.fetchScoredScores();
+      }
+    },
     getStatusText() {
       if (this.profileStatus === 0) return '审核中';
       if (this.profileStatus === 1) return '已通过';
@@ -191,8 +220,8 @@ export default {
       this.$router.push('/login');
     },
     fetchProfile() {
-      if (!this.user.id) return;
-      axios.get(`/api/profile/identity/${this.user.id}`).then(res => {
+      if (!this.viewUserId) return;
+      axios.get(`/api/profile/identity/${this.viewUserId}`).then(res => {
         if (res.data && res.data.avatar !== undefined) {
           this.profile = res.data;
           this.profileStatus = res.data.status;
@@ -241,31 +270,20 @@ export default {
       this.avatarFileList = fileList;
     },
     fetchScoredScores() {
-      if (!this.user.id) return;
-      axios.get(`/api/score/user-scored-scores?identityId=${this.user.id}`).then(res => {
+      if (!this.viewUserId) return;
+      axios.get(`/api/score/user-scored-scores?identityId=${this.viewUserId}`).then(res => {
         if (res.data && res.data.code === 0) {
           this.scoredScores = res.data.data || [];
         }
       });
     },
-    fetchProfile() {
-      if (!this.user.id) return;
-      axios.get(`/api/profile/identity/${this.user.id}`).then(res => {
-        console.log('接口返回:', res.data);
-        if (res.data && res.data.avatar !== undefined) {
-          this.profile = res.data;
-          this.profileStatus = res.data.status;
-        }
-      });
-    }
+    
   },
   mounted() {
-    const userInfo = sessionStorage.getItem('userInfo');
-    if (userInfo) {
-      this.user = JSON.parse(userInfo);
-      this.fetchProfile();
-      this.fetchScoredScores();
-    }
+    this.loadProfile();
+  },
+  watch: {
+    '$route.params.id': 'loadProfile'
   }
 };
 </script>

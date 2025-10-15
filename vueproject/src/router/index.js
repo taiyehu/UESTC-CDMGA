@@ -59,6 +59,11 @@ const router = new VueRouter({
         {
             path: '/admin-profiles',
             component: adminProfiles
+        },
+        {
+        path: '/profile/:id?',
+        name: 'Profile',
+        component: () => import('@/views/profile/profile.vue')
         }
     ]
 })

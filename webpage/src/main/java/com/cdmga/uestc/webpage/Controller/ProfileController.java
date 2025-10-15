@@ -70,8 +70,18 @@ public class ProfileController {
     }
 
     @GetMapping("/identity/{identityId}")
-    public Profile getProfileByIdentity(@PathVariable Integer identityId) {
-        return profileService.getProfileByIdentityId(identityId);
+    public ProfileDto getProfileByIdentity(@PathVariable Integer identityId) {
+        Profile p = profileService.getProfileByIdentityId(identityId);
+        if (p == null) return null;
+        ProfileDto dto = new ProfileDto();
+        dto.setId(p.getId());
+        dto.setIdentityId(p.getIdentity() != null ? p.getIdentity().getId() : null);
+        dto.setAccount(p.getIdentity() != null ? p.getIdentity().getAccount() : null);
+        dto.setAvatar(p.getAvatar());
+        dto.setDescription(p.getDescription());
+        dto.setTitle(p.getTitle());
+        dto.setStatus(p.getStatus());
+        return dto;
     }
 
     @PostMapping("/")

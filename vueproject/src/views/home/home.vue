@@ -52,16 +52,23 @@
       <h2 style="text-align:center;margin-bottom:20px;">用户总分排行榜</h2>
       <el-table
         :data="pagedRankData"
-        style="width: 500px; margin: 0 auto;"
+        style="width: 600px; margin: 0 auto;"
         border
         :default-sort="{prop: 'totalScore', order: 'descending'}"
       >
         <el-table-column label="排名" width="80" align="center">
-          <template #default="scope">
+          <template slot-scope="scope">
             {{ (rankCurrentPage - 1) * rankPageSize + scope.$index + 1 }}
           </template>
         </el-table-column>
-        <el-table-column prop="account" label="用户名" width="200" align="center" />
+        <el-table-column label="头像" width="80" align="center">
+          <template slot-scope="scope">
+            <span @click="goToProfile(scope.row.identityId)" style="cursor:pointer;display:inline-block;">
+              <el-avatar :src="getImageUrl(scope.row.avatar)" />
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="account" label="用户名" width="160" align="center" />
         <el-table-column prop="totalScore" label="总分" width="120" align="center" />
       </el-table>
       <div style="text-align:center;margin-top:20px;">
@@ -108,6 +115,10 @@ export default {
     }
   },
   methods: {
+    goToProfile(id) {
+      console.log('跳转到profile:', id);
+      this.$router.push(`/profile/${id}`);
+    },
     async fetchCourses() {
       try {
         const response = await fetchCourseData();
