@@ -6,7 +6,11 @@
         <p>课题名称：{{ course.title }} | 课题ID：{{ course.id }}</p>
         <div class="btnGroup">
           <el-button type="primary" @click="openViewDialog(course)" size="small">查看</el-button>
-          <el-button :type="isSubmitted(course.id)? 'warning' : 'success'" @click="isSubmitted(course.id)? openUpdateDialog(course) : openSubmitDialog(course)" size="small">
+          <el-button :type="isSubmitted(course.id)? 'warning' : 'success'"
+                     @click="isSubmitted(course.id)? openUpdateDialog(course) : openSubmitDialog(course)"
+                     size="small"
+                     :disabled="isScored(course.id)"
+                     >
             {{ isSubmitted(course.id)? '更新' : '提交' }}
           </el-button>
         </div>
@@ -16,7 +20,7 @@
       <h2>没有课题信息</h2>
     </el-card>
 
-    <!-- 课题信息查看弹窗 -->
+    <!-- 课题详情弹窗 -->
     <!-- 课题详情弹窗 -->
     <el-dialog :visible.sync="viewDialogVisible" title="课题详情" width="50%" @close="closeViewDialog()">
       <el-descriptions border :column="1">
@@ -52,6 +56,27 @@
                 alt="课题图片"
                 style="width: 160px; height: auto; border-radius: 4px; cursor: pointer"
                 @click="handleImageClick(getImageUrl(selectedCourse.image))"
+            />
+          </template>
+          <template v-else>-</template>
+        </el-descriptions-item>
+      </el-descriptions>
+
+      <h3 v-if="selectedScore" style="margin-top: 20px;">成绩信息</h3>
+      <el-descriptions v-if="selectedScore" border :column="1">
+        <el-descriptions-item label="是否评分">
+          {{ selectedScore.is_scored ? '是' : '否' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="得分">
+          {{ selectedScore.is_scored ? selectedScore.score: '还没打分呢!' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="成绩图片">
+          <template v-if="selectedScore.image">
+            <img
+                :src="getImageUrl(selectedScore.image)"
+                alt="成绩图片"
+                style="width: 160px; height: auto; border-radius: 4px; cursor: pointer"
+                @click="handleImageClick(getImageUrl(selectedScore.image))"
             />
           </template>
           <template v-else>-</template>
@@ -187,9 +212,11 @@ export default {
         created_at: '',
         updated_at: ''
       },
+      selectedScore: {},
       imageFileList: [],
       fileList: [],
-      submittedCourses: []
+      submittedCourses: [],
+      ScoredScores: []
     };
   },
   methods: {
@@ -231,6 +258,16 @@ export default {
         const response = await checkSubmitted(identityId,course.id)
         if (response.data) {
           this.submittedCourses.push(course.id);
+          const score = await axios.get('/api/score/find', {
+            params: {
+              identity_id: identityId,
+              course_id: course.id
+            }
+          })
+          if (score.data) {
+            const ScoredScore = await axios.get( `/api/score/${score.data}`);
+            this.ScoredScores.push(ScoredScore.data.course.id);
+          }
         }
       }
     },
@@ -238,14 +275,34 @@ export default {
     isSubmitted(courseId) {
       return this.submittedCourses.includes(courseId);
     },
+    isScored(courseId){
+      return this.ScoredScores.includes(courseId);
+    },
     // 打开查看弹窗
-    openViewDialog(course) {
+    async openViewDialog(course) {
       this.selectedCourse = {
         ...course,
         start_time: dayjs(course.start_time).format('YYYY-MM-DD'),
         end_time: dayjs(course.end_time).format('YYYY-MM-DD'),
         updated_at: dayjs(course.updated_at).format('YYYY-MM-DD'),
       };
+
+      const identityId = this.getCurrentIdentityId();
+
+      const response = await axios.get('/api/score/find', {
+        params: {
+          identity_id: identityId,
+          course_id: course.id
+        }
+      });
+      if(response.data) {
+        const scoreId = response.data;
+        this.selectedScore = (await axios.get(`/api/score/${scoreId}`)).data;
+      }
+      else {
+        this.selectedScore = null;
+      }
+
       this.viewDialogVisible = true;
     },
     closeViewDialog() {
