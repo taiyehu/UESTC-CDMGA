@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>课程列表</h1>
+    <h1>课题列表</h1>
 
     <!-- 加载中提示 -->
     <div v-if="loading">加载中...</div>
