@@ -266,6 +266,7 @@ export default {
           })
           if (score.data) {
             const ScoredScore = await axios.get( `/api/score/${score.data}`);
+            if (!ScoredScore.data.isScored)
             this.ScoredScores.push(ScoredScore.data.course.id);
           }
         }
