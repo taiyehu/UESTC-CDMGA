@@ -65,10 +65,10 @@
       <h3 v-if="selectedScore" style="margin-top: 20px;">成绩信息</h3>
       <el-descriptions v-if="selectedScore" border :column="1">
         <el-descriptions-item label="是否评分">
-          {{ selectedScore.is_scored ? '是' : '否' }}
+          {{ selectedScore.isScored ? '是' : '否' }}
         </el-descriptions-item>
         <el-descriptions-item label="得分">
-          {{ selectedScore.is_scored ? selectedScore.score: '还没打分呢!' }}
+          {{ selectedScore.isScored ? selectedScore.score: '还没打分呢!' }}
         </el-descriptions-item>
         <el-descriptions-item label="成绩图片">
           <template v-if="selectedScore.image">
