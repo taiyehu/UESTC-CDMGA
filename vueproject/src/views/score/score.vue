@@ -9,7 +9,7 @@
           <el-button :type="isSubmitted(course.id)? 'warning' : 'success'"
                      @click="isSubmitted(course.id)? openUpdateDialog(course) : openSubmitDialog(course)"
                      size="small"
-                     :disabled="isScored(course.id)"
+                     :disabled="!isScored(course.id)"
                      >
             {{ isSubmitted(course.id)? '更新' : '提交' }}
           </el-button>
