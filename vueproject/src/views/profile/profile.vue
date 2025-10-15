@@ -3,6 +3,7 @@
     <el-card class="box-card" shadow="hover" v-if="user.id !== null">
       <div class="profile-header">
         <div class="avatar-select-group">
+        <template v-if="isSelf">
           <el-tooltip content="点击头像修改" placement="bottom">
             <div style="display:inline-block;cursor:pointer;" @click="openEditDialog">
               <el-avatar
@@ -12,7 +13,19 @@
               />
             </div>
           </el-tooltip>
-        </div>
+        </template>
+        <template v-else>
+          <el-tooltip content="点击查看大图" placement="bottom">
+            <div style="display:inline-block;cursor:pointer;" @click="previewAvatar">
+              <el-avatar
+                :size="128"
+                :src="profileStatus === 1 ? getImageUrl(profile.avatar) : defaultAvatar"
+                style="background: #409EFF; color: #fff;"
+              />
+            </div>
+          </el-tooltip>
+        </template>
+      </div>
         <div class="profile-right">
           <div class="profile-info">
             <h2>{{ profile.account || user.account }}</h2>
@@ -129,6 +142,9 @@
         <el-table-column prop="remark" label="备注" />
       </el-table>
     </el-card>
+    <el-dialog :visible.sync="avatarPreviewVisible" width="auto" :show-close="true" center>
+      <img :src="avatarPreviewUrl" alt="头像大图" style="max-width:90vw;max-height:80vh;display:block;margin:auto;" />
+    </el-dialog>
   </div>
 </template>
 
@@ -160,6 +176,8 @@ export default {
       scoredScores: [],
       viewUserId: null, // 当前查看的用户id
       isSelf: false,    // 是否是自己
+      avatarPreviewVisible: false,
+      avatarPreviewUrl: '',
     };
   },
   methods: {
@@ -202,6 +220,10 @@ export default {
       }
       // 直接返回相对路径
       return imagePath.startsWith('/') ? imagePath : '/' + imagePath;
+    },
+    previewAvatar() {
+      this.avatarPreviewUrl = this.getImageUrl(this.profile.avatar);
+      this.avatarPreviewVisible = true;
     },
     openEditDialog() {
       this.editProfile.avatar = this.profile.avatar;
