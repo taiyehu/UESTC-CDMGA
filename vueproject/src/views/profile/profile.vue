@@ -349,4 +349,7 @@ export default {
 .profile-actions .profile-btn {
   margin-right: 16px;
 }
+.main-content {
+  margin-top: var(--navbar-height);
+}
 </style>

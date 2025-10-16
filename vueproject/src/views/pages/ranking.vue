@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="main-content">
     <h2 style="text-align:center;margin-bottom:20px;">用户总分排行榜</h2>
     <el-table
       :data="pagedRankData"
@@ -91,5 +91,8 @@ export default {
 </script>
 
 <style scoped>
+.main-content {
+  margin-top: var(--navbar-height);
+}
 /* 排行榜样式可根据需要自定义 */
 </style>

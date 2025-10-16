@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="main-content">
     <h1>课题列表</h1>
     <div v-if="loading">加载中...</div>
     <div v-else-if="error">{{ error }}</div>
@@ -77,6 +77,9 @@ export default {
 </script>
 
 <style scoped>
+.main-content {
+  margin-top: var(--navbar-height);
+}
 .course-item {
   margin-bottom: 32px;
   border: 1px solid #ccc;

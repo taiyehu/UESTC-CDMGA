@@ -80,6 +80,9 @@ export default {
 </script>
 
 <style scoped>
+:root {
+  --navbar-height: 80px;
+}
 .navbar {
   position: fixed;
   top: 0;
@@ -92,7 +95,7 @@ export default {
   background: #000000;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   padding: 0 48px;
-  height: 80px;
+  height: var(--navbar-height);
 }
 .nav-left {
   display: flex;

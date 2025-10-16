@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="main-content">
     <h1>最新课题</h1>
     <div v-if="loading">加载中...</div>
     <div v-else-if="error">{{ error }}</div>
@@ -47,7 +47,9 @@ export default {
     async fetchLatestCourse() {
       try {
         const response = await fetchCourseData();
-        const courses = response.data || [];
+        let courses = response.data || [];
+        // 按开始时间降序排序，最新的在最前面
+        courses = courses.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
         this.latestCourse = courses.length ? courses[0] : null;
       } catch (err) {
         this.error = err.message;
@@ -76,6 +78,9 @@ export default {
 </script>
 
 <style scoped>
+.main-content {
+  margin-top: var(--navbar-height);
+}
 .latest-course-banner {
   border: 2px solid #409EFF;
   border-radius: 12px;
