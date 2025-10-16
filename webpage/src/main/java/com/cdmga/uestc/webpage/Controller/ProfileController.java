@@ -1,6 +1,6 @@
 package com.cdmga.uestc.webpage.Controller;
 
-import com.cdmga.uestc.webpage.Common.Result;
+import com.cdmga.uestc.webpage.common.Result;
 import com.cdmga.uestc.webpage.Dto.ProfileDto;
 import com.cdmga.uestc.webpage.Entity.Profile;
 import com.cdmga.uestc.webpage.Service.ProfileService;

@@ -14,8 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.cdmga.uestc.webpage.Common.Result;
-import com.cdmga.uestc.webpage.Common.ScoreRequest;
+import com.cdmga.uestc.webpage.common.Result;
+import com.cdmga.uestc.webpage.common.ScoreRequest;
 import com.cdmga.uestc.webpage.Dto.UserScoreDto;
 import com.cdmga.uestc.webpage.Entity.Score;
 import com.cdmga.uestc.webpage.Service.ScoreService;

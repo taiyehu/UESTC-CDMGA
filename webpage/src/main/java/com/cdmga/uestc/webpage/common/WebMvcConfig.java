@@ -1,4 +1,4 @@
-package com.cdmga.uestc.webpage.Common;
+package com.cdmga.uestc.webpage.common;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
