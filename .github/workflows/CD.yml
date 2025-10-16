@@ -1,0 +1,21 @@
+name: CD
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  update_env:
+    if: github.event_name != 'pull_request' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    uses: ./.github/workflows/env_update.yml
+  update_mvn:
+    if: github.event_name != 'pull_request' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    uses: ./.github/workflows/mvn_update.yml
+  update_npm:
+    if: github.event_name != 'pull_request' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    uses: ./.github/workflows/npm_update.yml

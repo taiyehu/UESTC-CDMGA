@@ -5,3 +5,4 @@ vueproject/vue.config.js
 /.idea
 vueproject/dist
 vueproject/.env
+scores/
