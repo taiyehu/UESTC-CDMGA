@@ -1,11 +1,11 @@
-name: Server Initialization
+name: Environment update
 on:
   workflow_dispatch: # 允许手动触发此工作流
   workflow_call:
 
 jobs:
-  init-server:
-    name: Environment update
+  deploy-env:
+    name: Environment deploy
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
@@ -85,9 +85,6 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
             echo "=== Verification ==="
-            echo "Java version:"
-            java -version
-            echo ""
             echo "Nginx status:"
             systemctl status nginx --no-pager
             echo ""

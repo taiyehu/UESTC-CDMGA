@@ -1,17 +1,6 @@
 name: mvn-update
 on:
   workflow_call:
-  # push:
-  #   branches:
-  #     - main
-  #   paths:
-  #     - 'webpage/**'
-  # pull_request:
-  #   types: [closed]
-  #   branches:
-  #     - main
-  #   paths:
-  #     - 'webpage/**'
   workflow_dispatch:
 
 jobs:
@@ -90,11 +79,19 @@ jobs:
           sudo systemctl status webserver.service --no-pager
 
           echo "等待应用启动..."
-          sleep 30
-          if sudo lsof -t -i:8080 > /dev/null 2>&1; then
+          success=0
+          for i in {1..10}; do
+            if sudo lsof -t -i:8080 > /dev/null 2>&1; then
               echo "应用启动成功!"
-          else
-              echo "警告: 应用可能未正常启动，请检查日志"
-              sudo journalctl -u webserver.service -n 50 --no-pager
-              exit 1
+              success=1
+              break
+            else
+              echo "第 $i 次检测，服务未启动，5秒后重试..."
+              sleep 5
+            fi
+          done
+          if [ "$success" -ne 1 ]; then
+            echo "警告: 应用连续10次检测未正常启动，请检查日志"
+            sudo journalctl -u webserver.service -n 50 --no-pager
+            exit 1
           fi
