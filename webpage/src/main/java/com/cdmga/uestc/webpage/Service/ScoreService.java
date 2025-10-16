@@ -54,8 +54,8 @@ public class ScoreService {
 
             Score score = new Score(created_at);
 
-            score.setCourse(courseRepository.findById((long) course_id).orElse(null));
-            score.setIdentity(identityRepository.findById((long) identity_id).orElse(null));
+            score.setCourse(courseRepository.findById(course_id).orElse(null));
+            score.setIdentity(identityRepository.findById(identity_id).orElse(null));
 
             score.setUploadTime(upload_time);
             score.setImage(image);
