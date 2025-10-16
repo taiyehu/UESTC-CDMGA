@@ -1,7 +1,7 @@
 name: Server Initialization
 on:
   workflow_dispatch: # 允许手动触发此工作流
-
+  workflow_call:
 jobs:
   init-server:
     name: Initialize Server

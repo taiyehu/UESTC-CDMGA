@@ -1,0 +1,18 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'webpage/**'
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+    paths:
+      - 'webpage/**'
+  workflow_dispatch:
+
+jobs:
+    update_env:
+        uses: ./.github/workflows/env_update.yml
