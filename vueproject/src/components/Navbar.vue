@@ -81,24 +81,34 @@ export default {
 
 <style scoped>
 .navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
   display: flex;
   justify-content: space-between;
   align-items: center;
   background: #fff;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  padding: 0 32px;
-  height: 56px;
+  padding: 0 48px;
+  height: 80px;
 }
 .nav-left {
   display: flex;
   align-items: center;
+  margin-left: 12px;
 }
 .nav-item {
-  margin-right: 32px;
-  font-size: 16px;
+  margin-right: 48px;
+  font-size: 22px;
   color: #333;
   text-decoration: none;
   cursor: pointer;
+  letter-spacing: 2px;
+}
+.nav-item:last-child {
+  margin-right: 0;
 }
 .nav-item:hover {
   color: #409EFF;
@@ -106,14 +116,15 @@ export default {
 .nav-right {
   display: flex;
   align-items: center;
+  margin-right: 12px;
 }
 .avatar-menu {
   position: relative;
   cursor: pointer;
 }
 .avatar {
-  width: 36px;
-  height: 36px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid #eee;
@@ -121,21 +132,21 @@ export default {
 .dropdown-content {
   position: absolute;
   right: 0;
-  top: 48px;
+  top: 60px;
   background: #fff;
-  min-width: 120px;
+  min-width: 140px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  border-radius: 6px;
+  border-radius: 8px;
   z-index: 100;
   display: flex;
   flex-direction: column;
 }
 .dropdown-item {
-  padding: 12px 20px;
+  padding: 16px 24px;
   color: #333;
   text-decoration: none;
   cursor: pointer;
-  font-size: 15px;
+  font-size: 18px;
 }
 .dropdown-item:hover {
   background: #f5f5f5;
