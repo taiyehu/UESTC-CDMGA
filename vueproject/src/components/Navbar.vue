@@ -79,10 +79,13 @@ export default {
 }
 </script>
 
-<style scoped>
+<style>
 :root {
   --navbar-height: 80px;
 }
+</style>
+
+<style scoped>
 .navbar {
   position: fixed;
   top: 0;
@@ -94,7 +97,7 @@ export default {
   align-items: center;
   background: #000000;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  padding: 0 48px;
+  padding: 0 120px;
   height: var(--navbar-height);
 }
 .nav-left {

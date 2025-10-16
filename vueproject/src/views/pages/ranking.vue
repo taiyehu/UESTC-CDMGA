@@ -91,6 +91,7 @@ export default {
 </script>
 
 <style scoped>
+/* 主内容区自动适配导航栏高度，--navbar-height 为全局变量 */
 .main-content {
   margin-top: var(--navbar-height);
 }
