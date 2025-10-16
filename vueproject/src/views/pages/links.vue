@@ -3,8 +3,8 @@
     <h1 style="text-align:center;margin-bottom:32px;">欢迎来到我的网站</h1>
     <div class="links-grid">
       <div class="link-card" @click="go('card_one/card_one.html')">
-        <h2>新抽卡游戏</h2>
-        <p>体验全新抽卡玩法，点击进入开始抽卡。</p>
+        <h2>抽卡Debuff对决</h2>
+        <p>体验全新抽卡对决玩法，点击进入开始抽卡。</p>
       </div>
       <div class="link-card" @click="go('arcaea_radom/arc_radom.html')">
         <h2>抽arc歌曲</h2>
@@ -21,10 +21,6 @@
       <div class="link-card" @click="go('docs/SCREEN.html')">
         <h2>转播方案介绍</h2>
         <p>了解简易比赛转播方案，点击查看详细介绍。</p>
-      </div>
-      <div class="link-card" @click="go('card_drawing/Card_drawing.html')">
-        <h2>抽卡游戏</h2>
-        <p>经典抽卡游戏，点击进入开始抽卡。</p>
       </div>
     </div>
   </div>
