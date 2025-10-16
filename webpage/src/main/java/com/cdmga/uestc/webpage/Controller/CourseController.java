@@ -113,7 +113,7 @@ public class CourseController {
     }
 
     @DeleteMapping("/{courseId}")
-    public ResponseEntity<Void> deleteCourse(@PathVariable Long courseId) {
+    public ResponseEntity<Void> deleteCourse(@PathVariable Integer courseId) {
         try {
             Course deletedCourse = courseService.deleteCourse(courseId); // 接收 Course 类型
             if (deletedCourse != null) {
@@ -134,7 +134,7 @@ public class CourseController {
 
     // 删除对应id的课题
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<Result> deleteCourseData(@PathVariable Long id) {
+    public ResponseEntity<Result> deleteCourseData(@PathVariable Integer id) {
         try {
             Course deletedCourse = courseService.deleteCourse(id);
             if (deletedCourse != null) {

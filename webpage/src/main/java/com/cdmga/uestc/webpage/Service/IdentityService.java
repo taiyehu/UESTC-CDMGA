@@ -70,7 +70,7 @@ public class IdentityService {
     }
 
     // 删除用户
-    public void deleteIdentity(Long id) {
+    public void deleteIdentity(Integer id) {
         identityRepository.deleteById(id);
     }
 

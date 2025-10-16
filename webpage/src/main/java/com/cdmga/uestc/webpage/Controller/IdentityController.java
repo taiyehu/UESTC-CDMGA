@@ -108,7 +108,7 @@ public class IdentityController {
 
     // 删除用户
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteIdentity(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteIdentity(@PathVariable Integer id) {
         identityService.deleteIdentity(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }

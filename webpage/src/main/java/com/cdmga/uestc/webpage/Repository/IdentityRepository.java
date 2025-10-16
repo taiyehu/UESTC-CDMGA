@@ -9,7 +9,7 @@ import com.cdmga.uestc.webpage.Entity.Identity;
 import java.util.List;
 
 @Repository
-public interface IdentityRepository extends JpaRepository<Identity, Long> {
+public interface IdentityRepository extends JpaRepository<Identity, Integer> {
 
     // 可以定义一些自定义查询方法
     Identity findByAccount(String account);

@@ -9,7 +9,7 @@
           <el-button :type="isSubmitted(course.id)? 'warning' : 'success'"
                      @click="isSubmitted(course.id)? openUpdateDialog(course) : openSubmitDialog(course)"
                      size="small"
-                     :disabled="!isScored(course.id)"
+                     :disabled="isScored(course.id)"
                      >
             {{ isSubmitted(course.id)? '更新' : '提交' }}
           </el-button>
@@ -239,12 +239,14 @@ export default {
         const response = await fetchAvailablecourseData({page : 1, size: 10})
         this.courses = response.data || [];
         this.submittedCourses = []; // 清空
+        this.ScoredScores = [];
         await this.checkSubmittedCourses();
       } catch (error) {
         console.error('获取课题信息失败:', error);
         this.$message.error('获取课题列表失败，请稍后重试');
         this.courses = [];
         this.submittedCourses = [];
+        this.ScoredScores = [];
       }
     },
     // 检查课程是否已提交
@@ -266,7 +268,7 @@ export default {
           })
           if (score.data) {
             const ScoredScore = await axios.get( `/api/score/${score.data}`);
-            if (!ScoredScore.data.isScored)
+            if (ScoredScore.data.isScored)
             this.ScoredScores.push(ScoredScore.data.course.id);
           }
         }
