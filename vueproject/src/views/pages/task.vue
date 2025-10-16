@@ -49,7 +49,9 @@ export default {
     async fetchCourses() {
       try {
         const response = await fetchCourseData();
-        this.courses = response.data;
+        let courses = response.data || [];
+        // 按开始时间倒序排列
+        this.courses = courses.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
       } catch (err) {
         this.error = err.message;
       } finally {

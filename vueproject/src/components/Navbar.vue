@@ -4,7 +4,7 @@
       <router-link class="nav-item" to="/home">主页</router-link>
       <router-link class="nav-item" to="/task">课题</router-link>
       <router-link class="nav-item" to="/ranking">排行榜</router-link>
-      <span class="nav-item">网站功能</span>
+      <router-link class="nav-item" to="/links">网站功能</router-link>
     </div>
     <div class="nav-right">
       <div class="avatar-menu" @click.stop="toggleMenu">

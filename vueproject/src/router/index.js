@@ -15,6 +15,8 @@ import review from '@/views/review/review.vue'
 import adminProfiles from '@/views/admin/admin-profiles.vue'
 import ranking from '@/views/pages/ranking.vue'
 import task from '@/views/pages/task.vue'
+import links from '@/views/pages/links.vue'
+
 
 // 使用VueRouter插件
 Vue.use(VueRouter)
@@ -70,6 +72,10 @@ const router = new VueRouter({
         {
             path: '/task',
             component: task
+        },
+        {
+            path: '/links',
+            component: links
         },
         {
         path: '/profile/:id?',
