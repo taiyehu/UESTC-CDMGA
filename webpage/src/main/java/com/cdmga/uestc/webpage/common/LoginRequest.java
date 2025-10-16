@@ -1,4 +1,4 @@
-package com.cdmga.uestc.webpage.Common;
+package com.cdmga.uestc.webpage.common;
 
 import org.springframework.stereotype.Service;
 
