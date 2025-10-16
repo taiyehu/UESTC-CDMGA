@@ -2,8 +2,8 @@
   <nav class="navbar">
     <div class="nav-left">
       <router-link class="nav-item" to="/home">主页</router-link>
-      <span class="nav-item">课题</span>
-      <span class="nav-item">排行榜</span>
+      <router-link class="nav-item" to="/task">课题</router-link>
+      <router-link class="nav-item" to="/ranking">排行榜</router-link>
       <span class="nav-item">网站功能</span>
     </div>
     <div class="nav-right">
@@ -89,7 +89,7 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #fff;
+  background: #000000;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   padding: 0 48px;
   height: 80px;
@@ -102,7 +102,7 @@ export default {
 .nav-item {
   margin-right: 48px;
   font-size: 22px;
-  color: #333;
+  color: #ffffff;
   text-decoration: none;
   cursor: pointer;
   letter-spacing: 2px;
