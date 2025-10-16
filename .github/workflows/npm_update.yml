@@ -1,6 +1,12 @@
 name: npm-update 
 on:
   workflow_call:
+    secrets:
+      SSH_HOST: {}
+      SSH_SUDO: {}
+      SSH_PRIVATE_KEY: {}
+      SSH_PORT: {}
+      SSH_DOMIAN: {}
   workflow_dispatch:
 
 jobs:
@@ -107,4 +113,4 @@ jobs:
 
             echo "最新备份文件: /var/www/backup/dist_${{ steps.backup-time.outputs.date }}.tar.gz"
             echo "部署完成时间: $(date)"
-            
+

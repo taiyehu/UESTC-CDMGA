@@ -1,6 +1,12 @@
 name: mvn-update
 on:
   workflow_call:
+    secrets:
+      SSH_HOST: {}
+      SSH_SUDO: {}
+      SSH_PRIVATE_KEY: {}
+      SSH_PORT: {}
+      SSH_DOMIAN: {}
   workflow_dispatch:
 
 jobs:
