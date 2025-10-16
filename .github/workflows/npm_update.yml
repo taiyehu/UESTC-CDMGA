@@ -6,7 +6,6 @@ on:
       SSH_SUDO: {}
       SSH_PRIVATE_KEY: {}
       SSH_PORT: {}
-      SSH_DOMIAN: {}
   workflow_dispatch:
 
 jobs:
