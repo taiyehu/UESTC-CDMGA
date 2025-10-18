@@ -69,12 +69,8 @@
       </div>
       <el-divider></el-divider>
     <div class="profile-actions">
-      <el-button type="primary" @click="logout" class="profile-btn">登出</el-button>
       <router-link to="/score">
         <el-button type="success" class="profile-btn">成绩提交</el-button>
-      </router-link>
-      <router-link to="/home">
-        <el-button type="info" class="profile-btn">返回主页</el-button>
       </router-link>
     </div>
     </el-card>
@@ -311,6 +307,10 @@ export default {
 </script>
 
 <style scoped>
+/* 主内容区自动适配导航栏高度，--navbar-height 为全局变量 */
+.main-content {
+  margin-top: var(--navbar-height);
+}
 .avatar-uploader {
   display: flex;
   flex-direction: column;

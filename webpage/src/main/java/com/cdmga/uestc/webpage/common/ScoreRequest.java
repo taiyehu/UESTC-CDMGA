@@ -1,10 +1,10 @@
-package com.cdmga.uestc.webpage.Common;
+package com.cdmga.uestc.webpage.common;
 
 import java.time.LocalDateTime;
 
 public class ScoreRequest {
-    private int course_id;
-    private int identity_id;
+    private Integer course_id;
+    private Integer identity_id;
     private LocalDateTime upload_time;
     private String image;
     private float point;
@@ -22,20 +22,20 @@ public class ScoreRequest {
     }
 
     // Getters and Setters
-    public int getCourse_id() {
+    public Integer getCourse_id() {
         return course_id;
     }
 
-    public void setCourse_id(int course_id) {
+    public void setCourse_id(Integer course_id) {
         this.course_id = course_id;
         update();
     }
 
-    public int getIdentity_id() {
+    public Integer getIdentity_id() {
         return identity_id;
     }
 
-    public void setIdentity_id(int identity_id) {
+    public void setIdentity_id(Integer identity_id) {
         this.identity_id = identity_id;
         update();
     }

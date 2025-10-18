@@ -1,23 +1,18 @@
 name: npm-update 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'webpage/**'
-  pull_request:
-    types: [closed]
-    branches:
-      - main
-    paths:
-      - 'webpage/**'
+  workflow_call:
+    secrets:
+      SSH_HOST: {}
+      SSH_SUDO: {}
+      SSH_PRIVATE_KEY: {}
+      SSH_PORT: {}
   workflow_dispatch:
 
 jobs:
   npm-build-deploy:
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'push' 
+    # if: |
+    #   github.event_name == 'workflow_dispatch' ||
+    #   github.event_name == 'push' 
     name: npm build
     runs-on: ubuntu-22.04
     defaults:
@@ -117,4 +112,4 @@ jobs:
 
             echo "最新备份文件: /var/www/backup/dist_${{ steps.backup-time.outputs.date }}.tar.gz"
             echo "部署完成时间: $(date)"
-            
+

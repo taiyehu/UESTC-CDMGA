@@ -1,0 +1,30 @@
+name: CD
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  update_env:
+    uses: ./.github/workflows/env_update.yml
+    secrets:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_SUDO: ${{ secrets.SSH_SUDO }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      SSH_DOMIAN: ${{ secrets.SSH_DOMIAN }}
+  update_mvn:
+    uses: ./.github/workflows/mvn_update.yml
+    secrets:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_SUDO: ${{ secrets.SSH_SUDO }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+  update_npm:
+    uses: ./.github/workflows/npm_update.yml
+    secrets:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_SUDO: ${{ secrets.SSH_SUDO }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}

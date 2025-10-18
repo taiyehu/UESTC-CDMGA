@@ -32,6 +32,8 @@ public class ScoreService {
     @Autowired
     private ProfileRepository profileRepository;
 
+    public Score getScoreById(long id) {return scoreRepository.findByIdAndIsDeletedFalse(id);}
+
     public List<Score> getScoreByCourse(int courseId){
         return scoreRepository.findByCourse_Id(courseId);
     }
@@ -52,8 +54,8 @@ public class ScoreService {
 
             Score score = new Score(created_at);
 
-            score.setCourse(courseRepository.findById((long) course_id).orElse(null));
-            score.setIdentity(identityRepository.findById((long) identity_id).orElse(null));
+            score.setCourse(courseRepository.findById(course_id).orElse(null));
+            score.setIdentity(identityRepository.findById(identity_id).orElse(null));
 
             score.setUploadTime(upload_time);
             score.setImage(image);
@@ -111,7 +113,7 @@ public class ScoreService {
         return scoreRepository.existsByIdentityIdAndCourseId(identityId, courseId);
     }
 
-    public Score getScoreByIdentityIdAndCourseId(Long identityId, Long courseId) {
+    public Score getScoreByIdentityIdAndCourseId(Integer identityId, Integer courseId) {
         return scoreRepository.findByIdentityIdAndCourseId(identityId, courseId);
 
     }

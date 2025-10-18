@@ -17,9 +17,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.cdmga.uestc.webpage.Common.LoginRequest;
-import com.cdmga.uestc.webpage.Common.RegisterRequest;
-import com.cdmga.uestc.webpage.Common.Result;
+import com.cdmga.uestc.webpage.common.LoginRequest;
+import com.cdmga.uestc.webpage.common.RegisterRequest;
+import com.cdmga.uestc.webpage.common.Result;
 import com.cdmga.uestc.webpage.Entity.Identity;
 import com.cdmga.uestc.webpage.Service.IdentityService;
 
@@ -108,7 +108,7 @@ public class IdentityController {
 
     // 删除用户
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteIdentity(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteIdentity(@PathVariable Integer id) {
         identityService.deleteIdentity(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }

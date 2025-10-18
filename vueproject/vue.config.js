@@ -2,6 +2,7 @@
 module.exports = {
   lintOnSave: false,
   devServer: {
+    hot: true,
     port: 8081, // 明确指定前端端口
     proxy: {
       '/api': {

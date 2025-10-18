@@ -12,13 +12,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Verify files exist
-        run: |
-          echo "Checking if required files exist..."
-          ls -la script/ || echo "script/ directory not found"
-          ls -la script/webserver.service || echo "webserver.service not found"
-          ls -la script/cdmga_nginx.conf || echo "cdmga_nginx.conf not found"
-
       - name: Install dependencies on remote server via SSH
         uses: appleboy/ssh-action@master
         with:
@@ -69,86 +62,29 @@ jobs:
 
             echo "All dependencies and directories initialized successfully!"
 
-      - name: Transfer script files to server
-        uses: appleboy/scp-action@v1.0.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_SUDO }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          source: "script/*"
-          target: "/opt/webserver/"
 
-      - name: Deploy and enable Systemd service
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_SUDO }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          script: |
-            # 复制 Systemd 服务文件到正确位置
-            sudo cp /opt/webserver/script/webserver.service /etc/systemd/system/
-            
-            # 重新加载 Systemd 配置
-            sudo systemctl daemon-reload
-            
-            # 启用服务（开机自启）
-            sudo systemctl enable webserver.service
-            
-            echo "Systemd service deployed and enabled successfully!"
-
-      - name: Copy and enable Nginx configuration
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_SUDO }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          script: |
-            sudo cp /opt/webserver/script/cdmga_nginx.conf /etc/nginx/sites-available/
-
-            # 删除默认站点
-            sudo rm -f /etc/nginx/sites-enabled/default
-
-            # 启用站点
-            if [ ! -f /etc/nginx/sites-enabled/cdmga_nginx.conf ]; then
-              sudo ln -s /etc/nginx/sites-available/cdmga_nginx.conf /etc/nginx/sites-enabled/
-            fi
-
-            # 替换 server_name
-            sudo sed -i "s/server_name localhost;/server_name ${{ secrets.SSH_DOMIAN }};/" /etc/nginx/sites-available/cdmga_nginx.conf
-
-            #测试并重启nginx
-            sudo nginx -t
-            sudo systemctl restart nginx
-            echo "Nginx configuration applied successfully!"
-            
-
-      - name: Verify installation
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_SUDO }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          script: |
-            echo "=== Verification ==="
-            echo "Java version:"
-            java -version
-            echo ""
-            echo "Nginx status:"
-            systemctl status nginx --no-pager
-            echo ""
-            echo "Webserver service status:"
-            systemctl status webserver.service --no-pager
-            echo ""
-            echo "Backend directories:"
-            ls -la /opt/webserver
-            ls -la /var/webserver
-            echo ""
-            echo "Frontend directories:"
-            ls -la /var/webserver/ui
-            echo ""
-            echo "Systemd service file:"
-            ls -la /etc/systemd/system/webserver.service
+  Deploy_env:
+    needs: init-server
+    uses: ./.github/workflows/env_update.yml
+    secrets:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_SUDO: ${{ secrets.SSH_SUDO }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      SSH_DOMIAN: ${{ secrets.SSH_DOMIAN }}
+  Deploy_mvn:
+    needs: init-server
+    uses: ./.github/workflows/mvn_update.yml
+    secrets:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_SUDO: ${{ secrets.SSH_SUDO }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+  Deploy_npm:
+    needs: init-server
+    uses: ./.github/workflows/npm_update.yml
+    secrets:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_SUDO: ${{ secrets.SSH_SUDO }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}

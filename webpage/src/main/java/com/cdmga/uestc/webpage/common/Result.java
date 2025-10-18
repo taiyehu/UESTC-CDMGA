@@ -1,5 +1,5 @@
 // 文件路径：src/main/java/com/cdmga/uestc/webpage/common/Result.java
-package com.cdmga.uestc.webpage.Common; // 对应上述包路径
+package com.cdmga.uestc.webpage.common; // 对应上述包路径
 
 public class Result {
     private int code;

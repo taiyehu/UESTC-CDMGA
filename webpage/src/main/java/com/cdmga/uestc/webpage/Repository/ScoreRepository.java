@@ -12,6 +12,9 @@ import java.util.Optional;
 @Repository
 public interface ScoreRepository extends JpaRepository<Score, Long> {
 
+    // 按id查找
+    Score findByIdAndIsDeletedFalse(Long id);
+
     // 按 identity_id 查找
     List<Score> findByIdentity_Id(int identityId);
 
@@ -37,6 +40,6 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
 
     boolean existsByIdentityIdAndCourseId(int identityId, int courseId);
 
-    Score findByIdentityIdAndCourseId(Long identityId, Long courseId);
+    Score findByIdentityIdAndCourseId(Integer identityId, Integer courseId);
 
 }

@@ -14,8 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.cdmga.uestc.webpage.Common.Result;
-import com.cdmga.uestc.webpage.Common.ScoreRequest;
+import com.cdmga.uestc.webpage.common.Result;
+import com.cdmga.uestc.webpage.common.ScoreRequest;
 import com.cdmga.uestc.webpage.Dto.UserScoreDto;
 import com.cdmga.uestc.webpage.Entity.Score;
 import com.cdmga.uestc.webpage.Service.ScoreService;
@@ -96,12 +96,12 @@ public class ScoreController {
     // }
 
     @GetMapping("/find")
-    public Result findScoreId(@RequestParam Long identity_id, @RequestParam Long course_id) {
+    public ResponseEntity<Long> findScoreId(@RequestParam Integer identity_id, @RequestParam Integer course_id) {
         Score score = scoreService.getScoreByIdentityIdAndCourseId(identity_id, course_id);
         if (score != null) {
-            return Result.success(score.getId());
+            return ResponseEntity.ok(score.getId());
         } else {
-            return Result.error("Score not found");
+            return ResponseEntity.ok(null);
         }
     }
     // 获取文件扩展名
@@ -111,6 +111,18 @@ public class ScoreController {
             return ""; // 没有扩展名
         }
         return fileName.substring(index + 1);
+    }
+
+    // 根据id查找Score
+    @GetMapping("/{id}")
+    public ResponseEntity<Score> getScoreById(@PathVariable Long id) {
+        return ResponseEntity.ok(scoreService.getScoreById(id));
+    }
+
+    @GetMapping("/byIdentity/{identityId}")
+    public ResponseEntity<List<Score>> getScoreByIdentityId(@PathVariable Integer identityId) {
+        List<Score> scores = scoreService.getScoredScoresByIdentityId(identityId);
+        return ResponseEntity.ok(scores);
     }
 
     // 根据id更新Score
@@ -138,8 +150,8 @@ public class ScoreController {
 
     @GetMapping("/exists")
         public ResponseEntity<?> checkScoreExists(
-                @RequestParam("identityId") int identityId,
-                @RequestParam("courseId") int courseId) {
+                @RequestParam("identityId") Integer identityId,
+                @RequestParam("courseId") Integer courseId) {
 
             boolean exists = scoreService.existsByIdentityIdAndCourseId(identityId, courseId);
             return ResponseEntity.ok(exists);
