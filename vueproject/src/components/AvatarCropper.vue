@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :visible.sync="visible" title="裁剪头像" :width="dialogWidth" :modal="true" :custom-class="'avatar-cropper-dialog'">
+  <el-dialog :visible.sync="visible" title="裁剪头像" :width="dialogWidth" append-to-body :modal="true" :custom-class="'avatar-cropper-dialog'" :close-on-click-modal="false">
     <div v-if="imgUrl" class="avatar-cropper-content">
       <vue-cropper
         ref="cropper"

@@ -83,7 +83,7 @@
     </el-card>
 
     <!-- 修改资料弹窗 -->
-    <el-dialog title="修改个人资料" :visible.sync="editDialogVisible" width="400px">
+    <el-dialog title="修改个人资料" :visible.sync="editDialogVisible" width="400px" :close-on-click-modal="false">
       <div class="edit-profile-dialog">
         <el-button @click="triggerFileInput">选择头像</el-button>
         <input ref="fileInput" type="file" accept="image/*" style="display:none" @change="onFileChange" />
