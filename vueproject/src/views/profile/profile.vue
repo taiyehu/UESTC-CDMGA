@@ -86,7 +86,6 @@
     <el-dialog title="修改个人资料" :visible.sync="editDialogVisible" width="400px">
       <div class="edit-profile-dialog">
         <el-button @click="triggerFileInput">选择头像</el-button>
-        <!-- 仅保留一个 file input，ref 唯一，方便 this.$refs.fileInput.click() -->
         <input ref="fileInput" type="file" accept="image/*" style="display:none" @change="onFileChange" />
 
         <!-- AvatarCropper 子组件（确保子组件正确导出） -->
@@ -184,6 +183,40 @@ export default {
     };
   },
   methods: {
+  triggerFileInput() { this.$refs.fileInput.click() },
+  onFileChange(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      this.$message.error('只能上传 JPG/PNG 图片')
+      return
+    }
+    this.rawAvatarFile = file
+    this.cropImgUrl = URL.createObjectURL(file)
+    this.cropperVisible = true
+    e.target.value = ''
+  },
+  async handleAvatarCrop(croppedBlob) {
+    this.cropperVisible = false
+    try {
+      const compressed = await compressImage(croppedBlob)
+      const formData = new FormData()
+      formData.append('avatar', compressed)
+      formData.append('identityId', this.user.id)
+      const res = await axios.post('/api/profile/upload-avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      if (res.data && res.data.code === 0) {
+        this.editProfile.avatar = res.data.data
+        this.$message.success('头像上传成功')
+      } else {
+        this.$message.error(res.data?.message || '头像上传失败')
+      }
+    } catch (err) {
+      console.error(err)
+      this.$message.error('裁剪或上传失败')
+    }
+    },
     loadProfile() {
       const routeId = this.$route.params.id;
       let userInfo = sessionStorage.getItem('userInfo');
@@ -254,57 +287,8 @@ export default {
       });
     },
 
-    // 触发隐藏的 file input
-    triggerFileInput() {
-      // $refs.fileInput 是单个 input（非数组）
-      if (this.$refs.fileInput && this.$refs.fileInput.click) {
-        this.$refs.fileInput.click();
-      }
-    },
 
-    // 选择文件后弹出裁剪
-    onFileChange(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const isImage = file.type.startsWith('image/');
-      const isJPGorPNG = file.type === 'image/jpeg' || file.type === 'image/png';
-      if (!isImage || !isJPGorPNG) {
-        this.$message.error('只能上传 JPG/PNG 格式图片!');
-        return;
-      }
-
-      this.rawAvatarFile = file;
-      this.cropImgUrl = URL.createObjectURL(file);
-      this.cropperVisible = true;
-
-      // 清除 input 值，方便二次选择同一文件
-      e.target.value = '';
-    },
-
-    // 裁剪确认后压缩并上传
-    async handleAvatarCrop(croppedBlob) {
-      this.cropperVisible = false;
-      try {
-        const compressed = await compressImage(croppedBlob); // 确保 compressImage 支持 Blob
-        const formData = new FormData();
-        formData.append('avatar', compressed);
-        formData.append('identityId', this.user.id);
-        const res = await axios.post('/api/profile/upload-avatar', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        if (res.data && res.data.code === 0) {
-          this.editProfile.avatar = res.data.data;
-          this.avatarFileList = [{ name: '头像', url: this.getImageUrl(res.data.data) }];
-          this.$message.success('头像上传成功');
-        } else {
-          this.$message.error(res.data?.message || '头像上传失败');
-        }
-      } catch (err) {
-        console.error(err);
-        this.$message.error('图片压缩或上传失败');
-      }
-    },
+   
 
     submitEditProfile() {
       if (!this.editProfile.description || this.editProfile.description.length > 50) {

@@ -13,14 +13,14 @@
         :can-scale="true"
         :center-box="true"
         :view-mode="1"
-        @realTime="realTime"
+        @realTime="updatePreview"
       />
       <div class="action-buttons">
-        <el-button @click="changeScale(1)">放大</el-button>
-        <el-button @click="changeScale(-1)">缩小</el-button>
-        <el-button @click="rotateLeft">左旋</el-button>
-        <el-button @click="rotateRight">右旋</el-button>
-        <el-button type="primary" @click="confirmCrop">确定裁剪</el-button>
+        <el-button @click="scale(1)">放大</el-button>
+        <el-button @click="scale(-1)">缩小</el-button>
+        <el-button @click="rotate(-90)">左旋</el-button>
+        <el-button @click="rotate(90)">右旋</el-button>
+        <el-button type="primary" @click="confirm">确定裁剪</el-button>
       </div>
       <div class="preview-container">
         <img :src="previewUrl" style="width:120px;height:120px;border-radius:50%;" />
@@ -34,14 +34,12 @@
 </template>
 
 <script>
-/* 方案 A：适用于 npm 包 "vue-cropper" （API 与你最初 template 对应） */
-import VueCropperModule from 'vue-cropper'
-// 兼容导出形式
-const VueCropperComponent = VueCropperModule && (VueCropperModule.default || VueCropperModule)
+import { VueCropper }  from 'vue-cropper' 
+// const VueCropper = VueCropperModule.default || VueCropperModule
 
 export default {
   name: 'AvatarCropper',
-  components: { VueCropper: VueCropperComponent },
+  components: { VueCropper },
   props: {
     visible: Boolean,
     imgUrl: String
@@ -50,29 +48,25 @@ export default {
     return { previewUrl: '' }
   },
   methods: {
-    realTime(data) { this.previewUrl = data.url },
-    changeScale(val) {
+    updatePreview(data) { this.previewUrl = data.url },
+    scale(val) {
       const c = this.$refs.cropper
       if (c && typeof c.changeScale === 'function') c.changeScale(val)
     },
-    rotateLeft() {
+    rotate(deg) {
       const c = this.$refs.cropper
-      if (c && typeof c.rotateLeft === 'function') c.rotateLeft()
+      if (c && typeof c.rotate === 'function') c.rotate(deg)
+      else if (c && typeof c.rotateLeft === 'function') deg < 0 ? c.rotateLeft() : c.rotateRight()
     },
-    rotateRight() {
-      const c = this.$refs.cropper
-      if (c && typeof c.rotateRight === 'function') c.rotateRight()
-    },
-    confirmCrop() {
+    confirm() {
       const c = this.$refs.cropper
       if (c && typeof c.getCropBlob === 'function') {
-        c.getCropBlob(blob => { this.$emit('crop', blob); this.close() })
+        c.getCropBlob(blob => {
+          this.$emit('crop', blob)
+          this.close()
+        })
       } else {
-        // 兜底：如果没有 getCropBlob，尝试 getCropData/getCroppedCanvas（不同实现）
-        try {
-          const canvas = c.getCropData ? c.getCropData() : null
-          // 如果需要，你可以在这里做其他兼容处理
-        } catch (e) { console.error(e) }
+        console.error('裁剪组件未正确导出 getCropBlob 方法')
       }
     },
     close() { this.$emit('update:visible', false) }
@@ -82,7 +76,6 @@ export default {
   }
 }
 </script>
-
 
 <style scoped>
 .action-buttons {
