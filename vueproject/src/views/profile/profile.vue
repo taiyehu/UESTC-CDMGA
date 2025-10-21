@@ -95,11 +95,13 @@
           @crop="handleAvatarCrop"
         />
 
-        <el-avatar
-          :size="64"
-          :src="getImageUrl(editProfile.avatar)"
-          style="background: #409EFF; color: #fff; margin-top: 10px;"
-        />
+          <div style="display:flex;justify-content:center;margin-top:10px;">
+            <el-avatar
+              :size="64"
+              :src="getImageUrl(editProfile.avatar)"
+              style="background: #409EFF; color: #fff;"
+            />
+          </div>
 
         <el-input
           v-model="editProfile.description"
@@ -197,25 +199,18 @@ export default {
     e.target.value = ''
   },
   async handleAvatarCrop(croppedBlob) {
-    this.cropperVisible = false
-    try {
-      const compressed = await compressImage(croppedBlob)
-      const formData = new FormData()
-      formData.append('avatar', compressed)
-      formData.append('identityId', this.user.id)
-      const res = await axios.post('/api/profile/upload-avatar', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-      if (res.data && res.data.code === 0) {
-        this.editProfile.avatar = res.data.data
-        this.$message.success('头像上传成功')
-      } else {
-        this.$message.error(res.data?.message || '头像上传失败')
-      }
-    } catch (err) {
-      console.error(err)
-      this.$message.error('裁剪或上传失败')
+    this.cropperVisible = false;
+    // 统一转为jpg或png格式
+    let type = croppedBlob.type;
+    if (type !== 'image/jpeg' && type !== 'image/png') {
+      type = 'image/jpeg';
     }
+    const fileName = `avatar_${Date.now()}.${type === 'image/png' ? 'png' : 'jpg'}`;
+    const fixedBlob = new Blob([croppedBlob], { type });
+    const fixedFile = new File([fixedBlob], fileName, { type });
+    this.croppedFile = fixedFile;
+    this.editProfile.avatar = URL.createObjectURL(fixedFile);
+    this.editDialogVisible = true;
     },
     loadProfile() {
       const routeId = this.$route.params.id;
@@ -294,6 +289,25 @@ export default {
       if (!this.editProfile.description || this.editProfile.description.length > 50) {
         this.$message.error('签名不能为空且不能超过50字');
         return;
+      }
+      // 上传裁剪后的图片
+      if (this.croppedFile) {
+        const formData = new FormData();
+        formData.append('avatar', this.croppedFile);
+        formData.append('identityId', this.user.id);
+        axios.post('/api/profile/upload-avatar', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        }).then(res => {
+          if (res.data && res.data.code === 0) {
+            this.editProfile.avatar = res.data.data;
+            this.$message.success('头像上传成功');
+          } else {
+            this.$message.error(res.data?.message || '头像上传失败');
+          }
+        }).catch(err => {
+          console.error(err);
+          this.$message.error('裁剪或上传失败');
+        });
       }
       axios.put(`/api/profile/${this.user.id}`, {
         avatar: this.editProfile.avatar,
