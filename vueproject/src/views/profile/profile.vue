@@ -246,9 +246,11 @@ export default {
     },
 
     getImageUrl(imagePath) {
-      if (!imagePath) return this.defaultAvatar;
-      if (/^https?:\/\//.test(imagePath)) return imagePath;
-      return imagePath.startsWith('/') ? imagePath : '/' + imagePath;
+  if (!imagePath) return this.defaultAvatar;
+  // 支持 blob: 和 data: url 直接返回
+  if (/^(blob:|data:)/.test(imagePath)) return imagePath;
+  if (/^https?:\/\//.test(imagePath)) return imagePath;
+  return imagePath.startsWith('/') ? imagePath : '/' + imagePath;
     },
 
     previewAvatar() {
@@ -257,7 +259,12 @@ export default {
     },
 
     openEditDialog() {
-      this.editProfile.avatar = this.profile.avatar;
+      // 优先显示裁剪后的头像
+      if (this.croppedFile) {
+        this.editProfile.avatar = URL.createObjectURL(this.croppedFile);
+      } else {
+        this.editProfile.avatar = this.profile.avatar;
+      }
       this.editProfile.description = this.profile.description;
       this.avatarFileList = this.profile.avatar ? [{ name: '头像', url: this.getImageUrl(this.profile.avatar) }] : [];
       this.editDialogVisible = true;
