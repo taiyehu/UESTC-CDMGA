@@ -4,7 +4,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,10 +35,18 @@ public class ScoreController {
     private String uploadDir;
 
     @GetMapping("/")
-    public ResponseEntity<List<Score>> getScore() {
-    List<Score> currentScore = scoreService.getAllScore();
-    return currentScore.isEmpty() ? ResponseEntity.status(HttpStatus.NO_CONTENT).body(null)
-                                  : ResponseEntity.ok(currentScore);
+    public ResponseEntity<Object> getScore(
+            @RequestParam(defaultValue = "0")int page,
+            @RequestParam(defaultValue = "10")int size
+    ) {
+    List<Score> currentScore = scoreService.getAllScore(page, size);
+
+    Long total = scoreService.getScoreCount();
+
+    Map<String, Object> result = new HashMap<>();
+    result.put("list",currentScore);
+    result.put("total",total);
+    return ResponseEntity.ok(result);
 }
 
 

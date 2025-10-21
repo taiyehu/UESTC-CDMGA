@@ -1,5 +1,7 @@
 package com.cdmga.uestc.webpage.Repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -26,6 +28,8 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     @Query("SELECT c FROM Score c WHERE c.isDeleted = false ORDER BY c.createdAt DESC")
     List<Score> findAllNotDeleted();
 
+    @Query("SELECT c FROM Score c WHERE c.isDeleted = false ORDER BY c.createdAt DESC")
+    Page<Score> findAllNotDeletedByPaged(Pageable pageable);
     // 按 id、identity_id 和 course_id 查找
     Optional<Score> findByIdAndIdentityIdAndCourseId(Long id, int identityId, int courseId);
 

@@ -33,6 +33,15 @@
           </template>
         </el-table-column>
       </el-table>
+      <div>
+        <el-pagination
+            @current-change="handlePageChange"
+            :current-page="currentPage"
+            :page-size="pageSize"
+            :total="total"
+            layout="prev, pager, next">
+        </el-pagination>
+      </div>
     </el-card>
     <el-card v-else>
       <h2>没有未审核的成绩信息</h2>
@@ -104,6 +113,9 @@ export default {
       previewImage: '',
       deleteDialogVisible: false,
       deleteScoreId: null,
+      currentPage: 1,
+      pageSize: 10,
+      total: 0,
     };
   },
   methods: {
@@ -124,7 +136,8 @@ export default {
     async fetchScores() {
       try {
         const response = await fetchScore({ page: 1, pageSize: 10 });
-        this.scores = response.data || [];
+        this.scores = response.data.list || [];
+        this.total = response.data.total || 0;
         // 过滤出未被审核的成绩
         this.unscoredScores = this.scores.filter(score =>!score.isScored);
       } catch (error) {
@@ -133,6 +146,10 @@ export default {
         this.scores = [];
         this.unscoredScores = [];
       }
+    },
+    handlePageChange(page) {
+      this.currentPage = page;
+      this.fetchScores()
     },
     async updateScore(score) {
     try {
