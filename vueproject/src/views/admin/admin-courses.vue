@@ -96,6 +96,7 @@
             :file-list="imageFileList"
             list-type="picture-card"
             :on-success="handleImageUploadSuccess"
+            :before-upload="beforeImageUpload"
           >
             <el-button>点击上传</el-button>
           </el-upload>
@@ -118,6 +119,7 @@
 import { fetchAllCourseData, deleteCourseData, uploadCourseData } from '@/api/course'
 import dayjs from 'dayjs'
 import axios from 'axios'
+import { compressImage } from '@/components/imageCompressor'
 
 export default {
   data() {
@@ -217,6 +219,21 @@ export default {
         this.$message.success('图片上传成功');
       } else {
         this.$message.error((response.message || (response.data && response.data.message)) || '图片上传失败');
+      }
+    },
+
+    // 上传前自动压缩图片
+    async beforeImageUpload(file) {
+      try {
+        if (!file.type.startsWith('image/')) {
+          this.$message.error('只能上传图片文件');
+          return false;
+        }
+        const compressed = await compressImage(file);
+        return compressed;
+      } catch (err) {
+        this.$message.error('图片压缩失败: ' + err.message);
+        return false;
       }
     },
 
