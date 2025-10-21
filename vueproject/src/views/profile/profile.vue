@@ -185,6 +185,15 @@ export default {
     };
   },
   methods: {
+    handleAvatarUploadSuccess(response, file, fileList) {
+      if (response.code === 0) {
+        this.editProfile.avatar = response.data;
+        this.avatarFileList = fileList;
+        this.$message.success('头像上传成功');
+      } else {
+        this.$message.error('头像上传失败');
+      }
+    },
   triggerFileInput() { this.$refs.fileInput.click() },
   onFileChange(e) {
     const file = e.target.files[0]
@@ -200,16 +209,22 @@ export default {
   },
   async handleAvatarCrop(croppedBlob) {
     this.cropperVisible = false;
-    // 统一转为jpg或png格式
-    let type = croppedBlob.type;
-    if (type !== 'image/jpeg' && type !== 'image/png') {
-      type = 'image/jpeg';
+    // 压缩图片，调用 compressImage(file, targetSize)
+    try {
+      const compressedFile = await compressImage(croppedBlob);
+      this.croppedFile = compressedFile;
+      // 上传压缩后的图片
+      const formData = new FormData();
+      formData.append('avatar', compressedFile);
+      formData.append('identityId', this.user.id);
+      const res = await axios.post('/api/profile/upload-avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      this.handleAvatarUploadSuccess(res.data, compressedFile, [{ name: '头像', url: res.data.data }]);
+    } catch (err) {
+      console.error(err);
+      this.$message.error('裁剪或上传失败');
     }
-    const fileName = `avatar_${Date.now()}.${type === 'image/png' ? 'png' : 'jpg'}`;
-    const fixedBlob = new Blob([croppedBlob], { type });
-    const fixedFile = new File([fixedBlob], fileName, { type });
-    this.croppedFile = fixedFile;
-    this.editProfile.avatar = URL.createObjectURL(fixedFile);
     this.editDialogVisible = true;
     },
     loadProfile() {
@@ -246,11 +261,12 @@ export default {
     },
 
     getImageUrl(imagePath) {
-  if (!imagePath) return this.defaultAvatar;
-  // 支持 blob: 和 data: url 直接返回
-  if (/^(blob:|data:)/.test(imagePath)) return imagePath;
-  if (/^https?:\/\//.test(imagePath)) return imagePath;
-  return imagePath.startsWith('/') ? imagePath : '/' + imagePath;
+      if (!imagePath) return this.defaultAvatar;
+      if (/^https?:\/\//.test(imagePath)) {
+        return imagePath;
+      }
+      // 直接返回相对路径
+      return imagePath.startsWith('/') ? imagePath : '/' + imagePath;
     },
 
     previewAvatar() {
@@ -259,15 +275,18 @@ export default {
     },
 
     openEditDialog() {
-      // 优先显示裁剪后的头像
-      if (this.croppedFile) {
-        this.editProfile.avatar = URL.createObjectURL(this.croppedFile);
-      } else {
-        this.editProfile.avatar = this.profile.avatar;
-      }
+      this.editProfile.avatar = this.profile.avatar;
       this.editProfile.description = this.profile.description;
-      this.avatarFileList = this.profile.avatar ? [{ name: '头像', url: this.getImageUrl(this.profile.avatar) }] : [];
+      // 如果有头像，初始化 fileList
+      this.avatarFileList = this.profile.avatar
+        ? [{ name: '头像', url: this.getImageUrl(this.profile.avatar) }]
+        : [];
       this.editDialogVisible = true;
+    },
+
+    handleAvatarRemove(file, fileList) {
+      this.editProfile.avatar = '';
+      this.avatarFileList = fileList;
     },
 
     logout() {
@@ -297,25 +316,7 @@ export default {
         this.$message.error('签名不能为空且不能超过50字');
         return;
       }
-      // 上传裁剪后的图片
-      if (this.croppedFile) {
-        const formData = new FormData();
-        formData.append('avatar', this.croppedFile);
-        formData.append('identityId', this.user.id);
-        axios.post('/api/profile/upload-avatar', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        }).then(res => {
-          if (res.data && res.data.code === 0) {
-            this.editProfile.avatar = res.data.data;
-            this.$message.success('头像上传成功');
-          } else {
-            this.$message.error(res.data?.message || '头像上传失败');
-          }
-        }).catch(err => {
-          console.error(err);
-          this.$message.error('裁剪或上传失败');
-        });
-      }
+      // 提交头像和签名审核
       axios.put(`/api/profile/${this.user.id}`, {
         avatar: this.editProfile.avatar,
         description: this.editProfile.description,
@@ -325,9 +326,6 @@ export default {
         this.$message.success('资料已提交审核，请等待管理员处理');
         this.editDialogVisible = false;
         this.fetchProfile();
-      }).catch(err => {
-        console.error(err);
-        this.$message.error('提交失败');
       });
     },
 
