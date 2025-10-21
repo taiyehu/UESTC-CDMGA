@@ -129,3 +129,5 @@ demo.html 文件就是主题的网页框架
 ## 2025-8-30 CI/CD部署功能 -QGlint
 
 利用Github Action实现了自动部署的功能。
+
+## 2025-10-21 添加图片压缩功能 -QGlint

@@ -147,6 +147,7 @@
 <script>
 import router from '@/router';
 import axios from 'axios';
+import { compressImage } from '@/components/imageCompressor'
 
 export default {
   data() {
@@ -246,16 +247,14 @@ export default {
         }
       });
     },
-    beforeAvatarUpload(file) {
+    async beforeAvatarUpload(file) {
       const isJPG = file.type === 'image/jpeg' || file.type === 'image/png';
-      const isLt2M = file.size / 1024 / 1024 < 2;
       if (!isJPG) {
         this.$message.error('只能上传 JPG/PNG 格式图片!');
+        return false;
       }
-      if (!isLt2M) {
-        this.$message.error('图片大小不能超过 2MB!');
-      }
-      return isJPG && isLt2M;
+      // 自动压缩到1M以内
+      return await compressImage(file)
     },
     submitEditProfile() {
       if (!this.editProfile.description || this.editProfile.description.length > 50) {
