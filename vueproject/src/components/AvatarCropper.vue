@@ -1,12 +1,12 @@
 <template>
-  <el-dialog :visible.sync="visible" title="裁剪头像" width="600px">
-    <div v-if="imgUrl">
+  <el-dialog :visible.sync="visible" title="裁剪头像" :width="dialogWidth" :modal="true" :custom-class="'avatar-cropper-dialog'">
+    <div v-if="imgUrl" class="avatar-cropper-content">
       <vue-cropper
         ref="cropper"
         :img="imgUrl"
         :auto-crop="true"
-        :auto-crop-width="240"
-        :auto-crop-height="240"
+        :auto-crop-width="cropWidth"
+        :auto-crop-height="cropHeight"
         :fixed="true"
         :fixed-number="[1,1]"
         :can-move="true"
@@ -14,20 +14,17 @@
         :center-box="true"
         :view-mode="1"
         @realTime="updatePreview"
+        :style="{width: cropWidth + 'px', height: cropHeight + 'px', margin: 'auto'}"
       />
-      <div class="action-buttons">
-        <el-button @click="scale(1)">放大</el-button>
-        <el-button @click="scale(-1)">缩小</el-button>
-        <el-button @click="rotate(-90)">左旋</el-button>
-        <el-button @click="rotate(90)">右旋</el-button>
-        <el-button type="primary" @click="confirm">确定裁剪</el-button>
-      </div>
-      <div class="preview-container">
-        <img :src="previewUrl" style="width:120px;height:120px;border-radius:50%;" />
-      </div>
+      <div style="height:40px;"></div>
     </div>
     <div v-else style="text-align:center;padding:40px 0;">请选择图片后裁剪</div>
-    <span slot="footer" class="dialog-footer">
+    <span slot="footer" class="dialog-footer" style="display:flex;justify-content:center;gap:16px;">
+      <el-button @click="scale(1)">放大</el-button>
+      <el-button @click="scale(-1)">缩小</el-button>
+      <el-button @click="rotate(-90)">左旋</el-button>
+      <el-button @click="rotate(90)">右旋</el-button>
+      <el-button type="primary" @click="confirm">确定裁剪</el-button>
       <el-button @click="close">取消</el-button>
     </span>
   </el-dialog>
@@ -45,7 +42,13 @@ export default {
     imgUrl: String
   },
   data() {
-    return { previewUrl: '' }
+    return {
+      previewUrl: '',
+      dialogWidth: Math.round(window.innerWidth * 2 / 3) + 'px',
+      dialogHeight: Math.round(window.innerHeight * 2 / 3) + 'px',
+      cropWidth: Math.round(window.innerWidth * 2 / 3) - 40,
+      cropHeight: Math.round(window.innerHeight * 2 / 3) - 40
+    }
   },
   methods: {
     updatePreview(data) { this.previewUrl = data.url },
@@ -78,13 +81,25 @@ export default {
 </script>
 
 <style scoped>
+.avatar-cropper-dialog {
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  height: calc(66vh) !important;
+  max-height: calc(66vh) !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.avatar-cropper-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: calc(66vh - 80px);
+}
 .action-buttons {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   margin-top: 10px;
-}
-.preview-container {
-  margin-top: 20px;
-  text-align: center;
 }
 </style>
