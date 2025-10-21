@@ -10,6 +10,15 @@
           <el-button type="danger" @click="deleteConfirm(course)" size="small">删除</el-button>
         </div>
       </div>
+      <div>
+        <el-pagination
+            @current-change="handlePageChange"
+            :current-page="currentPage"
+            :page-size="pageSize"
+            :total="total"
+            layout="prev, pager, next">
+        </el-pagination>
+      </div>
     </el-card>
     <el-card v-else>
       <h2>没有课题信息</h2>
@@ -129,6 +138,9 @@ export default {
       selectedCourse: {}, // 存储当前查看的课题信息
       showUploadForm: false, // 控制上传课题表单显示
       confirmDialogVisible: false,
+      currentPage: 1,
+      pageSize: 10,
+      total: 0,
       newCourse: {
         title: '',
         category: '',
@@ -156,12 +168,17 @@ export default {
     },
     async fetchCourses() {
       try {
-        const response = await fetchAllCourseData({ page: 1, pageSize: 10 })
-        this.courses = response.data || [];
+        const response = await fetchAllCourseData({ page:this.currentPage, size:this.pageSize})
+        this.courses = response.data.list || [];
+        this.total = response.data.total || 0;
       } catch (error) {
         console.error('获取课题信息失败:', error);
         this.courses = [];
       }
+    },
+    handlePageChange(page) {
+      this.currentPage = page;
+      this.fetchCourses();
     },
     openDialog(course) {
       this.selectedCourse = {

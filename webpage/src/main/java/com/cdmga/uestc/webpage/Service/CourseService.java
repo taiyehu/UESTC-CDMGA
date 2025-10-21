@@ -3,9 +3,11 @@ package com.cdmga.uestc.webpage.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.cdmga.uestc.webpage.Entity.Identity;
 import com.cdmga.uestc.webpage.Entity.Score;
 import com.cdmga.uestc.webpage.Repository.ScoreRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import com.cdmga.uestc.webpage.Entity.Course;
@@ -37,9 +39,13 @@ public class CourseService {
         return courseRepository.findLatestStartTimeCourseBeforeEndTime();
     }
 
-    public List<Course> getAvailableCourse(){
+    public List<Course> getAvailableCourse(int page, int size){
         LocalDateTime currentDateTime = LocalDateTime.now();
-        return courseRepository.findAvailableCourse(currentDateTime);
+        return courseRepository.findAvailableCourse(currentDateTime,PageRequest.of(page,size)).getContent();
+    }
+
+    public Long countCourse(){
+        return courseRepository.countByIsDeletedFalse();
     }
 
     public Course postNewCourse(String title, String category,
@@ -72,4 +78,8 @@ public class CourseService {
         return null; // 如果课程不存在，返回null
     }
 
+    public List<Course> getAllCourseByPage(int page, int size) {
+        // 分页查询未删除的 Identity
+        return courseRepository.findByIsDeletedFalse(PageRequest.of(page, size)).getContent();
+    }
 }

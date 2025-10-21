@@ -11,6 +11,9 @@ import java.util.List;
 @Repository
 public interface IdentityRepository extends JpaRepository<Identity, Integer> {
 
+    // 统计所有生效用户
+    long countByIsDeletedFalse();
+
     // 可以定义一些自定义查询方法
     Identity findByAccount(String account);
 
@@ -18,4 +21,6 @@ public interface IdentityRepository extends JpaRepository<Identity, Integer> {
 
     @Query("select c from Identity c")
     List<Identity> findAllAccount();
+
+
 }

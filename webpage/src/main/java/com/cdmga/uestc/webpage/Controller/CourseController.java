@@ -3,7 +3,9 @@ package com.cdmga.uestc.webpage.Controller;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.nio.file.Path;
 
@@ -107,9 +109,16 @@ public class CourseController {
 
 
     @GetMapping("/allcourse")
-    public ResponseEntity<List<Course>> getAllCourses() {
-        List<Course> courses = courseService.getAllCourse();
-        return ResponseEntity.ok(courses);
+    public ResponseEntity<Object> getAllCourses(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        List<Course> courses = courseService.getAllCourseByPage(page,size);
+        Long total = courseService.countCourse();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("list", courses);
+        result.put("total", total);
+        return ResponseEntity.ok(result);
     }
 
     @DeleteMapping("/{courseId}")
@@ -127,9 +136,17 @@ public class CourseController {
     }
 
     @GetMapping("/availablecourse")
-    public ResponseEntity<List<Course>> getAvailableCourses() {
-        List<Course> courses = courseService.getAvailableCourse();
-        return ResponseEntity.ok(courses);
+    public ResponseEntity<Object> getAvailableCourses(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        List<Course> courses = courseService.getAvailableCourse(page,size);
+        Long total = courseService.countCourse();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("list", courses);
+        result.put("total", total);
+
+        return ResponseEntity.ok(result);
     }
 
     // 删除对应id的课题

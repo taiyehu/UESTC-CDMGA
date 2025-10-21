@@ -3,6 +3,7 @@ package com.cdmga.uestc.webpage.Service;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -82,5 +83,13 @@ public class IdentityService {
         else{
             return false;
         }
+    }
+
+    public List<Identity> getIdentitiesByPage(int page, int size) {
+        return identityRepository.findAll(PageRequest.of(page, size)).getContent();
+    }
+
+    public long countIdentities() {
+        return identityRepository.countByIsDeletedFalse();
     }
 }

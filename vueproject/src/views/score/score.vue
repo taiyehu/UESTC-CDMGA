@@ -237,7 +237,7 @@ export default {
     async fetchCourses() {
       try {
         const response = await fetchAvailablecourseData({page : 1, size: 10})
-        this.courses = response.data || [];
+        this.courses = response.data.list || [];
         this.submittedCourses = []; // 清空
         this.ScoredScores = [];
         await this.checkSubmittedCourses();

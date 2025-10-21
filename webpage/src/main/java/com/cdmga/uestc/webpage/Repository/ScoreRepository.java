@@ -12,6 +12,8 @@ import java.util.Optional;
 @Repository
 public interface ScoreRepository extends JpaRepository<Score, Long> {
 
+    long countByIsDeletedFalse();
+
     // 按id查找
     Score findByIdAndIsDeletedFalse(Long id);
 

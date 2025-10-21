@@ -9,6 +9,15 @@
           <el-button type="danger" @click="deleteUser(user.id)" size="small">删除</el-button>
         </div>
       </div>
+      <div>
+        <el-pagination
+            @current-change="handlePageChange"
+            :current-page="currentPage"
+            :page-size="pageSize"
+            :total="total"
+            layout="prev, pager, next">
+        </el-pagination>
+      </div>
     </el-card>
     <el-card v-else>
       <h2>没有用户信息</h2>
@@ -49,19 +58,26 @@ export default {
     return {
       users: [], // 存储用户信息
       dialogVisible: false, // 控制弹窗显示
-      selectedUser: {} // 存储当前查看的用户信息
+      selectedUser: {},
+      currentPage: 1,
+      pageSize: 10,
+      total: 0,
     };
   },
   methods: {
     async fetchUsers() {
-        console.log(this.$axios);
       try {
-        const response = await fetchUsersData({ page: 1, pageSize: 10 });
-        this.users = response.data || [];
+        const response = await fetchUsersData({ page: this.currentPage, pageSize: this.pageSize });
+        this.users = response.data.list || [];
+        this.total = response.data.total || 0;
       } catch (error) {
         console.error('获取用户信息失败:', error);
         this.users = [];
       }
+    },
+    handlePageChange(page) {
+      this.currentPage = page;
+      this.fetchUsers();
     },
     openDialog(user) {
       // 打开弹窗并填充选中的用户信息

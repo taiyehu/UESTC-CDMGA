@@ -2,6 +2,8 @@ package com.cdmga.uestc.webpage.Controller;
 
 
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -68,10 +70,22 @@ public class IdentityController {
     }
 
     @GetMapping("/allaccount")
-    public ResponseEntity<List<Identity>> getAllIdentities() {
-        List<Identity> identities = identityService.getAllIdentities();
-        return ResponseEntity.ok(identities);
+    public ResponseEntity<Object> getAllIdentities(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        // 查询分页数据
+        List<Identity> identities = identityService.getIdentitiesByPage(page, size);
+        // 查询总数
+        long total = identityService.countIdentities();
+
+        // 构造返回结果
+        Map<String, Object> result = new HashMap<>();
+        result.put("list", identities);
+        result.put("total", total);
+
+        return ResponseEntity.ok(result);
     }
+
 
 
     // 获取用户信息
