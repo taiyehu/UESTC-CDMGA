@@ -1,6 +1,6 @@
 <template>
   <div class="main-content">
-    <div class="banner-carousel" @mouseenter="pauseCarousel" @mouseleave="resumeCarousel">
+    <div class="banner-carousel" @mouseenter="pauseCarousel" @mouseleave="resumeCarousel(false)">
       <div class="banner-label">
         <span v-if="bannerList[currentIndex].type === 'course'">最新课题</span>
         <span v-else-if="bannerList[currentIndex].type === 'activity'">最新活动</span>
@@ -14,7 +14,7 @@
               <p>类别: {{ bannerList[currentIndex].data.category }}</p>
               <p>开始时间: {{ formatDate(bannerList[currentIndex].data.startTime) }}</p>
               <p>结束时间: {{ formatDate(bannerList[currentIndex].data.endTime) }}</p>
-              <p>描述: {{ bannerList[currentIndex].data.description }}</p>
+              <!--<p>描述: {{ bannerList[currentIndex].data.description }}</p>-->
               <img
                 :src="getImageUrl(bannerList[currentIndex].data.image)"
                 alt="课程图片"
@@ -45,8 +45,50 @@
         <el-button class="banner-btn right" icon="el-icon-arrow-right" @click="nextCard" size="small" />
       </div>
     </div>
-    <el-dialog :visible.sync="previewVisible" width="auto" :show-close="true" center>
-      <img :src="previewImage" alt="预览图片" style="max-width:90vw;max-height:80vh;display:block;margin:auto;" />
+    <el-dialog :visible.sync="previewVisible" width="760px" :show-close="true" center @close="resumeCarousel">
+      <template v-if="currentCourse">
+        <el-form :model="currentCourse" label-width="110px" class="view-form">
+          <el-form-item label="课题名称">
+            <el-input :value="currentCourse.title || '-'" disabled />
+          </el-form-item>
+
+          <el-form-item label="类别">
+            <el-input :value="currentCourse.category || '-'" disabled />
+          </el-form-item>
+
+          <el-form-item label="开始时间">
+            <el-input :value="formatDateTime(currentCourse.startTime)" disabled />
+          </el-form-item>
+
+          <el-form-item label="结束时间">
+            <el-input :value="formatDateTime(currentCourse.endTime)" disabled />
+          </el-form-item>
+
+          <el-form-item label="描述">
+            <div style="white-space:pre-wrap;color:#333;">{{ currentCourse.description || '-' }}</div>
+          </el-form-item>
+
+          <el-form-item label="图片">
+            <div v-if="currentCourse.image">
+              <img
+                  :src="getImageUrl(currentCourse.image)"
+                  alt="课题图片"
+                  style="max-width:260px;max-height:160px;border-radius:6px;cursor:pointer;"
+                  @click="handleImageClick(getImageUrl(currentCourse.image))"
+              />
+            </div>
+            <div v-else>-</div>
+          </el-form-item>
+        </el-form>
+      </template>
+
+      <div v-else>
+        <el-empty description="无课题数据" />
+      </div>
+
+      <span slot="footer" class="dialog-footer">
+      <el-button @click="previewVisible = false">关闭</el-button>
+    </span>
     </el-dialog>
   </div>
 </template>
@@ -64,6 +106,7 @@ export default {
       previewVisible: false,
       previewImage: '',
       controlsVisible: false,
+      pauseCounter: 0, // 新增：暂停计数器
     };
   },
   mounted() {
@@ -71,6 +114,12 @@ export default {
   },
   beforeDestroy() {
     this.clearCarouselTimer();
+  },
+  computed: {
+    currentCourse() {
+      const item = this.bannerList[this.currentIndex];
+      return item && item.type === 'course' ? item.data || null : null;
+    }
   },
   methods: {
     async initBannerList() {
@@ -104,12 +153,22 @@ export default {
       }
     },
     pauseCarousel() {
-      this.clearCarouselTimer();
-      this.controlsVisible = true;
+      if (this.pauseCounter === 0) {
+        this.clearCarouselTimer();
+        this.controlsVisible = true;
+      }
+      this.pauseCounter++;
     },
-    resumeCarousel() {
-      this.startCarousel();
-      this.controlsVisible = false;
+    resumeCarousel(force = false) {
+      if (force) {
+        this.pauseCounter = 0;
+      } else if (this.pauseCounter > 0) {
+        this.pauseCounter--;
+      }
+      if (this.pauseCounter === 0) {
+        this.startCarousel();
+        this.controlsVisible = false;
+      }
     },
     clearCarouselTimer() {
       if (this.carouselTimer) {
@@ -128,6 +187,7 @@ export default {
       }
     },
     handleImageClick(imgUrl) {
+      this.pauseCarousel();
       this.previewImage = imgUrl;
       this.previewVisible = true;
     },
@@ -135,6 +195,10 @@ export default {
       const d = new Date(date);
       const options = { year: 'numeric', month: 'long', day: 'numeric' };
       return d.toLocaleDateString('zh-CN', options);
+    },
+    formatDateTime(dateTime) {
+      if (!dateTime) return '';
+      return new Date(dateTime).toLocaleString();
     },
     getImageUrl(imagePath) {
       if (!imagePath) return '';
