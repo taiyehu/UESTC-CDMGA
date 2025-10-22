@@ -22,6 +22,7 @@
           @click="handleImageClick(getImageUrl(course.image))"
           style="margin-top: 10px;"
         >查看</el-button>
+        
       </div>
     </div>
     <el-dialog :visible.sync="previewVisible" width="auto" :show-close="true" center>
