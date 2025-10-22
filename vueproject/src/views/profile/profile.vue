@@ -68,11 +68,11 @@
 
       <el-divider></el-divider>
 
-      <div class="profile-actions">
+      <!-- <div class="profile-actions">
         <router-link to="/score">
           <el-button type="success" class="profile-btn">成绩提交</el-button>
         </router-link>
-      </div>
+      </div> -->
     </el-card>
 
     <el-card class="box-card" shadow="hover" v-else>
@@ -162,7 +162,12 @@
     <el-dialog :visible.sync="avatarPreviewVisible" width="auto" :show-close="true" center>
       <img :src="avatarPreviewUrl" alt="头像大图" style="max-width:90vw;max-height:80vh;display:block;margin:auto;" />
     </el-dialog>
+
+    <el-dialog :visible.sync="imagePreviewVisible" width="auto" :show-close="true" center>
+      <img :src="imagePreviewUrl" alt="图片预览" style="max-width:90vw;max-height:80vh;display:block;margin:auto;" />
+    </el-dialog>
   </div>
+  
 </template>
 
 <script>
@@ -384,4 +389,8 @@ export default {
 .profile-signature { width: 300px; max-width: 100%; margin-bottom: 16px; }
 .admin-actions .profile-btn { margin-right: 16px; }
 .profile-actions .profile-btn { margin-right: 16px; }
+img[alt="课题图片"],
+img[alt="成绩图片"] {
+  cursor: pointer;
+}
 </style>

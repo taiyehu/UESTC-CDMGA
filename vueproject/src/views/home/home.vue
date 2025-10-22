@@ -71,10 +71,10 @@
           <el-form-item label="图片">
             <div v-if="currentCourse.image">
               <img
-                  :src="getImageUrl(currentCourse.image)"
-                  alt="课题图片"
-                  style="max-width:260px;max-height:160px;border-radius:6px;cursor:pointer;"
-                  @click="handleImageClick(getImageUrl(currentCourse.image))"
+                :src="getImageUrl(currentCourse.image)"
+                alt="课题图片"
+                style="max-width:260px;max-height:160px;border-radius:6px;cursor:pointer;"
+                @click="previewImage(currentCourse.image)"
               />
             </div>
             <div v-else>-</div>
@@ -90,6 +90,9 @@
       <el-button @click="previewVisible = false">关闭</el-button>
     </span>
     </el-dialog>
+    <el-dialog :visible.sync="imagePreviewVisible" width="auto" :show-close="true" center>
+      <img :src="imagePreviewUrl" alt="图片预览" style="max-width:90vw;max-height:80vh;display:block;margin:auto;" />
+    </el-dialog>
   </div>
 </template>
 
@@ -104,9 +107,10 @@ export default {
       currentIndex: 0,
       carouselTimer: null,
       previewVisible: false,
-      previewImage: '',
       controlsVisible: false,
       pauseCounter: 0, // 新增：暂停计数器
+      imagePreviewVisible: false,
+      imagePreviewUrl: '',
     };
   },
   mounted() {
@@ -122,6 +126,10 @@ export default {
     }
   },
   methods: {
+    previewImage(imgUrl) {
+      this.imagePreviewUrl = this.getImageUrl(imgUrl);
+      this.imagePreviewVisible = true;
+    },
     async initBannerList() {
       try {
         const response = await fetchCourseData();
@@ -188,7 +196,6 @@ export default {
     },
     handleImageClick(imgUrl) {
       this.pauseCarousel();
-      this.previewImage = imgUrl;
       this.previewVisible = true;
     },
     formatDate(date) {

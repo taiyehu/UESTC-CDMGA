@@ -15,13 +15,8 @@
           alt="课程图片"
           v-if="course.image"
           class="course-image"
-        />
-        <el-button
-          v-if="course.image"
-          size="mini"
           @click="handleImageClick(getImageUrl(course.image))"
-          style="margin-top: 10px;"
-        >查看</el-button>
+        />
         
       </div>
     </div>
@@ -100,5 +95,6 @@ export default {
   display: block;
   margin-left: auto;
   margin-right: auto;
+  cursor: pointer;
 }
 </style>
