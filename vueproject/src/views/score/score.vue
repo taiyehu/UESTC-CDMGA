@@ -339,7 +339,7 @@ export default {
       });
 
       this.updateForm = {
-        score_id :response.data.data,
+        score_id :response.data,
         course_id: course.id,
         course_title: course.title,
         create_at: course.created_at,
@@ -487,7 +487,7 @@ export default {
       }
     }
   },
-  
+
   mounted() {
     this.fetchCourses();
   }
