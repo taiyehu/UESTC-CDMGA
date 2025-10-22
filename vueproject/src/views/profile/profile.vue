@@ -139,6 +139,18 @@
             {{ scope.row.uploadTime ? scope.row.uploadTime.replace('T', ' ') : '-' }}
           </template>
         </el-table-column>
+        <el-table-column prop="image" label="成绩图片" width="120">
+          <template slot-scope="scope">
+            <img
+              v-if="scope.row.image"
+              :src="getImageUrl(scope.row.image)"
+              alt="成绩图片"
+              style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;"
+            />
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+          
         <el-table-column prop="score" label="分数" width="100" />
         <el-table-column prop="remark" label="备注" />
       </el-table>
@@ -301,16 +313,21 @@ export default {
     fetchProfile() {
       if (!this.viewUserId) return;
       axios.get(`/api/profile/identity/${this.viewUserId}`).then(res => {
-        if (res.data && res.data.avatar !== undefined) {
-          this.profile = res.data;
-          this.profileStatus = res.data.status;
+        // 如果后端返回 null 或没有 avatar 字段，说明 profile 不存在
+        if (!res.data || res.data.avatar === undefined) {
+          // 清空 profile，显示未完善资料提示
+          this.profile = { avatar: '', description: '', status: -1, account: '' };
+          this.profileStatus = -1;
+          // 可选：显示提示
+          this.$message.info('该用户尚未完善个人资料');
+          return;
         }
+        // 正常赋值
+        this.profile = res.data;
+        this.profileStatus = res.data.status;
       });
     },
-
-
-   
-
+    
     submitEditProfile() {
       if (!this.editProfile.description || this.editProfile.description.length > 50) {
         this.$message.error('签名不能为空且不能超过50字');
@@ -356,7 +373,7 @@ export default {
 .avatar-select-group { display: flex; flex-direction: column; align-items: center; margin-right: 32px; }
 .profile-right { flex: 1; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; margin-top: 16px; }
 .profile-info { margin-bottom: 16px; }
-.profile-signature { width: 100px; max-width: 100%; margin-bottom: 16px; }
+.profile-signature { width: 300px; max-width: 100%; margin-bottom: 16px; }
 .admin-actions .profile-btn { margin-right: 16px; }
 .profile-actions .profile-btn { margin-right: 16px; }
 </style>

@@ -6,11 +6,27 @@
         <p>课题名称：{{ course.title }} | 课题ID：{{ course.id }}</p>
         <div class="btnGroup">
           <el-button type="primary" @click="openViewDialog(course)" size="small">查看</el-button>
-          <el-button :type="isSubmitted(course.id)? 'warning' : 'success'"
-                     @click="isSubmitted(course.id)? openUpdateDialog(course) : openSubmitDialog(course)"
-                     size="small"
-                     :disabled="isScored(course.id)"
-                     >
+          <el-tooltip
+            v-if="isScored(course.id)"
+            content="已经被打过分"
+            placement="top"
+          >
+            <el-button
+              :type="isSubmitted(course.id)? 'warning' : 'success'"
+              @click="isSubmitted(course.id)? openUpdateDialog(course) : openSubmitDialog(course)"
+              size="small"
+              :disabled="isScored(course.id)"
+            >
+              {{ isSubmitted(course.id)? '更新' : '提交' }}
+            </el-button>
+          </el-tooltip>
+          <el-button
+            v-else
+            :type="isSubmitted(course.id)? 'warning' : 'success'"
+            @click="isSubmitted(course.id)? openUpdateDialog(course) : openSubmitDialog(course)"
+            size="small"
+            :disabled="isScored(course.id)"
+          >
             {{ isSubmitted(course.id)? '更新' : '提交' }}
           </el-button>
         </div>
@@ -143,7 +159,7 @@
           <el-input
             type="textarea"
             v-model="updateForm.remark"
-            placeholder="可选，填写补充说明"
+            placeholder="可选，填写补充说明。提交时请提交课题发布之后游玩的成绩图，不要使用老成绩图！"
             :rows="3"
           ></el-input>
         </el-form-item>
@@ -190,14 +206,14 @@ export default {
       previewImage: '',
       selectedCourse: {},
       submitForm: {
-        course_id: '',       // 课程ID
+        course_id: '',       // 课题ID
         course_title: '',    // 仅前端显示
         upload_time: '',     // 上传时间
         remark: '',
         image: ''            // 上传的图片
       },
       updateForm: {
-        course_id: '',       // 课程ID
+        course_id: '',       // 课题ID
         course_title: '',    // 仅前端显示
         upload_time: '',     // 上传时间
         remark: '',
@@ -251,7 +267,7 @@ export default {
         this.ScoredScores = [];
       }
     },
-    // 检查课程是否已提交
+    // 检查课题是否已提交
     async checkSubmittedCourses() {
       const identityId = this.getCurrentIdentityId();
       if (!identityId) {
@@ -276,7 +292,7 @@ export default {
         }
       }
     },
-    // 判断课程是否已提交
+    // 判断课题是否已提交
     isSubmitted(courseId) {
       return this.submittedCourses.includes(courseId);
     },
