@@ -130,6 +130,7 @@
               :src="getImageUrl(scope.row.course.image)"
               alt="课题图片"
               style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;"
+              @click="previewImage(scope.row.course.image)"
             />
             <span v-else>-</span>
           </template>
@@ -146,6 +147,7 @@
               :src="getImageUrl(scope.row.image)"
               alt="成绩图片"
               style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;"
+              @click="previewImage(scope.row.image)"
             />
             <span v-else>-</span>
           </template>
@@ -182,7 +184,6 @@ export default {
 
       // 只保留一个 avatarFileList
       avatarFileList: [],
-
       scoredScores: [],
       viewUserId: null,
       isSelf: false,
@@ -193,10 +194,17 @@ export default {
       cropperVisible: false,
       cropImgUrl: null,
       rawAvatarFile: null,
-      croppedFile: null
+      croppedFile: null,
+
+      imagePreviewVisible: false,
+      imagePreviewUrl: '',
     };
   },
   methods: {
+    previewImage(url) {
+      this.imagePreviewUrl = this.getImageUrl(url);
+      this.imagePreviewVisible = true;
+    },
     handleAvatarUploadSuccess(response, file, fileList) {
       if (response.code === 0) {
         this.editProfile.avatar = response.data;
@@ -206,38 +214,38 @@ export default {
         this.$message.error('头像上传失败');
       }
     },
-  triggerFileInput() { this.$refs.fileInput.click() },
-  onFileChange(e) {
-    const file = e.target.files[0]
-    if (!file) return
-    if (!file.type.startsWith('image/')) {
-      this.$message.error('只能上传 JPG/PNG 图片')
-      return
-    }
-    this.rawAvatarFile = file
-    this.cropImgUrl = URL.createObjectURL(file)
-    this.cropperVisible = true
-    e.target.value = ''
-  },
-  async handleAvatarCrop(croppedBlob) {
-    this.cropperVisible = false;
-    // 压缩图片，调用 compressImage(file, targetSize)
-    try {
-      const compressedFile = await compressImage(croppedBlob);
-      this.croppedFile = compressedFile;
-      // 上传压缩后的图片
-      const formData = new FormData();
-      formData.append('avatar', compressedFile);
-      formData.append('identityId', this.user.id);
-      const res = await axios.post('/api/profile/upload-avatar', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      this.handleAvatarUploadSuccess(res.data, compressedFile, [{ name: '头像', url: res.data.data }]);
-    } catch (err) {
-      console.error(err);
-      this.$message.error('裁剪或上传失败');
-    }
-    this.editDialogVisible = true;
+    triggerFileInput() { this.$refs.fileInput.click() },
+    onFileChange(e) {
+      const file = e.target.files[0]
+      if (!file) return
+      if (!file.type.startsWith('image/')) {
+        this.$message.error('只能上传 JPG/PNG 图片')
+        return
+      }
+      this.rawAvatarFile = file
+      this.cropImgUrl = URL.createObjectURL(file)
+      this.cropperVisible = true
+      e.target.value = ''
+    },
+    async handleAvatarCrop(croppedBlob) {
+      this.cropperVisible = false;
+      // 压缩图片，调用 compressImage(file, targetSize)
+      try {
+        const compressedFile = await compressImage(croppedBlob);
+        this.croppedFile = compressedFile;
+        // 上传压缩后的图片
+        const formData = new FormData();
+        formData.append('avatar', compressedFile);
+        formData.append('identityId', this.user.id);
+        const res = await axios.post('/api/profile/upload-avatar', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        this.handleAvatarUploadSuccess(res.data, compressedFile, [{ name: '头像', url: res.data.data }]);
+      } catch (err) {
+        console.error(err);
+        this.$message.error('裁剪或上传失败');
+      }
+      this.editDialogVisible = true;
     },
     loadProfile() {
       const routeId = this.$route.params.id;
@@ -327,7 +335,7 @@ export default {
         this.profileStatus = res.data.status;
       });
     },
-    
+
     submitEditProfile() {
       if (!this.editProfile.description || this.editProfile.description.length > 50) {
         this.$message.error('签名不能为空且不能超过50字');

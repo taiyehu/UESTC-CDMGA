@@ -10,6 +10,7 @@
         label-position="left"
         label-width="70px"
         class="login-from"
+        @keyup.enter.native="submitForm('ruleForm')"
       >
         <el-form-item label="用户名" prop="account">
           <el-input v-model="ruleForm.account"></el-input>
