@@ -16,6 +16,8 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
 
     long countByIsDeletedFalse();
 
+    long countByIsScoredFalseAndIsDeletedFalse();
+
     // 按id查找
     Score findByIdAndIsDeletedFalse(Long id);
 
@@ -37,7 +39,7 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     List<Score> findByIdOrIdentityIdOrCourseId(Long id, int identityId, int courseId);
 
     // 查询所有 isScored = false 且 isDeleted = false 的成绩
-    List<Score> findByIsScoredFalseAndIsDeletedFalse();
+    Page<Score> findByIsScoredFalseAndIsDeletedFalse(Pageable pageable);
 
     // 根据identity_id 查找所有 isScored = true 且 isDeleted = false 的成绩
     List<Score> findByIsScoredTrueAndIsDeletedFalse();

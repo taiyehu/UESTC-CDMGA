@@ -69,3 +69,13 @@ export const fetchScore = (params) => {
         }
     })
 }
+export const fetchUnScoredScores = (params) => {
+    return request({
+        url: '/score/unscored',
+        method: 'get' ,
+        params: {
+            page: params.page - 1,
+            size: params.pageSize,
+        }
+    })
+}

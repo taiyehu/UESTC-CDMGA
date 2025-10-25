@@ -2,6 +2,7 @@ package com.cdmga.uestc.webpage.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.cdmga.uestc.webpage.Dto.UserScoreDto;
@@ -49,6 +50,10 @@ public class ScoreService {
 
     public Long getScoreCount(){
         return scoreRepository.countByIsDeletedFalse();
+    }
+
+    public Long getUnScoredScoreCount(){
+        return scoreRepository.countByIsScoredFalseAndIsDeletedFalse();
     }
 
     public Score postNewScore(int course_id, int identity_id,
@@ -110,8 +115,8 @@ public class ScoreService {
         return null;
     }
 
-    public List<Score> getUnscoredScores() {
-        return scoreRepository.findByIsScoredFalseAndIsDeletedFalse();
+    public List<Score> getUnscoredScores(int page, int size) {
+        return scoreRepository.findByIsScoredFalseAndIsDeletedFalse(PageRequest.of(page, size)).getContent();
     }
 
     public boolean existsByIdentityIdAndCourseId(int identityId, int courseId) {

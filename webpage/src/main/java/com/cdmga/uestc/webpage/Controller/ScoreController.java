@@ -36,18 +36,18 @@ public class ScoreController {
 
     @GetMapping("/")
     public ResponseEntity<Object> getScore(
-            @RequestParam(defaultValue = "0")int page,
-            @RequestParam(defaultValue = "10")int size
-    ) {
-    List<Score> currentScore = scoreService.getAllScore(page, size);
+                @RequestParam(defaultValue = "0")int page,
+                @RequestParam(defaultValue = "10")int size
+        ) {
+        List<Score> currentScore = scoreService.getAllScore(page, size);
 
-    Long total = scoreService.getScoreCount();
+        Long total = scoreService.getScoreCount();
 
-    Map<String, Object> result = new HashMap<>();
-    result.put("list",currentScore);
-    result.put("total",total);
-    return ResponseEntity.ok(result);
-}
+        Map<String, Object> result = new HashMap<>();
+        result.put("list",currentScore);
+        result.put("total",total);
+        return ResponseEntity.ok(result);
+    }
 
 
     @PostMapping("/post")
@@ -132,6 +132,7 @@ public class ScoreController {
     @GetMapping("/byIdentity/{identityId}")
     public ResponseEntity<List<Score>> getScoreByIdentityId(@PathVariable Integer identityId) {
         List<Score> scores = scoreService.getScoredScoresByIdentityId(identityId);
+        Long total = scoreService.getScoreCount();
         return ResponseEntity.ok(scores);
     }
 
@@ -167,9 +168,17 @@ public class ScoreController {
             return ResponseEntity.ok(exists);
         }
     @GetMapping("/unscored")
-    public ResponseEntity<List<Score>> getUnscoredScores() {
-        List<Score> scores = scoreService.getUnscoredScores();
-        return ResponseEntity.ok(scores);
+    public ResponseEntity<Object> getUnscoredScores(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        List<Score> scores = scoreService.getUnscoredScores(page, size);
+        Long total = scoreService.getUnScoredScoreCount();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("list",scores);
+        result.put("total",total);
+        return ResponseEntity.ok(result);
     }
 
     @DeleteMapping("/delete/{id}")

@@ -98,14 +98,13 @@
 </template>
 
 <script>
-import {fetchScore, handleUpdateScore} from "@/api/score";
+import {fetchUnScoredScores, handleUpdateScore} from "@/api/score";
 import dayjs from "dayjs";
 
 
 export default {
   data() {
     return {
-      scores: [],
       unscoredScores: [],
       selectedScore: {},
       dialogVisible: false,
@@ -135,15 +134,13 @@ export default {
     // 获取所有成绩信息
     async fetchScores() {
       try {
-        const response = await fetchScore({ page: 1, pageSize: 10 });
-        this.scores = response.data.list || [];
+        const response = await fetchUnScoredScores({ page: this.currentPage, pageSize: this.pageSize });
+        this.unscoredScores = response.data.list || [];
         this.total = response.data.total || 0;
-        // 过滤出未被审核的成绩
-        this.unscoredScores = this.scores.filter(score =>!score.isScored);
+        console.log(this.unscoredScores);
       } catch (error) {
         console.error('获取成绩信息失败:', error);
         this.$message.error('获取成绩列表失败，请稍后重试');
-        this.scores = [];
         this.unscoredScores = [];
       }
     },
