@@ -11,12 +11,13 @@ import request from '@/utils/request'
  */
 export const login = (credentials) => {
     return request({
-        url: '/identity/login',
+        url: '/api/identity/login',
         method: 'post',
         headers: {
             'Content-Type': 'application/json'
         },
-        data: credentials
+        data: credentials,
+        withCredentials: true
     })
 }
 /**
@@ -28,7 +29,7 @@ export const login = (credentials) => {
  */
 export const  register = (credentials) => {
     return request({
-        url: '/identity/register',
+        url: '/api/identity/register',
         method: 'post',
         headers: {
           'Content-Type': 'application/json'
