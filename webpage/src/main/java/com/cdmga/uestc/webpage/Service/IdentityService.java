@@ -33,6 +33,15 @@ public class IdentityService {
         return identityRepository.save(newIdentity);
     }
 
+    public Identity resetPassword(String account, String password) throws Exception{
+        Identity existingIdentity = identityRepository.findByAccount(account);
+        if (existingIdentity == null) {
+            throw new Exception("账号不存在"); // 抛出异常，由控制器捕获
+        }
+        existingIdentity.setPassword(passwordEncoder.encode(password));
+        return identityRepository.save(existingIdentity);
+    }
+
     //登录
     public Identity validateLogin(String account, String password) {
         Identity identity = identityRepository.findByAccount(account);

@@ -50,6 +50,22 @@ public class IdentityController {
             return Result.error(e.getMessage());
         }
     }
+
+    @PostMapping("/reset")
+    public Result resetPassword(@RequestBody RegisterRequest registerRequest) {
+        try {
+            // 调用服务层注册，获取注册成功的用户信息（可选，根据业务需求）
+            Identity updatedIdentity = identityService.resetPassword(
+                    registerRequest.getAccount(),
+                    registerRequest.getPassword());
+            // 成功时返回 code=0，携带用户信息（或成功提示）
+            return Result.success(updatedIdentity); // 若无需用户信息，可改为 Result.success("注册成功")
+        } catch (Exception e) {
+            // 失败时返回 code=1，携带错误信息（如“账号已存在”）
+            return Result.error(e.getMessage());
+        }
+    }
+
     // 接收 JSON 请求体
     @CrossOrigin(origins = "http://localhost:8081")
     @PostMapping("/login")

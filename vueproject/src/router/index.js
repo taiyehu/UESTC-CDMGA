@@ -16,6 +16,7 @@ import adminProfiles from '@/views/admin/admin-profiles.vue'
 import ranking from '@/views/pages/ranking.vue'
 import task from '@/views/pages/task.vue'
 import links from '@/views/pages/links.vue'
+import axios from "axios";
 
 
 // 使用VueRouter插件
@@ -85,6 +86,7 @@ const router = new VueRouter({
     ]
 })
 
+
 // 全局前置守卫
 router.beforeEach((to, from, next) => {
     const isAuthenticated = !!sessionStorage.getItem('userInfo')
@@ -98,6 +100,18 @@ router.beforeEach((to, from, next) => {
         next({ path: '/login' })
     } else {
         next()
+    }
+
+
+    // 管理员页面白名单
+    const adminPaths = ['/admin-users', '/admin-courses', '/admin-profiles', '/review']
+    const userRole = sessionStorage.getItem('userInfo') ? JSON.parse(sessionStorage.getItem('role')) : null
+    if (adminPaths.includes(to.path)) {
+
+        if (userRole !== "admin") {
+            Message({ message: '需要管理员权限', type: 'warning' })
+            return next({ path: '/home' })
+        }
     }
 })
 

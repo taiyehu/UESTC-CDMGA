@@ -89,6 +89,8 @@ export default {
     handleLoginSuccess(response) {
       if (response.data.code === 0) {
         sessionStorage.setItem("userInfo", JSON.stringify(response.data.data));
+        sessionStorage.setItem("role", JSON.stringify(response.data.data.role));
+
         this.$router.push('/home');
         this.$message({
           message: response.data.msg || '登录成功',
