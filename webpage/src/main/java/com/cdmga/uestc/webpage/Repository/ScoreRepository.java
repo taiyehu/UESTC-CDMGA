@@ -46,8 +46,8 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
 
     List<Score> findByIdentity_IdAndIsScoredTrueAndIsDeletedFalse(int identityId);
 
-    boolean existsByIdentityIdAndCourseId(int identityId, int courseId);
+    boolean existsByIdentityIdAndCourseIdAndIsDeletedFalse(int identityId, int courseId);
 
-    Score findByIdentityIdAndCourseId(Integer identityId, Integer courseId);
+    Score findByIdentityIdAndCourseIdAndIsDeletedFalse(Integer identityId, Integer courseId);
 
 }

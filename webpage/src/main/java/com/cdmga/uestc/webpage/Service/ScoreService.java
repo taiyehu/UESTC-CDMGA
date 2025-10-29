@@ -110,6 +110,7 @@ public class ScoreService {
         Score score = scoreRepository.findById(scoreId).orElse(null);
         if(score != null){
             score.setIsDeleted(true);
+            score.setUpdatedAt(LocalDateTime.now());
             return scoreRepository.save(score);
         }
         return null;
@@ -120,11 +121,11 @@ public class ScoreService {
     }
 
     public boolean existsByIdentityIdAndCourseId(int identityId, int courseId) {
-        return scoreRepository.existsByIdentityIdAndCourseId(identityId, courseId);
+        return scoreRepository.existsByIdentityIdAndCourseIdAndIsDeletedFalse(identityId, courseId);
     }
 
     public Score getScoreByIdentityIdAndCourseId(Integer identityId, Integer courseId) {
-        return scoreRepository.findByIdentityIdAndCourseId(identityId, courseId);
+        return scoreRepository.findByIdentityIdAndCourseIdAndIsDeletedFalse(identityId, courseId);
 
     }
 
