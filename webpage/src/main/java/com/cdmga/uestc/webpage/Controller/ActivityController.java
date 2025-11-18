@@ -37,7 +37,7 @@ public class ActivityController {
             Path targetLocation = Paths.get(bannerUploadDir, fileName);
             Files.createDirectories(targetLocation.getParent());
             Files.copy(banner.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-            String imageUrl = "/activity/banner/" + fileName;
+            String imageUrl = "/banners/" + fileName;
             return Result.success(imageUrl);
         } catch (Exception e) {
             e.printStackTrace();
@@ -53,7 +53,7 @@ public class ActivityController {
             Path targetLocation = Paths.get(fileUploadDir, fileName);
             Files.createDirectories(targetLocation.getParent());
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-            String fileUrl = "/activity/file/" + fileName;
+            String fileUrl = "/files/" + fileName;
             return Result.success(fileUrl);
         } catch (Exception e) {
             e.printStackTrace();
