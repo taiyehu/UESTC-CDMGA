@@ -38,7 +38,7 @@ jobs:
             # 创建后端目录结构
             # 1. 创建目录结构 (不变)
             sudo mkdir -p /opt/webserver/app /opt/webserver/upload /opt/webserver/backup
-            sudo mkdir -p /var/webserver/images /var/webserver/courses /var/webserver/log /var/webserver/scores/
+            sudo mkdir -p /var/webserver/images /var/webserver/courses /var/webserver/log /var/webserver/scores/ /var/webserver/avatars /var/webserver/files /var/webserver/banners
 
             # 2. 将 'webserver' 用户加入 'www-data' 组
             # -a 表示追加（Append），-G 指定要加入的组

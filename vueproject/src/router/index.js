@@ -17,7 +17,8 @@ import ranking from '@/views/pages/ranking.vue'
 import task from '@/views/pages/task.vue'
 import links from '@/views/pages/links.vue'
 import axios from "axios";
-
+import activity from "@/views/activity/activity.vue";
+import adminActivities from "@/views/admin/admin-activities.vue";
 
 // 使用VueRouter插件
 Vue.use(VueRouter)
@@ -77,6 +78,14 @@ const router = new VueRouter({
         {
             path: '/links',
             component: links
+        },
+        {
+            path: '/activity',
+            component: activity
+        },
+        {
+            path: '/admin-activities',
+            component: adminActivities
         },
         {
         path: '/profile/:id?',
