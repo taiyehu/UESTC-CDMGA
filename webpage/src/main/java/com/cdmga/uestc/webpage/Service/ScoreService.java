@@ -130,7 +130,7 @@ public class ScoreService {
     }
 
     public List<UserScoreDto> calculateTotalScoreForAllUsers() {
-        List<Score> scores = scoreRepository.findByIsScoredTrueAndIsDeletedFalse();
+        List<Score> scores = scoreRepository.findScoredNotDeletedAndCategoryNotContest();
         Map<Integer, Float> userScoreMap = new HashMap<>();
         Map<Integer, String> userAvatarMap = new HashMap<>();
         Map<Integer, String> userAccountMap = new HashMap<>();
