@@ -4,6 +4,7 @@
       <router-link class="nav-item" to="/home">主页</router-link>
       <router-link class="nav-item" to="/task">课题</router-link>
       <router-link class="nav-item" to="/score">成绩提交</router-link>
+      <router-link class="nav-item" to="/activity">活动</router-link>
       <router-link class="nav-item" to="/ranking">排行榜</router-link>
       <router-link class="nav-item" to="/links">网站功能</router-link>
     </div>

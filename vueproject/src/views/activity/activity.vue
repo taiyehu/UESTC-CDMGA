@@ -14,11 +14,8 @@
           alt="活动宣传图"
           v-if="activity.activityBanner"
           class="activity-image"
-          @click="handleImageClick(getImageUrl(activity.activityBanner))"
+          @click="handleView(activity)"
         />
-        <div class="btn-group">
-          <el-button type="success" size="small" @click="handleView(activity)">查看</el-button>
-        </div>
       </div>
     </div>
     <el-dialog :visible.sync="previewVisible" width="auto" :show-close="true" center>
@@ -149,6 +146,6 @@ export default {
 .btn-group {
   margin-top: 16px;
   display: flex;
-  gap: 12px;
+  margin-left: auto;
 }
 </style>

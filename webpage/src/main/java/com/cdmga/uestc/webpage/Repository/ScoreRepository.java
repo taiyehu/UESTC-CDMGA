@@ -41,7 +41,7 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     // 查询所有 isScored = false 且 isDeleted = false 的成绩
     Page<Score> findByIsScoredFalseAndIsDeletedFalse(Pageable pageable);
 
-    // 根据identity_id 查找所有 isScored = true 且 isDeleted = false 的成绩
+    // 查询所有 isScored = true 且 isDeleted = false 且 category为contest的成绩
     @Query("SELECT s FROM Score s WHERE s.isScored = true AND s.isDeleted = false AND s.course.category = 'contest'")
     List<Score> findScoredNotDeletedAndCategoryIsContest();
 

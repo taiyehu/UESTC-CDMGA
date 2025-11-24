@@ -164,4 +164,36 @@ public class ScoreService {
     public List<Score> getScoredScoresByIdentityId(int identityId) {
         return scoreRepository.findByIdentity_IdAndIsScoredTrueAndIsDeletedFalse(identityId);
     }
+
+    public List<UserScoreDto> calculateTotalScoresForContest(){
+        List<Score> scores = scoreRepository.findScoredNotDeletedAndCategoryIsContest();
+        Map<Integer, Float> userScoreMap = new HashMap<>();
+        Map<Integer, String> userAvatarMap = new HashMap<>();
+        Map<Integer, String> userAccountMap = new HashMap<>();
+
+        for (Score score : scores) {
+            Integer identityId = score.getIdentity().getId();
+            float point = score.getScore();
+            userScoreMap.put(identityId, userScoreMap.getOrDefault(identityId, 0f) + point);
+
+            // 只要有一次就记录
+            if (!userAvatarMap.containsKey(identityId)) {
+                // 通过 profileRepository 查询 status=1 的有效头像
+                Profile profile = profileRepository.findPassedProfileByIdentityId(identityId);
+                userAvatarMap.put(identityId, profile != null ? profile.getAvatar() : null);
+            }
+            if (!userAccountMap.containsKey(identityId)) {
+                userAccountMap.put(identityId, score.getIdentity().getAccount());
+            }
+        }
+        List<UserScoreDto> result = new ArrayList<>();
+        for (Map.Entry<Integer, Float> entry : userScoreMap.entrySet()) {
+            Integer identityId = entry.getKey();
+            Float totalScore = entry.getValue();
+            String avatar = userAvatarMap.get(identityId);
+            String account = userAccountMap.get(identityId);
+            result.add(new UserScoreDto(identityId, totalScore, avatar, account));
+        }
+        return result;
+    }
 }
