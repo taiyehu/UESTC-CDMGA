@@ -1,6 +1,6 @@
 <template>
   <div class="main-content">
-    <h2 style="text-align:center;margin-bottom:20px;">用户总分排行榜</h2>
+    <h2 style="text-align:center;margin-bottom:20px;">比赛排行榜</h2>
     <el-table
       :data="pagedRankData"
       style="width: 600px; margin: 0 auto;"
@@ -32,8 +32,8 @@
         @current-change="handleRankPageChange"
       />
     </div>
-    <router-link to="/contest-ranking">
-      <el-button type="primary" style="position: fixed; bottom: 20px; right: 20px;">查看比赛排行榜</el-button>
+    <router-link to="/ranking">
+        <el-button type="primary" style="position: fixed; bottom: 20px; right: 20px;">查看课题排行榜</el-button>
     </router-link>
   </div>
   
@@ -65,7 +65,7 @@ export default {
     },
     async fetchRankData() {
       try {
-        const res = await axios.get('/api/score/user-total-scores');
+        const res = await axios.get('/api/score/contest-scores');
         let data = res.data.data || [];
         data.sort((a, b) => b.totalScore - a.totalScore);
         this.rankAllData = data;

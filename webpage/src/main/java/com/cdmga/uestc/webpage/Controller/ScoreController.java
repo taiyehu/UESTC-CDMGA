@@ -197,6 +197,16 @@ public class ScoreController {
         }
     }
 
+    @GetMapping("/contest-scores")
+    public Result getContestScores() {
+        try {
+            List<UserScoreDto> contestScores = scoreService.calculateTotalScoresForContest();
+            return Result.success(contestScores);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
     @GetMapping("/user-scored-scores")
     public Result getUserScoredScores(@RequestParam("identityId") int identityId) {
         try {
