@@ -1,12 +1,12 @@
 import Compressor from 'compressorjs'
 
 /**
- * 压缩图片到目标大小（优先1M，压不下则3M），质量尽量高
+ * 压缩图片到目标大小（优先5M，压不下则8M），质量尽量高
  * @param {File} file 原始图片文件
- * @param {number} [targetSize=1024*1024] 目标大小（字节），默认1M
+ * @param {number} targetSize 目标大小（字节），默认5M
  * @returns {Promise<File>} 压缩后的图片文件
  */
-export function compressImage(file, targetSize = 1024 * 1024) {
+export function compressImage(file, targetSize = 5 * 1024 * 1024) {
   const originalName = file.name
   const originalSize = file.size
   return new Promise((resolve, reject) => {
@@ -38,9 +38,9 @@ export function compressImage(file, targetSize = 1024 * 1024) {
 
     doCompress(file)
   }).then(result => {
-    if (result.size > 1024 * 1024 && targetSize === 1024 * 1024) {
+    if (result.size > 5 * 1024 * 1024 && targetSize === 5 * 1024 * 1024) {
       // 压到1M失败，尝试压到3M
-      return compressImage(result, 3 * 1024 * 1024)
+      return compressImage(result, 8 * 1024 * 1024)
     }
     return result
   })
