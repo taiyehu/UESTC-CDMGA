@@ -54,4 +54,9 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
 
     Score findByIdentityIdAndCourseIdAndIsDeletedFalse(Integer identityId, Integer courseId);
 
+    @Query("SELECT COUNT(s) FROM Score s WHERE s.identity.id = :identityId AND s.course.category = 'contest' AND s.isDeleted = false")
+    long countContestScoreByIdentityId(Integer identityId);
+
+    @Query("SELECT s FROM Score s WHERE s.identity.id = :identityId AND s.course.category = 'contest' AND s.isDeleted = false AND s.isScored = true")
+    List<Score> findContestScoresByIdentityId(Integer identityId);
 }

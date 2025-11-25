@@ -217,4 +217,25 @@ public class ScoreController {
         }
     }
 
+    @GetMapping("/contest-score-count")
+    public Result getContestScoreCount(
+            @RequestParam int identityId) {
+        try {
+            long count = scoreService.countContestScoreByIdentityId(identityId);
+            return Result.success(count);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @GetMapping("/contest/contest-scores-by-user")
+    public Result getContestScoresByUser(@RequestParam int identityId) {
+        try {
+            List<Score> scores = scoreService.getContestScoresByIdentityId(identityId);
+            return Result.success(scores);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
 }

@@ -196,4 +196,12 @@ public class ScoreService {
         }
         return result;
     }
+
+    public long countContestScoreByIdentityId(int identityId) {
+        return scoreRepository.countContestScoreByIdentityId(identityId);
+    }
+
+    public List<Score> getContestScoresByIdentityId(int identityId) {
+        return scoreRepository.findContestScoresByIdentityId(identityId);
+    }
 }

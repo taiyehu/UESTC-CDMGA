@@ -149,24 +149,29 @@ export default {
       this.fetchScores()
     },
     async updateScore(score) {
-    try {
-      const updateScore = {
-        id: score.id,
-        upload_time: dayjs(score.uploadTime).format('YYYY-MM-DDTHH:mm:ss'),
-        image: score.image,
-        point: score.score,
-        is_scored: true,
-        remark: score.remark,
+      try {
+        let point = score.score;
+        // 判断是否为 contest 类型
+        if (score.course && score.course.category === 'contest') {
+          point = parseFloat(point) - 10000000;
+        }
+        const updateScore = {
+          id: score.id,
+          upload_time: dayjs(score.uploadTime).format('YYYY-MM-DDTHH:mm:ss'),
+          image: score.image,
+          point: parseFloat(point), // 转为 float
+          is_scored: true,
+          remark: score.remark,
+        };
+        await handleUpdateScore(updateScore, updateScore.id);
+        this.$message.success(`成绩提交成功！`);
+        this.dialogVisible = false;
+        await this.fetchScores({ page: 1, pageSize: 10 });
+      } catch (error) {
+        console.error('提交失败:', error);
+        const errorMsg = error.response?.data?.message || '成绩提交失败，请重试';
+        this.$message.error(errorMsg);
       }
-      await handleUpdateScore(updateScore, updateScore.id)
-      this.$message.success(`成绩提交成功！`);
-      this.dialogVisible = false;
-      await this.fetchScores({page: 1, pageSize: 10});
-    } catch(error) {
-      console.error('提交失败:', error);
-      const errorMsg = error.response?.data?.message || '成绩提交失败，请重试';
-      this.$message.error(errorMsg);
-    }
   },
     // 格式化日期时间
     formatDateTime(row, column, cellValue) {
