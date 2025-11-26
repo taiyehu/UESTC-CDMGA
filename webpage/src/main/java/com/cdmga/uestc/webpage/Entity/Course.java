@@ -1,5 +1,6 @@
 package com.cdmga.uestc.webpage.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
@@ -88,6 +89,13 @@ public class Course {
         createdAt = createTime;
         isDeleted = false;
     }
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "course", fetch = FetchType.LAZY)
+    private List<ActivityCourseAssoc> activityAssocs;
+
+    public List<ActivityCourseAssoc> getActivityAssocs() { return activityAssocs; }
+    public void setActivityAssocs(List<ActivityCourseAssoc> activityAssocs) { this.activityAssocs = activityAssocs; }
 
     // Getters and Setters
     public Integer getId() {

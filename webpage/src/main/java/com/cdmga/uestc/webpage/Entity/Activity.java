@@ -1,8 +1,10 @@
 package com.cdmga.uestc.webpage.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.List;
 
 @Entity
 @Table(name = "activity")
@@ -38,6 +40,11 @@ public class Activity {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "activity", fetch = FetchType.LAZY)
+    private List<ActivityCourseAssoc> courseAssocs;
+
     // Getters and Setters
 
     public Integer getId() { return id; }
@@ -69,4 +76,7 @@ public class Activity {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public List<ActivityCourseAssoc> getCourseAssocs() { return courseAssocs; }
+    public void setCourseAssocs(List<ActivityCourseAssoc> courseAssocs) { this.courseAssocs = courseAssocs; }
 }

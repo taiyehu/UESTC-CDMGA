@@ -25,7 +25,7 @@
             :type="isSubmitted(course.id)? 'warning' : 'success'"
             @click="isSubmitted(course.id)? openUpdateDialog(course) : openSubmitDialog(course)"
             size="small"
-            :disabled="isScored(course.id)"
+            :disabled="isScored(course.id) && course.category !== 'contest'"
           >
             {{ isSubmitted(course.id)? '更新' : '提交' }}
           </el-button>
@@ -199,6 +199,8 @@ export default {
   data() {
     return {
       courses: [],
+      normalCourses: [],
+      contestCourses: [],
       viewDialogVisible: false,
       submitDialogVisible: false,
       updateDialogVisible: false,
@@ -278,6 +280,7 @@ export default {
         const response = await checkSubmitted(identityId,course.id)
         if (response.data) {
           this.submittedCourses.push(course.id);
+          this.submittedCourses.push(course.category);
           const score = await axios.get('/api/score/find', {
             params: {
               identity_id: identityId,
@@ -297,7 +300,7 @@ export default {
       return this.submittedCourses.includes(courseId);
     },
     isScored(courseId){
-      return this.ScoredScores.includes(courseId);
+      return this.ScoredScores.includes(courseId) && !this.submittedCourses.includes('contest');
     },
     // 打开查看弹窗
     async openViewDialog(course) {
