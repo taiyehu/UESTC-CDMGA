@@ -13,6 +13,8 @@ import com.cdmga.uestc.webpage.Entity.Course;
 
 @Repository
 public interface CourseRepository extends JpaRepository<Course, Integer> {
+
+    Course findByIdAndIsDeletedFalse(Integer Id);
     // 统计所有生效课题
     long countByIsDeletedFalse();
 

@@ -1,5 +1,8 @@
 package com.cdmga.uestc.webpage.Service;
 
+import com.cdmga.uestc.webpage.Entity.Activity;
+import com.cdmga.uestc.webpage.Entity.ActivityCourseAssoc;
+import com.cdmga.uestc.webpage.Repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -8,10 +11,6 @@ import org.springframework.stereotype.Service;
 import com.cdmga.uestc.webpage.Dto.UserScoreDto;
 import com.cdmga.uestc.webpage.Entity.Profile;
 import com.cdmga.uestc.webpage.Entity.Score;
-import com.cdmga.uestc.webpage.Repository.ScoreRepository;
-import com.cdmga.uestc.webpage.Repository.CourseRepository;
-import com.cdmga.uestc.webpage.Repository.IdentityRepository;
-import com.cdmga.uestc.webpage.Repository.ProfileRepository;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -33,6 +32,9 @@ public class ScoreService {
 
     @Autowired
     private ProfileRepository profileRepository;
+
+    @Autowired
+    private ActivityRepository activityRepository;
 
     public Score getScoreById(long id) {return scoreRepository.findByIdAndIsDeletedFalse(id);}
 
@@ -129,8 +131,7 @@ public class ScoreService {
 
     }
 
-    public List<UserScoreDto> calculateTotalScoreForAllUsers() {
-        List<Score> scores = scoreRepository.findScoredNotDeletedAndCategoryNotContest();
+    public List<UserScoreDto> calculateScoresForAllUsers(List<Score> scores) {
         Map<Integer, Float> userScoreMap = new HashMap<>();
         Map<Integer, String> userAvatarMap = new HashMap<>();
         Map<Integer, String> userAccountMap = new HashMap<>();
@@ -160,6 +161,12 @@ public class ScoreService {
         }
         return result;
     }
+
+    public List<UserScoreDto> calculateTotalScoreForAllUsers() {
+        List<Score> scores = scoreRepository.findScoredNotDeletedAndCategoryNotContest();
+        return calculateScoresForAllUsers(scores);
+    }
+
 
     public List<Score> getScoredScoresByIdentityId(int identityId) {
         return scoreRepository.findByIdentity_IdAndIsScoredTrueAndIsDeletedFalse(identityId);
@@ -167,34 +174,24 @@ public class ScoreService {
 
     public List<UserScoreDto> calculateTotalScoresForContest(){
         List<Score> scores = scoreRepository.findScoredNotDeletedAndCategoryIsContest();
-        Map<Integer, Float> userScoreMap = new HashMap<>();
-        Map<Integer, String> userAvatarMap = new HashMap<>();
-        Map<Integer, String> userAccountMap = new HashMap<>();
+        return calculateScoresForAllUsers(scores);
+    }
 
-        for (Score score : scores) {
-            Integer identityId = score.getIdentity().getId();
-            float point = score.getScore();
-            userScoreMap.put(identityId, userScoreMap.getOrDefault(identityId, 0f) + point);
-
-            // 只要有一次就记录
-            if (!userAvatarMap.containsKey(identityId)) {
-                // 通过 profileRepository 查询 status=1 的有效头像
-                Profile profile = profileRepository.findPassedProfileByIdentityId(identityId);
-                userAvatarMap.put(identityId, profile != null ? profile.getAvatar() : null);
+    public List<UserScoreDto> calculateTotalScoresForActivity(Integer activityId) {
+        Activity activity = activityRepository.findByIdAndIsDeletedFalse(activityId);
+        if(activity != null){
+            List<Score> scores = new ArrayList<>();
+            for (ActivityCourseAssoc assoc : activity.getCourseAssocs()) {
+                List<Score> courseScores = scoreRepository.findByCourse_Id(assoc.getCourse().getId());
+                for (Score score : courseScores) {
+                    if (score.getIsScored() && !score.getIsDeleted()) {
+                        scores.add(score);
+                    }
+                }
             }
-            if (!userAccountMap.containsKey(identityId)) {
-                userAccountMap.put(identityId, score.getIdentity().getAccount());
-            }
+            return calculateScoresForAllUsers(scores);
         }
-        List<UserScoreDto> result = new ArrayList<>();
-        for (Map.Entry<Integer, Float> entry : userScoreMap.entrySet()) {
-            Integer identityId = entry.getKey();
-            Float totalScore = entry.getValue();
-            String avatar = userAvatarMap.get(identityId);
-            String account = userAccountMap.get(identityId);
-            result.add(new UserScoreDto(identityId, totalScore, avatar, account));
-        }
-        return result;
+        return null;
     }
 
     public long countContestScoreByIdentityId(int identityId) {

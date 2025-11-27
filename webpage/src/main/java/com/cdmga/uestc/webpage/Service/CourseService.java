@@ -1,16 +1,16 @@
 package com.cdmga.uestc.webpage.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
-import com.cdmga.uestc.webpage.Entity.Identity;
-import com.cdmga.uestc.webpage.Entity.Score;
+import com.cdmga.uestc.webpage.Entity.*;
+import com.cdmga.uestc.webpage.Repository.ActivityRepository;
 import com.cdmga.uestc.webpage.Repository.ScoreRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
-import com.cdmga.uestc.webpage.Entity.Course;
 import com.cdmga.uestc.webpage.Repository.CourseRepository;
 
 @Service
@@ -21,6 +21,9 @@ public class CourseService {
 
     @Autowired
     private ScoreRepository scoreRepository;
+
+    @Autowired
+    private ActivityService activityService;
 
     public List<Course> getCourseByTitle(String title){
         return courseRepository.findByTitleContainingAndIsDeletedFalse(title);
@@ -81,5 +84,18 @@ public class CourseService {
     public List<Course> getAllCourseByPage(int page, int size) {
         // 分页查询未删除的 Identity
         return courseRepository.findByIsDeletedFalse(PageRequest.of(page, size)).getContent();
+    }
+
+
+    //不一定用的到
+    public List<Activity> getAssocActivities(Integer courseId) {
+        Course course = courseRepository.findById(courseId).orElse(null);
+        if (course != null) {
+            List<Activity> list = new ArrayList<>();
+            for(ActivityCourseAssoc assoc : course.getActivityAssocs())
+                list.add(assoc.getActivity());
+            return list;
+        }
+        return null;
     }
 }

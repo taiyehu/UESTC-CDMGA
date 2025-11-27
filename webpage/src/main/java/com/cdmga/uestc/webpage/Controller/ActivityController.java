@@ -1,7 +1,10 @@
 package com.cdmga.uestc.webpage.Controller;
 
+import com.cdmga.uestc.webpage.Dto.AssocCourseDto;
 import com.cdmga.uestc.webpage.Entity.Activity;
+import com.cdmga.uestc.webpage.Entity.Course;
 import com.cdmga.uestc.webpage.Service.ActivityService;
+import com.cdmga.uestc.webpage.common.AssocCourseRequest;
 import com.cdmga.uestc.webpage.common.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -115,6 +118,30 @@ public class ActivityController {
         }
     }
 
+    @PostMapping("/add-assoc-course")
+    public ResponseEntity<Course> addAssocCourseToActivity(
+            @RequestBody AssocCourseRequest request) {
+        try {
+            Course result =  activityService.saveAssocCoursesToActivity(request.getActivityId(), request.getCourseId(), request.getRules());
+            return ResponseEntity.ok().body(result); // 返回最新添加的关联课题
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    //获取关联课题信息
+    @GetMapping("/assoc-activity-courses/{activityId}")
+    public ResponseEntity<List<AssocCourseDto>> getAssocCoursesForActivity(@PathVariable Integer activityId) {
+        List<AssocCourseDto> courses = activityService.getAssocCoursesForActivity(activityId);
+        if (courses != null) {
+            return ResponseEntity.ok(courses);
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+    }
+
     // 获取文件扩展名
     private String getFileExtension(String fileName) {
         int index = fileName.lastIndexOf('.');
@@ -123,4 +150,7 @@ public class ActivityController {
         }
         return fileName.substring(index + 1);
     }
+
+
+
 }

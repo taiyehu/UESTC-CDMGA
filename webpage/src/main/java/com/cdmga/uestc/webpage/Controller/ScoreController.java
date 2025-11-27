@@ -207,6 +207,16 @@ public class ScoreController {
         }
     }
 
+    @GetMapping("/activity-scores/{id}")
+    public Result getActivityScores(@PathVariable Integer id) {
+        try {
+            List<UserScoreDto> activityScores = scoreService.calculateTotalScoresForActivity(id);
+            return Result.success(activityScores);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
     @GetMapping("/user-scored-scores")
     public Result getUserScoredScores(@RequestParam("identityId") int identityId) {
         try {

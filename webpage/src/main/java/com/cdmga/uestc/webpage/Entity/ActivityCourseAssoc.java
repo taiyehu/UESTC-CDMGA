@@ -1,5 +1,6 @@
 package com.cdmga.uestc.webpage.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 @Entity
@@ -13,11 +14,13 @@ public class ActivityCourseAssoc {
     // 可选关联到 Activity
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "activity_id", referencedColumnName = "id", nullable = true)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "courseAssocs"})
     private Activity activity;
 
     // 可选关联到 Course
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_id", referencedColumnName = "id", nullable = true)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "activityAssocs"})
     private Course course;
 
     @Column(name = "rule", length = 255)
