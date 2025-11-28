@@ -207,8 +207,16 @@ public class ScoreController {
         }
     }
 
-    @GetMapping("/activity-scores/{id}")
-    public Result getActivityScores(@PathVariable Integer id) {
+    @GetMapping("/activity-scores")
+    public ResponseEntity<List<Score>> getActivityScores(
+            @RequestParam Integer activityId,
+            @RequestParam Integer identityId){
+        return ResponseEntity.ok().body(scoreService.getActivityScoreByIdentityId(identityId, activityId));
+    }
+
+
+    @GetMapping("/activity-totalScores/{id}")
+    public Result getActivityTotalScores(@PathVariable Integer id) {
         try {
             List<UserScoreDto> activityScores = scoreService.calculateTotalScoresForActivity(id);
             return Result.success(activityScores);

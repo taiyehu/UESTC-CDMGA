@@ -194,9 +194,24 @@ public class ScoreService {
         return null;
     }
 
+    public List<Score> getActivityScoreByIdentityId(Integer identityId, Integer activityId) {
+        Activity activity = activityRepository.findByIdAndIsDeletedFalse(activityId);
+        if (activity != null) {
+            List<Score> scores = new ArrayList<>();
+            for (ActivityCourseAssoc assoc : activity.getCourseAssocs()) {
+                scores.add(scoreRepository.findByIdentityIdAndCourseIdAndIsDeletedFalse(identityId, assoc.getCourse().getId()));
+            }
+            return scores;
+        }
+        return null;
+    }
+
+
+
     public long countContestScoreByIdentityId(int identityId) {
         return scoreRepository.countContestScoreByIdentityId(identityId);
     }
+
 
     public List<Score> getContestScoresByIdentityId(int identityId) {
         return scoreRepository.findContestScoresByIdentityId(identityId);

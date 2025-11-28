@@ -1,6 +1,6 @@
 <template>
   <div class="main-content">
-    <h2 style="text-align:center;margin-bottom:20px;">比赛排行榜</h2>
+    <h2 style="text-align:center;margin-bottom:20px;">比赛排行榜（总计）</h2>
     <el-table
     :data="pagedRankData"
     style="width: 600px; margin: 0 auto;"
@@ -58,7 +58,7 @@
       <img :src="previewImage" alt="预览图片" style="max-width:90vw;max-height:80vh;display:block;margin:auto;" />
     </el-dialog>
   </div>
-  
+
 </template>
 
 <script>
