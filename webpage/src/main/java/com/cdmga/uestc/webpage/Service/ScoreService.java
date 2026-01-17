@@ -172,6 +172,14 @@ public class ScoreService {
         return scoreRepository.findByIdentity_IdAndIsScoredTrueAndIsDeletedFalse(identityId);
     }
 
+    public List<Score> getScoredContestScoresByIdentityId(int identityId) {
+        return scoreRepository.findByIdentity_IdAndIsScoredTrueAndIsDeletedFalseAndCategoryContest(identityId);
+    }
+
+    public List<Score> getScoredCourseScoresByIdentityId(int identityId) {
+        return scoreRepository.findByIdentity_IdAndIsScoredTrueAndIsDeletedFalseAndCategoryNotContest(identityId);
+    }
+
     public List<UserScoreDto> calculateTotalScoresForContest(){
         List<Score> scores = scoreRepository.findScoredNotDeletedAndCategoryIsContest();
         return calculateScoresForAllUsers(scores);

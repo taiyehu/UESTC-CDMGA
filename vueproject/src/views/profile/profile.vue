@@ -152,11 +152,91 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-          
+
         <el-table-column prop="score" label="分数" width="100" />
         <el-table-column prop="remark" label="备注" />
       </el-table>
     </el-card>
+    <el-collapse
+        v-model="activePanels"
+        accordion
+        @change="onCollapseChange"
+        v-if="RatedActivities.length > 0"
+    >
+      <h3>已参与的活动与分数详情</h3>
+
+      <el-collapse-item
+          v-for="activity in RatedActivities"
+          :key="activity.id"
+          :name="String(activity.id)">
+      <!-- 折叠头部 -->
+      <template slot="title">
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+          <div>{{ activity.title || activity.name }}</div>
+          <div style="color:#999;font-size:12px;">
+            <span v-if="loadingMap[activity.id]">加载中…</span>
+            <span v-else-if="errorMap[activity.id]" style="color:#f56c6c;">加载失败</span>
+          </div>
+        </div>
+      </template>
+
+      <div class="activity-scores">
+        <!-- 根据当前活动 id 从缓存取对应数组（第一次展开时会触发加载） -->
+        <div v-if="loadingMap[activity.id]" style="text-align:center;padding:16px">
+          <el-spinner /> 加载中...
+        </div>
+
+        <div v-else-if="errorMap[activity.id]" style="text-align:center;padding:12px;color:#f56c6c;">
+          加载失败：{{ errorMap[activity.id] }}
+          <el-button type="text" @click="fetchContestScores(activity.id)">重试</el-button>
+        </div>
+
+        <el-table
+            v-else
+            :data="activityScoresMap[activity.id] || []"
+            border
+            style="width: 100%; margin-top: 10px;"
+        >
+          <el-table-column prop="course.title" label="课题名称" />
+          <el-table-column prop="course.image" label="课题图片" width="120">
+            <template slot-scope="scope">
+              <img
+                  v-if="scope.row.course && scope.row.course.image"
+                  :src="getImageUrl(scope.row.course.image)"
+                  alt="课题图片"
+                  style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;"
+                  @click="previewImage(scope.row.course.image)"
+              />
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="uploadTime" label="完成时间" width="180">
+            <template slot-scope="scope">
+              {{ scope.row.uploadTime ? scope.row.uploadTime.replace('T', ' ') : '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="image" label="成绩图片" width="120">
+            <template slot-scope="scope">
+              <img
+                  v-if="scope.row.image"
+                  :src="getImageUrl(scope.row.image)"
+                  alt="成绩图片"
+                  style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;"
+                  @click="previewImage(scope.row.image)"
+              />
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="score" label="分数(根据计分规则换算，并非真实分数)" width="100" />
+          <el-table-column prop="remark" label="备注" />
+        </el-table>
+
+        <div v-if="!loadingMap[activity.id] && (!activityScoresMap[activity.id] || !activityScoresMap[activity.id].length)" style="text-align:center;color:#999;padding:12px;">
+          暂无成绩
+        </div>
+      </div>
+      </el-collapse-item>
+    </el-collapse>
 
     <!-- 头像预览大图 Dialog -->
     <el-dialog :visible.sync="avatarPreviewVisible" width="auto" :show-close="true" center>
@@ -167,7 +247,7 @@
       <img :src="imagePreviewUrl" alt="图片预览" style="max-width:90vw;max-height:80vh;display:block;margin:auto;" />
     </el-dialog>
   </div>
-  
+
 </template>
 
 <script>
@@ -175,8 +255,14 @@ import router from '@/router';
 import axios from 'axios';
 import { compressImage } from '@/components/imageCompressor';
 import AvatarCropper from '@/components/AvatarCropper.vue';
+import ContestRanking from "@/views/pages/contest-ranking.vue";
 
 export default {
+  computed: {
+    ContestRanking() {
+      return ContestRanking
+    }
+  },
   components: { AvatarCropper },
   data() {
     return {
@@ -190,10 +276,25 @@ export default {
       // 只保留一个 avatarFileList
       avatarFileList: [],
       scoredScores: [],
+      contestScores: [],
+      RatedActivities: [],
       viewUserId: null,
       isSelf: false,
       avatarPreviewVisible: false,
       avatarPreviewUrl: '',
+
+      // v-model 绑定的变量：当前展开的面板（因为 accordion=true，这里是单个字符串或空字符串）
+      activePanels: '',
+
+      // 保存上一次 active，用于判断新展开的是哪一项（非手风琴模式时会是数组）
+      prevActivePanels: [],
+
+      // 缓存每个 activity 的分数数据： { [activityId]: [score, ...] }
+      activityScoresMap: {},
+
+      // 加载状态与错误缓存，按 activityId 存
+      loadingMap: {},
+      errorMap: {},
 
       // 裁剪弹窗相关
       cropperVisible: false,
@@ -276,6 +377,7 @@ export default {
       if (this.viewUserId) {
         this.fetchProfile();
         this.fetchScoredScores();
+        this.fetchRatedActivity();
       }
     },
 
@@ -358,15 +460,93 @@ export default {
         this.fetchProfile();
       });
     },
+    // el-collapse 的 @change 回调，参数 activeNames（因为 accordion=true，这里会是 string）
+    // 如果 accordion=false，activeNames 是数组
+    onCollapseChange(activeNames) {
+      // 规范化为数组方便比较
+      const activeArr = Array.isArray(activeNames) ? activeNames.map(String) : (activeNames ? [String(activeNames)] : []);
+      const prevArr = Array.isArray(this.prevActivePanels) ? this.prevActivePanels.map(String) : (this.prevActivePanels ? [String(this.prevActivePanels)] : []);
 
+      // 找到新打开（activeArr 中存在但 prevArr 不存在）的项
+      const newlyOpened = activeArr.filter(name => !prevArr.includes(name));
+
+      // 对每个新打开的 name，触发加载（name 是 String(activity.id)）
+      newlyOpened.forEach(name => {
+        const activityId = parseInt(name, 10);
+        const activity = this.RatedActivities.find(a => String(a.id) === name);
+        if (activity) {
+          this.fetchContestScores(activity.id);
+        }
+      });
+
+      // 更新 prevActivePanels
+      this.prevActivePanels = activeArr.slice();
+    },
     fetchScoredScores() {
       if (!this.viewUserId) return;
-      axios.get(`/api/score/user-scored-scores?identityId=${this.viewUserId}`).then(res => {
+      axios.get(`/api/score/user-course-scores?identityId=${this.viewUserId}`).then(res => {
         if (res.data && res.data.code === 0) {
           this.scoredScores = res.data.data || [];
         }
       });
+    },
+    fetchRatedActivity() {
+      if (!this.viewUserId) return;
+      axios.get(`/api/activity/rated-activities/${this.viewUserId}`).then(res => {
+        if (res.data) {
+          this.RatedActivities = res.data || [];
+        }
+      })
+    },
+    async fetchContestScores(activityId) {
+      if (!this.viewUserId || !activityId) return;
+
+      // 设置 loading / error 状态
+      this.$set(this.loadingMap, activityId, true);
+      this.$set(this.errorMap, activityId, null);
+
+      try {
+        const res = await axios.get('/api/score/activity-scores', {
+          params: { activityId: activityId, identityId: this.viewUserId }
+        });
+
+        // 兼容后端不同返回结构
+        let scores = [];
+        if (res.data) {
+          scores = Array.isArray(res.data) ? res.data : (res.data.data || []);
+        }
+
+        // 为每条成绩尝试获取计分规则（单次失败不影响整体）
+        for (let i = 0; i < scores.length; i++) {
+          const courseId = scores[i].course && scores[i].course.id;
+          if (!courseId) continue;
+          try {
+            const ruleRes = await axios.get('/api/activity/rule', { params: { activityId,courseId } });
+            const rule = ruleRes.data && (ruleRes.data.rule || ruleRes.data);
+            if (rule === 'arcaea计分方式') {
+              scores[i].score = (scores[i].score || 0) + 10000000;
+            }
+          } catch (e) {
+            // 忽略单个规则请求错误，记录到控制台以便排查
+            console.warn('获取计分规则失败，courseId=', courseId, e && e.message);
+          }
+        }
+
+        // 保存结果到活动缓存并兼容旧字段
+        this.$set(this.activityScoresMap, activityId, scores);
+        this.contestScores = scores;
+      } catch (err) {
+        const msg = err.response && err.response.data && err.response.data.message
+            ? err.response.data.message
+            : (err.message || '加载失败');
+        this.$set(this.errorMap, activityId, msg);
+        this.$set(this.activityScoresMap, activityId, []);
+        console.error('fetchContestScores 错误:', err);
+      } finally {
+        this.$set(this.loadingMap, activityId, false);
+      }
     }
+
   },
 
   mounted() {

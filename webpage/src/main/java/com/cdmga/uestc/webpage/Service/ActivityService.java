@@ -1,21 +1,22 @@
 package com.cdmga.uestc.webpage.Service;
 
+import com.cdmga.uestc.webpage.Dto.AssocActivityDto;
 import com.cdmga.uestc.webpage.Dto.AssocCourseDto;
 import com.cdmga.uestc.webpage.Entity.Activity;
 import com.cdmga.uestc.webpage.Entity.ActivityCourseAssoc;
 import com.cdmga.uestc.webpage.Entity.Course;
+import com.cdmga.uestc.webpage.Entity.Score;
 import com.cdmga.uestc.webpage.Repository.ActivityRepository;
 import com.cdmga.uestc.webpage.Repository.CourseRepository;
 import com.cdmga.uestc.webpage.Repository.ActivityCourseAssocRepository;
+import com.cdmga.uestc.webpage.Repository.ScoreRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class ActivityService {
@@ -28,6 +29,9 @@ public class ActivityService {
 
     @Autowired
     private ActivityCourseAssocRepository activityCourseAssocRepository;
+
+    @Autowired
+    private ScoreRepository scoreRepository;
 
 
     public List<Activity> findAll() {
@@ -95,5 +99,22 @@ public class ActivityService {
             return list;
         }
         return null;
+    }
+
+    public List<Activity> getRatedActivities(Integer identityId) {
+        List<Score> activityScores = scoreRepository.findByIdentity_IdAndIsScoredTrueAndIsDeletedFalseAndCategoryContest(identityId);
+        Set<Activity> result = new HashSet<>();
+        for(Score score : activityScores){
+            Course course = score.getCourse();
+            List<ActivityCourseAssoc> assocs = activityCourseAssocRepository.findByCourseId(course.getId());
+            for(ActivityCourseAssoc assoc : assocs){
+                result.add(assoc.getActivity());
+            }
+        }
+        return new ArrayList<>(result);
+    }
+
+    public String getRule(Integer activityId, Integer courseId) {
+        return activityCourseAssocRepository.findByActivityIdAndCourseId(activityId, courseId).getRule();
     }
 }

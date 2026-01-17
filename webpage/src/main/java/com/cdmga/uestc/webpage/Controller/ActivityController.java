@@ -142,6 +142,23 @@ public class ActivityController {
         }
     }
 
+    @GetMapping("/rated-activities/{identityId}")
+    public ResponseEntity<List<Activity>> getRatedActivities(@PathVariable Integer identityId) {
+        List<Activity> activities = activityService.getRatedActivities(identityId);
+        if (activities != null) {
+            return ResponseEntity.ok(activities);
+        } else {
+            return ResponseEntity.ok().body(null);
+        }
+    }
+
+    @GetMapping("/rule")
+    public ResponseEntity<String> getRules(
+            @RequestParam Integer activityId,
+            @RequestParam Integer courseId) {
+        String rule = activityService.getRule(activityId, courseId);
+        return ResponseEntity.ok(rule);
+    }
     // 获取文件扩展名
     private String getFileExtension(String fileName) {
         int index = fileName.lastIndexOf('.');

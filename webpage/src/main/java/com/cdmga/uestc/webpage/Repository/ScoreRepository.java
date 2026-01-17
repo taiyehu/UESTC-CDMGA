@@ -50,6 +50,12 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
 
     List<Score> findByIdentity_IdAndIsScoredTrueAndIsDeletedFalse(int identityId);
 
+    @Query("SELECT s FROM Score s WHERE s.isScored = true AND s.isDeleted = false AND s.identity.id = :identityId AND s.course.category = 'contest'")
+    List<Score> findByIdentity_IdAndIsScoredTrueAndIsDeletedFalseAndCategoryContest(int identityId);
+
+    @Query("SELECT s FROM Score s WHERE s.isScored = true AND s.isDeleted = false AND s.identity.id = :identityId AND s.course.category <> 'contest'")
+    List<Score> findByIdentity_IdAndIsScoredTrueAndIsDeletedFalseAndCategoryNotContest(int identityId);
+
     boolean existsByIdentityIdAndCourseIdAndIsDeletedFalse(int identityId, int courseId);
 
     Score findByIdentityIdAndCourseIdAndIsDeletedFalse(Integer identityId, Integer courseId);

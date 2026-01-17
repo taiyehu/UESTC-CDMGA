@@ -235,6 +235,26 @@ public class ScoreController {
         }
     }
 
+    @GetMapping("/user-course-scores")
+    public Result getUserCourseScoresByIdentityId(@RequestParam("identityId") int identityId) {
+        try {
+            List<Score> scoredScores = scoreService.getScoredCourseScoresByIdentityId(identityId);
+            return Result.success(scoredScores);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @GetMapping("/user-contest-scores")
+    public Result getUserContestScoresByIdentityId(@RequestParam("identityId") int identityId) {
+        try {
+            List<Score> scoredScores = scoreService.getScoredContestScoresByIdentityId(identityId);
+            return Result.success(scoredScores);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
     @GetMapping("/contest-score-count")
     public Result getContestScoreCount(
             @RequestParam int identityId) {
