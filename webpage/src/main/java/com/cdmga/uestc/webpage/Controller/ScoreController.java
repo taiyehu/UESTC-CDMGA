@@ -34,6 +34,9 @@ public class ScoreController {
     @Value("${score.upload.directory}")
     private String uploadDir;
 
+    @Value("${activity.upload.file-directory}")
+    private String FileUploadDir;
+
     @GetMapping("/")
     public ResponseEntity<Object> getScore(
                 @RequestParam(defaultValue = "0")int page,
@@ -89,6 +92,30 @@ public class ScoreController {
         }
     }
 
+    @PostMapping("/upload-file")
+    public Result postFile(@RequestParam("file") MultipartFile file) {
+        try {
+            // 生成一个唯一的文件名
+            String fileName = UUID.randomUUID().toString() + "." + getFileExtension(file.getOriginalFilename());
+            Path targetLocation = Paths.get(FileUploadDir, fileName);
+
+            System.out.println("图片上传目录：" + FileUploadDir);
+
+            // 确保文件存储目录存在
+            Files.createDirectories(targetLocation.getParent());
+
+            // 保存图片到指定目录
+            Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+
+            // 假设你有一个基础 URL（例如：http://localhost:8081/scores/），可以返回相对路径
+            String fileUrl = "/scores-file/" + fileName;
+
+            return Result.success(fileUrl);  // 返回文件的URL
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
     // @PutMapping("/update/{id}")
     // public ResponseEntity<Result> updateScoreImage(
     //         @PathVariable Long id,
@@ -122,6 +149,38 @@ public class ScoreController {
         }
         return fileName.substring(index + 1);
     }
+
+    // 在 `ScoreController` 中添加此方法
+    @GetMapping("/scores/{filename:.+}")
+    public ResponseEntity<org.springframework.core.io.Resource> downloadFile(@PathVariable String filename) {
+        try {
+            // 基础目录（来自类中的 `uploadDir`）
+            Path basePath = Paths.get(FileUploadDir).toAbsolutePath().normalize();
+            // 目标文件路径
+            Path filePath = basePath.resolve(filename).normalize();
+
+            // 防止目录遍历并检查文件是否存在
+            if (!filePath.startsWith(basePath) || !Files.exists(filePath)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+
+            org.springframework.core.io.Resource resource = new org.springframework.core.io.UrlResource(filePath.toUri());
+
+            String contentType = Files.probeContentType(filePath);
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(org.springframework.http.MediaType.parseMediaType(contentType))
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + filePath.getFileName().toString() + "\"")
+                    .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
 
     // 根据id查找Score
     @GetMapping("/{id}")

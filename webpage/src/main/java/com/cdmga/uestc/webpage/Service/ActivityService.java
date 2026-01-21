@@ -11,6 +11,7 @@ import com.cdmga.uestc.webpage.Repository.CourseRepository;
 import com.cdmga.uestc.webpage.Repository.ActivityCourseAssocRepository;
 import com.cdmga.uestc.webpage.Repository.ScoreRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -116,5 +117,15 @@ public class ActivityService {
 
     public String getRule(Integer activityId, Integer courseId) {
         return activityCourseAssocRepository.findByActivityIdAndCourseId(activityId, courseId).getRule();
+    }
+
+    public List<Activity> searchActivitiesByName(String name) {
+        if (name == null) name = "";
+        return activityRepository.findByNameContainingIgnoreCaseAndIsDeletedFalse(name);
+    }
+
+    public Page<Activity> searchActivitiesByName(String name, Pageable pageable) {
+        if (name == null) name = "";
+        return activityRepository.findByNameContainingIgnoreCaseAndIsDeletedFalse(name, pageable);
     }
 }

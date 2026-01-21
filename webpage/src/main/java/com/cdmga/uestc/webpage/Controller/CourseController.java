@@ -12,6 +12,7 @@ import java.nio.file.Path;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -146,6 +147,53 @@ public class CourseController {
         result.put("list", courses);
         result.put("total", total);
 
+        return ResponseEntity.ok(result);
+    }
+    // 获取category不包含特定字符的所有可用课题
+    @GetMapping("/availablecourse-notcontaining")
+    public ResponseEntity<Object> searchAvailableCoursesExcludeCategory(
+            @RequestParam(name = "excludePrefix", required = false) String excludePrefix,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<Course> pageResult = courseService.findAvailableByCategoryNotContaining(excludePrefix, page, size);
+        Map<String, Object> result = new HashMap<>();
+        result.put("list", pageResult.getContent());
+        result.put("total", pageResult.getTotalElements());
+        return ResponseEntity.ok(result);
+    }
+    // 获取category包含特定字符的所有可用课题
+    @GetMapping("/availablecourse-containing")
+    public ResponseEntity<Object> searchAvailableCoursesIncludeCategory(
+            @RequestParam(name = "excludePrefix", required = false) String excludePrefix,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<Course> pageResult = courseService.findAvailableByCategoryContaining(excludePrefix, page, size);
+        Map<String, Object> result = new HashMap<>();
+        result.put("list", pageResult.getContent());
+        result.put("total", pageResult.getTotalElements());
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/course-containing")
+    public ResponseEntity<Object> searchAllCoursesIncludeCategory(
+            @RequestParam(name = "excludePrefix", required = false) String excludePrefix,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<Course> pageResult = courseService.findByCategoryContainingAll(excludePrefix, page, size);
+        Map<String, Object> result = new HashMap<>();
+        result.put("list", pageResult.getContent());
+        result.put("total", pageResult.getTotalElements());
+        return ResponseEntity.ok(result);
+    }
+    @GetMapping("/course-notcontaining")
+    public ResponseEntity<Object> searchAllCoursesExcludeCategory(
+            @RequestParam(name = "excludePrefix", required = false) String excludePrefix,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<Course> pageResult = courseService.findByCategoryNotContainingAll(excludePrefix, page, size);
+        Map<String, Object> result = new HashMap<>();
+        result.put("list", pageResult.getContent());
+        result.put("total", pageResult.getTotalElements());
         return ResponseEntity.ok(result);
     }
 
