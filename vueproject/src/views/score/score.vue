@@ -306,9 +306,9 @@ export default {
     async openViewDialog(course) {
       this.selectedCourse = {
         ...course,
-        start_time: dayjs(course.start_time).format('YYYY-MM-DD'),
-        end_time: dayjs(course.end_time).format('YYYY-MM-DD'),
-        updated_at: dayjs(course.updated_at).format('YYYY-MM-DD'),
+        start_time: dayjs(course.start_time).format('YYYY-MM-DD HH:mm:ss'),
+        end_time: dayjs(course.end_time).format('YYYY-MM-DD HH:mm:ss'),
+        updated_at: dayjs(course.updated_at).format('YYYY-MM-DD HH:mm:ss'),
       };
 
       const identityId = this.getCurrentIdentityId();
