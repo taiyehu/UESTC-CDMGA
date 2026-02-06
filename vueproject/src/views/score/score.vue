@@ -54,15 +54,15 @@
         </el-descriptions-item>
 
         <el-descriptions-item label="开始时间">
-          {{ formatDateTime(selectedCourse.start_time) || '-' }}
+          {{ formatDateTime(selectedCourse.startTime) || '-' }}
         </el-descriptions-item>
 
         <el-descriptions-item label="结束时间">
-          {{ formatDateTime(selectedCourse.end_time) || '-' }}
+          {{ formatDateTime(selectedCourse.endTime) || '-' }}
         </el-descriptions-item>
 
         <el-descriptions-item label="最后更新时间">
-          {{ formatDateTime(selectedCourse.updated_at) || '-' }}
+          {{ formatDateTime(selectedCourse.updatedAt) || '-' }}
         </el-descriptions-item>
 
         <el-descriptions-item label="课题图片">
@@ -261,6 +261,7 @@ export default {
         this.submittedCourses = []; // 清空
         this.ScoredScores = [];
         await this.checkSubmittedCourses();
+        console.log('后端返回的数据:', response.data.list);
       } catch (error) {
         console.error('获取课题信息失败:', error);
         this.$message.error('获取课题列表失败，请稍后重试');
