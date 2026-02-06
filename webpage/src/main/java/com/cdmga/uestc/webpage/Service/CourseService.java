@@ -8,7 +8,9 @@ import com.cdmga.uestc.webpage.Entity.*;
 import com.cdmga.uestc.webpage.Repository.ActivityRepository;
 import com.cdmga.uestc.webpage.Repository.ScoreRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.cdmga.uestc.webpage.Repository.CourseRepository;
@@ -86,6 +88,34 @@ public class CourseService {
         return courseRepository.findByIsDeletedFalse(PageRequest.of(page, size)).getContent();
     }
 
+    // 排除包含 substring 的 category
+    public Page<Course> findAvailableByCategoryNotContaining(String substring, int page, int size) {
+        if (substring == null) substring = "";
+        Pageable pageable = PageRequest.of(page, size);
+        LocalDateTime currentDateTime = LocalDateTime.now();
+        return courseRepository.findAvailableCourseNotContainingCategory(currentDateTime, substring, pageable);
+    }
+
+    public Page<Course> findAvailableByCategoryContaining(String substring, int page, int size) {
+        if (substring == null) substring = "";
+        Pageable pageable = PageRequest.of(page, size);
+        LocalDateTime currentDateTime = LocalDateTime.now();
+        return courseRepository.findAvailableCourseContainingCategory(currentDateTime, substring, pageable);
+    }
+
+    // 包含 substring 的 category
+    public Page<Course> findByCategoryContainingAll(String substring, int page, int size) {
+        if (substring == null) substring = "";
+        Pageable pageable = PageRequest.of(page, size);
+        return courseRepository.findByCategoryContainingIgnoreCaseAndIsDeletedFalse(substring, pageable);
+    }
+
+    // 排除包含 substring 的 category
+    public Page<Course> findByCategoryNotContainingAll(String substring, int page, int size) {
+        if (substring == null) substring = "";
+        Pageable pageable = PageRequest.of(page, size);
+        return courseRepository.findByCategoryNotContainingIgnoreCaseAndIsDeletedFalse(substring, pageable);
+    }
 
     //不一定用的到
     public List<Activity> getAssocActivities(Integer courseId) {

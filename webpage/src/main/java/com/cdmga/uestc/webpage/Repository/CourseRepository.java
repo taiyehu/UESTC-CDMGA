@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.cdmga.uestc.webpage.Entity.Course;
@@ -39,4 +40,26 @@ public interface CourseRepository extends JpaRepository<Course, Integer> {
 
     @Query("SELECT c FROM Course c WHERE c.startTime <= :currentDateTime AND c.endTime >= :currentDateTime AND c.isDeleted = false ORDER BY c.startTime DESC")
     Page<Course> findAvailableCourse(LocalDateTime currentDateTime,Pageable pageable);
+
+    // 排除 category 包含子串（忽略大小写）
+    Page<Course> findByCategoryNotContainingIgnoreCaseAndIsDeletedFalse(String substring, Pageable pageable);
+
+    // 排除 category 包含子串（忽略大小写）
+    Page<Course> findByCategoryContainingIgnoreCaseAndIsDeletedFalse(String substring, Pageable pageable);
+
+    @Query("SELECT c FROM Course c WHERE c.startTime <= :currentDateTime AND c.endTime >= :currentDateTime "
+            + "AND c.isDeleted = false "
+            + "AND ( :contain IS NULL OR :contain = '' OR LOWER(c.category) LIKE CONCAT('%', LOWER(:contain), '%') ) "
+            + "ORDER BY c.startTime DESC")
+    Page<Course> findAvailableCourseContainingCategory(@Param("currentDateTime") LocalDateTime currentDateTime,
+                                                       @Param("contain") String contain,
+                                                       Pageable pageable);
+
+    @Query("SELECT c FROM Course c WHERE c.startTime <= :currentDateTime AND c.endTime >= :currentDateTime "
+            + "AND c.isDeleted = false "
+            + "AND ( :contain IS NULL OR :contain = '' OR LOWER(c.category) NOT LIKE CONCAT('%', LOWER(:contain), '%') ) "
+            + "ORDER BY c.startTime DESC")
+    Page<Course> findAvailableCourseNotContainingCategory(@Param("currentDateTime") LocalDateTime currentDateTime,
+                                                          @Param("contain") String contain,
+                                                          Pageable pageable);
 }

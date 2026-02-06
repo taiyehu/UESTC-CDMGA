@@ -8,6 +8,9 @@ import com.cdmga.uestc.webpage.common.AssocCourseRequest;
 import com.cdmga.uestc.webpage.common.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -92,6 +95,29 @@ public class ActivityController {
         return ResponseEntity.ok(result);
     }
 
+    //分页查找活动列表
+    @GetMapping("/search")
+    public ResponseEntity<Object> searchActivitiesByName(
+            @RequestParam(name = "name", required = false) String name,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        try {
+            Pageable pageable = PageRequest.of(page, size);
+            // activityService.searchActivitiesByName 返回 Page<Activity>
+            Page<Activity> pageResult = activityService.searchActivitiesByName(name, pageable);
+            List<Activity> activities = pageResult.getContent();
+            long total = pageResult.getTotalElements();
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("list", activities);
+            result.put("total", total);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+
     // 获取所有活动（不分页）
     @GetMapping("/all")
     public ResponseEntity<List<Activity>> getAllActivities() {
@@ -117,7 +143,7 @@ public class ActivityController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(e.getMessage()));
         }
     }
-
+    //添加和活动相关的课题，需要标明计分方式等其他备注信息，详情参见AssocCourseRequest类定义
     @PostMapping("/add-assoc-course")
     public ResponseEntity<Course> addAssocCourseToActivity(
             @RequestBody AssocCourseRequest request) {
@@ -142,6 +168,7 @@ public class ActivityController {
         }
     }
 
+    //获取参加过的活动信息
     @GetMapping("/rated-activities/{identityId}")
     public ResponseEntity<List<Activity>> getRatedActivities(@PathVariable Integer identityId) {
         List<Activity> activities = activityService.getRatedActivities(identityId);
