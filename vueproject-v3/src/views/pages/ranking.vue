@@ -3,7 +3,7 @@
     <h2 style="text-align: center; margin-bottom: 20px">用户总分排行榜</h2>
     <el-table
       :data="pagedRankData"
-      style="width: 600px; margin: 0 auto"
+      style="width: 440px; margin: 0 auto"
       border
       :default-sort="{ prop: 'totalScore', order: 'descending' }"
     >
@@ -55,64 +55,55 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
-export default {
-  data() {
-    return {
-      rankAllData: [],
-      rankSortedData: [],
-      pagedRankData: [],
-      rankPageSize: 10,
-      rankCurrentPage: 1,
-    }
-  },
-  mounted() {
-    this.fetchRankData()
-  },
-  watch: {
-    rankCurrentPage() {
-      this.setPagedRankData()
-    },
-  },
-  methods: {
-    goToProfile(id) {
-      this.$router.push(`/profile/${id}`)
-    },
-    async fetchRankData() {
-      try {
-        const res = await axios.get('/api/score/user-total-scores')
-        let data = res.data.data || []
-        data.sort((a, b) => b.totalScore - a.totalScore)
-        this.rankAllData = data
-        this.rankSortedData = data
-        this.setPagedRankData()
-      } catch (e) {
-        this.$message
-          ? this.$message.error('获取排行榜失败')
-          : alert('获取排行榜失败')
-      }
-    },
-    setPagedRankData() {
-      const start = (this.rankCurrentPage - 1) * this.rankPageSize
-      this.pagedRankData = this.rankSortedData.slice(
-        start,
-        start + this.rankPageSize
-      )
-    },
-    handleRankPageChange(page) {
-      this.rankCurrentPage = page
-      this.setPagedRankData()
-    },
-    getImageUrl(imagePath) {
-      if (!imagePath) return ''
-      if (/^https?:\/\//.test(imagePath)) {
-        return imagePath
-      }
-      return imagePath.startsWith('/') ? imagePath : '/' + imagePath
-    },
-  },
+import { ElMessage } from 'element-plus'
+
+const rankAllData = ref([])
+const rankSortedData = ref([])
+const rankPageSize = ref(10)
+const rankCurrentPage = ref(1)
+
+const pagedRankData = computed(() => {
+  const start = (rankCurrentPage.value - 1) * rankPageSize.value
+  return rankSortedData.value.slice(start, start + rankPageSize.value)
+})
+
+const router = useRouter()
+
+function goToProfile(id) {
+  router.push(`/profile/${id}`)
 }
+
+async function fetchRankData() {
+  try {
+    const res = await axios.get('/api/score/user-total-scores')
+    let data = res.data.data || []
+    data.sort((a, b) => b.totalScore - a.totalScore)
+    rankAllData.value = data
+    rankSortedData.value = data
+  } catch (e) {
+    ElMessage({ message: '获取排行榜失败', type: 'error' })
+  }
+}
+
+function handleRankPageChange(page) {
+  rankCurrentPage.value = page
+}
+
+function getImageUrl(imagePath) {
+  if (!imagePath) return ''
+  if (/^https?:\/\//.test(imagePath)) {
+    return imagePath
+  }
+  return imagePath.startsWith('/') ? imagePath : '/' + imagePath
+}
+
+onMounted(() => {
+  fetchRankData()
+})
 </script>
 
 <style scoped>

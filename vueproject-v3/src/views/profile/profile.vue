@@ -377,6 +377,9 @@ import axios from 'axios'
 import { compressImage } from '@/components/imageCompressor'
 import AvatarCropper from '@/components/AvatarCropper.vue'
 import ContestRanking from '@/views/pages/contest-ranking.vue'
+import { ref } from 'vue'   
+import defaultAvatar from '@/assets/default-avatar.png'
+const avatarUrl = ref(defaultAvatar)
 
 export default {
   computed: {
@@ -390,7 +393,7 @@ export default {
       user: { account: '', id: null, role: '' },
       profile: { avatar: '', description: '', status: -1 },
       profileStatus: -1, // 0审核中 1通过 -1未提交
-      defaultAvatar: require('@/assets/default-avatar.png'),
+      defaultAvatar: defaultAvatar,
       editDialogVisible: false,
       editProfile: { avatar: '', description: '' },
 
