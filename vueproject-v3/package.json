@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@vue/compat": "^3.5.28",
     "axios": "^1.13.5",
     "dayjs": "^1.11.19",
     "pinia": "^3.0.4",
@@ -19,6 +20,7 @@
     "@types/node": "^24.10.1",
     "@vitejs/plugin-vue": "^6.0.2",
     "@vue/tsconfig": "^0.8.1",
+    "gogocode": "^1.0.55",
     "typescript": "~5.9.3",
     "vite": "^7.3.1",
     "vue-tsc": "^3.1.5"
