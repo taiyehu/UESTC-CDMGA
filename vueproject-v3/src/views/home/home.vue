@@ -157,137 +157,138 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import {
   ArrowLeft as ElIconArrowLeft,
   ArrowRight as ElIconArrowRight,
 } from '@element-plus/icons'
 import { fetchCourseData } from '@/api/course'
-export default {
-  data() {
-    return {
-      bannerList: [],
-      loading: true,
-      error: null,
-      currentIndex: 0,
-      carouselTimer: null,
-      previewVisible: false,
-      controlsVisible: false,
-      // 新增：暂停计数器
-      pauseCounter: 0,
-      imagePreviewVisible: false,
-      imagePreviewUrl: '',
-      ElIconArrowLeft,
-      ElIconArrowRight,
-    }
-  },
-  mounted() {
-    this.initBannerList()
-  },
-  beforeUnmount() {
-    this.clearCarouselTimer()
-  },
-  computed: {
-    currentCourse() {
-      const item = this.bannerList[this.currentIndex]
-      return item && item.type === 'course' ? item.data || null : null
-    },
-  },
-  methods: {
-    previewImage(imgUrl) {
-      this.imagePreviewUrl = this.getImageUrl(imgUrl)
-      this.imagePreviewVisible = true
-    },
-    async initBannerList() {
-      try {
-        const response = await fetchCourseData()
-        let courses = response.data || []
-        // 只取最新课题
-        courses = courses.sort(
-          (a, b) => new Date(b.startTime) - new Date(a.startTime)
-        )
-        console.log('RELOAD TEST', Date.now())
-        const latestCourse = courses.length ? courses[0] : null
-        const bannerArr = []
-        if (latestCourse) {
-          bannerArr.push({ type: 'course', data: latestCourse })
-        }
-        // 活动占位，可扩展为多个
-        bannerArr.push({ type: 'activity', data: {} })
-        this.bannerList = bannerArr
-        this.startCarousel()
-      } catch (err) {
-        this.error = err.message
-      } finally {
-        this.loading = false
-      }
-    },
-    startCarousel() {
-      this.clearCarouselTimer()
-      if (this.bannerList.length > 1) {
-        this.carouselTimer = setInterval(() => {
-          this.nextCard()
-        }, 4000)
-      }
-    },
-    pauseCarousel() {
-      if (this.pauseCounter === 0) {
-        this.clearCarouselTimer()
-        this.controlsVisible = true
-      }
-      this.pauseCounter++
-    },
-    resumeCarousel(force = false) {
-      if (force) {
-        this.pauseCounter = 0
-      } else if (this.pauseCounter > 0) {
-        this.pauseCounter--
-      }
-      if (this.pauseCounter === 0) {
-        this.startCarousel()
-        this.controlsVisible = false
-      }
-    },
-    clearCarouselTimer() {
-      if (this.carouselTimer) {
-        clearInterval(this.carouselTimer)
-        this.carouselTimer = null
-      }
-    },
-    nextCard() {
-      if (this.bannerList.length) {
-        this.currentIndex = (this.currentIndex + 1) % this.bannerList.length
-      }
-    },
-    prevCard() {
-      if (this.bannerList.length) {
-        this.currentIndex =
-          (this.currentIndex - 1 + this.bannerList.length) %
-          this.bannerList.length
-      }
-    },
-    handleImageClick(imgUrl) {
-      this.pauseCarousel()
-      this.previewVisible = true
-    },
-    formatDate(date) {
-      const d = new Date(date)
-      const options = { year: 'numeric', month: 'long', day: 'numeric' }
-      return d.toLocaleDateString('zh-CN', options)
-    },
-    formatDateTime(dateTime) {
-      if (!dateTime) return ''
-      return new Date(dateTime).toLocaleString()
-    },
-    getImageUrl(imagePath) {
-      if (!imagePath) return ''
-      if (/^https?:\/\//.test(imagePath)) {
-        return imagePath
-      }
-      return imagePath.startsWith('/') ? imagePath : '/' + imagePath
-    },
-  },
+
+const bannerList = ref([])
+const loading = ref(true)
+const error = ref(null)
+const currentIndex = ref(0)
+const carouselTimer = ref(null)
+const previewVisible = ref(false)
+const controlsVisible = ref(false)
+const pauseCounter = ref(0)
+const imagePreviewVisible = ref(false)
+const imagePreviewUrl = ref('')
+
+const currentCourse = computed(() => {
+  const item = bannerList.value[currentIndex.value]
+  return item && item.type === 'course' ? item.data || null : null
+})
+
+function previewImage(imgUrl) {
+  imagePreviewUrl.value = getImageUrl(imgUrl)
+  imagePreviewVisible.value = true
 }
+
+async function initBannerList() {
+  try {
+    const response = await fetchCourseData()
+    let courses = response.data || []
+    courses = courses.sort(
+      (a, b) => new Date(b.startTime) - new Date(a.startTime)
+    )
+    const latestCourse = courses.length ? courses[0] : null
+    const bannerArr = []
+    if (latestCourse) {
+      bannerArr.push({ type: 'course', data: latestCourse })
+    }
+    bannerArr.push({ type: 'activity', data: {} })
+    bannerList.value = bannerArr
+    startCarousel()
+  } catch (err) {
+    error.value = err.message
+  } finally {
+    loading.value = false
+  }
+}
+
+function startCarousel() {
+  clearCarouselTimer()
+  if (bannerList.value.length > 1) {
+    carouselTimer.value = window.setInterval(() => {
+      nextCard()
+    }, 4000)
+  }
+}
+
+function pauseCarousel() {
+  if (pauseCounter.value === 0) {
+    clearCarouselTimer()
+    controlsVisible.value = true
+  }
+  pauseCounter.value++
+}
+
+function resumeCarousel(force = false) {
+  if (force) {
+    pauseCounter.value = 0
+  } else if (pauseCounter.value > 0) {
+    pauseCounter.value--
+  }
+  if (pauseCounter.value === 0) {
+    startCarousel()
+    controlsVisible.value = false
+  }
+}
+
+function clearCarouselTimer() {
+  if (carouselTimer.value) {
+    clearInterval(carouselTimer.value)
+    carouselTimer.value = null
+  }
+}
+
+function nextCard() {
+  if (bannerList.value.length) {
+    currentIndex.value = (currentIndex.value + 1) % bannerList.value.length
+  }
+}
+
+function prevCard() {
+  if (bannerList.value.length) {
+    currentIndex.value =
+      (currentIndex.value - 1 + bannerList.value.length) %
+      bannerList.value.length
+  }
+}
+
+function handleImageClick(imgUrl) {
+  pauseCarousel()
+  previewVisible.value = true
+}
+
+function formatDate(date) {
+  const d = new Date(date)
+  const options = { year: 'numeric', month: 'long', day: 'numeric' }
+  return d.toLocaleDateString('zh-CN', options)
+}
+
+function formatDateTime(dateTime) {
+  if (!dateTime) return ''
+  return new Date(dateTime).toLocaleString()
+}
+
+function getImageUrl(imagePath) {
+  if (!imagePath) return ''
+  if (/^https?:\/\//.test(imagePath)) {
+    return imagePath
+  }
+  return imagePath.startsWith('/') ? imagePath : '/' + imagePath
+}
+
+onMounted(() => {
+  initBannerList()
+})
+
+onBeforeUnmount(() => {
+  clearCarouselTimer()
+})
 </script>
 
 <style scoped>

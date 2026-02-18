@@ -49,7 +49,7 @@
 
 ## 运行环境
 
-整个项目目前运行的服务器系统为**ubuntu-22.04-LST**（LST为长期支持版，标注22.04的和标注22.04-LST的ubuntu系统均可使用）。
+整个项目目前运行的服务器系统为**ubuntu-22.04-LTS**（LTS为长期支持版，标注22.04的和标注22.04-LTS的ubuntu系统均可使用）。
 
 项目的前端由vue构建，使用的Node版本为Node 20，部署在nginx下运行，并由nginx进行后端项目的反向代理。
 
@@ -63,9 +63,9 @@
 
 ## 开发
 
-项目的开发环境建议使用与部署目标环境相同的**ubuntu-22.04-LST**，在由于脚手架的一致性，因此在windows下也能进行开发，如果使用安装了**ubuntu-22.04-LST**的WSL、VMware等虚拟机，在开发环境的部署上比windows下的部署方便一些。
+项目的开发环境建议使用与部署目标环境相同的**ubuntu-22.04-LTS**，在由于脚手架的一致性，因此在windows下也能进行开发，如果使用安装了**ubuntu-22.04-LTS**的WSL、VMware等虚拟机，在开发环境的部署上比windows下的部署方便一些。
 
-### ubuntu-22.04-LST下的开发环境
+### ubuntu-22.04-LTS下的开发环境
 
 在ubuntu22.04下默认软件仓库的Node版本为已经不提供支持的12版本，因此需要引入Node 20的软件源，开发相关的软件环境可以使用下面的命令完成安装。
 
@@ -76,10 +76,12 @@ sudo apt install maven -y #安装maven
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - # 添加 NodeSource 仓库
 sudo apt install nodejs -y #安装node和npm
 
+
 java -version #验证java
 mvn -version #验证maven
 node --version
 npm --version #验证npn和Node
+
 
 ```
 
@@ -105,22 +107,33 @@ nginx --version
 ### 前端的开发和部署
 
 前端项目的开发需要在命令行进入vueproject/文件夹下，首先根据 package.json 安装项目所需的所有依赖，使用命令
-
 ```Bash
-npm install 
-```
-
-或
-
-```Bash
-npm i
+sudo corepack enable pnpm
+corepack use pnpm@10.30.0
+pnpm --version
 ```
 
 接着执行
 
 ```Bash
-npm run serve
+pnpm install
+
+# 2. 首次需要批准构建脚本（只需一次）
+pnpm approve-builds
+
+# 3. 如果这是第一次批准，重建一次
+pnpm rebuild
+
+# 4. 启动项目
+pnpm dev
+
+pnpm run serve
 ```
+
+>换源
+>国内镜像较慢，可以执行`pnpm config set registry https://registry.npmmirror.com`进行换源操作
+
+
 
 即可运行前端项目，此时复制出现的http://localhost:8081或带ip的地址到浏览器中即可查看vue项目的效果，在项目运行下修改代码也可即刻反映在浏览器中。
 
