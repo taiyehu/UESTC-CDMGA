@@ -1,12 +1,12 @@
 import request from '@/utils/request'
-import types from '@/api/types'
+import type { Score } from '@/api/types'
 /**
  * ģ��ɼ��ύ
  * @param {Object} handleScore - ģ��ɼ�
  * @param {Number} handleScore.course_id
  * @returns {Promise}
  */
-export const Test_handleSubmitScore = (handleScore) => {
+export const Test_handleSubmitScore = (handleScore:Score) => {
   return request({
     url: '/score/submit',
     method: 'post',
@@ -40,7 +40,7 @@ export const checkSubmitted = (identityId, courseId) => {
  * @param {String} handleScore.upload_time
  * @param {string} handleScore.image
  */
-export const handleSubmitScore = (handleScore) => {
+export const handleSubmitScore = (handleScore:Score) => {
   return request({
     url: '/score/post',
     method: 'post',

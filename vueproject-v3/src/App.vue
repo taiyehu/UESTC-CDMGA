@@ -5,21 +5,17 @@
   </div>
 </template>
 
-<script>
-import Navbar from './components/Navbar.vue'
+<script lang="ts" setup>
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import Navbar from '@/components/Navbar.vue'
 
-export default {
-  name: 'App',
-  components: {
-    Navbar,
-  },
-  computed: {
-    showNavbar() {
-      const noNavRoutes = ['/login', '/register']
-      return !noNavRoutes.includes(this.$route.path)
-    },
-  },
-}
+const route = useRoute()
+
+const showNavbar = computed(() => {
+  const noNavRoutes = ['/login', '/register']
+  return !noNavRoutes.includes(route.path)
+})
 </script>
 
 <style>

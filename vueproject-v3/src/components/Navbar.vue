@@ -12,9 +12,7 @@
       <div class="avatar-menu" @click.stop="toggleMenu">
         <img class="avatar" :src="avatarUrl" alt="头像" />
         <div v-if="menuOpen" class="dropdown-content">
-          <router-link class="dropdown-item" to="/profile"
-            >个人主页</router-link
-          >
+          <router-link class="dropdown-item" to="/profile">个人主页</router-link>
           <a class="dropdown-item" @click="logout">登出</a>
         </div>
       </div>
@@ -22,94 +20,81 @@
   </nav>
 </template>
 
-<script>
+<script lang="ts" setup>
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
-export default {
-  data() {
-    return {
-      menuOpen: false,
-      avatarUrl: require('@/assets/default-avatar.png'),
-      profile: {
-        avatar: '',
-        status: -1,
-      },
-      profileStatus: -1,
-    }
-  },
-  mounted() {
-    this.loadProfile()
-    document.addEventListener('click', this.handleClickOutside)
-  },
-  beforeUnmount() {
-    document.removeEventListener('click', this.handleClickOutside)
-  },
-  methods: {
-    getImageUrl(imagePath) {
-      if (!imagePath) return require('@/assets/default-avatar.png')
-      if (/^https?:\/\//.test(imagePath)) {
-        return imagePath
-      }
-      return imagePath.startsWith('/') ? imagePath : '/' + imagePath
-    },
-    loadProfile() {
-      try {
-        const userInfo = sessionStorage.getItem('userInfo')
-        if (!userInfo) {
-          this.avatarUrl = require('@/assets/default-avatar.png')
-          return
-        }
-        const user = JSON.parse(userInfo)
-        const avatar =
-          user.avatar ||
-          user.avatarUrl ||
-          (user.profile && user.profile.avatar) ||
-          ''
-        const status = Number(
-          user.status ?? (user.profile && user.profile.status) ?? -1
-        )
-        if (status === 1 && avatar) {
-          this.avatarUrl = this.getImageUrl(avatar)
-        } else {
-          // 如果 sessionStorage 没 avatar，尝试从后端拉取一次（可能首次登录未写入）
-          this.avatarUrl = require('@/assets/default-avatar.png')
-          if (!avatar) {
-            this.fetchProfileFromServer(user.id || user.identityId)
-          }
-        }
-      } catch (e) {
-        console.error('Navbar.loadProfile parse error', e)
-        this.avatarUrl = require('@/assets/default-avatar.png')
-      }
-    },
-    async fetchProfileFromServer(identityId) {
-      if (!identityId) return
-      try {
-        const res = await axios.get(`/api/profile/identity/${identityId}`)
-        // 适配后端返回格式，如果是 {code:..., data:...} 请调整取值
-        const profile = res.data && res.data.data ? res.data.data : res.data
-        const avatar = profile && (profile.avatar || profile.avatarUrl)
-        const status = Number((profile && profile.status) ?? -1)
-        if (status === 1 && avatar) {
-          this.avatarUrl = this.getImageUrl(avatar)
-        }
-      } catch (err) {
-        console.debug('fetchProfileFromServer failed', err)
-      }
-    },
-    toggleMenu() {
-      this.menuOpen = !this.menuOpen
-    },
-    handleClickOutside(e) {
-      if (!this.$el.contains(e.target)) {
-        this.menuOpen = false
-      }
-    },
-    logout() {
-      sessionStorage.removeItem('userInfo')
-      this.$router.push('/login')
-    },
-  },
+import avatarDefault from '@/assets/default-avatar.png'
+
+const router = useRouter()
+
+const menuOpen = ref(false)
+const avatarUrl = ref(avatarDefault)
+
+function toggleMenu() {
+  menuOpen.value = !menuOpen.value
 }
+
+function handleClickOutside(e: MouseEvent) {
+  const target = e.target as HTMLElement
+  if (!document.querySelector('.navbar')?.contains(target)) {
+    menuOpen.value = false
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('userInfo')
+  router.push('/login')
+}
+
+function getImageUrl(imagePath: string) {
+  if (!imagePath) return avatarDefault
+  if (/^https?:\/\//.test(imagePath)) return imagePath
+  return imagePath.startsWith('/') ? imagePath : '/' + imagePath
+}
+
+function loadProfile() {
+  const userInfo = sessionStorage.getItem('userInfo')
+  if (!userInfo) {
+    avatarUrl.value = avatarDefault
+    return
+  }
+  const user = JSON.parse(userInfo)
+  const avatar =
+    user.avatar || user.avatarUrl || (user.profile && user.profile.avatar) || ''
+  const status = Number(
+    user.status ?? (user.profile && user.profile.status) ?? -1
+  )
+  if (status === 1 && avatar) {
+    avatarUrl.value = getImageUrl(avatar)
+  } else if (!avatar) {
+    fetchProfileFromServer(user.id || user.identityId)
+  }
+}
+
+async function fetchProfileFromServer(identityId: string | number) {
+  if (!identityId) return
+  try {
+    const res = await axios.get(`/api/profile/identity/${identityId}`)
+    const profile = res.data?.data || res.data
+    const avatar = profile?.avatar || profile?.avatarUrl
+    const status = Number(profile?.status ?? -1)
+    if (status === 1 && avatar) {
+      avatarUrl.value = getImageUrl(avatar)
+    }
+  } catch (err) {
+    console.debug('fetchProfileFromServer failed', err)
+  }
+}
+
+onMounted(() => {
+  loadProfile()
+  document.addEventListener('click', handleClickOutside)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <style>

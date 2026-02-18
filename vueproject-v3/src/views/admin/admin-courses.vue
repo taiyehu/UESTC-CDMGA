@@ -168,7 +168,7 @@
 import {
   fetchAllCourseData,
   deleteCourseData,
-  uploadCourseData,
+  // uploadCourseData,
 } from '@/api/course'
 import dayjs from 'dayjs'
 import axios from 'axios'
