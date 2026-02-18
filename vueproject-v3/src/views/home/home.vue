@@ -6,8 +6,8 @@
       @mouseleave="resumeCarousel(false)"
     >
       <div class="banner-label">
-        <span v-if="bannerList[currentIndex].type === 'course'">最新课题</span>
-        <span v-else-if="bannerList[currentIndex].type === 'activity'"
+        <span v-if="bannerList[currentIndex]?.type === 'course'">最新课题</span>
+        <span v-else-if="bannerList[currentIndex]?.type === 'activity'"
           >最新活动</span
         >
       </div>
@@ -35,7 +35,7 @@
               />
               <el-button
                 v-if="bannerList[currentIndex].data.image"
-                size="mini"
+                size="small"
                 @click="
                   handleImageClick(
                     getImageUrl(bannerList[currentIndex].data.image)
