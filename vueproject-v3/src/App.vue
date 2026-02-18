@@ -1,25 +1,24 @@
 <template>
   <div id="app">
     <Navbar v-if="showNavbar" />
-    <router-view/>
+    <router-view />
   </div>
 </template>
 
 <script>
-
-import Navbar from './components/Navbar.vue';
+import Navbar from './components/Navbar.vue'
 
 export default {
   name: 'App',
   components: {
-    Navbar
+    Navbar,
   },
   computed: {
     showNavbar() {
-      const noNavRoutes = ['/login', '/register'];
-      return !noNavRoutes.includes(this.$route.path);
-    }
-  }
+      const noNavRoutes = ['/login', '/register']
+      return !noNavRoutes.includes(this.$route.path)
+    },
+  },
 }
 </script>
 

@@ -19,10 +19,14 @@ export function compressImage(file, targetSize = 5 * 1024 * 1024) {
         convertSize: targetSize,
         success(result) {
           if (result.size <= targetSize) {
-            console.log(`[compressImage] 压缩成功: ${originalName}, 原始大小: ${originalSize}, 压缩后: ${result.size}`)
+            console.log(
+              `[compressImage] 压缩成功: ${originalName}, 原始大小: ${originalSize}, 压缩后: ${result.size}`
+            )
             resolve(result)
           } else if (tryCount >= 2) {
-            console.warn(`[compressImage] 压缩3次未达目标: ${originalName}, 原始大小: ${originalSize}, 最终: ${result.size}`)
+            console.warn(
+              `[compressImage] 压缩3次未达目标: ${originalName}, 原始大小: ${originalSize}, 最终: ${result.size}`
+            )
             resolve(result)
           } else {
             quality -= 0.15
@@ -32,12 +36,12 @@ export function compressImage(file, targetSize = 5 * 1024 * 1024) {
         },
         error(err) {
           reject(err)
-        }
+        },
       })
     }
 
     doCompress(file)
-  }).then(result => {
+  }).then((result) => {
     if (result.size > 5 * 1024 * 1024 && targetSize === 5 * 1024 * 1024) {
       // 压到1M失败，尝试压到3M
       return compressImage(result, 8 * 1024 * 1024)

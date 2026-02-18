@@ -10,15 +10,15 @@ import request from '@/utils/request'
  * @returns {Promise} Axios 请求的 Promise 对象
  */
 export const login = (credentials) => {
-    return request({
-        url: '/identity/login',
-        method: 'post',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        data: credentials,
-        withCredentials: true
-    })
+  return request({
+    url: '/identity/login',
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: credentials,
+    withCredentials: true,
+  })
 }
 /**
  * 用户注册
@@ -27,14 +27,14 @@ export const login = (credentials) => {
  * @param {string} credentials.password - 密码
  * @returns {Promise} Axios 请求的 Promise 对象
  */
-export const  register = (credentials) => {
-    return request({
-        url: '/identity/register',
-        method: 'post',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        data: credentials,
-        withCredentials: true
-    })
+export const register = (credentials) => {
+  return request({
+    url: '/identity/register',
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: credentials,
+    withCredentials: true,
+  })
 }

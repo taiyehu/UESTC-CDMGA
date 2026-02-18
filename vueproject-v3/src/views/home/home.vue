@@ -1,19 +1,31 @@
 <template>
   <div class="main-content">
-    <div class="banner-carousel" @mouseenter="pauseCarousel" @mouseleave="resumeCarousel(false)">
+    <div
+      class="banner-carousel"
+      @mouseenter="pauseCarousel"
+      @mouseleave="resumeCarousel(false)"
+    >
       <div class="banner-label">
         <span v-if="bannerList[currentIndex].type === 'course'">最新课题</span>
-        <span v-else-if="bannerList[currentIndex].type === 'activity'">最新活动</span>
+        <span v-else-if="bannerList[currentIndex].type === 'activity'"
+          >最新活动</span
+        >
       </div>
       <transition name="carousel-fade" mode="out-in">
-        <div v-if="bannerList.length" :key="currentIndex" class="banner-content">
+        <div v-if="bannerList.length" class="banner-content">
           <!-- 最新课题 -->
           <template v-if="bannerList[currentIndex].type === 'course'">
             <div class="banner-info">
               <h4>{{ bannerList[currentIndex].data.title }}</h4>
               <p>类别: {{ bannerList[currentIndex].data.category }}</p>
-              <p>开始时间: {{ formatDate(bannerList[currentIndex].data.startTime) }}</p>
-              <p>结束时间: {{ formatDate(bannerList[currentIndex].data.endTime) }}</p>
+              <p>
+                开始时间:
+                {{ formatDate(bannerList[currentIndex].data.startTime) }}
+              </p>
+              <p>
+                结束时间:
+                {{ formatDate(bannerList[currentIndex].data.endTime) }}
+              </p>
               <!--<p>描述: {{ bannerList[currentIndex].data.description }}</p>-->
               <img
                 :src="getImageUrl(bannerList[currentIndex].data.image)"
@@ -24,9 +36,14 @@
               <el-button
                 v-if="bannerList[currentIndex].data.image"
                 size="mini"
-                @click="handleImageClick(getImageUrl(bannerList[currentIndex].data.image))"
-                style="margin-top: 10px;"
-              >查看</el-button>
+                @click="
+                  handleImageClick(
+                    getImageUrl(bannerList[currentIndex].data.image)
+                  )
+                "
+                style="margin-top: 10px"
+                >查看</el-button
+              >
             </div>
           </template>
           <!-- 最新活动 -->
@@ -38,34 +55,62 @@
         </div>
       </transition>
       <div class="banner-dots">
-        <span v-for="(item, idx) in bannerList" :key="idx" :class="['dot', { active: idx === currentIndex }]" />
+        <span
+          v-for="(item, idx) in bannerList"
+          :key="idx"
+          :class="['dot', { active: idx === currentIndex }]"
+        />
       </div>
       <div class="banner-controls" :class="{ show: controlsVisible }">
-        <el-button class="banner-btn left" icon="el-icon-arrow-left" @click="prevCard" size="small" />
-        <el-button class="banner-btn right" icon="el-icon-arrow-right" @click="nextCard" size="small" />
+        <el-button
+          class="banner-btn left"
+          :icon="ElIconArrowLeft"
+          @click="prevCard"
+          size="small"
+        />
+        <el-button
+          class="banner-btn right"
+          :icon="ElIconArrowRight"
+          @click="nextCard"
+          size="small"
+        />
       </div>
     </div>
-    <el-dialog :visible.sync="previewVisible" width="760px" :show-close="true" center @close="resumeCarousel">
+    <el-dialog
+      v-model="previewVisible"
+      width="760px"
+      :show-close="true"
+      center
+      @close="resumeCarousel"
+    >
       <template v-if="currentCourse">
         <el-form :model="currentCourse" label-width="110px" class="view-form">
           <el-form-item label="课题名称">
-            <el-input :value="currentCourse.title || '-'" disabled />
+            <el-input :model-value="currentCourse.title || '-'" disabled />
           </el-form-item>
 
           <el-form-item label="类别">
-            <el-input :value="currentCourse.category || '-'" disabled />
+            <el-input :model-value="currentCourse.category || '-'" disabled />
           </el-form-item>
 
           <el-form-item label="开始时间">
-            <el-input :value="formatDateTime(currentCourse.startTime)" disabled />
+            <el-input
+              :model-value="formatDateTime(currentCourse.startTime)"
+              disabled
+            />
           </el-form-item>
 
           <el-form-item label="结束时间">
-            <el-input :value="formatDateTime(currentCourse.endTime)" disabled />
+            <el-input
+              :model-value="formatDateTime(currentCourse.endTime)"
+              disabled
+            />
           </el-form-item>
 
           <el-form-item label="描述">
-            <div style="white-space:pre-wrap;color:#333;">{{ currentCourse.description || '-' }}</div>
+            <div style="white-space: pre-wrap; color: #333">
+              {{ currentCourse.description || '-' }}
+            </div>
           </el-form-item>
 
           <el-form-item label="图片">
@@ -73,7 +118,12 @@
               <img
                 :src="getImageUrl(currentCourse.image)"
                 alt="课题图片"
-                style="max-width:260px;max-height:160px;border-radius:6px;cursor:pointer;"
+                style="
+                  max-width: 260px;
+                  max-height: 160px;
+                  border-radius: 6px;
+                  cursor: pointer;
+                "
                 @click="previewImage(currentCourse.image)"
               />
             </div>
@@ -86,18 +136,33 @@
         <el-empty description="无课题数据" />
       </div>
 
-      <span slot="footer" class="dialog-footer">
-      <el-button @click="previewVisible = false">关闭</el-button>
-    </span>
+      <template v-slot:footer>
+        <span class="dialog-footer">
+          <el-button @click="previewVisible = false">关闭</el-button>
+        </span>
+      </template>
     </el-dialog>
-    <el-dialog :visible.sync="imagePreviewVisible" width="auto" :show-close="true" center>
-      <img :src="imagePreviewUrl" alt="图片预览" style="max-width:90vw;max-height:80vh;display:block;margin:auto;" />
+    <el-dialog
+      v-model="imagePreviewVisible"
+      width="auto"
+      :show-close="true"
+      center
+    >
+      <img
+        :src="imagePreviewUrl"
+        alt="图片预览"
+        style="max-width: 90vw; max-height: 80vh; display: block; margin: auto"
+      />
     </el-dialog>
   </div>
 </template>
 
 <script>
-import { fetchCourseData } from "@/api/course";
+import {
+  ArrowLeft as ElIconArrowLeft,
+  ArrowRight as ElIconArrowRight,
+} from '@element-plus/icons'
+import { fetchCourseData } from '@/api/course'
 export default {
   data() {
     return {
@@ -108,114 +173,121 @@ export default {
       carouselTimer: null,
       previewVisible: false,
       controlsVisible: false,
-      pauseCounter: 0, // 新增：暂停计数器
+      // 新增：暂停计数器
+      pauseCounter: 0,
       imagePreviewVisible: false,
       imagePreviewUrl: '',
-    };
+      ElIconArrowLeft,
+      ElIconArrowRight,
+    }
   },
   mounted() {
-    this.initBannerList();
+    this.initBannerList()
   },
-  beforeDestroy() {
-    this.clearCarouselTimer();
+  beforeUnmount() {
+    this.clearCarouselTimer()
   },
   computed: {
     currentCourse() {
-      const item = this.bannerList[this.currentIndex];
-      return item && item.type === 'course' ? item.data || null : null;
-    }
+      const item = this.bannerList[this.currentIndex]
+      return item && item.type === 'course' ? item.data || null : null
+    },
   },
   methods: {
     previewImage(imgUrl) {
-      this.imagePreviewUrl = this.getImageUrl(imgUrl);
-      this.imagePreviewVisible = true;
+      this.imagePreviewUrl = this.getImageUrl(imgUrl)
+      this.imagePreviewVisible = true
     },
     async initBannerList() {
       try {
-        const response = await fetchCourseData();
-        let courses = response.data || [];
+        const response = await fetchCourseData()
+        let courses = response.data || []
         // 只取最新课题
-        courses = courses.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+        courses = courses.sort(
+          (a, b) => new Date(b.startTime) - new Date(a.startTime)
+        )
         console.log('RELOAD TEST', Date.now())
-        const latestCourse = courses.length ? courses[0] : null;
-        const bannerArr = [];
+        const latestCourse = courses.length ? courses[0] : null
+        const bannerArr = []
         if (latestCourse) {
-          bannerArr.push({ type: 'course', data: latestCourse });
+          bannerArr.push({ type: 'course', data: latestCourse })
         }
         // 活动占位，可扩展为多个
-        bannerArr.push({ type: 'activity', data: {} });
-        this.bannerList = bannerArr;
-        this.startCarousel();
+        bannerArr.push({ type: 'activity', data: {} })
+        this.bannerList = bannerArr
+        this.startCarousel()
       } catch (err) {
-        this.error = err.message;
+        this.error = err.message
       } finally {
-        this.loading = false;
+        this.loading = false
       }
     },
     startCarousel() {
-      this.clearCarouselTimer();
+      this.clearCarouselTimer()
       if (this.bannerList.length > 1) {
         this.carouselTimer = setInterval(() => {
-          this.nextCard();
-        }, 4000);
+          this.nextCard()
+        }, 4000)
       }
     },
     pauseCarousel() {
       if (this.pauseCounter === 0) {
-        this.clearCarouselTimer();
-        this.controlsVisible = true;
+        this.clearCarouselTimer()
+        this.controlsVisible = true
       }
-      this.pauseCounter++;
+      this.pauseCounter++
     },
     resumeCarousel(force = false) {
       if (force) {
-        this.pauseCounter = 0;
+        this.pauseCounter = 0
       } else if (this.pauseCounter > 0) {
-        this.pauseCounter--;
+        this.pauseCounter--
       }
       if (this.pauseCounter === 0) {
-        this.startCarousel();
-        this.controlsVisible = false;
+        this.startCarousel()
+        this.controlsVisible = false
       }
     },
     clearCarouselTimer() {
       if (this.carouselTimer) {
-        clearInterval(this.carouselTimer);
-        this.carouselTimer = null;
+        clearInterval(this.carouselTimer)
+        this.carouselTimer = null
       }
     },
     nextCard() {
       if (this.bannerList.length) {
-        this.currentIndex = (this.currentIndex + 1) % this.bannerList.length;
+        this.currentIndex = (this.currentIndex + 1) % this.bannerList.length
       }
     },
     prevCard() {
       if (this.bannerList.length) {
-        this.currentIndex = (this.currentIndex - 1 + this.bannerList.length) % this.bannerList.length;
+        this.currentIndex =
+          (this.currentIndex - 1 + this.bannerList.length) %
+          this.bannerList.length
       }
     },
     handleImageClick(imgUrl) {
-      this.pauseCarousel();
-      this.previewVisible = true;
+      this.pauseCarousel()
+      this.previewVisible = true
     },
     formatDate(date) {
-      const d = new Date(date);
-      const options = { year: 'numeric', month: 'long', day: 'numeric' };
-      return d.toLocaleDateString('zh-CN', options);
+      const d = new Date(date)
+      const options = { year: 'numeric', month: 'long', day: 'numeric' }
+      return d.toLocaleDateString('zh-CN', options)
     },
     formatDateTime(dateTime) {
-      if (!dateTime) return '';
-      return new Date(dateTime).toLocaleString();
+      if (!dateTime) return ''
+      return new Date(dateTime).toLocaleString()
     },
     getImageUrl(imagePath) {
-      if (!imagePath) return '';
+      if (!imagePath) return ''
       if (/^https?:\/\//.test(imagePath)) {
-        return imagePath;
+        return imagePath
       }
-      return imagePath.startsWith('/') ? imagePath : '/' + imagePath;
-    }
-  }
-};
+      return imagePath.startsWith('/') ? imagePath : '/' + imagePath
+    },
+  },
+}
 </script>
 
 <style scoped>
@@ -232,7 +304,8 @@ export default {
   margin: 140px auto 0 auto;
   background: linear-gradient(135deg, #e3f0ff 0%, #b3d8ff 100%);
   border-radius: 20px;
-  box-shadow: 0 12px 40px rgba(64,158,255,0.22), 0 0 0 6px #eaf6ff inset, 0 1px 12px #fff inset;
+  box-shadow: 0 12px 40px rgba(64, 158, 255, 0.22), 0 0 0 6px #eaf6ff inset,
+    0 1px 12px #fff inset;
   padding: 56px 56px 40px 56px;
   position: relative;
   min-height: 320px;
@@ -306,7 +379,7 @@ export default {
   pointer-events: auto;
 }
 .banner-btn {
-  background: rgba(120,120,120,0.35) !important;
+  background: rgba(120, 120, 120, 0.35) !important;
   border: none !important;
   border-radius: 4px !important;
   width: 36px !important;
@@ -326,7 +399,7 @@ export default {
   margin-right: 8px;
 }
 .banner-btn:hover {
-  background: rgba(80,80,80,0.55) !important;
+  background: rgba(80, 80, 80, 0.55) !important;
 }
 .course-image {
   max-width: 300px;
@@ -336,13 +409,12 @@ export default {
   display: block;
   margin: 20px auto 0 auto;
 }
-/* 轮播淡入淡出动画 */
-.carousel-fade-enter-active, .carousel-fade-leave-active {
+.carousel-fade-enter-active,
+.carousel-fade-leave-active {
   transition: opacity 0.5s;
 }
-.carousel-fade-enter, .carousel-fade-leave-to {
+.carousel-fade-enter-from,
+.carousel-fade-leave-to {
   opacity: 0;
 }
 </style>
-
-

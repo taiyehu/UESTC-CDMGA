@@ -1,6 +1,6 @@
 <template>
   <div class="links-main">
-    <h1 style="text-align:center;margin-bottom:32px;">欢迎来到我的网站</h1>
+    <h1 style="text-align: center; margin-bottom: 32px">欢迎来到我的网站</h1>
     <div class="links-grid">
       <div class="link-card" @click="go('card_one/card_one.html')">
         <h2>抽卡Debuff对决</h2>
@@ -30,9 +30,9 @@
 export default {
   methods: {
     go(path) {
-      window.open(`https://qglint.github.io/Qcdmga/${path}`, '_blank');
-    }
-  }
+      window.open(`https://qglint.github.io/Qcdmga/${path}`, '_blank')
+    },
+  },
 }
 </script>
 
@@ -52,7 +52,7 @@ export default {
 .link-card {
   background: #fff;
   border-radius: 16px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   padding: 32px 24px;
   cursor: pointer;
   transition: box-shadow 0.2s, transform 0.2s;
@@ -60,14 +60,14 @@ export default {
   border: 2px solid #e3eaf2;
 }
 .link-card:hover {
-  box-shadow: 0 4px 24px rgba(64,158,255,0.15);
-  border-color: #409EFF;
+  box-shadow: 0 4px 24px rgba(64, 158, 255, 0.15);
+  border-color: #409eff;
   transform: translateY(-4px) scale(1.03);
 }
 .link-card h2 {
   margin-bottom: 16px;
   font-size: 22px;
-  color: #409EFF;
+  color: #409eff;
 }
 .link-card p {
   font-size: 16px;

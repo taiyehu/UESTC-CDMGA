@@ -12,17 +12,26 @@
     "@vue/compat": "^3.5.28",
     "axios": "^1.13.5",
     "dayjs": "^1.11.19",
+    "element-plus": "^2.13.2",
     "pinia": "^3.0.4",
     "vue": "3",
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
     "@types/node": "^24.10.1",
     "@vitejs/plugin-vue": "^6.0.2",
     "@vue/tsconfig": "^0.8.1",
     "gogocode": "^1.0.55",
     "typescript": "~5.9.3",
     "vite": "^7.3.1",
+    "vue-cropper": "^1.1.4",
     "vue-tsc": "^3.1.5"
-  }
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ],
+  "packageManager": "pnpm@10.30.0"
 }

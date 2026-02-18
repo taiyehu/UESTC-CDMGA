@@ -5,17 +5,22 @@
       <div v-for="(user, index) in users" :key="user.id" class="user-item">
         <p>账号：{{ user.account }} | 用户ID：{{ user.id }}</p>
         <div class="btnGroup">
-          <el-button type="primary" @click="openDialog(user)" size="small">查看</el-button>
-          <el-button type="danger" @click="deleteUser(user.id)" size="small">删除</el-button>
+          <el-button type="primary" @click="openDialog(user)" size="small"
+            >查看</el-button
+          >
+          <el-button type="danger" @click="deleteUser(user.id)" size="small"
+            >删除</el-button
+          >
         </div>
       </div>
       <div>
         <el-pagination
-            @current-change="handlePageChange"
-            :current-page="currentPage"
-            :page-size="pageSize"
-            :total="total"
-            layout="prev, pager, next">
+          @current-change="handlePageChange"
+          :current-page="currentPage"
+          :page-size="pageSize"
+          :total="total"
+          layout="prev, pager, next"
+        >
         </el-pagination>
       </div>
     </el-card>
@@ -24,7 +29,7 @@
     </el-card>
 
     <!-- 用户信息查看弹窗 -->
-    <el-dialog :visible.sync="dialogVisible" width="50%" @close="closeDialog">
+    <el-dialog v-model="dialogVisible" width="50%" @close="closeDialog">
       <h3>用户信息</h3>
       <el-form :model="selectedUser" label-width="100px">
         <el-form-item label="账号">
@@ -37,10 +42,12 @@
           <el-input v-model="selectedUser.role" disabled></el-input>
         </el-form-item>
       </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="closeDialog">取消</el-button>
-        <el-button type="primary" @click="closeDialog">确定</el-button>
-      </div>
+      <template v-slot:footer>
+        <div class="dialog-footer">
+          <el-button @click="closeDialog">取消</el-button>
+          <el-button type="primary" @click="closeDialog">确定</el-button>
+        </div>
+      </template>
     </el-dialog>
     <div>
       <router-link to="/profile">
@@ -51,7 +58,7 @@
 </template>
 
 <script>
-import {fetchUsersData, deleteUserData} from "@/api/user";
+import { fetchUsersData, deleteUserData } from '@/api/user'
 
 export default {
   data() {
@@ -62,52 +69,55 @@ export default {
       currentPage: 1,
       pageSize: 10,
       total: 0,
-    };
+    }
   },
   methods: {
     async fetchUsers() {
       try {
-        const response = await fetchUsersData({ page: this.currentPage, pageSize: this.pageSize });
-        this.users = response.data.list || [];
-        this.total = response.data.total || 0;
+        const response = await fetchUsersData({
+          page: this.currentPage,
+          pageSize: this.pageSize,
+        })
+        this.users = response.data.list || []
+        this.total = response.data.total || 0
       } catch (error) {
-        console.error('获取用户信息失败:', error);
-        this.users = [];
+        console.error('获取用户信息失败:', error)
+        this.users = []
       }
     },
     handlePageChange(page) {
-      this.currentPage = page;
-      this.fetchUsers();
+      this.currentPage = page
+      this.fetchUsers()
     },
     openDialog(user) {
       // 打开弹窗并填充选中的用户信息
-      this.selectedUser = { ...user }; // 使用对象拷贝避免直接引用
-      this.dialogVisible = true;
+      this.selectedUser = { ...user } // 使用对象拷贝避免直接引用
+      this.dialogVisible = true
     },
     closeDialog() {
-      this.dialogVisible = false;
+      this.dialogVisible = false
     },
     async deleteUser(userId) {
       try {
         // 调用删除用户的 API
-        const response = await deleteUserData(userId);
+        const response = await deleteUserData(userId)
         if (response.status === 204) {
-          this.$message.success('用户删除成功');
+          this.$message.success('用户删除成功')
           // 删除成功后，刷新用户列表
-          this.fetchUsers();
+          this.fetchUsers()
         } else {
-          this.$message.error('删除失败');
+          this.$message.error('删除失败')
         }
       } catch (error) {
-        console.error('删除用户失败:', error);
-        this.$message.error('删除失败');
+        console.error('删除用户失败:', error)
+        this.$message.error('删除失败')
       }
     },
   },
   mounted() {
-    this.fetchUsers();
+    this.fetchUsers()
   },
-};
+}
 </script>
 
 <style scoped>
@@ -116,42 +126,34 @@ export default {
   width: 600px;
   padding: 20px;
 }
-
 h2 {
   font-size: 24px;
   color: #333;
   margin-bottom: 40px;
 }
-
-.user-item p{
+.user-item p {
   margin-bottom: 20px;
 }
-
 .user-item p {
-  text-align: left; /* 使用户信息文字左对齐 */
+  text-align: left;
 }
-
 .btnGroup {
   display: flex;
   justify-content: flex-end;
   margin-top: 10px;
 }
-
 .el-button {
   margin-left: 10px;
   position: relative;
   top: -42px;
 }
-
 .el-button:hover {
-  background-color: #409EFF;
+  background-color: #409eff;
   color: white;
 }
-
 .el-dialog {
   min-width: 500px;
 }
-
 .el-form-item {
   margin-bottom: 20px;
 }
