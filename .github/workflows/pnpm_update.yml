@@ -74,7 +74,7 @@ jobs:
           username: ${{ secrets.SSH_SUDO }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          source: "${{ env.PROJECT_DIR }}/dist.tar.gz"
+          source: "${{ env.PROJECT_DIR }}/dist"
           target: /var/www/
           strip_components: 1
 
