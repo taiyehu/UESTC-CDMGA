@@ -148,121 +148,127 @@
   </div>
 </template>
 
-<script>
+<script lang="ts" setup>
+import { ref, onMounted } from 'vue'
 import { Edit as ElIconEdit, Delete as ElIconDelete } from '@element-plus/icons'
 import { fetchUnScoredScores, handleUpdateScore } from '@/api/score'
 import dayjs from 'dayjs'
+import axios from 'axios'
+import { ElMessage } from 'element-plus'
 
-export default {
-  data() {
-    return {
-      unscoredScores: [],
-      selectedScore: {},
-      dialogVisible: false,
-      previewVisible: false,
-      previewImage: '',
-      deleteDialogVisible: false,
-      deleteScoreId: null,
-      currentPage: 1,
-      pageSize: 10,
-      total: 0,
-      ElIconEdit,
-      ElIconDelete,
-    }
-  },
-  methods: {
-    getImageUrl(imagePath) {
-      console.log('原始图片路径:', imagePath)
-      if (!imagePath) return ''
-      if (/^https?:\/\//.test(imagePath)) {
-        return imagePath
-      }
-      // 只返回相对路径，nginx会自动代理
-      return imagePath.startsWith('/') ? imagePath : '/' + imagePath
-    },
-    handleImageClick(imgUrl) {
-      this.previewImage = imgUrl
-      this.previewVisible = true
-    },
-    // 获取所有成绩信息
-    async fetchScores() {
-      try {
-        const response = await fetchUnScoredScores({
-          page: this.currentPage,
-          pageSize: this.pageSize,
-        })
-        this.unscoredScores = response.data.list || []
-        this.total = response.data.total || 0
-        console.log(this.unscoredScores)
-      } catch (error) {
-        console.error('获取成绩信息失败:', error)
-        this.$message.error('获取成绩列表失败，请稍后重试')
-        this.unscoredScores = []
-      }
-    },
-    handlePageChange(page) {
-      this.currentPage = page
-      this.fetchScores()
-    },
-    async updateScore(score) {
-      try {
-        let point = score.score
-        // 判断是否为 contest 类型
-        if (score.course && score.course.category === 'contest') {
-          point = parseFloat(point) - 10000000
-        }
-        const updateScore = {
-          id: score.id,
-          upload_time: dayjs(score.uploadTime).format('YYYY-MM-DDTHH:mm:ss'),
-          image: score.image,
-          point: parseFloat(point), // 转为 float
-          is_scored: true,
-          remark: score.remark,
-        }
-        await handleUpdateScore(updateScore, updateScore.id)
-        this.$message.success(`成绩提交成功！`)
-        this.dialogVisible = false
-        await this.fetchScores({ page: 1, pageSize: 10 })
-      } catch (error) {
-        console.error('提交失败:', error)
-        const errorMsg = error.response?.data?.message || '成绩提交失败，请重试'
-        this.$message.error(errorMsg)
-      }
-    },
-    // 格式化日期时间
-    formatDateTime(row, column, cellValue) {
-      if (!cellValue) return ''
-      return new Date(cellValue).toLocaleString()
-    },
-    openDialog(score) {
-      console.log(score)
-      this.selectedScore = {
-        ...score,
-        uploadTime: dayjs(score.uploadTime).format('YYYY-MM-DD HH:mm:ss'),
-        createAt: dayjs(score.createAt).format('YYYY-MM-DD HH:mm:ss'),
-        updateAt: dayjs(score.updateAt).format('YYYY-MM-DD HH:mm:ss'),
-      }
-      this.dialogVisible = true
-    },
-    openDeleteDialog(score) {
-      this.deleteScoreId = score.id
-      this.deleteDialogVisible = true
-    },
-    async handleDeleteScore() {
-      try {
-        await this.$axios.delete(`/api/score/delete/${this.deleteScoreId}`)
-        this.$message.success('成绩删除成功')
-        this.deleteDialogVisible = false
-        await this.fetchScores()
-      } catch (error) {
-        this.$message.error('成绩删除失败')
-      }
-    },
-  },
-  mounted() {
-    this.fetchScores()
-  },
+// 数据与状态
+const unscoredScores = ref<any[]>([])
+const selectedScore = ref<any>({})
+const dialogVisible = ref(false)
+const previewVisible = ref(false)
+const previewImage = ref('')
+const deleteDialogVisible = ref(false)
+const deleteScoreId = ref<number | null>(null)
+const currentPage = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+const ElIconEditRef = ElIconEdit
+const ElIconDeleteRef = ElIconDelete
+
+// 获取图片 URL，保留日志用于调试
+function getImageUrl(imagePath?: string) {
+  console.log('原始图片路径:', imagePath)
+  if (!imagePath) return ''
+  if (/^https?:\/\//.test(imagePath)) {
+    return imagePath
+  }
+  // 只返回相对路径，nginx会自动代理
+  return imagePath.startsWith('/') ? imagePath : '/' + imagePath
 }
+
+function handleImageClick(imgUrl: string) {
+  previewImage.value = imgUrl
+  previewVisible.value = true
+}
+
+// 获取所有成绩信息
+async function fetchScores() {
+  try {
+    const response = await fetchUnScoredScores({ page: currentPage.value, pageSize: pageSize.value })
+    unscoredScores.value = response.data.list || []
+    total.value = response.data.total || 0
+    console.log(unscoredScores.value)
+  } catch (error: any) {
+    console.error('获取成绩信息失败:', error)
+    ElMessage({ message: '获取成绩列表失败，请稍后重试', type: 'error' })
+    unscoredScores.value = []
+  }
+}
+
+function handlePageChange(page: number) {
+  currentPage.value = page
+  fetchScores()
+}
+
+async function updateScore(score: any) {
+  try {
+    let point: number = score.score
+    // 判断是否为 contest 类型
+    if (score.course && score.course.category === 'contest') {
+      point = parseFloat(point) - 10000000
+    }
+    const updatePayload = {
+      id: score.id,
+      upload_time: dayjs(score.uploadTime).format('YYYY-MM-DDTHH:mm:ss'),
+      image: score.image,
+      point: parseFloat(point), // 转为 float
+      is_scored: true,
+      remark: score.remark,
+    }
+    await handleUpdateScore(updatePayload, updatePayload.id)
+    ElMessage({ message: '成绩提交成功！', type: 'success' })
+    dialogVisible.value = false
+    // 提交后刷新第一页
+    currentPage.value = 1
+    await fetchScores()
+  } catch (error: any) {
+    console.error('提交失败:', error)
+    const errorMsg = error.response?.data?.message || '成绩提交失败，请重试'
+    ElMessage({ message: errorMsg, type: 'error' })
+  }
+}
+
+// 格式化日期时间
+function formatDateTime(row: any, column: any, cellValue: any) {
+  if (!cellValue) return ''
+  return new Date(cellValue).toLocaleString()
+}
+
+function openDialog(score: any) {
+  console.log(score)
+  selectedScore.value = {
+    ...score,
+    uploadTime: dayjs(score.uploadTime).format('YYYY-MM-DD HH:mm:ss'),
+    createAt: dayjs(score.createAt).format('YYYY-MM-DD HH:mm:ss'),
+    updateAt: dayjs(score.updateAt).format('YYYY-MM-DD HH:mm:ss'),
+  }
+  dialogVisible.value = true
+}
+
+function openDeleteDialog(score: any) {
+  deleteScoreId.value = score.id
+  deleteDialogVisible.value = true
+}
+
+async function handleDeleteScore() {
+  try {
+    await axios.delete(`/api/score/delete/${deleteScoreId.value}`)
+    ElMessage({ message: '成绩删除成功', type: 'success' })
+    deleteDialogVisible.value = false
+    await fetchScores()
+  } catch (error) {
+    ElMessage({ message: '成绩删除失败', type: 'error' })
+  }
+}
+
+onMounted(() => {
+  fetchScores()
+})
 </script>
 
 <style scoped>
