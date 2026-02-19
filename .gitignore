@@ -6,6 +6,3 @@ vueproject/vue.config.js
 vueproject/dist
 vueproject/.env
 scores/
-vueproject-v3/node_modules
-vueproject-v3/dist
-vueproject-v3/src-old2
