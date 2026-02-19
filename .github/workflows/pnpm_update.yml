@@ -67,10 +67,6 @@ jobs:
       - name: List build output  # 帮助确认构建产物的位置
         run: ls -la dist/  # 通常Vue项目构建输出到dist目录
 
-      - name: Create release archive
-        run: |
-          tar -czf dist.tar.gz dist
-
       - name: Upload dist
         uses: appleboy/scp-action@v1.0.0
         with:
@@ -79,7 +75,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           source: "${{ env.PROJECT_DIR }}/dist.tar.gz"
-          target: /var/www/ 
+          target: /var/www/
+          strip_components: 1
 
 
       - name: Deploy on server (atomic)
@@ -101,15 +98,10 @@ jobs:
             sudo mkdir -p "$RELEASE_BASE"
             sudo mkdir -p "$RELEASE_DIR"
 
-            REMOTE_ARCHIVE="/var/www/dist.tar.gz"
-            if [ -f "$REMOTE_ARCHIVE" ]; then
-              # Extract archive into release dir and strip the top-level 'dist' folder
-              # so the release dir directly contains the site files.
-              sudo tar -xzf "$REMOTE_ARCHIVE" -C "$RELEASE_DIR" --strip-components=1
-            else
-              echo "⚠️ Remote archive $REMOTE_ARCHIVE not found"
-              exit 1
-            fi
+            REMOTE_DIR="/var/www/dist"
+            sudo ls -la "$REMOTE_DIR" || echo "上传文件尚不存在"
+
+            sudo mv "$REMOTE_DIR" "$RELEASE_DIR"
 
             # No nested 'dist' handling and no backup of the symlink: symlink rotation
             # is intended for zero-downtime updates. Point current-<branch> directly
@@ -147,6 +139,7 @@ jobs:
             fi
 
             sudo chown -R www-data:www-data "$BASE_DIR"
-            sudo rm -f "$REMOTE_ARCHIVE"
+            sudo chmod -R 755 "$RELEASE_DIR"
 
             echo "✅ Deployed $BRANCH to $CURRENT_LINK"
+            echo "部署完成时间: $(date)"
