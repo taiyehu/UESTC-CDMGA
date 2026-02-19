@@ -57,67 +57,62 @@
   </div>
 </template>
 
-<script>
+<script lang="ts" setup>
+import { ref, reactive, onMounted } from 'vue'
 import { fetchUsersData, deleteUserData } from '@/api/user'
+import { ElMessage } from 'element-plus'
 
-export default {
-  data() {
-    return {
-      users: [], // 存储用户信息
-      dialogVisible: false, // 控制弹窗显示
-      selectedUser: {},
-      currentPage: 1,
-      pageSize: 10,
-      total: 0,
-    }
-  },
-  methods: {
-    async fetchUsers() {
-      try {
-        const response = await fetchUsersData({
-          page: this.currentPage,
-          pageSize: this.pageSize,
-        })
-        this.users = response.data.list || []
-        this.total = response.data.total || 0
-      } catch (error) {
-        console.error('获取用户信息失败:', error)
-        this.users = []
-      }
-    },
-    handlePageChange(page) {
-      this.currentPage = page
-      this.fetchUsers()
-    },
-    openDialog(user) {
-      // 打开弹窗并填充选中的用户信息
-      this.selectedUser = { ...user } // 使用对象拷贝避免直接引用
-      this.dialogVisible = true
-    },
-    closeDialog() {
-      this.dialogVisible = false
-    },
-    async deleteUser(userId) {
-      try {
-        // 调用删除用户的 API
-        const response = await deleteUserData(userId)
-        if (response.status === 204) {
-          this.$message.success('用户删除成功')
-          // 删除成功后，刷新用户列表
-          this.fetchUsers()
-        } else {
-          this.$message.error('删除失败')
-        }
-      } catch (error) {
-        console.error('删除用户失败:', error)
-        this.$message.error('删除失败')
-      }
-    },
-  },
-  mounted() {
-    this.fetchUsers()
-  },
+const users = ref<any[]>([])
+const dialogVisible = ref(false)
+const selectedUser = reactive<any>({})
+const currentPage = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+
+async function fetchUsers() {
+  try {
+    const response = await fetchUsersData({ page: currentPage.value, pageSize: pageSize.value })
+    users.value = response.data.list || []
+    total.value = response.data.total || 0
+  } catch (error) {
+    console.error('获取用户信息失败:', error)
+    users.value = []
+  }
 }
+
+function handlePageChange(page: number) {
+  currentPage.value = page
+  fetchUsers()
+}
+
+function openDialog(user: any) {
+  // 打开弹窗并填充选中的用户信息
+  Object.assign(selectedUser, user)
+  dialogVisible.value = true
+}
+
+function closeDialog() {
+  dialogVisible.value = false
+}
+
+async function deleteUser(userId: any) {
+  try {
+    const response = await deleteUserData(userId)
+    if (response.status === 204) {
+      ElMessage({ message: '用户删除成功', type: 'success' })
+      await fetchUsers()
+    } else {
+      ElMessage({ message: '删除失败', type: 'error' })
+    }
+  } catch (error) {
+    console.error('删除用户失败:', error)
+    ElMessage({ message: '删除失败', type: 'error' })
+  }
+}
+
+onMounted(() => {
+  fetchUsers()
+})
 </script>
 
 <style scoped>
