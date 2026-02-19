@@ -63,7 +63,7 @@ async function fetchCourses() {
 }
 
 // 更新类别过滤器
-function updateCategoryFilter(categories) {
+function updateCategoryFilter(categories: string[]): void {
   // allCategories = categories
   const categorySelect = document.getElementById('category-filter') as HTMLSelectElement | null
 
@@ -74,7 +74,7 @@ function updateCategoryFilter(categories) {
     }
 
     // 添加新的类别选项
-    categories.forEach((category) => {
+    categories.forEach((category: string) => {
       const option = document.createElement('option')
       option.value = category
       option.textContent = category
@@ -84,7 +84,7 @@ function updateCategoryFilter(categories) {
 }
 
 // 显示课程卡片
-function displayCourses(courses) {
+function displayCourses(courses: any[]): void {
   const container = document.getElementById('courses-container')
 
   if (!courses || courses.length === 0) {
@@ -97,7 +97,7 @@ function displayCourses(courses) {
 
   let html = ''
 
-  courses.forEach((course) => {
+  courses.forEach((course: any) => {
     html += `
         <div class="col-md-6 col-lg-4 col-xl-3">
             <div class="card course-card h-100">
@@ -152,7 +152,7 @@ function displayCourses(courses) {
 }
 
 // 显示课程详情
-async function showCourseDetail(courseId) {
+async function showCourseDetail(courseId: string): Promise<void> {
   try {
     const response = await axios.get(`/api/courses/${courseId}`)
     const course = response.data
@@ -214,7 +214,7 @@ async function showCourseDetail(courseId) {
 }
 
 // 设置分页
-function setupPagination(totalItems, currentPage, pageSize) {
+function setupPagination(totalItems: number, currentPage: number, pageSize: number): void {
   const totalPages = Math.ceil(totalItems / pageSize)
   const pagination = document.getElementById('pagination')
 

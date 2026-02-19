@@ -2,6 +2,12 @@
 //用户身份认证相关API
 import request from '@/utils/request'
 
+export interface AuthCredentials {
+  account: string
+  password: string
+  [key: string]: any
+}
+
 /**
  * 用户登录
  * @param {Object} credentials - 用户凭据
@@ -9,7 +15,7 @@ import request from '@/utils/request'
  * @param {string} credentials.password - 密码
  * @returns {Promise} Axios 请求的 Promise 对象
  */
-export const login = (credentials) => {
+export const login = (credentials: AuthCredentials) => {
   return request({
     url: '/identity/login',
     method: 'post',
@@ -27,7 +33,7 @@ export const login = (credentials) => {
  * @param {string} credentials.password - 密码
  * @returns {Promise} Axios 请求的 Promise 对象
  */
-export const register = (credentials) => {
+export const register = (credentials: AuthCredentials) => {
   return request({
     url: '/identity/register',
     method: 'post',

@@ -22,7 +22,7 @@ export const Test_handleSubmitScore = (handleScore:Score) => {
  * @param {Number} courseId
  * @returns {Promise}
  */
-export const checkSubmitted = (identityId, courseId) => {
+export const checkSubmitted = (identityId: number | string, courseId: number | string) => {
   return request({
     url: '/score/exists',
     method: 'get',
@@ -52,30 +52,32 @@ export const handleSubmitScore = (handleScore: Partial<Score>) => {
  * @param {Object} updateData
  * @Param {String} course_id
  */
-export const handleUpdateScore = (updateData, score_id) => {
+export const handleUpdateScore = (updateData: Partial<Score> | Record<string, any>, score_id: number | string) => {
   return request({
     url: `/score/update/${score_id}`,
     method: 'put',
     data: updateData,
   })
 }
-export const fetchScore = (params) => {
+export const fetchScore = (params: { page: number; pageSize?: number; size?: number }) => {
+  const pageSize = params.pageSize ?? params.size ?? 10
   return request({
     url: '/score/',
     method: 'get',
     params: {
       page: params.page - 1,
-      size: params.pageSize,
+      size: pageSize,
     },
   })
 }
-export const fetchUnScoredScores = (params) => {
+export const fetchUnScoredScores = (params: { page: number; pageSize?: number; size?: number }) => {
+  const pageSize = params.pageSize ?? params.size ?? 10
   return request({
     url: '/score/unscored',
     method: 'get',
     params: {
       page: params.page - 1,
-      size: params.pageSize,
+      size: pageSize,
     },
   })
 }

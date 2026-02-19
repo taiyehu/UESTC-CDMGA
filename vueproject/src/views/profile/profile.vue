@@ -330,10 +330,10 @@
 
           <div
             v-if="
-              !loadingMap[activity.id] &&
-              (!activityScoresMap[activity.id] ||
-                !activityScoresMap[activity.id].length)
-            "
+                !loadingMap[activity.id] &&
+                (!activityScoresMap[activity.id] ||
+                  !(activityScoresMap[activity.id]?.length))
+              "
             style="text-align: center; color: #999; padding: 12px"
           >
             暂无成绩
@@ -411,7 +411,7 @@ const errorMap = reactive<Record<string, string | null>>({})
 
 // 裁剪弹窗相关
 const cropperVisible = ref(false)
-const cropImgUrl = ref<string | null>(null)
+const cropImgUrl = ref<string | undefined>(undefined)
 const rawAvatarFile = ref<File | null>(null)
 const croppedFile = ref<File | null>(null)
 
@@ -643,7 +643,7 @@ async function fetchContestScores(activityId: number) {
           scores[i].score = (scores[i].score || 0) + 10000000
         }
       } catch (e) {
-        console.warn('获取计分规则失败，courseId=', courseId, e && e.message)
+        console.warn('获取计分规则失败，courseId=', courseId, e)
       }
     }
     activityScoresMap[String(activityId)] = scores

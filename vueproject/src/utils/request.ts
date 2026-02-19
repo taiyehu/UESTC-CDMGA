@@ -8,19 +8,18 @@ const service = axios.create({
 
 // 请求拦截器 - 统一添加 /api 前缀
 service.interceptors.request.use(
-  (config) => {
+  (config: any) => {
     // 排除特殊情况（如外部URL）
-    const isExternalUrl = /^https?:\/\//i.test(config.url)
-    const isStaticAsset = /\.(json|png|jpg|svg|css|js)$/i.test(config.url)
+    const url = config.url ?? ''
+    const isExternalUrl = /^https?:\/\//i.test(url)
+    const isStaticAsset = /\.(json|png|jpg|svg|css|js)$/i.test(url)
 
     // 添加 /api 前缀的条件：
     // 1. 不是外部URL
     // 2. 不是静态资源
     // 3. 不是以 /api 开头
-    if (!isExternalUrl && !isStaticAsset && !config.url.startsWith('/api')) {
-      config.url = `/api${
-        config.url.startsWith('/') ? config.url : '/' + config.url
-      }`
+    if (!isExternalUrl && !isStaticAsset && !url.startsWith('/api')) {
+      config.url = `/api${url.startsWith('/') ? url : '/' + url}`
     }
 
     return config
