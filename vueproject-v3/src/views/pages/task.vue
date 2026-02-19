@@ -29,54 +29,50 @@
   </div>
 </template>
 
-<script>
+<script lang="ts" setup>
+import { ref, onMounted } from 'vue'
 import { fetchCourseData } from '@/api/course'
-export default {
-  data() {
-    return {
-      courses: [],
-      loading: true,
-      error: null,
-      previewVisible: false,
-      previewImage: '',
-    }
-  },
-  mounted() {
-    this.fetchCourses()
-  },
-  methods: {
-    async fetchCourses() {
-      try {
-        const response = await fetchCourseData()
-        let courses = response.data || []
-        // 按开始时间倒序排列
-        this.courses = courses.sort(
-          (a, b) => new Date(b.startTime) - new Date(a.startTime)
-        )
-      } catch (err) {
-        this.error = err.message
-      } finally {
-        this.loading = false
-      }
-    },
-    handleImageClick(imgUrl) {
-      this.previewImage = imgUrl
-      this.previewVisible = true
-    },
-    formatDate(date) {
-      const d = new Date(date)
-      const options = { year: 'numeric', month: 'long', day: 'numeric' }
-      return d.toLocaleDateString('zh-CN', options)
-    },
-    getImageUrl(imagePath) {
-      if (!imagePath) return ''
-      if (/^https?:\/\//.test(imagePath)) {
-        return imagePath
-      }
-      return imagePath.startsWith('/') ? imagePath : '/' + imagePath
-    },
-  },
+
+const courses = ref<any[]>([])
+const loading = ref(true)
+const error = ref<string | null>(null)
+const previewVisible = ref(false)
+const previewImage = ref('')
+
+async function fetchCourses() {
+  try {
+    const response = await fetchCourseData()
+    const data = response.data || []
+    courses.value = data.sort(
+      (a: any, b: any) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+    )
+  } catch (err: any) {
+    error.value = err?.message || String(err)
+  } finally {
+    loading.value = false
+  }
 }
+
+function handleImageClick(imgUrl: string) {
+  previewImage.value = imgUrl
+  previewVisible.value = true
+}
+
+function formatDate(date: string | number | Date) {
+  const d = new Date(date)
+  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' }
+  return d.toLocaleDateString('zh-CN', options)
+}
+
+function getImageUrl(imagePath?: string) {
+  if (!imagePath) return ''
+  if (/^https?:\/\//.test(imagePath)) return imagePath
+  return imagePath.startsWith('/') ? imagePath : '/' + imagePath
+}
+
+onMounted(() => {
+  fetchCourses()
+})
 </script>
 
 <style scoped>
