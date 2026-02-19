@@ -50,7 +50,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
-          cache-dependency-path: ${{ env.PROJECT_DIR }}pnpm-lock.yaml
+          cache-dependency-path: ${{ env.PROJECT_DIR }}/pnpm-lock.yaml
 
       - name: Enable pnpm
         run: corepack enable pnpm
