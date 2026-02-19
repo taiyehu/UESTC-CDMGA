@@ -235,348 +235,310 @@
   </div>
 </template>
 
-<script>
+<script lang="ts" setup>
 import axios from 'axios'
 import { fetchAvailablecourseData } from '@/api/course'
-import {
-  checkSubmitted,
-  handleSubmitScore,
-  handleUpdateScore,
-} from '@/api/score'
+import { checkSubmitted, handleSubmitScore, handleUpdateScore } from '@/api/score'
 import { compressImage } from '@/components/imageCompressor'
 import dayjs from 'dayjs'
+import { ref, reactive, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
 
-export default {
-  data() {
-    return {
-      courses: [],
-      normalCourses: [],
-      contestCourses: [],
-      viewDialogVisible: false,
-      submitDialogVisible: false,
-      updateDialogVisible: false,
-      previewVisible: false,
-      previewImage: '',
-      selectedCourse: {},
-      submitForm: {
-        course_id: '', // 课题ID
-        course_title: '', // 仅前端显示
-        upload_time: '', // 上传时间
-        remark: '',
-        image: '', // 上传的图片
-      },
-      updateForm: {
-        course_id: '', // 课题ID
-        course_title: '', // 仅前端显示
-        upload_time: '', // 上传时间
-        remark: '',
-        image: '', // 上传的图片
-      },
-      newScore: {
-        course_id: '',
-        identity_id: '',
-        upload_time: '',
-        image: '',
-        point: 0,
-        is_scored: false,
-        remark: '',
-        created_at: '',
-        updated_at: '',
-      },
-      selectedScore: {},
-      imageFileList: [],
-      fileList: [],
-      submittedCourses: [],
-      ScoredScores: [],
-    }
-  },
-  methods: {
-    getImageUrl(imagePath) {
-      console.log('原始图片路径:', imagePath)
-      if (!imagePath) return ''
-      if (/^https?:\/\//.test(imagePath)) {
-        return imagePath
-      }
-      // 只返回相对路径，nginx会自动代理
-      return imagePath.startsWith('/') ? imagePath : '/' + imagePath
-    },
-    handleImageClick(imgUrl) {
-      this.previewImage = imgUrl
-      this.previewVisible = true
-    },
-    // 获取课题列表
-    async fetchCourses() {
-      try {
-        const response = await fetchAvailablecourseData({ page: 1, size: 10 })
-        this.courses = response.data.list || []
-        this.submittedCourses = [] // 清空
-        this.ScoredScores = []
-        await this.checkSubmittedCourses()
-        console.log('后端返回的数据:', response.data.list)
-      } catch (error) {
-        console.error('获取课题信息失败:', error)
-        this.$message.error('获取课题列表失败，请稍后重试')
-        this.courses = []
-        this.submittedCourses = []
-        this.ScoredScores = []
-      }
-    },
-    // 检查课题是否已提交
-    async checkSubmittedCourses() {
-      const identityId = this.getCurrentIdentityId()
-      if (!identityId) {
-        this.$message.error('未获取到用户信息，请重新登录')
-        return
-      }
-      for (const course of this.courses) {
-        const response = await checkSubmitted(identityId, course.id)
-        if (response.data) {
-          this.submittedCourses.push(course.id)
-          this.submittedCourses.push(course.category)
-          const score = await axios.get('/api/score/find', {
-            params: {
-              identity_id: identityId,
-              course_id: course.id,
-            },
-          })
-          if (score.data) {
-            const ScoredScore = await axios.get(`/api/score/${score.data}`)
-            if (ScoredScore.data.isScored && !ScoredScore.data.isDeleted)
-              this.ScoredScores.push(ScoredScore.data.course.id)
-          }
-        }
-      }
-    },
-    // 判断课题是否已提交
-    isSubmitted(courseId) {
-      return this.submittedCourses.includes(courseId)
-    },
-    isScored(courseId) {
-      return (
-        this.ScoredScores.includes(courseId) &&
-        !this.submittedCourses.includes('contest')
-      )
-    },
-    // 打开查看弹窗
-    async openViewDialog(course) {
-      this.selectedCourse = {
-        ...course,
-        start_time: dayjs(course.start_time).format('YYYY-MM-DD HH:mm:ss'),
-        end_time: dayjs(course.end_time).format('YYYY-MM-DD HH:mm:ss'),
-        updated_at: dayjs(course.updated_at).format('YYYY-MM-DD HH:mm:ss'),
-      }
+// 状态与数据
+const courses = ref<any[]>([])
+const normalCourses = ref<any[]>([])
+const contestCourses = ref<any[]>([])
+const viewDialogVisible = ref(false)
+const submitDialogVisible = ref(false)
+const updateDialogVisible = ref(false)
+const previewVisible = ref(false)
+const previewImage = ref('')
+const selectedCourse = ref<any>({})
 
-      const identityId = this.getCurrentIdentityId()
+const submitForm = reactive<any>({
+  course_id: '',
+  course_title: '',
+  upload_time: '',
+  remark: '',
+  image: '',
+})
 
-      const response = await axios.get('/api/score/find', {
-        params: {
-          identity_id: identityId,
-          course_id: course.id,
-        },
-      })
-      if (response.data) {
-        const scoreId = response.data
-        this.selectedScore = (await axios.get(`/api/score/${scoreId}`)).data
-      } else {
-        this.selectedScore = null
-      }
+const updateForm = reactive<any>({
+  course_id: '',
+  course_title: '',
+  upload_time: '',
+  remark: '',
+  image: '',
+  // may include score_id or create_at
+})
 
-      this.viewDialogVisible = true
-    },
-    closeViewDialog() {
-      this.viewDialogVisible = false
-    },
-    // 打开提交弹窗
-    openSubmitDialog(course) {
-      this.submitForm = {
-        course_id: course.id,
-        course_title: course.title,
-        upload_time: '',
-        image: '',
-      }
-      this.imageFileList = []
-      this.submitDialogVisible = true
-    },
-    closeSubmitDialog() {
-      this.submitDialogVisible = false
-    },
-    // 打开更新弹窗
-    async openUpdateDialog(course) {
-      const identityId = this.getCurrentIdentityId()
-      // 调用后端接口获取score_id
-      const response = await axios.get('/api/score/find', {
-        params: {
-          identity_id: identityId,
-          course_id: course.id,
-        },
-      })
+const newScore = reactive<any>({
+  course_id: '',
+  identity_id: '',
+  upload_time: '',
+  image: '',
+  point: 0,
+  is_scored: false,
+  remark: '',
+  created_at: '',
+  updated_at: '',
+})
 
-      this.updateForm = {
-        score_id: response.data,
-        course_id: course.id,
-        course_title: course.title,
-        create_at: course.created_at,
-        upload_time: '',
-        image: '',
-      }
-      this.imageFileList = []
-      this.updateDialogVisible = true
-    },
-    closeUpdateDialog() {
-      this.updateDialogVisible = false
-    },
-    // 格式化日期时间
-    formatDateTime(dateTime) {
-      if (!dateTime) return ''
-      return new Date(dateTime).toLocaleString()
-    },
-    // 提交处理
-    async handleSubmit() {
-      try {
-        // 1. 获取当前用户ID（从sessionStorage获取，与用户信息页面保持一致）
-        const identityId = this.getCurrentIdentityId()
-        if (!identityId) {
-          this.$message.error('未获取到用户信息，请重新登录')
-          return
-        }
+const selectedScore = ref<any>({})
+const imageFileList = ref<any[]>([])
+const fileList = ref<any[]>([])
+const submittedCourses = ref<any[]>([])
+const ScoredScores = ref<any[]>([])
 
-        // 2. 补充时间字段（ISO格式）
-        this.submitForm.upload_time = new Date().toISOString()
-
-        // 3. 构造提交数据
-        const submitData = {
-          course_id: this.submitForm.course_id,
-          identity_id: identityId,
-          upload_time: this.submitForm.upload_time,
-          image: this.submitForm.image,
-          remark: this.submitForm.remark,
-        }
-
-        // 4. 发送请求
-        await handleSubmitScore(submitData)
-        // 5. 处理成功
-        this.$message.success(
-          `课题 "${this.submitForm.course_title}" 的成绩提交成功！`
-        )
-        this.closeSubmitDialog()
-        await this.fetchCourses()
-      } catch (error) {
-        console.error('提交失败:', error)
-        const errorMsg = error.response?.data?.message || '成绩提交失败，请重试'
-        this.$message.error(errorMsg)
-      }
-    },
-    // 更新处理
-    async handleUpdate() {
-      try {
-        // ...获取identityId等...
-        this.updateForm.upload_time = new Date().toISOString()
-
-        // 只需传 image 字段和需要的其他字段
-        const updateData = {
-          upload_time: this.updateForm.upload_time,
-          created_at: this.updateForm.create_at,
-          image: this.updateForm.image,
-          score: 0,
-          is_scored: false,
-          id: this.updateForm.score_id,
-          remark: this.updateForm.remark,
-          //后端方法是put,需要把这里传递的信息补全
-        }
-        // 这里必须用成绩ID
-        await handleUpdateScore(updateData, this.updateForm.score_id)
-
-        this.$message.success(
-          `课题 "${this.updateForm.course_title}" 的成绩更新成功！`
-        )
-        this.closeUpdateDialog()
-        await this.fetchCourses()
-      } catch (error) {
-        const errorMsg = error.response?.data?.message || '成绩更新失败，请重试'
-        this.$message.error(errorMsg)
-      }
-    },
-    // 图片上传成功后的回调
-    handleImageUploadSuccess(response, file, fileList) {
-      // 直接打印 response，确认结构
-      console.log('图片上传返回：', response)
-
-      // 兼容 axios 和原生结构
-      let url = ''
-      if (response && response.code === 0) {
-        url = response.data
-      } else if (response && response.data && response.data.code === 0) {
-        url = response.data.data
-      }
-
-      if (url) {
-        this.submitForm.image = url
-        this.imageFileList = fileList
-        this.$message.success('图片上传成功')
-      } else {
-        this.$message.error(
-          response.message ||
-            (response.data && response.data.message) ||
-            '图片上传失败'
-        )
-      }
-    },
-    handleImageUpdateSuccess(response, file, fileList) {
-      // 直接打印 response，确认结构
-      console.log('图片上传返回：', response)
-
-      // 兼容 axios 和原生结构
-      let url = ''
-      if (response && response.code === 0) {
-        url = response.data
-      } else if (response && response.data && response.data.code === 0) {
-        url = response.data.data
-      }
-
-      if (url) {
-        this.updateForm.image = url
-        this.imageFileList = fileList
-        this.$message.success('图片上传成功')
-      } else {
-        this.$message.error(
-          response.message ||
-            (response.data && response.data.message) ||
-            '图片上传失败'
-        )
-      }
-    },
-    getCurrentIdentityId() {
-      try {
-        const userInfo = sessionStorage.getItem('userInfo')
-        if (!userInfo) return null
-
-        const user = JSON.parse(userInfo)
-        return user.id ? Number(user.id) : null
-      } catch (error) {
-        console.error('获取用户身份失败:', error)
-        return null
-      }
-    },
-    // 上传前自动压缩图片
-    async beforeImageUpload(file) {
-      try {
-        if (!file.type.startsWith('image/')) {
-          this.$message.error('只能上传图片文件')
-          return false
-        }
-        const compressed = await compressImage(file)
-        return compressed
-      } catch (err) {
-        this.$message.error('图片压缩失败: ' + err.message)
-        return false
-      }
-    },
-  },
-
-  mounted() {
-    this.fetchCourses()
-  },
+// 工具函数
+function getImageUrl(imagePath?: string) {
+  console.log('原始图片路径:', imagePath)
+  if (!imagePath) return ''
+  if (/^https?:\/\//.test(imagePath)) return imagePath
+  return imagePath.startsWith('/') ? imagePath : '/' + imagePath
 }
+
+function handleImageClick(imgUrl: string) {
+  previewImage.value = imgUrl
+  previewVisible.value = true
+}
+
+// 获取课题列表
+async function fetchCourses() {
+  try {
+    const response = await fetchAvailablecourseData({ page: 1, size: 10 })
+    courses.value = response.data.list || []
+    submittedCourses.value = []
+    ScoredScores.value = []
+    await checkSubmittedCourses()
+    console.log('后端返回的数据:', response.data.list)
+  } catch (error: any) {
+    console.error('获取课题信息失败:', error)
+    ElMessage({ message: '获取课题列表失败，请稍后重试', type: 'error' })
+    courses.value = []
+    submittedCourses.value = []
+    ScoredScores.value = []
+  }
+}
+
+// 检查课题是否已提交
+async function checkSubmittedCourses() {
+  const identityId = getCurrentIdentityId()
+  if (!identityId) {
+    ElMessage({ message: '未获取到用户信息，请重新登录', type: 'error' })
+    return
+  }
+  for (const course of courses.value) {
+    const response = await checkSubmitted(identityId, course.id)
+    if (response.data) {
+      submittedCourses.value.push(course.id)
+      submittedCourses.value.push(course.category)
+      const score = await axios.get('/api/score/find', {
+        params: { identity_id: identityId, course_id: course.id },
+      })
+      if (score.data) {
+        const ScoredScore = await axios.get(`/api/score/${score.data}`)
+        if (ScoredScore.data.isScored && !ScoredScore.data.isDeleted)
+          ScoredScores.value.push(ScoredScore.data.course.id)
+      }
+    }
+  }
+}
+
+// 判断课题是否已提交
+function isSubmitted(courseId: any) {
+  return submittedCourses.value.includes(courseId)
+}
+
+function isScored(courseId: any) {
+  return ScoredScores.value.includes(courseId) && !submittedCourses.value.includes('contest')
+}
+
+// 打开查看弹窗
+async function openViewDialog(course: any) {
+  // 保留多种命名以兼容后端字段
+  selectedCourse.value = {
+    ...course,
+    startTime: dayjs(course.startTime || course.start_time).format('YYYY-MM-DD HH:mm:ss'),
+    start_time: dayjs(course.startTime || course.start_time).format('YYYY-MM-DD HH:mm:ss'),
+    endTime: dayjs(course.endTime || course.end_time).format('YYYY-MM-DD HH:mm:ss'),
+    end_time: dayjs(course.endTime || course.end_time).format('YYYY-MM-DD HH:mm:ss'),
+    updatedAt: dayjs(course.updatedAt || course.updated_at).format('YYYY-MM-DD HH:mm:ss'),
+    updated_at: dayjs(course.updatedAt || course.updated_at).format('YYYY-MM-DD HH:mm:ss'),
+  }
+
+  const identityId = getCurrentIdentityId()
+  const response = await axios.get('/api/score/find', {
+    params: { identity_id: identityId, course_id: course.id },
+  })
+  if (response.data) {
+    const scoreId = response.data
+    selectedScore.value = (await axios.get(`/api/score/${scoreId}`)).data
+  } else {
+    selectedScore.value = null
+  }
+  viewDialogVisible.value = true
+}
+
+function closeViewDialog() {
+  viewDialogVisible.value = false
+}
+
+// 打开提交弹窗
+function openSubmitDialog(course: any) {
+  submitForm.course_id = course.id
+  submitForm.course_title = course.title
+  submitForm.upload_time = ''
+  submitForm.image = ''
+  imageFileList.value = []
+  submitDialogVisible.value = true
+}
+
+function closeSubmitDialog() {
+  submitDialogVisible.value = false
+}
+
+// 打开更新弹窗
+async function openUpdateDialog(course: any) {
+  const identityId = getCurrentIdentityId()
+  const response = await axios.get('/api/score/find', {
+    params: { identity_id: identityId, course_id: course.id },
+  })
+  updateForm.score_id = response.data
+  updateForm.course_id = course.id
+  updateForm.course_title = course.title
+  updateForm.create_at = course.created_at || course.createAt
+  updateForm.upload_time = ''
+  updateForm.image = ''
+  imageFileList.value = []
+  updateDialogVisible.value = true
+}
+
+function closeUpdateDialog() {
+  updateDialogVisible.value = false
+}
+
+// 格式化日期时间
+function formatDateTime(dateTime: any) {
+  if (!dateTime) return ''
+  return new Date(dateTime).toLocaleString()
+}
+
+// 提交处理
+async function handleSubmit() {
+  try {
+    const identityId = getCurrentIdentityId()
+    if (!identityId) {
+      ElMessage({ message: '未获取到用户信息，请重新登录', type: 'error' })
+      return
+    }
+    submitForm.upload_time = new Date().toISOString()
+    const submitData = {
+      course_id: submitForm.course_id,
+      identity_id: identityId,
+      upload_time: submitForm.upload_time,
+      image: submitForm.image,
+      remark: submitForm.remark,
+    }
+    await handleSubmitScore(submitData)
+    ElMessage({ message: `课题 "${submitForm.course_title}" 的成绩提交成功！`, type: 'success' })
+    closeSubmitDialog()
+    await fetchCourses()
+  } catch (error: any) {
+    console.error('提交失败:', error)
+    const errorMsg = error.response?.data?.message || '成绩提交失败，请重试'
+    ElMessage({ message: errorMsg, type: 'error' })
+  }
+}
+
+// 更新处理
+async function handleUpdate() {
+  try {
+    updateForm.upload_time = new Date().toISOString()
+    const updateData = {
+      upload_time: updateForm.upload_time,
+      created_at: updateForm.create_at,
+      image: updateForm.image,
+      score: 0,
+      is_scored: false,
+      id: updateForm.score_id,
+      remark: updateForm.remark,
+    }
+    await handleUpdateScore(updateData, updateForm.score_id)
+    ElMessage({ message: `课题 "${updateForm.course_title}" 的成绩更新成功！`, type: 'success' })
+    closeUpdateDialog()
+    await fetchCourses()
+  } catch (error: any) {
+    const errorMsg = error.response?.data?.message || '成绩更新失败，请重试'
+    ElMessage({ message: errorMsg, type: 'error' })
+  }
+}
+
+// 图片上传成功后的回调
+function handleImageUploadSuccess(response: any, file: any, fileListParam: any[]) {
+  console.log('图片上传返回：', response)
+  let url = ''
+  if (response && response.code === 0) {
+    url = response.data
+  } else if (response && response.data && response.data.code === 0) {
+    url = response.data.data
+  }
+  if (url) {
+    submitForm.image = url
+    imageFileList.value = fileListParam
+    ElMessage({ message: '图片上传成功', type: 'success' })
+  } else {
+    ElMessage({ message: response.message || (response.data && response.data.message) || '图片上传失败', type: 'error' })
+  }
+}
+
+function handleImageUpdateSuccess(response: any, file: any, fileListParam: any[]) {
+  console.log('图片上传返回：', response)
+  let url = ''
+  if (response && response.code === 0) {
+    url = response.data
+  } else if (response && response.data && response.data.code === 0) {
+    url = response.data.data
+  }
+  if (url) {
+    updateForm.image = url
+    imageFileList.value = fileListParam
+    ElMessage({ message: '图片上传成功', type: 'success' })
+  } else {
+    ElMessage({ message: response.message || (response.data && response.data.message) || '图片上传失败', type: 'error' })
+  }
+}
+
+function getCurrentIdentityId(): number | null {
+  try {
+    const userInfo = sessionStorage.getItem('userInfo')
+    if (!userInfo) return null
+    const user = JSON.parse(userInfo)
+    return user.id ? Number(user.id) : null
+  } catch (error) {
+    console.error('获取用户身份失败:', error)
+    return null
+  }
+}
+
+// 上传前自动压缩图片
+async function beforeImageUpload(file: any) {
+  try {
+    if (!file.type.startsWith('image/')) {
+      ElMessage({ message: '只能上传图片文件', type: 'error' })
+      return false
+    }
+    const compressed = await compressImage(file)
+    return compressed
+  } catch (err: any) {
+    ElMessage({ message: '图片压缩失败: ' + err.message, type: 'error' })
+    return false
+  }
+}
+
+onMounted(() => {
+  fetchCourses()
+})
 </script>
 
 <style scoped>
