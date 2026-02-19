@@ -26,13 +26,9 @@
   </div>
 </template>
 
-<script>
-export default {
-  methods: {
-    go(path) {
-      window.open(`https://qglint.github.io/Qcdmga/${path}`, '_blank')
-    },
-  },
+<script lang="ts" setup>
+function go(path: string) {
+  window.open(`https://qglint.github.io/Qcdmga/${path}`, '_blank')
 }
 </script>
 
