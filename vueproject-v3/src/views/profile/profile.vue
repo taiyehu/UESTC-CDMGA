@@ -371,394 +371,325 @@
   </div>
 </template>
 
-<script>
-import router from '@/router'
+<script lang="ts" setup>
+import { ref, reactive, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { compressImage } from '@/components/imageCompressor'
 import AvatarCropper from '@/components/AvatarCropper.vue'
-import ContestRanking from '@/views/pages/contest-ranking.vue'
-import { ref } from 'vue'   
 import defaultAvatar from '@/assets/default-avatar.png'
-const avatarUrl = ref(defaultAvatar)
+import { ElMessage } from 'element-plus'
 
-export default {
-  computed: {
-    ContestRanking() {
-      return ContestRanking
-    },
-  },
-  components: { AvatarCropper },
-  data() {
-    return {
-      user: { account: '', id: null, role: '' },
-      profile: { avatar: '', description: '', status: -1 },
-      profileStatus: -1, // 0审核中 1通过 -1未提交
-      defaultAvatar: defaultAvatar,
-      editDialogVisible: false,
-      editProfile: { avatar: '', description: '' },
+const route = useRoute()
+const router = useRouter()
 
-      // 只保留一个 avatarFileList
-      avatarFileList: [],
-      scoredScores: [],
-      contestScores: [],
-      RatedActivities: [],
-      viewUserId: null,
-      isSelf: false,
-      avatarPreviewVisible: false,
-      avatarPreviewUrl: '',
+const user = reactive<{ account: string; id: number | null; role: string }>({ account: '', id: null, role: '' })
+const profile = reactive<any>({ avatar: '', description: '', status: -1, account: '' })
+const profileStatus = ref<number>(-1)
+const defaultAvatarRef = defaultAvatar
+const editDialogVisible = ref(false)
+const editProfile = reactive<{ avatar: string; description: string }>({ avatar: '', description: '' })
 
-      // v-model 绑定的变量：当前展开的面板（因为 accordion=true，这里是单个字符串或空字符串）
-      activePanels: '',
+// 只保留一个 avatarFileList
+const avatarFileList = ref<any[]>([])
+const scoredScores = ref<any[]>([])
+const contestScores = ref<any[]>([])
+const RatedActivities = ref<any[]>([])
+const viewUserId = ref<number | null>(null)
+const isSelf = ref(false)
+const avatarPreviewVisible = ref(false)
+const avatarPreviewUrl = ref('')
 
-      // 保存上一次 active，用于判断新展开的是哪一项（非手风琴模式时会是数组）
-      prevActivePanels: [],
+// 折叠面板相关
+const activePanels = ref<string | string[]>('')
+const prevActivePanels = ref<any[]>([])
 
-      // 缓存每个 activity 的分数数据： { [activityId]: [score, ...] }
-      activityScoresMap: {},
+// 缓存每个 activity 的分数数据
+const activityScoresMap = reactive<Record<string, any[]>>({})
+const loadingMap = reactive<Record<string, boolean>>({})
+const errorMap = reactive<Record<string, string | null>>({})
 
-      // 加载状态与错误缓存，按 activityId 存
-      loadingMap: {},
-      errorMap: {},
+// 裁剪弹窗相关
+const cropperVisible = ref(false)
+const cropImgUrl = ref<string | null>(null)
+const rawAvatarFile = ref<File | null>(null)
+const croppedFile = ref<File | null>(null)
 
-      // 裁剪弹窗相关
-      cropperVisible: false,
-      cropImgUrl: null,
-      rawAvatarFile: null,
-      croppedFile: null,
+const imagePreviewVisible = ref(false)
+const imagePreviewUrl = ref('')
 
-      imagePreviewVisible: false,
-      imagePreviewUrl: '',
-    }
-  },
-  methods: {
-    previewImage(url) {
-      this.imagePreviewUrl = this.getImageUrl(url)
-      this.imagePreviewVisible = true
-    },
-    handleAvatarUploadSuccess(response, file, fileList) {
-      if (response.code === 0) {
-        this.editProfile.avatar = response.data
-        this.avatarFileList = fileList
-        this.$message.success('头像上传成功')
-      } else {
-        this.$message.error('头像上传失败')
-      }
-    },
-    triggerFileInput() {
-      this.$refs.fileInput.click()
-    },
-    onFileChange(e) {
-      const file = e.target.files[0]
-      if (!file) return
-      if (!file.type.startsWith('image/')) {
-        this.$message.error('只能上传 JPG/PNG 图片')
-        return
-      }
-      this.rawAvatarFile = file
-      this.cropImgUrl = URL.createObjectURL(file)
-      this.cropperVisible = true
-      e.target.value = ''
-    },
-    async handleAvatarCrop(croppedBlob) {
-      this.cropperVisible = false
-      // 压缩图片，调用 compressImage(file, targetSize)
-      try {
-        const compressedFile = await compressImage(croppedBlob)
-        this.croppedFile = compressedFile
-        // 上传压缩后的图片
-        const formData = new FormData()
-        formData.append('avatar', compressedFile)
-        formData.append('identityId', this.user.id)
-        const res = await axios.post('/api/profile/upload-avatar', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        })
-        this.handleAvatarUploadSuccess(res.data, compressedFile, [
-          { name: '头像', url: res.data.data },
-        ])
-      } catch (err) {
-        console.error(err)
-        this.$message.error('裁剪或上传失败')
-      }
-      this.editDialogVisible = true
-    },
-    loadProfile() {
-      const routeId = this.$route.params.id
-      let userInfo = sessionStorage.getItem('userInfo')
+const fileInput = ref<HTMLInputElement | null>(null)
 
-      if (routeId) {
-        this.viewUserId = parseInt(routeId)
-        if (userInfo) {
-          this.user = JSON.parse(userInfo)
-          this.isSelf = this.user.id == routeId
-        } else {
-          this.isSelf = false
-        }
-      } else if (userInfo) {
-        this.user = JSON.parse(userInfo)
-        this.viewUserId = this.user.id
-        this.isSelf = true
-      } else {
-        this.viewUserId = null
-        this.isSelf = false
-      }
 
-      if (this.viewUserId) {
-        this.fetchProfile()
-        this.fetchScoredScores()
-        this.fetchRatedActivity()
-      }
-    },
-
-    getStatusText() {
-      if (this.profileStatus === 0) return '审核中'
-      if (this.profileStatus === 1) return '已通过'
-      return '未提交'
-    },
-
-    getImageUrl(imagePath) {
-      if (!imagePath) return this.defaultAvatar
-      if (/^https?:\/\//.test(imagePath)) {
-        return imagePath
-      }
-      // 直接返回相对路径
-      return imagePath.startsWith('/') ? imagePath : '/' + imagePath
-    },
-
-    previewAvatar() {
-      this.avatarPreviewUrl = this.getImageUrl(this.profile.avatar)
-      this.avatarPreviewVisible = true
-    },
-
-    openEditDialog() {
-      this.editProfile.avatar = this.profile.avatar
-      this.editProfile.description = this.profile.description
-      // 如果有头像，初始化 fileList
-      this.avatarFileList = this.profile.avatar
-        ? [{ name: '头像', url: this.getImageUrl(this.profile.avatar) }]
-        : []
-      this.editDialogVisible = true
-    },
-
-    handleAvatarRemove(file, fileList) {
-      this.editProfile.avatar = ''
-      this.avatarFileList = fileList
-    },
-
-    logout() {
-      sessionStorage.removeItem('userInfo')
-      this.$router.push('/login')
-    },
-
-    redirectToLogin() {
-      this.$router.push('/login')
-    },
-
-    fetchProfile() {
-      if (!this.viewUserId) return
-      axios.get(`/api/profile/identity/${this.viewUserId}`).then((res) => {
-        // 如果后端返回 null 或没有 avatar 字段，说明 profile 不存在
-        if (!res.data || res.data.avatar === undefined) {
-          // 清空 profile，显示未完善资料提示
-          this.profile = {
-            avatar: '',
-            description: '',
-            status: -1,
-            account: '',
-          }
-          this.profileStatus = -1
-          // 可选：显示提示
-          this.$message.info('该用户尚未完善个人资料')
-          return
-        }
-        // 正常赋值
-        this.profile = res.data
-        this.profileStatus = res.data.status
-      })
-    },
-
-    submitEditProfile() {
-      if (
-        !this.editProfile.description ||
-        this.editProfile.description.length > 50
-      ) {
-        this.$message.error('签名不能为空且不能超过50字')
-        return
-      }
-      // 提交头像和签名审核
-      axios
-        .put(`/api/profile/${this.user.id}`, {
-          avatar: this.editProfile.avatar,
-          description: this.editProfile.description,
-          status: 0,
-          identityId: this.user.id,
-        })
-        .then(() => {
-          this.$message.success('资料已提交审核，请等待管理员处理')
-          this.editDialogVisible = false
-          this.fetchProfile()
-        })
-    },
-    // el-collapse 的 @change 回调，参数 activeNames（因为 accordion=true，这里会是 string）
-    // 如果 accordion=false，activeNames 是数组
-    onCollapseChange(activeNames) {
-      // 规范化为数组方便比较
-      const activeArr = Array.isArray(activeNames)
-        ? activeNames.map(String)
-        : activeNames
-        ? [String(activeNames)]
-        : []
-      const prevArr = Array.isArray(this.prevActivePanels)
-        ? this.prevActivePanels.map(String)
-        : this.prevActivePanels
-        ? [String(this.prevActivePanels)]
-        : []
-
-      // 找到新打开（activeArr 中存在但 prevArr 不存在）的项
-      const newlyOpened = activeArr.filter((name) => !prevArr.includes(name))
-
-      // 对每个新打开的 name，触发加载（name 是 String(activity.id)）
-      newlyOpened.forEach((name) => {
-        const activityId = parseInt(name, 10)
-        const activity = this.RatedActivities.find((a) => String(a.id) === name)
-        if (activity) {
-          this.fetchContestScores(activity.id)
-        }
-      })
-
-      // 更新 prevActivePanels
-      this.prevActivePanels = activeArr.slice()
-    },
-    fetchScoredScores() {
-      if (!this.viewUserId) return
-      axios
-        .get(`/api/score/user-course-scores?identityId=${this.viewUserId}`)
-        .then((res) => {
-          if (res.data && res.data.code === 0) {
-            this.scoredScores = res.data.data || []
-          }
-        })
-    },
-    fetchRatedActivity() {
-      if (!this.viewUserId) return
-      axios
-        .get(`/api/activity/rated-activities/${this.viewUserId}`)
-        .then((res) => {
-          if (res.data) {
-            this.RatedActivities = res.data || []
-          }
-        })
-    },
-    async fetchContestScores(activityId) {
-      if (!this.viewUserId || !activityId) return
-
-      // 设置 loading / error 状态
-      this.loadingMap[activityId] = true
-      this.errorMap[activityId] = null
-
-      try {
-        const res = await axios.get('/api/score/activity-scores', {
-          params: { activityId: activityId, identityId: this.viewUserId },
-        })
-
-        // 兼容后端不同返回结构
-        let scores = []
-        if (res.data) {
-          scores = Array.isArray(res.data) ? res.data : res.data.data || []
-        }
-
-        // 为每条成绩尝试获取计分规则（单次失败不影响整体）
-        for (let i = 0; i < scores.length; i++) {
-          const courseId = scores[i].course && scores[i].course.id
-          if (!courseId) continue
-          try {
-            const ruleRes = await axios.get('/api/activity/rule', {
-              params: { activityId, courseId },
-            })
-            const rule = ruleRes.data && (ruleRes.data.rule || ruleRes.data)
-            if (rule === 'arcaea计分方式') {
-              scores[i].score = (scores[i].score || 0) + 10000000
-            }
-          } catch (e) {
-            // 忽略单个规则请求错误，记录到控制台以便排查
-            console.warn(
-              '获取计分规则失败，courseId=',
-              courseId,
-              e && e.message
-            )
-          }
-        }
-
-        // 保存结果到活动缓存并兼容旧字段
-        this.activityScoresMap[activityId] = scores
-        this.contestScores = scores
-      } catch (err) {
-        const msg =
-          err.response && err.response.data && err.response.data.message
-            ? err.response.data.message
-            : err.message || '加载失败'
-        this.errorMap[activityId] = msg
-        this.activityScoresMap[activityId] = []
-        console.error('fetchContestScores 错误:', err)
-      } finally {
-        this.loadingMap[activityId] = false
-      }
-    },
-  },
-
-  mounted() {
-    this.loadProfile()
-  },
-
-  watch: {
-    '$route.params.id': 'loadProfile',
-  },
+// 方法实现
+function previewImage(url: string) {
+  imagePreviewUrl.value = getImageUrl(url)
+  imagePreviewVisible.value = true
 }
+
+function handleAvatarUploadSuccess(response: any, file: File | Blob, fileList: any[]) {
+  if (response.code === 0) {
+    editProfile.avatar = response.data
+    avatarFileList.value = fileList
+    ElMessage({ message: '头像上传成功', type: 'success' })
+  } else {
+    ElMessage({ message: '头像上传失败', type: 'error' })
+  }
+}
+
+function triggerFileInput() {
+  fileInput.value?.click()
+}
+
+function onFileChange(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input?.files?.[0]
+  if (!file) return
+  if (!file.type.startsWith('image/')) {
+    ElMessage({ message: '只能上传 JPG/PNG 图片', type: 'error' })
+    return
+  }
+  rawAvatarFile.value = file
+  cropImgUrl.value = URL.createObjectURL(file)
+  cropperVisible.value = true
+  input.value = ''
+}
+
+async function handleAvatarCrop(croppedBlob: Blob) {
+  cropperVisible.value = false
+  try {
+    const compressedFile = await compressImage(croppedBlob)
+    croppedFile.value = compressedFile as File
+    const formData = new FormData()
+    formData.append('avatar', compressedFile)
+    formData.append('identityId', String(user.id))
+    const res = await axios.post('/api/profile/upload-avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    handleAvatarUploadSuccess(res.data, compressedFile as File, [
+      { name: '头像', url: res.data.data },
+    ])
+  } catch (err) {
+    console.error(err)
+    ElMessage({ message: '裁剪或上传失败', type: 'error' })
+  }
+  editDialogVisible.value = true
+}
+
+function loadProfile() {
+  const routeId = route.params.id
+  const userInfo = sessionStorage.getItem('userInfo')
+
+  if (routeId) {
+    viewUserId.value = parseInt(String(routeId))
+    if (userInfo) {
+      const parsed = JSON.parse(userInfo)
+      user.account = parsed.account
+      user.id = parsed.id
+      user.role = parsed.role
+      isSelf.value = user.id == Number(routeId)
+    } else {
+      isSelf.value = false
+    }
+  } else if (userInfo) {
+    const parsed = JSON.parse(userInfo)
+    user.account = parsed.account
+    user.id = parsed.id
+    user.role = parsed.role
+    viewUserId.value = parsed.id
+    isSelf.value = true
+  } else {
+    viewUserId.value = null
+    isSelf.value = false
+  }
+
+  if (viewUserId.value) {
+    fetchProfile()
+    fetchScoredScores()
+    fetchRatedActivity()
+  }
+}
+
+function getStatusText() {
+  if (profileStatus.value === 0) return '审核中'
+  if (profileStatus.value === 1) return '已通过'
+  return '未提交'
+}
+
+function getImageUrl(imagePath?: string) {
+  if (!imagePath) return defaultAvatarRef
+  if (/^https?:\/\//.test(imagePath)) {
+    return imagePath
+  }
+  return imagePath.startsWith('/') ? imagePath : '/' + imagePath
+}
+
+function previewAvatar() {
+  avatarPreviewUrl.value = getImageUrl(profile.avatar)
+  avatarPreviewVisible.value = true
+}
+
+function openEditDialog() {
+  editProfile.avatar = profile.avatar
+  editProfile.description = profile.description
+  avatarFileList.value = profile.avatar ? [{ name: '头像', url: getImageUrl(profile.avatar) }] : []
+  editDialogVisible.value = true
+}
+
+function handleAvatarRemove(file: any, fileList: any[]) {
+  editProfile.avatar = ''
+  avatarFileList.value = fileList
+}
+
+function logout() {
+  sessionStorage.removeItem('userInfo')
+  router.push('/login')
+}
+
+function redirectToLogin() {
+  router.push('/login')
+}
+
+function fetchProfile() {
+  if (!viewUserId.value) return
+  axios.get(`/api/profile/identity/${viewUserId.value}`).then((res) => {
+    if (!res.data || res.data.avatar === undefined) {
+      profile.avatar = ''
+      profile.description = ''
+      profile.status = -1
+      profile.account = ''
+      profileStatus.value = -1
+      ElMessage({ message: '该用户尚未完善个人资料', type: 'info' })
+      return
+    }
+    Object.assign(profile, res.data)
+    profileStatus.value = res.data.status
+  })
+}
+
+function submitEditProfile() {
+  if (!editProfile.description || editProfile.description.length > 50) {
+    ElMessage({ message: '签名不能为空且不能超过50字', type: 'error' })
+    return
+  }
+  axios
+    .put(`/api/profile/${user.id}`, {
+      avatar: editProfile.avatar,
+      description: editProfile.description,
+      status: 0,
+      identityId: user.id,
+    })
+    .then(() => {
+      ElMessage({ message: '资料已提交审核，请等待管理员处理', type: 'success' })
+      editDialogVisible.value = false
+      fetchProfile()
+    })
+}
+
+function onCollapseChange(activeNames: any) {
+  const activeArr = Array.isArray(activeNames)
+    ? activeNames.map(String)
+    : activeNames
+    ? [String(activeNames)]
+    : []
+
+  const prevArr = Array.isArray(prevActivePanels.value)
+    ? prevActivePanels.value.map(String)
+    : prevActivePanels.value
+    ? [String(prevActivePanels.value)]
+    : []
+
+  const newlyOpened = activeArr.filter((name) => !prevArr.includes(name))
+  newlyOpened.forEach((name) => {
+    const activityId = parseInt(name, 10)
+    const activity = RatedActivities.value.find((a) => String(a.id) === name)
+    if (activity) {
+      fetchContestScores(activity.id)
+    }
+  })
+
+  prevActivePanels.value = activeArr.slice()
+}
+
+function fetchScoredScores() {
+  if (!viewUserId.value) return
+  axios.get(`/api/score/user-course-scores?identityId=${viewUserId.value}`).then((res) => {
+    if (res.data && res.data.code === 0) {
+      scoredScores.value = res.data.data || []
+    }
+  })
+}
+
+function fetchRatedActivity() {
+  if (!viewUserId.value) return
+  axios.get(`/api/activity/rated-activities/${viewUserId.value}`).then((res) => {
+    if (res.data) {
+      RatedActivities.value = res.data || []
+    }
+  })
+}
+
+async function fetchContestScores(activityId: number) {
+  if (!viewUserId.value || !activityId) return
+  loadingMap[activityId] = true
+  errorMap[activityId] = null
+  try {
+    const res = await axios.get('/api/score/activity-scores', {
+      params: { activityId: activityId, identityId: viewUserId.value },
+    })
+    let scores: any[] = []
+    if (res.data) {
+      scores = Array.isArray(res.data) ? res.data : res.data.data || []
+    }
+    for (let i = 0; i < scores.length; i++) {
+      const courseId = scores[i].course && scores[i].course.id
+      if (!courseId) continue
+      try {
+        const ruleRes = await axios.get('/api/activity/rule', {
+          params: { activityId: activityId, courseId },
+        })
+        const rule = ruleRes.data && (ruleRes.data.rule || ruleRes.data)
+        if (rule === 'arcaea计分方式') {
+          scores[i].score = (scores[i].score || 0) + 10000000
+        }
+      } catch (e) {
+        console.warn('获取计分规则失败，courseId=', courseId, e && e.message)
+      }
+    }
+    activityScoresMap[String(activityId)] = scores
+    contestScores.value = scores
+  } catch (err: any) {
+    const msg = err.response && err.response.data && err.response.data.message ? err.response.data.message : err.message || '加载失败'
+    errorMap[activityId] = msg
+    activityScoresMap[String(activityId)] = []
+    console.error('fetchContestScores 错误:', err)
+  } finally {
+    loadingMap[activityId] = false
+  }
+}
+
+onMounted(() => {
+  loadProfile()
+})
+
+watch(() => route.params.id, () => {
+  loadProfile()
+})
 </script>
 
 <style scoped>
-.main-content {
-  margin-top: var(--navbar-height);
-}
-.avatar-uploader {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.profile-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-}
-.avatar-select-group {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-right: 32px;
-}
-.profile-right {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
-  margin-top: 16px;
-}
-.profile-info {
-  margin-bottom: 16px;
-}
-.profile-signature {
-  width: 300px;
-  max-width: 100%;
-  margin-bottom: 16px;
-}
-.admin-actions .profile-btn {
-  margin-right: 16px;
-}
-.profile-actions .profile-btn {
-  margin-right: 16px;
-}
-img[alt='课题图片'],
-img[alt='成绩图片'] {
+.main-content { margin-top: var(--navbar-height); }
+.avatar-uploader { display: flex; flex-direction: column; align-items: center; }
+.profile-header { display: flex; align-items: center; margin-bottom: 20px; }
+.avatar-select-group { display: flex; flex-direction: column; align-items: center; margin-right: 32px; }
+.profile-right { flex: 1; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; margin-top: 16px; }
+.profile-info { margin-bottom: 16px; }
+.profile-signature { width: 300px; max-width: 100%; margin-bottom: 16px; }
+.admin-actions .profile-btn { margin-right: 16px; }
+.profile-actions .profile-btn { margin-right: 16px; }
+img[alt="课题图片"],
+img[alt="成绩图片"] {
   cursor: pointer;
 }
 </style>
+
