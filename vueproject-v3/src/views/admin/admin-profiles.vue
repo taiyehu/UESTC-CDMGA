@@ -164,137 +164,122 @@
   </div>
 </template>
 
-<script>
+<script lang="ts" setup>
+import { ref, reactive, onMounted } from 'vue'
 import axios from 'axios'
+import { ElMessage } from 'element-plus'
+import defaultAvatar from '@/assets/default-avatar.png'
 
-function deleteAndCloseprofile() {
-  deleteProfile(selectedProfile.id)
-  confirmDialogVisible = false
+const profiles = ref<any[]>([])
+const dialogVisible = ref(false)
+const confirmDialogVisible = ref(false)
+const selectedProfile = reactive<any>({})
+const passedDialogVisible = ref(false)
+const passedProfiles = ref<any[]>([])
+const previewImage = ref('')
+const previewVisible = ref(false)
+
+// 查看已通过用户资料
+async function checkPassedProfiles() {
+  try {
+    const response = await axios.get('/api/profile/all-passed')
+    passedProfiles.value = response.data || []
+    passedDialogVisible.value = true
+  } catch (error) {
+    ElMessage({ message: '获取已通过用户资料失败', type: 'error' })
+    passedProfiles.value = []
+  }
 }
 
-export default {
-  data() {
-    return {
-      profiles: [],
-      dialogVisible: false,
-      confirmDialogVisible: false,
-      selectedProfile: {},
-      passedDialogVisible: false,
-      passedProfiles: [],
+// 获取图片URL
+function getImageUrl(imagePath?: string) {
+  if (!imagePath) return defaultAvatar
+  if (/^https?:\/\//.test(imagePath)) return imagePath
+  return imagePath.startsWith('/') ? imagePath : '/' + imagePath
+}
+
+// 获取所有用户资料
+async function fetchProfiles() {
+  try {
+    const response = await axios.get('/api/profile/all')
+    profiles.value = response.data || []
+  } catch (error) {
+    ElMessage({ message: '获取用户资料失败', type: 'error' })
+    profiles.value = []
+  }
+}
+
+function openDialog(profile: any) {
+  Object.assign(selectedProfile, profile)
+  dialogVisible.value = true
+}
+
+function closeDialog() {
+  dialogVisible.value = false
+}
+
+function deleteConfirm(profile: any) {
+  Object.assign(selectedProfile, profile)
+  confirmDialogVisible.value = true
+}
+
+async function deleteProfile(profileId: any) {
+  try {
+    const response = await axios.delete(`/api/profile/${profileId}`)
+    if (response.status === 204 || (response.data && response.data.code === 0)) {
+      ElMessage({ message: '用户资料删除成功', type: 'success' })
+      await fetchProfiles()
+    } else {
+      ElMessage({ message: '删除成功', type: 'success' })
+      dialogVisible.value = false
     }
-  },
-  methods: {
-    // 查看已通过用户资料
-    checkPassedProfiles() {
-      return axios
-        .get('/api/profile/all-passed')
-        .then((response) => {
-          this.profiles = response.data || []
-        })
-        .catch(() => {
-          this.$message.error('获取已通过用户资料失败')
-          this.profiles = []
-        })
-    },
-    async checkPassedProfiles() {
-      try {
-        const response = await axios.get('/api/profile/all-passed')
-        this.passedProfiles = response.data || []
-        this.passedDialogVisible = true
-      } catch (error) {
-        this.$message.error('获取已通过用户资料失败')
-        this.passedProfiles = []
-      }
-    },
-    // 获取图片URL
-    getImageUrl(imagePath) {
-      if (!imagePath) return require('@/assets/default-avatar.png')
-      if (/^https?:\/\//.test(imagePath)) {
-        return imagePath
-      }
-      return imagePath.startsWith('/') ? imagePath : '/' + imagePath
-    },
-    // 获取所有用户资料
-    async fetchProfiles() {
-      try {
-        const response = await axios.get('/api/profile/all')
-        this.profiles = response.data || []
-      } catch (error) {
-        this.$message.error('获取用户资料失败')
-        this.profiles = []
-      }
-    },
-    openDialog(profile) {
-      this.selectedProfile = { ...profile }
-      this.dialogVisible = true
-    },
-    closeDialog() {
-      this.dialogVisible = false
-    },
-    deleteConfirm(profile) {
-      this.selectedProfile = { ...profile }
-      this.confirmDialogVisible = true
-    },
-    async deleteProfile(profileId) {
-      try {
-        const response = await axios.delete(`/api/profile/${profileId}`)
-        if (
-          response.status === 204 ||
-          (response.data && response.data.code === 0)
-        ) {
-          this.$message.success('用户资料删除成功')
-          await this.fetchProfiles()
-        } else {
-          this.$message.success('删除成功')
-          this.dialogVisible = false
-        }
-      } catch (error) {
-        this.$message.error('删除失败')
-      }
-    },
-    // 审核通过
-    async approveProfile(profile) {
-      try {
-        const response = await axios.put(`/api/profile/${profile.id}`, {
-          ...profile,
-          status: 1,
-        })
-        if (response.data && response.data.code === 0) {
-          this.$message.success('审核通过')
-          this.dialogVisible = false
-          await this.fetchProfiles()
-        } else {
-          this.$message.success('操作成功')
-          this.dialogVisible = false
-          await this.fetchProfiles()
-        }
-      } catch (error) {
-        this.$message.error('操作失败')
-      }
-    },
-    // 审核驳回
-    async rejectProfile(profile) {
-      try {
-        const response = await axios.put(`/api/profile/${profile.id}`, {
-          ...profile,
-          status: -1,
-        })
-        if (response.data && response.data.code === 0) {
-          this.$message.success('已驳回')
-          this.dialogVisible = false
-          await this.fetchProfiles()
-        } else {
-          this.$message.error('操作失败')
-        }
-      } catch (error) {
-        this.$message.error('操作失败')
-      }
-    },
-  },
-  mounted() {
-    this.fetchProfiles()
-  },
+  } catch (error) {
+    ElMessage({ message: '删除失败', type: 'error' })
+  }
 }
+
+// 审核通过
+async function approveProfile(profile: any) {
+  try {
+    const response = await axios.put(`/api/profile/${profile.id}`, { ...profile, status: 1 })
+    if (response.data && response.data.code === 0) {
+      ElMessage({ message: '审核通过', type: 'success' })
+      dialogVisible.value = false
+      await fetchProfiles()
+    } else {
+      ElMessage({ message: '操作成功', type: 'success' })
+      dialogVisible.value = false
+      await fetchProfiles()
+    }
+  } catch (error) {
+    ElMessage({ message: '操作失败', type: 'error' })
+  }
+}
+
+// 审核驳回
+async function rejectProfile(profile: any) {
+  try {
+    const response = await axios.put(`/api/profile/${profile.id}`, { ...profile, status: -1 })
+    if (response.data && response.data.code === 0) {
+      ElMessage({ message: '已驳回', type: 'success' })
+      dialogVisible.value = false
+      await fetchProfiles()
+    } else {
+      ElMessage({ message: '操作失败', type: 'error' })
+    }
+  } catch (error) {
+    ElMessage({ message: '操作失败', type: 'error' })
+  }
+}
+
+async function deleteAndCloseProfile() {
+  await deleteProfile(selectedProfile.id || selectedProfile.identityId || selectedProfile.identity_id)
+  confirmDialogVisible.value = false
+}
+
+onMounted(() => {
+  fetchProfiles()
+})
 </script>
 
 <style scoped>
