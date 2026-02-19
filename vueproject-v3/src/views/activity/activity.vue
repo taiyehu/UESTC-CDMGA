@@ -191,169 +191,161 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
-export default {
-  data() {
-    return {
-      activities: [],
-      assocCourses: [],
-      activitiesScore: [],
-      loading: true,
-      error: null,
-      rankAllData: [],
-      rankSortedData: [],
-      pagedRankData: [],
-      rankPageSize: 10,
-      rankCurrentPage: 1,
-      previewVisible: false,
-      previewImage: '',
-      viewDialogVisible: false,
-      viewCourseVisible: false,
-      viewScoreBoardVisible: false,
-      currentActivity: null,
+import { ElMessage } from 'element-plus'
+
+const activities = ref([])
+const assocCourses = ref([])
+const activitiesScore = ref([])
+const loading = ref(true)
+const error = ref(null)
+const rankAllData = ref([])
+const rankSortedData = ref([])
+const rankPageSize = ref(10)
+const rankCurrentPage = ref(1)
+const previewVisible = ref(false)
+const previewImage = ref('')
+const viewDialogVisible = ref(false)
+const viewCourseVisible = ref(false)
+const viewScoreBoardVisible = ref(false)
+const currentActivity = ref(null)
+
+const pagedRankData = computed(() => {
+  const start = (rankCurrentPage.value - 1) * rankPageSize.value
+  return rankSortedData.value.slice(start, start + rankPageSize.value)
+})
+
+const router = useRouter()
+
+async function fetchActivities() {
+  try {
+    const response = await axios.get('/api/activity/list')
+    if (response.data.list) {
+      activities.value = response.data.list
+    } else if (Array.isArray(response.data)) {
+      activities.value = response.data
+    } else {
+      activities.value = []
     }
-  },
-  mounted() {
-    this.fetchActivities()
-  },
-  watch: {
-    rankCurrentPage() {
-      this.setPagedRankData()
-    },
-  },
-  methods: {
-    async fetchActivities() {
-      try {
-        const response = await axios.get('/api/activity/list')
-        if (response.data.list) {
-          this.activities = response.data.list
-        } else if (Array.isArray(response.data)) {
-          this.activities = response.data
-        } else {
-          this.activities = []
-        }
-      } catch (err) {
-        this.error = err.message
-      } finally {
-        this.loading = false
-      }
-    },
-    async fetchAssocCourses() {
-      try {
-        const id = this.currentActivity.id
-        const response = await axios.get(
-          `/api/activity/assoc-activity-courses/${id}`
-        )
-        if (response.data.list) {
-          this.assocCourses = response.data.list
-          this.viewCourseVisible = true
-        } else if (Array.isArray(response.data)) {
-          this.assocCourses = response.data
-          this.viewCourseVisible = true
-        }
-      } catch (err) {
-        this.error = err.message
-      } finally {
-        this.loading = false
-      }
-    },
-
-    handleImageClick(imgUrl) {
-      this.previewImage = imgUrl
-      this.previewVisible = true
-    },
-    handleCourseView(activity) {
-      this.currentActivity = activity
-      this.assocCourses = []
-      this.fetchAssocCourses()
-      this.viewCourseVisible = true
-    },
-
-    handleView(activity) {
-      this.currentActivity = activity
-      this.viewDialogVisible = true
-    },
-    formatDate(date) {
-      if (!date) return '-'
-      const d = new Date(date)
-      const options = { year: 'numeric', month: 'long', day: 'numeric' }
-      return d.toLocaleDateString('zh-CN', options)
-    },
-    getImageUrl(imagePath) {
-      if (!imagePath) return ''
-      if (/^https?:\/\//.test(imagePath)) {
-        return imagePath
-      }
-      return imagePath.startsWith('/') ? imagePath : '/' + imagePath
-    },
-    getFileName(filePath) {
-      if (!filePath) return ''
-      return filePath.split('/').pop()
-    },
-    downloadFile(filePath) {
-      const url = this.getImageUrl(filePath)
-      // 创建隐藏a标签实现下载
-      const a = document.createElement('a')
-      a.href = url
-      a.download = this.getFileName(filePath)
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-    },
-    goToProfile(id) {
-      this.$router.push(`/profile/${id}`)
-    },
-    async fetchRankData() {
-      try {
-        const res = await axios.get(
-          `/api/score/activity-totalScores/${this.currentActivity.id}`
-        )
-        let data = res.data.data || []
-        // 保留原有 totalScore 计算
-        const promises = data.map(async (item) => {
-          const resp = await axios.get('/api/score/activity-scores', {
-            params: {
-              activityId: this.currentActivity.id,
-              identityId: item.identityId,
-            },
-          })
-          this.activitiesScore = resp.data || []
-          const count = this.activitiesScore.length
-          item.totalScore += count * 10000000
-          item.contestCount = count
-          item.contestScores = resp.data || []
-          return item
-        })
-        data = await Promise.all(promises)
-        data.sort((a, b) => b.totalScore - a.totalScore)
-        this.rankAllData = data
-        this.rankSortedData = data
-        this.setPagedRankData()
-      } catch (e) {
-        this.$message
-          ? this.$message.error('获取排行榜失败')
-          : alert('获取排行榜失败')
-      }
-    },
-    setPagedRankData() {
-      const start = (this.rankCurrentPage - 1) * this.rankPageSize
-      this.pagedRankData = this.rankSortedData.slice(
-        start,
-        start + this.rankPageSize
-      )
-    },
-    handleRankPageChange(page) {
-      this.rankCurrentPage = page
-      this.setPagedRankData()
-    },
-    handleScoreBoardView(activity) {
-      this.currentActivity = activity
-      this.fetchRankData()
-      this.viewScoreBoardVisible = true
-    },
-  },
+  } catch (err) {
+    error.value = err.message
+  } finally {
+    loading.value = false
+  }
 }
+
+async function fetchAssocCourses() {
+  try {
+    const id = currentActivity.value.id
+    const response = await axios.get(`/api/activity/assoc-activity-courses/${id}`)
+    if (response.data.list) {
+      assocCourses.value = response.data.list
+      viewCourseVisible.value = true
+    } else if (Array.isArray(response.data)) {
+      assocCourses.value = response.data
+      viewCourseVisible.value = true
+    }
+  } catch (err) {
+    error.value = err.message
+  } finally {
+    loading.value = false
+  }
+}
+
+function handleImageClick(imgUrl) {
+  previewImage.value = imgUrl
+  previewVisible.value = true
+}
+
+function handleCourseView(activity) {
+  currentActivity.value = activity
+  assocCourses.value = []
+  fetchAssocCourses()
+  viewCourseVisible.value = true
+}
+
+function handleView(activity) {
+  currentActivity.value = activity
+  viewDialogVisible.value = true
+}
+
+function formatDate(date) {
+  if (!date) return '-'
+  const d = new Date(date)
+  const options = { year: 'numeric', month: 'long', day: 'numeric' }
+  return d.toLocaleDateString('zh-CN', options)
+}
+
+function getImageUrl(imagePath) {
+  if (!imagePath) return ''
+  if (/^https?:\/\//.test(imagePath)) {
+    return imagePath
+  }
+  return imagePath.startsWith('/') ? imagePath : '/' + imagePath
+}
+
+function getFileName(filePath) {
+  if (!filePath) return ''
+  return filePath.split('/').pop()
+}
+
+function downloadFile(filePath) {
+  const url = getImageUrl(filePath)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = getFileName(filePath)
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+}
+
+function goToProfile(id) {
+  router.push(`/profile/${id}`)
+}
+
+async function fetchRankData() {
+  try {
+    const res = await axios.get(`/api/score/activity-totalScores/${currentActivity.value.id}`)
+    let data = res.data.data || []
+    const promises = data.map(async (item) => {
+      const resp = await axios.get('/api/score/activity-scores', {
+        params: {
+          activityId: currentActivity.value.id,
+          identityId: item.identityId,
+        },
+      })
+      activitiesScore.value = resp.data || []
+      const count = activitiesScore.value.length
+      item.totalScore += count * 10000000
+      item.contestCount = count
+      item.contestScores = resp.data || []
+      return item
+    })
+    data = await Promise.all(promises)
+    data.sort((a, b) => b.totalScore - a.totalScore)
+    rankAllData.value = data
+    rankSortedData.value = data
+  } catch (e) {
+    ElMessage({ message: '获取排行榜失败', type: 'error' })
+  }
+}
+
+function handleRankPageChange(page) {
+  rankCurrentPage.value = page
+}
+
+function handleScoreBoardView(activity) {
+  currentActivity.value = activity
+  fetchRankData()
+  viewScoreBoardVisible.value = true
+}
+
+onMounted(() => {
+  fetchActivities()
+})
 </script>
 
 <style scoped>
