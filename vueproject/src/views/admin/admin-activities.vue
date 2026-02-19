@@ -224,7 +224,7 @@ function openUploadDialog() {
   showUploadForm.value = true
 }
 
-function handleBannerUploadSuccess(response: any, file: any, fileListParam: any[]) {
+function handleBannerUploadSuccess(response: any,  fileListParam: any[]) {
   if (response && response.code === 0) {
     newActivity.activityBanner = response.data
     bannerFileList.value = fileListParam
@@ -234,7 +234,7 @@ function handleBannerUploadSuccess(response: any, file: any, fileListParam: any[
   }
 }
 
-function handleFileUploadSuccess(response: any, file: any, fileListParam: any[]) {
+function handleFileUploadSuccess(response: any, fileListParam: any[]) {
   if (response && response.code === 0) {
     newActivity.activityFile = response.data
     fileFileList.value = fileListParam

@@ -57,7 +57,7 @@ const loading = ref(false)
 const ruleForm = reactive({ account: '', password: '', confirmPassword: '' })
 const ruleFormRef = ref<FormInstance | null>(null)
 
-const validatePass = (rule: any, value: string, callback: (err?: Error) => void) => {
+const validatePass = (value: string, callback: (err?: Error) => void) => {
   if (!value) {
     callback(new Error('请输入密码'))
   } else if (value.length < 6) {
@@ -70,7 +70,7 @@ const validatePass = (rule: any, value: string, callback: (err?: Error) => void)
   }
 }
 
-const validatePass2 = (rule: any, value: string, callback: (err?: Error) => void) => {
+const validatePass2 = (value: string, callback: (err?: Error) => void) => {
   if (!value) {
     callback(new Error('请再次输入密码'))
   } else if (value !== ruleForm.password) {

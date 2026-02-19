@@ -276,7 +276,11 @@ function handleView(activity: any): void {
 function formatDate(date: any): string {
   if (!date) return '-'
   const d = new Date(date)
-  const options = { year: 'numeric', month: 'long', day: 'numeric' }
+    const options: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  }
   return d.toLocaleDateString('zh-CN', options)
 }
 

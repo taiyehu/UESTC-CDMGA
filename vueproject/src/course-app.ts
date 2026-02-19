@@ -1,7 +1,10 @@
 // 全局变量
 let currentPage = 1
 const pageSize = 8
-let allCategories = []
+// let allCategories: string[] = []
+
+declare const axios: any
+declare const bootstrap: any
 
 // DOM加载完成后初始化
 document.addEventListener('DOMContentLoaded', function () {
@@ -11,14 +14,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // 设置事件监听器
 function setupEventListeners() {
-  document.getElementById('search-btn').addEventListener('click', function () {
+  document.getElementById('search-btn')?.addEventListener('click', function () {
     currentPage = 1
     fetchCourses()
   })
 
   document
     .getElementById('category-filter')
-    .addEventListener('change', function () {
+    ?.addEventListener('change', function () {
       currentPage = 1
       fetchCourses()
     })
@@ -29,13 +32,15 @@ async function fetchCourses() {
   try {
     showLoading(true)
 
-    const searchTerm = document.getElementById('search-input').value
-    const categoryFilter = document.getElementById('category-filter').value
+    const searchInput = document.getElementById('search-input') as HTMLInputElement | null
+    const searchTerm = searchInput ? searchInput.value : ''
+    const categorySelect = document.getElementById('category-filter') as HTMLSelectElement | null
+    const categoryFilter = categorySelect ? categorySelect.value : ''
 
     // 构建查询参数
     const params = new URLSearchParams()
-    params.append('page', currentPage)
-    params.append('size', pageSize)
+    params.append('page', String(currentPage))
+    params.append('size', String(pageSize))
     if (searchTerm) params.append('search', searchTerm)
     if (categoryFilter) params.append('category', categoryFilter)
 
@@ -44,7 +49,7 @@ async function fetchCourses() {
 
     // 如果是第一页，更新类别过滤器选项
     if (currentPage === 1) {
-      updateCategoryFilter(data.allCategories || [])
+        updateCategoryFilter(data.allCategories || [])
     }
 
     displayCourses(data.courses)
@@ -59,21 +64,23 @@ async function fetchCourses() {
 
 // 更新类别过滤器
 function updateCategoryFilter(categories) {
-  allCategories = categories
-  const categorySelect = document.getElementById('category-filter')
+  // allCategories = categories
+  const categorySelect = document.getElementById('category-filter') as HTMLSelectElement | null
 
-  // 保留"所有类别"选项
-  while (categorySelect.options.length > 1) {
-    categorySelect.remove(1)
+  if (categorySelect) {
+    // 保留"所有类别"选项
+    while (categorySelect.options.length > 1) {
+      categorySelect.remove(1)
+    }
+
+    // 添加新的类别选项
+    categories.forEach((category) => {
+      const option = document.createElement('option')
+      option.value = category
+      option.textContent = category
+      categorySelect.appendChild(option)
+    })
   }
-
-  // 添加新的类别选项
-  categories.forEach((category) => {
-    const option = document.createElement('option')
-    option.value = category
-    option.textContent = category
-    categorySelect.appendChild(option)
-  })
 }
 
 // 显示课程卡片
@@ -81,8 +88,10 @@ function displayCourses(courses) {
   const container = document.getElementById('courses-container')
 
   if (!courses || courses.length === 0) {
-    container.innerHTML =
-      '<div class="col-12 text-center"><p>没有找到相关课程</p></div>'
+    if (container) {
+      container.innerHTML =
+        '<div class="col-12 text-center"><p>没有找到相关课程</p></div>'
+    }
     return
   }
 
@@ -131,13 +140,13 @@ function displayCourses(courses) {
         `
   })
 
-  container.innerHTML = html
+  if (container) container.innerHTML = html
 
   // 为详情按钮添加事件监听
   document.querySelectorAll('.view-detail').forEach((btn) => {
-    btn.addEventListener('click', function () {
-      const courseId = this.getAttribute('data-id')
-      showCourseDetail(courseId)
+    ;(btn as HTMLElement).addEventListener('click', function () {
+      const courseId = (this as HTMLElement).getAttribute('data-id')
+      if (courseId) showCourseDetail(courseId)
     })
   })
 }
@@ -151,9 +160,9 @@ async function showCourseDetail(courseId) {
     const modalTitle = document.getElementById('courseDetailTitle')
     const modalContent = document.getElementById('courseDetailContent')
 
-    modalTitle.textContent = course.title
+    if (modalTitle) modalTitle.textContent = course.title
 
-    modalContent.innerHTML = `
+    if (modalContent) modalContent.innerHTML = `
         <div class="row">
             <div class="col-md-6">
                 ${
@@ -193,10 +202,11 @@ async function showCourseDetail(courseId) {
         `
 
     // 显示模态框
-    const modal = new bootstrap.Modal(
-      document.getElementById('courseDetailModal')
-    )
-    modal.show()
+    const modalEl = document.getElementById('courseDetailModal')
+    if (modalEl) {
+      const modal = new bootstrap.Modal(modalEl)
+      modal.show()
+    }
   } catch (error) {
     console.error('获取课程详情失败:', error)
     alert('获取课程详情失败，请稍后重试')
@@ -208,7 +218,7 @@ function setupPagination(totalItems, currentPage, pageSize) {
   const totalPages = Math.ceil(totalItems / pageSize)
   const pagination = document.getElementById('pagination')
 
-  pagination.innerHTML = ''
+  if (pagination) pagination.innerHTML = ''
 
   // 上一页按钮
   const prevLi = document.createElement('li')
@@ -221,7 +231,7 @@ function setupPagination(totalItems, currentPage, pageSize) {
       fetchCourses()
     }
   })
-  pagination.appendChild(prevLi)
+  if (pagination) pagination.appendChild(prevLi)
 
   // 页码按钮
   for (let i = 1; i <= totalPages; i++) {
@@ -233,7 +243,7 @@ function setupPagination(totalItems, currentPage, pageSize) {
       currentPage = i
       fetchCourses()
     })
-    pagination.appendChild(li)
+    if (pagination) pagination.appendChild(li)
   }
 
   // 下一页按钮
@@ -247,27 +257,27 @@ function setupPagination(totalItems, currentPage, pageSize) {
       fetchCourses()
     }
   })
-  pagination.appendChild(nextLi)
+  if (pagination) pagination.appendChild(nextLi)
 }
 
 // 辅助函数：格式化日期
-function formatDate(dateTime) {
+function formatDate(dateTime: string | number | Date | undefined) {
   if (!dateTime) return ''
   const date = new Date(dateTime)
   return date.toLocaleDateString('zh-CN')
 }
 
 // 辅助函数：格式化日期时间
-function formatDateTime(dateTime) {
+function formatDateTime(dateTime: string | number | Date | undefined) {
   if (!dateTime) return ''
   const date = new Date(dateTime)
   return date.toLocaleString('zh-CN')
 }
 
 // 显示/隐藏加载状态
-function showLoading(show) {
+function showLoading(show: boolean) {
   const container = document.getElementById('courses-container')
-  if (show) {
+  if (show && container) {
     container.innerHTML = `
         <div class="col-12 text-center">
             <div class="spinner-border text-primary" role="status">

@@ -176,8 +176,6 @@ const confirmDialogVisible = ref(false)
 const selectedProfile = reactive<any>({})
 const passedDialogVisible = ref(false)
 const passedProfiles = ref<any[]>([])
-const previewImage = ref('')
-const previewVisible = ref(false)
 
 // 查看已通过用户资料
 async function checkPassedProfiles() {

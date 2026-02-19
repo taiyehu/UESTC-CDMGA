@@ -6,28 +6,30 @@ import Compressor from 'compressorjs'
  * @param {number} targetSize 目标大小（字节），默认5M
  * @returns {Promise<File>} 压缩后的图片文件
  */
-export function compressImage(file, targetSize = 5 * 1024 * 1024) {
-  const originalName = file.name
-  const originalSize = file.size
-  return new Promise((resolve, reject) => {
+export function compressImage(file: Blob | File, targetSize = 5 * 1024 * 1024): Promise<File> {
+  const inputFile: File = file instanceof File ? file : new File([file], 'image.jpg', { type: (file as Blob).type })
+  const originalName = inputFile.name
+  const originalSize = inputFile.size
+  return new Promise<File>((resolve, reject) => {
     let quality = 0.9
     let tryCount = 0
 
-    function doCompress(currentFile) {
+    function doCompress(currentFile: File) {
       new Compressor(currentFile, {
         quality,
         convertSize: targetSize,
-        success(result) {
-          if (result.size <= targetSize) {
+        success(result: any) {
+          const outFile = result as File
+          if (outFile.size <= targetSize) {
             console.log(
-              `[compressImage] 压缩成功: ${originalName}, 原始大小: ${originalSize}, 压缩后: ${result.size}`
+              `[compressImage] 压缩成功: ${originalName}, 原始大小: ${originalSize}, 压缩后: ${outFile.size}`
             )
-            resolve(result)
+            resolve(outFile)
           } else if (tryCount >= 2) {
             console.warn(
-              `[compressImage] 压缩3次未达目标: ${originalName}, 原始大小: ${originalSize}, 最终: ${result.size}`
+              `[compressImage] 压缩3次未达目标: ${originalName}, 原始大小: ${originalSize}, 最终: ${outFile.size}`
             )
-            resolve(result)
+            resolve(outFile)
           } else {
             quality -= 0.15
             tryCount++
@@ -40,9 +42,9 @@ export function compressImage(file, targetSize = 5 * 1024 * 1024) {
       })
     }
 
-    doCompress(file)
-  }).then((result) => {
-    if (result.size > 5 * 1024 * 1024 && targetSize === 5 * 1024 * 1024) {
+    doCompress(inputFile)
+  }).then((result: File) => {
+    if ((result as File).size > 5 * 1024 * 1024 && targetSize === 5 * 1024 * 1024) {
       // 压到1M失败，尝试压到3M
       return compressImage(result, 8 * 1024 * 1024)
     }

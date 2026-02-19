@@ -4,7 +4,7 @@
     <el-card class="box-card" v-if="courses.length > 0">
       <h2>课题管理</h2>
       <div
-        v-for="(course, index) in courses"
+        v-for="(course) in courses"
         :key="course.id"
         class="course-item"
       >
@@ -258,7 +258,7 @@ function openUploadDialog() {
   showUploadForm.value = true
 }
 
-function handleImageUploadSuccess(response: any, file: any, fileListParam: any[]) {
+function handleImageUploadSuccess(response: any, fileListParam: any[]) {
   console.log('图片上传返回：', response)
   let url = ''
   if (response && response.code === 0) {

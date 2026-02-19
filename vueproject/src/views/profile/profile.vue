@@ -427,7 +427,7 @@ function previewImage(url: string) {
   imagePreviewVisible.value = true
 }
 
-function handleAvatarUploadSuccess(response: any, file: File | Blob, fileList: any[]) {
+function handleAvatarUploadSuccess(response: any, fileList: any[]) {
   if (response.code === 0) {
     editProfile.avatar = response.data
     avatarFileList.value = fileList
@@ -466,7 +466,7 @@ async function handleAvatarCrop(croppedBlob: Blob) {
     const res = await axios.post('/api/profile/upload-avatar', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
-    handleAvatarUploadSuccess(res.data, compressedFile as File, [
+    handleAvatarUploadSuccess(res.data,  [
       { name: '头像', url: res.data.data },
     ])
   } catch (err) {
@@ -536,15 +536,6 @@ function openEditDialog() {
   editDialogVisible.value = true
 }
 
-function handleAvatarRemove(file: any, fileList: any[]) {
-  editProfile.avatar = ''
-  avatarFileList.value = fileList
-}
-
-function logout() {
-  sessionStorage.removeItem('userInfo')
-  router.push('/login')
-}
 
 function redirectToLogin() {
   router.push('/login')
@@ -601,7 +592,6 @@ function onCollapseChange(activeNames: any) {
 
   const newlyOpened = activeArr.filter((name) => !prevArr.includes(name))
   newlyOpened.forEach((name) => {
-    const activityId = parseInt(name, 10)
     const activity = RatedActivities.value.find((a) => String(a.id) === name)
     if (activity) {
       fetchContestScores(activity.id)

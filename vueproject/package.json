@@ -16,7 +16,6 @@
     "element-plus": "^2.13.2",
     "pinia": "^3.0.4",
     "vue": "3",
-    "vue-cropper": "^1.1.4",
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
@@ -25,6 +24,7 @@
     "@vue/tsconfig": "^0.8.1",
     "typescript": "~5.9.3",
     "vite": "^7.3.1",
+    "vue-cropper": "^1.1.4",
     "vue-tsc": "^3.1.5"
   },
   "browserslist": [

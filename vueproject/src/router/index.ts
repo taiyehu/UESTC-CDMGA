@@ -91,7 +91,7 @@ const routes = [
 // 创建 router 实例
 const router = createRouter({
   history: createWebHistory(),
-  routes,
+  routes: routes as unknown as any,
 })
 
 /**

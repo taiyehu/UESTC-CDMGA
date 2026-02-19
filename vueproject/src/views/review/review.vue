@@ -167,8 +167,6 @@ const deleteScoreId = ref<number | null>(null)
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
-const ElIconEditRef = ElIconEdit
-const ElIconDeleteRef = ElIconDelete
 
 // 获取图片 URL，保留日志用于调试
 function getImageUrl(imagePath?: string) {
@@ -210,13 +208,13 @@ async function updateScore(score: any) {
     let point: number = score.score
     // 判断是否为 contest 类型
     if (score.course && score.course.category === 'contest') {
-      point = parseFloat(point) - 10000000
+      point = Number(point) - 10000000
     }
     const updatePayload = {
       id: score.id,
       upload_time: dayjs(score.uploadTime).format('YYYY-MM-DDTHH:mm:ss'),
       image: score.image,
-      point: parseFloat(point), // 转为 float
+      point: Number(point), // 转为 float
       is_scored: true,
       remark: score.remark,
     }
@@ -234,7 +232,7 @@ async function updateScore(score: any) {
 }
 
 // 格式化日期时间
-function formatDateTime(row: any, column: any, cellValue: any) {
+function formatDateTime(cellValue: any) {
   if (!cellValue) return ''
   return new Date(cellValue).toLocaleString()
 }

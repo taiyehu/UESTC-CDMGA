@@ -37,9 +37,7 @@
                 v-if="bannerList[currentIndex].data.image"
                 size="small"
                 @click="
-                  handleImageClick(
-                    getImageUrl(bannerList[currentIndex].data.image)
-                  )
+                  handleImageClick()
                 "
                 style="margin-top: 10px"
                 >查看</el-button
@@ -56,7 +54,7 @@
       </transition>
       <div class="banner-dots">
         <span
-          v-for="(item, idx) in bannerList"
+          v-for="(idx) in bannerList"
           :key="idx"
           :class="['dot', { active: idx === currentIndex }]"
         />
@@ -259,7 +257,7 @@ function prevCard(): void {
   }
 }
 
-function handleImageClick(imgUrl: string): void {
+function handleImageClick(): void {
   pauseCarousel()
   previewVisible.value = true
 }

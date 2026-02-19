@@ -2,7 +2,7 @@
   <div>
     <el-card class="box-card" v-if="users.length > 0">
       <h2>用户管理</h2>
-      <div v-for="(user, index) in users" :key="user.id" class="user-item">
+      <div v-for="(user) in users" :key="user.id" class="user-item">
         <p>账号：{{ user.account }} | 用户ID：{{ user.id }}</p>
         <div class="btnGroup">
           <el-button type="primary" @click="openDialog(user)" size="small"

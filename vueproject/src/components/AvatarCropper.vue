@@ -50,7 +50,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { VueCropper } from 'vue-cropper'
 
 const props = defineProps<{
@@ -66,7 +66,6 @@ const emit = defineEmits<{
 const cropper = ref<any>(null)
 const previewUrl = ref<string>('')
 const dialogWidth = ref<string>(Math.round((window.innerWidth * 2) / 3) + 'px')
-const dialogHeight = ref<string>(Math.round((window.innerHeight * 2) / 3) + 'px')
 const cropWidth = ref<number>(Math.round((window.innerWidth * 2) / 3) - 40)
 const cropHeight = ref<number>(Math.round((window.innerHeight * 2) / 3) - 40)
 

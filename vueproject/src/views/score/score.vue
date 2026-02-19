@@ -3,7 +3,7 @@
     <el-card class="box-card" v-if="courses.length > 0">
       <h2>成绩提交</h2>
       <div
-        v-for="(course, index) in courses"
+        v-for="(course) in courses"
         :key="course.id"
         class="course-item"
       >
@@ -246,8 +246,6 @@ import { ElMessage } from 'element-plus'
 
 // 状态与数据
 const courses = ref<any[]>([])
-const normalCourses = ref<any[]>([])
-const contestCourses = ref<any[]>([])
 const viewDialogVisible = ref(false)
 const submitDialogVisible = ref(false)
 const updateDialogVisible = ref(false)
@@ -272,21 +270,9 @@ const updateForm = reactive<any>({
   // may include score_id or create_at
 })
 
-const newScore = reactive<any>({
-  course_id: '',
-  identity_id: '',
-  upload_time: '',
-  image: '',
-  point: 0,
-  is_scored: false,
-  remark: '',
-  created_at: '',
-  updated_at: '',
-})
 
 const selectedScore = ref<any>({})
 const imageFileList = ref<any[]>([])
-const fileList = ref<any[]>([])
 const submittedCourses = ref<any[]>([])
 const ScoredScores = ref<any[]>([])
 
@@ -475,7 +461,7 @@ async function handleUpdate() {
 }
 
 // 图片上传成功后的回调
-function handleImageUploadSuccess(response: any, file: any, fileListParam: any[]) {
+function handleImageUploadSuccess(response: any, fileListParam: any[]) {
   console.log('图片上传返回：', response)
   let url = ''
   if (response && response.code === 0) {
@@ -492,7 +478,7 @@ function handleImageUploadSuccess(response: any, file: any, fileListParam: any[]
   }
 }
 
-function handleImageUpdateSuccess(response: any, file: any, fileListParam: any[]) {
+function handleImageUpdateSuccess(response: any, fileListParam: any[]) {
   console.log('图片上传返回：', response)
   let url = ''
   if (response && response.code === 0) {

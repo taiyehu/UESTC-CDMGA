@@ -40,7 +40,7 @@ export const checkSubmitted = (identityId, courseId) => {
  * @param {String} handleScore.upload_time
  * @param {string} handleScore.image
  */
-export const handleSubmitScore = (handleScore:Score) => {
+export const handleSubmitScore = (handleScore: Partial<Score>) => {
   return request({
     url: '/score/post',
     method: 'post',
