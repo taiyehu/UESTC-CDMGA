@@ -7,6 +7,14 @@ on:
   workflow_dispatch:
 
 jobs:
+  update_env:
+    uses: ./.github/workflows/env_update.yml
+    secrets:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_SUDO: ${{ secrets.SSH_SUDO }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      SSH_DOMIAN: ${{ secrets.SSH_DOMIAN }}
   update_npm:
     uses: ./.github/workflows/pnpm_update.yml
     with:

@@ -14,16 +14,25 @@ on:
       SSH_PRIVATE_KEY: {}
       SSH_PORT: {}
   workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Branch or channel'
+        required: false
+        type: string
+        default: dev
 
 env:
   PROJECT_DIR: vueproject
   TARGET_DIR: /var/www/CDMGA-vue
+  CHANNEL: dev
 
 jobs:
   build-deploy:
     name: pnpm build
     runs-on: ubuntu-22.04
 
+    env:
+      CHANNEL: ${{ inputs.channel }}
     defaults:
       run:
         working-directory: ${{ env.PROJECT_DIR }}
@@ -35,7 +44,7 @@ jobs:
           ref: ${{ inputs.channel }}
 
       - name: Show channel
-        run: echo "Using channel: ${{ inputs.channel }}"
+        run: echo "Using channel: $CHANNEL"
 
       - name: List json file  # 帮助确认JAR包的位置和名称
         run: ls -la pnpm-lock.yaml
@@ -55,8 +64,7 @@ jobs:
 
       # 👉 根据分支区分构建
       - name: Build project
-        run: |
-            pnpm run build
+        run: pnpm run build
 
       - name: List build output  # 帮助确认构建产物的位置
         run: ls -la dist/  # 通常Vue项目构建输出到dist目录
@@ -86,7 +94,7 @@ jobs:
           script: |
             set -e
 
-            BRANCH="${{ inputs.channel }}"
+            BRANCH="$CHANNEL"
             DATE=$(date +%Y%m%d_%H%M%S)
 
             BASE_DIR="${TARGET_DIR}"
