@@ -3,7 +3,7 @@
     <h2 style="text-align: center; margin-bottom: 20px">比赛排行榜（总计）</h2>
     <el-table
       :data="pagedRankData"
-      style="width: 600px; margin: 0 auto"
+      style="width: 500px; margin: 0 auto"
       border
       :default-sort="{ prop: 'totalScore', order: 'descending' }"
     >
@@ -98,90 +98,82 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
-export default {
-  data() {
-    return {
-      rankAllData: [],
-      rankSortedData: [],
-      pagedRankData: [],
-      rankPageSize: 10,
-      rankCurrentPage: 1,
-      previewVisible: false,
-      previewImage: '',
-    }
-  },
-  mounted() {
-    this.fetchRankData()
-  },
-  watch: {
-    rankCurrentPage() {
-      this.setPagedRankData()
-    },
-  },
-  methods: {
-    goToProfile(id) {
-      this.$router.push(`/profile/${id}`)
-    },
-    async fetchRankData() {
-      try {
-        const res = await axios.get('/api/score/contest-scores')
-        let data = res.data.data || []
-        // 保留原有 totalScore 计算
-        const promises = data.map(async (item) => {
-          const resp = await axios.get('/api/score/contest-score-count', {
-            params: { identityId: item.identityId },
-          })
-          const count = resp.data.data || 0
-          item.totalScore += count * 10000000
-          item.contestCount = count
-          // 新增：获取该用户所有 contest 课题成绩和图片
-          console.log('请求contest成绩 identityId:', item.identityId)
-          const contestResp = await axios.get(
-            '/api/score/contest/contest-scores-by-user',
-            {
-              params: { identityId: item.identityId },
-            }
-          )
-          item.contestScores = contestResp.data.data || []
-          return item
-        })
-        data = await Promise.all(promises)
-        data.sort((a, b) => b.totalScore - a.totalScore)
-        this.rankAllData = data
-        this.rankSortedData = data
-        this.setPagedRankData()
-      } catch (e) {
-        this.$message
-          ? this.$message.error('获取排行榜失败')
-          : alert('获取排行榜失败')
-      }
-    },
-    setPagedRankData() {
-      const start = (this.rankCurrentPage - 1) * this.rankPageSize
-      this.pagedRankData = this.rankSortedData.slice(
-        start,
-        start + this.rankPageSize
-      )
-    },
-    handleRankPageChange(page) {
-      this.rankCurrentPage = page
-      this.setPagedRankData()
-    },
-    getImageUrl(imagePath) {
-      if (!imagePath) return ''
-      if (/^https?:\/\//.test(imagePath)) {
-        return imagePath
-      }
-      return imagePath.startsWith('/') ? imagePath : '/' + imagePath
-    },
-    handleImageClick(imgUrl) {
-      this.previewImage = imgUrl
-      this.previewVisible = true
-    },
-  },
+import { ElMessage } from 'element-plus'
+
+const rankAllData = ref([])
+const rankSortedData = ref([])
+const rankPageSize = ref(10)
+const rankCurrentPage = ref(1)
+const previewVisible = ref(false)
+const previewImage = ref('')
+
+const pagedRankData = computed(() => {
+  const start = (rankCurrentPage.value - 1) * rankPageSize.value
+  return rankSortedData.value.slice(start, start + rankPageSize.value)
+})
+
+const router = useRouter()
+
+function goToProfile(id) {
+  router.push(`/profile/${id}`)
 }
+
+async function fetchRankData() {
+  try {
+    const res = await axios.get('/api/score/contest-scores')
+    let data = res.data.data || []
+    // 保留原有 totalScore 计算
+    const promises = data.map(async (item) => {
+      const resp = await axios.get('/api/score/contest-score-count', {
+        params: { identityId: item.identityId },
+      })
+      const count = resp.data.data || 0
+      item.totalScore += count * 10000000
+      item.contestCount = count
+      // 新增：获取该用户所有 contest 课题成绩和图片
+      console.log('请求contest成绩 identityId:', item.identityId)
+      const contestResp = await axios.get(
+        '/api/score/contest/contest-scores-by-user',
+        {
+          params: { identityId: item.identityId },
+        }
+      )
+      item.contestScores = contestResp.data.data || []
+      return item
+    })
+    data = await Promise.all(promises)
+    data.sort((a, b) => b.totalScore - a.totalScore)
+    rankAllData.value = data
+    rankSortedData.value = data
+  } catch (e) {
+    ElMessage({ message: '获取排行榜失败', type: 'error' })
+  }
+}
+
+function handleRankPageChange(page) {
+  rankCurrentPage.value = page
+}
+
+function getImageUrl(imagePath) {
+  if (!imagePath) return ''
+  if (/^https?:\/\//.test(imagePath)) {
+    return imagePath
+  }
+  return imagePath.startsWith('/') ? imagePath : '/' + imagePath
+}
+
+function handleImageClick(imgUrl) {
+  previewImage.value = imgUrl
+  previewVisible.value = true
+}
+
+onMounted(() => {
+  fetchRankData()
+})
 </script>
 
 <style scoped>
