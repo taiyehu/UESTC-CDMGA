@@ -164,202 +164,172 @@
   </div>
 </template>
 
-<script>
-import {
-  fetchAllCourseData,
-  deleteCourseData,
-  // uploadCourseData,
-} from '@/api/course'
+<script lang="ts" setup>
+import { ref, reactive, onMounted } from 'vue'
+import { fetchAllCourseData, deleteCourseData } from '@/api/course'
 import dayjs from 'dayjs'
 import axios from 'axios'
 import { compressImage } from '@/components/imageCompressor'
+import { ElMessage } from 'element-plus'
 
-function deleteAndCloseCourse() {
-  deleteCourse(selectedCourse.id)
-  confirmDialogVisible = false
+const courses = ref<any[]>([])
+const dialogVisible = ref(false)
+const selectedCourse = ref<any>({})
+const showUploadForm = ref(false)
+const confirmDialogVisible = ref(false)
+const currentPage = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+const newCourse = reactive<any>({
+  title: '',
+  category: '',
+  start_time: '',
+  end_time: '',
+  description: '',
+  image: '',
+})
+const imageFileList = ref<any[]>([])
+const previewImage = ref('')
+const previewVisible = ref(false)
+
+function getImageUrl(imagePath?: string) {
+  console.log('原始图片路径:', imagePath)
+  if (!imagePath) return ''
+  if (/^https?:\/\//.test(imagePath)) return imagePath
+  return imagePath.startsWith('/') ? imagePath : '/' + imagePath
 }
 
-export default {
-  data() {
-    return {
-      courses: [], // 存储课题信息
-      dialogVisible: false, // 控制弹窗显示
-      selectedCourse: {}, // 存储当前查看的课题信息
-      showUploadForm: false, // 控制上传课题表单显示
-      confirmDialogVisible: false,
-      currentPage: 1,
-      pageSize: 10,
-      total: 0,
-      newCourse: {
-        title: '',
-        category: '',
-        start_time: '',
-        end_time: '',
-        description: '',
-        image: '',
-      },
-      imageFileList: [], // 存储上传的图片文件
+function handleImageClick(imgUrl: string) {
+  previewImage.value = imgUrl
+  previewVisible.value = true
+}
+
+async function fetchCourses() {
+  try {
+    const response = await fetchAllCourseData({ page: currentPage.value, size: pageSize.value })
+    courses.value = response.data.list || []
+    total.value = response.data.total || 0
+  } catch (error) {
+    console.error('获取课题信息失败:', error)
+    courses.value = []
+  }
+}
+
+function handlePageChange(page: number) {
+  currentPage.value = page
+  fetchCourses()
+}
+
+function openDialog(course: any) {
+  selectedCourse.value = {
+    ...course,
+    start_time: dayjs(course.start_time).format('YYYY-MM-DD HH:mm:ss'),
+    end_time: dayjs(course.end_time).format('YYYY-MM-DD HH:mm:ss'),
+    updated_at: dayjs(course.updated_at).format('YYYY-MM-DD HH:mm:ss'),
+  }
+  dialogVisible.value = true
+}
+
+function closeDialog() {
+  dialogVisible.value = false
+}
+
+function deleteConfirm(course: any) {
+  selectedCourse.value = { ...course }
+  confirmDialogVisible.value = true
+}
+
+async function deleteCourse(courseId: any) {
+  try {
+    const response = await deleteCourseData(courseId)
+    if (response.status === 204) {
+      ElMessage({ message: '课题删除成功', type: 'success' })
+      await fetchCourses()
+    } else {
+      ElMessage({ message: '删除失败', type: 'error' })
     }
-  },
-  methods: {
-    getImageUrl(imagePath) {
-      console.log('原始图片路径:', imagePath)
-      if (!imagePath) return ''
-      if (/^https?:\/\//.test(imagePath)) {
-        return imagePath
-      }
-      // 只返回相对路径，nginx会自动代理
-      return imagePath.startsWith('/') ? imagePath : '/' + imagePath
-    },
-    handleImageClick(imgUrl) {
-      this.previewImage = imgUrl
-      this.previewVisible = true
-    },
-    async fetchCourses() {
-      try {
-        const response = await fetchAllCourseData({
-          page: this.currentPage,
-          size: this.pageSize,
-        })
-        this.courses = response.data.list || []
-        this.total = response.data.total || 0
-      } catch (error) {
-        console.error('获取课题信息失败:', error)
-        this.courses = []
-      }
-    },
-    handlePageChange(page) {
-      this.currentPage = page
-      this.fetchCourses()
-    },
-    openDialog(course) {
-      this.selectedCourse = {
-        ...course,
-        start_time: dayjs(course.start_time).format('YYYY-MM-DD HH:mm:ss'),
-        end_time: dayjs(course.end_time).format('YYYY-MM-DD HH:mm:ss'),
-        updated_at: dayjs(course.updated_at).format('YYYY-MM-DD HH:mm:ss'),
-      }
-      this.dialogVisible = true
-    },
-    closeDialog() {
-      this.dialogVisible = false
-    },
-    deleteConfirm(course) {
-      this.selectedCourse = {
-        ...course,
-      }
-      this.confirmDialogVisible = true
-    },
-    async deleteCourse(courseId) {
-      try {
-        const response = await deleteCourseData(courseId)
-        if (response.status === 204) {
-          this.$message.success('课题删除成功')
-          await this.fetchCourses()
-        } else {
-          this.$message.error('删除失败')
-        }
-      } catch (error) {
-        console.error('删除课题失败:', error)
-        this.$message.error('删除失败')
-      }
-    },
-    // 打开上传表单
-    openUploadDialog() {
-      this.showUploadForm = true
-    },
-
-    // 图片上传成功后的回调
-    handleImageUploadSuccess(response, file, fileList) {
-      // 直接打印 response，确认结构
-      console.log('图片上传返回：', response)
-
-      // 兼容 axios 和原生结构
-      let url = ''
-      if (response && response.code === 0) {
-        url = response.data
-      } else if (response && response.data && response.data.code === 0) {
-        url = response.data.data
-      }
-
-      if (url) {
-        this.newCourse.image = url
-        this.imageFileList = fileList
-        this.$message.success('图片上传成功')
-      } else {
-        this.$message.error(
-          response.message ||
-            (response.data && response.data.message) ||
-            '图片上传失败'
-        )
-      }
-    },
-
-    // 上传前自动压缩图片
-    async beforeImageUpload(file) {
-      try {
-        if (!file.type.startsWith('image/')) {
-          this.$message.error('只能上传图片文件')
-          return false
-        }
-        const compressed = await compressImage(file)
-        return compressed
-      } catch (err) {
-        this.$message.error('图片压缩失败: ' + err.message)
-        return false
-      }
-    },
-
-    // 上传课题信息，包括图片URL
-    async uploadCourse() {
-      console.log('提交前的newCourse:', this.newCourse)
-      const formattedStartTime = dayjs(this.newCourse.start_time).format(
-        'YYYY-MM-DDTHH:mm:ss'
-      )
-      const formattedEndTime = dayjs(this.newCourse.end_time).format(
-        'YYYY-MM-DDTHH:mm:ss'
-      )
-      const now = dayjs().format('YYYY-MM-DDTHH:mm:ss')
-      if (
-        !this.newCourse.title ||
-        !this.newCourse.category ||
-        !this.newCourse.start_time ||
-        !this.newCourse.end_time ||
-        !this.newCourse.description ||
-        !this.newCourse.image
-      ) {
-        this.$message.error('请填写所有必填项')
-        return
-      }
-
-      try {
-        const response = await axios.post('/api/course/post', {
-          title: this.newCourse.title,
-          category: this.newCourse.category,
-          startTime: formattedStartTime,
-          endTime: formattedEndTime,
-          description: this.newCourse.description,
-          image: this.newCourse.image,
-          createTime: now,
-          updateTime: now,
-        })
-        console.log('课题上传响应：', response)
-        if (response.data.code === 0) {
-          this.$message.success('课题上传成功')
-          this.showUploadForm = false
-          await this.fetchCourses()
-        } else {
-          this.$message.error(response.data.message || '课题上传失败')
-        }
-      } catch (error) {
-        this.$message.error('上传过程中发生错误')
-      }
-    },
-  },
-  mounted() {
-    this.fetchCourses() // 页面加载时获取课题信息
-  },
+  } catch (error) {
+    console.error('删除课题失败:', error)
+    ElMessage({ message: '删除失败', type: 'error' })
+  }
 }
+
+function openUploadDialog() {
+  showUploadForm.value = true
+}
+
+function handleImageUploadSuccess(response: any, file: any, fileListParam: any[]) {
+  console.log('图片上传返回：', response)
+  let url = ''
+  if (response && response.code === 0) {
+    url = response.data
+  } else if (response && response.data && response.data.code === 0) {
+    url = response.data.data
+  }
+  if (url) {
+    newCourse.image = url
+    imageFileList.value = fileListParam
+    ElMessage({ message: '图片上传成功', type: 'success' })
+  } else {
+    ElMessage({ message: response.message || (response.data && response.data.message) || '图片上传失败', type: 'error' })
+  }
+}
+
+async function beforeImageUpload(file: any) {
+  try {
+    if (!file.type.startsWith('image/')) {
+      ElMessage({ message: '只能上传图片文件', type: 'error' })
+      return false
+    }
+    const compressed = await compressImage(file)
+    return compressed
+  } catch (err: any) {
+    ElMessage({ message: '图片压缩失败: ' + err.message, type: 'error' })
+    return false
+  }
+}
+
+async function uploadCourse() {
+  console.log('提交前的newCourse:', newCourse)
+  const formattedStartTime = dayjs(newCourse.start_time).format('YYYY-MM-DDTHH:mm:ss')
+  const formattedEndTime = dayjs(newCourse.end_time).format('YYYY-MM-DDTHH:mm:ss')
+  const now = dayjs().format('YYYY-MM-DDTHH:mm:ss')
+  if (!newCourse.title || !newCourse.category || !newCourse.start_time || !newCourse.end_time || !newCourse.description || !newCourse.image) {
+    ElMessage({ message: '请填写所有必填项', type: 'error' })
+    return
+  }
+  try {
+    const response = await axios.post('/api/course/post', {
+      title: newCourse.title,
+      category: newCourse.category,
+      startTime: formattedStartTime,
+      endTime: formattedEndTime,
+      description: newCourse.description,
+      image: newCourse.image,
+      createTime: now,
+      updateTime: now,
+    })
+    console.log('课题上传响应：', response)
+    if (response.data.code === 0) {
+      ElMessage({ message: '课题上传成功', type: 'success' })
+      showUploadForm.value = false
+      await fetchCourses()
+    } else {
+      ElMessage({ message: response.data.message || '课题上传失败', type: 'error' })
+    }
+  } catch (error) {
+    ElMessage({ message: '上传过程中发生错误', type: 'error' })
+  }
+}
+
+async function deleteAndCloseCourse() {
+  await deleteCourse(selectedCourse.value.id)
+  confirmDialogVisible.value = false
+}
+
+onMounted(() => {
+  fetchCourses()
+})
 </script>
 
 <style scoped>
