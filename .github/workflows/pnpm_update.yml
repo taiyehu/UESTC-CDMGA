@@ -1,7 +1,13 @@
-name: pnpm-update
+name: pnpm-dual-deploy
 
 on:
   workflow_call:
+    inputs:
+      channel:
+        description: 'Branch or channel name to build/deploy'
+        required: false
+        type: string
+        default: 'dev'
     secrets:
       SSH_HOST: {}
       SSH_SUDO: {}
@@ -9,77 +15,132 @@ on:
       SSH_PORT: {}
   workflow_dispatch:
 
+env:
+  PROJECT_DIR: vueproject
+  TARGET_DIR: /var/www/CDMGA-vue
+
 jobs:
-  pnpm-build-deploy:
+  build-deploy:
     name: pnpm build
     runs-on: ubuntu-22.04
 
     defaults:
       run:
-        working-directory: vueproject
+        working-directory: ${{ env.PROJECT_DIR }}
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.channel }}
 
-    - name: Check pnpm lockfile
-      run: ls -la pnpm-lock.yaml
+      - name: Show channel
+        run: echo "Using channel: ${{ inputs.channel }}"
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'pnpm'
-        cache-dependency-path: vueproject/pnpm-lock.yaml
+      - name: List json file  # 帮助确认JAR包的位置和名称
+        run: ls -la pnpm-lock.yaml
 
-    - name: Enable pnpm
-      run: corepack enable
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: ${{ env.PROJECT_DIR }}pnpm-lock.yaml
 
-    - name: Install dependencies
-      run: pnpm install --frozen-lockfile
+      - name: Enable pnpm
+        run: corepack enable pnpm
 
-    - name: Build project
-      run: pnpm run build
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-    - name: List build output
-      run: ls -la dist/
+      # 👉 根据分支区分构建
+      - name: Build project
+        run: |
+            pnpm run build
 
-    - name: Upload dist to server
-      uses: appleboy/scp-action@v1.0.0
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_SUDO }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: ${{ secrets.SSH_PORT || 22 }}
-        source: "vueproject/dist"
-        target: /var/www/
-        strip_components: 1
+      - name: List build output  # 帮助确认构建产物的位置
+        run: ls -la dist/  # 通常Vue项目构建输出到dist目录
 
-    - name: Create backup timestamp
-      id: backup-time
-      run: echo "date=$(date +'%Y%m%d_%H%M%S')" >> $GITHUB_OUTPUT
+      - name: Create release archive
+        run: |
+          tar -czf dist.tar.gz dist
 
-    - name: Deploy on server
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_SUDO }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: ${{ secrets.SSH_PORT || 22 }}
-        script: |
-          set -e
+      - name: Upload dist
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_SUDO }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          source: "${{ env.PROJECT_DIR }}/dist.tar.gz"
+          target: /var/www/ 
 
-          sudo mkdir -p /var/www/backup
 
-          if [ -d "/var/www/CDMGA-ui" ]; then
-            BACKUP_FILE="/var/www/backup/CDMGA-ui_${{ steps.backup-time.outputs.date }}.tar.gz"
-            sudo tar -czf "$BACKUP_FILE" /var/www/CDMGA-ui
-            sudo rm -rf /var/www/CDMGA-ui
-          fi
+      - name: Deploy on server (atomic)
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_SUDO }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            set -e
 
-          sudo mv /var/www/dist /var/www/CDMGA-ui
+            BRANCH="${{ inputs.channel }}"
+            DATE=$(date +%Y%m%d_%H%M%S)
 
-          sudo chown -R www-data:www-data /var/www/CDMGA-ui
-          sudo chmod -R 755 /var/www/CDMGA-ui
+            BASE_DIR="${TARGET_DIR}"
+            RELEASE_BASE="$BASE_DIR/release_${BRANCH}"
+            RELEASE_DIR="$RELEASE_BASE/$DATE"
+            sudo mkdir -p "$RELEASE_BASE"
+            sudo mkdir -p "$RELEASE_DIR"
 
-          sudo systemctl restart nginx
+            REMOTE_ARCHIVE="/var/www/dist.tar.gz"
+            if [ -f "$REMOTE_ARCHIVE" ]; then
+              # Extract archive into release dir and strip the top-level 'dist' folder
+              # so the release dir directly contains the site files.
+              sudo tar -xzf "$REMOTE_ARCHIVE" -C "$RELEASE_DIR" --strip-components=1
+            else
+              echo "⚠️ Remote archive $REMOTE_ARCHIVE not found"
+              exit 1
+            fi
+
+            # No nested 'dist' handling and no backup of the symlink: symlink rotation
+            # is intended for zero-downtime updates. Point current-<branch> directly
+            # to the release directory contents.
+
+            CURRENT_LINK="$BASE_DIR/current_${BRANCH}"
+            sudo ln -sfn "$RELEASE_DIR" "$CURRENT_LINK"
+
+            # --- Cleanup old releases ---
+            # Rules:
+            # - dev: remove releases older than 5 days, but always keep the newest 6 releases
+            # - stable/other: remove everything except the newest 6 releases
+            MAX_KEEP=6
+            if [ -d "$RELEASE_BASE" ]; then
+              mapfile -t releases < <(ls -1d "$RELEASE_BASE"/* 2>/dev/null | grep -E '/[0-9]{8}_[0-9]{6}$' | sort -r)
+              total=${#releases[@]}
+              if [ "$total" -gt "$MAX_KEEP" ]; then
+                age_threshold=$(( $(date +%s) - 5*24*3600 ))
+                for idx in "${!releases[@]}"; do
+                  if [ "$idx" -lt "$MAX_KEEP" ]; then
+                    continue
+                  fi
+                  dir="${releases[$idx]}"
+                  if [ "$BRANCH" = "dev" ]; then
+                    # only delete if older than 5 days
+                    if [ "$(stat -c %Y "$dir")" -lt "$age_threshold" ]; then
+                      sudo rm -rf "$dir"
+                    fi
+                  else
+                    # for stable and other branches delete beyond the newest MAX_KEEP
+                    sudo rm -rf "$dir"
+                  fi
+                done
+              fi
+            fi
+
+            sudo chown -R www-data:www-data "$BASE_DIR"
+            sudo rm -f "$REMOTE_ARCHIVE"
+
+            echo "✅ Deployed $BRANCH to $CURRENT_LINK"

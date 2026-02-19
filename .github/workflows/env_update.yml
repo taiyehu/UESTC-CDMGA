@@ -63,6 +63,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
+            sudo mkdir -p /etc/nginx/snippets
+            sudo cp /opt/webserver/script/cdmga-assets.conf /etc/nginx/snippets/cdmga-assets.conf
             sudo cp /opt/webserver/script/cdmga_nginx.conf /etc/nginx/sites-available/
 
             # 删除默认站点
