@@ -98,36 +98,36 @@
   </div>
 </template>
 
-<script setup>
+<script lang="ts" setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
-const rankAllData = ref([])
-const rankSortedData = ref([])
-const rankPageSize = ref(10)
-const rankCurrentPage = ref(1)
-const previewVisible = ref(false)
-const previewImage = ref('')
+const rankAllData = ref<any[]>([])
+const rankSortedData = ref<any[]>([])
+const rankPageSize = ref<number>(10)
+const rankCurrentPage = ref<number>(1)
+const previewVisible = ref<boolean>(false)
+const previewImage = ref<string>('')
 
-const pagedRankData = computed(() => {
+const pagedRankData = computed<any[]>(() => {
   const start = (rankCurrentPage.value - 1) * rankPageSize.value
   return rankSortedData.value.slice(start, start + rankPageSize.value)
 })
 
 const router = useRouter()
 
-function goToProfile(id) {
+function goToProfile(id: string | number): void {
   router.push(`/profile/${id}`)
 }
 
-async function fetchRankData() {
+async function fetchRankData(): Promise<void> {
   try {
     const res = await axios.get('/api/score/contest-scores')
     let data = res.data.data || []
     // 保留原有 totalScore 计算
-    const promises = data.map(async (item) => {
+    const promises = data.map(async (item: any) => {
       const resp = await axios.get('/api/score/contest-score-count', {
         params: { identityId: item.identityId },
       })
@@ -146,7 +146,7 @@ async function fetchRankData() {
       return item
     })
     data = await Promise.all(promises)
-    data.sort((a, b) => b.totalScore - a.totalScore)
+    data.sort((a: any, b: any) => b.totalScore - a.totalScore)
     rankAllData.value = data
     rankSortedData.value = data
   } catch (e) {
@@ -154,11 +154,11 @@ async function fetchRankData() {
   }
 }
 
-function handleRankPageChange(page) {
+function handleRankPageChange(page: number): void {
   rankCurrentPage.value = page
 }
 
-function getImageUrl(imagePath) {
+function getImageUrl(imagePath?: string): string {
   if (!imagePath) return ''
   if (/^https?:\/\//.test(imagePath)) {
     return imagePath
@@ -166,7 +166,7 @@ function getImageUrl(imagePath) {
   return imagePath.startsWith('/') ? imagePath : '/' + imagePath
 }
 
-function handleImageClick(imgUrl) {
+function handleImageClick(imgUrl: string): void {
   previewImage.value = imgUrl
   previewVisible.value = true
 }

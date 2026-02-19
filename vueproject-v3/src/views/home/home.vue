@@ -157,67 +157,68 @@
   </div>
 </template>
 
-<script setup>
+
+<script lang="ts" setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import {
   ArrowLeft as ElIconArrowLeft,
   ArrowRight as ElIconArrowRight,
-} from '@element-plus/icons'
+} from '@element-plus/icons-vue'
 import { fetchCourseData } from '@/api/course'
 
-const bannerList = ref([])
-const loading = ref(true)
-const error = ref(null)
-const currentIndex = ref(0)
-const carouselTimer = ref(null)
-const previewVisible = ref(false)
-const controlsVisible = ref(false)
-const pauseCounter = ref(0)
-const imagePreviewVisible = ref(false)
-const imagePreviewUrl = ref('')
+const bannerList = ref<any[]>([])
+const loading = ref<boolean>(true)
+const error = ref<string | null>(null)
+const currentIndex = ref<number>(0)
+const carouselTimer = ref<number | null>(null)
+const previewVisible = ref<boolean>(false)
+const controlsVisible = ref<boolean>(false)
+const pauseCounter = ref<number>(0)
+const imagePreviewVisible = ref<boolean>(false)
+const imagePreviewUrl = ref<string>('')
 
-const currentCourse = computed(() => {
+const currentCourse = computed<any | null>(() => {
   const item = bannerList.value[currentIndex.value]
   return item && item.type === 'course' ? item.data || null : null
 })
 
-function previewImage(imgUrl) {
+function previewImage(imgUrl: string): void {
   imagePreviewUrl.value = getImageUrl(imgUrl)
   imagePreviewVisible.value = true
 }
 
-async function initBannerList() {
+async function initBannerList(): Promise<void> {
   try {
     const response = await fetchCourseData()
     let courses = response.data || []
     courses = courses.sort(
-      (a, b) => new Date(b.startTime) - new Date(a.startTime)
+      (a: any, b: any) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
     )
     const latestCourse = courses.length ? courses[0] : null
-    const bannerArr = []
+    const bannerArr: any[] = []
     if (latestCourse) {
       bannerArr.push({ type: 'course', data: latestCourse })
     }
     bannerArr.push({ type: 'activity', data: {} })
     bannerList.value = bannerArr
     startCarousel()
-  } catch (err) {
+  } catch (err: any) {
     error.value = err.message
   } finally {
     loading.value = false
   }
 }
 
-function startCarousel() {
+function startCarousel(): void {
   clearCarouselTimer()
   if (bannerList.value.length > 1) {
     carouselTimer.value = window.setInterval(() => {
       nextCard()
-    }, 4000)
+    }, 4000) as unknown as number
   }
 }
 
-function pauseCarousel() {
+function pauseCarousel(): void {
   if (pauseCounter.value === 0) {
     clearCarouselTimer()
     controlsVisible.value = true
@@ -225,7 +226,7 @@ function pauseCarousel() {
   pauseCounter.value++
 }
 
-function resumeCarousel(force = false) {
+function resumeCarousel(force = false): void {
   if (force) {
     pauseCounter.value = 0
   } else if (pauseCounter.value > 0) {
@@ -237,20 +238,20 @@ function resumeCarousel(force = false) {
   }
 }
 
-function clearCarouselTimer() {
+function clearCarouselTimer(): void {
   if (carouselTimer.value) {
     clearInterval(carouselTimer.value)
     carouselTimer.value = null
   }
 }
 
-function nextCard() {
+function nextCard(): void {
   if (bannerList.value.length) {
     currentIndex.value = (currentIndex.value + 1) % bannerList.value.length
   }
 }
 
-function prevCard() {
+function prevCard(): void {
   if (bannerList.value.length) {
     currentIndex.value =
       (currentIndex.value - 1 + bannerList.value.length) %
@@ -258,23 +259,23 @@ function prevCard() {
   }
 }
 
-function handleImageClick(imgUrl) {
+function handleImageClick(imgUrl: string): void {
   pauseCarousel()
   previewVisible.value = true
 }
 
-function formatDate(date) {
+function formatDate(date: any): string {
   const d = new Date(date)
-  const options = { year: 'numeric', month: 'long', day: 'numeric' }
+  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' }
   return d.toLocaleDateString('zh-CN', options)
 }
 
-function formatDateTime(dateTime) {
+function formatDateTime(dateTime?: any): string {
   if (!dateTime) return ''
   return new Date(dateTime).toLocaleString()
 }
 
-function getImageUrl(imagePath) {
+function getImageUrl(imagePath?: string): string {
   if (!imagePath) return ''
   if (/^https?:\/\//.test(imagePath)) {
     return imagePath

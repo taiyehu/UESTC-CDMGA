@@ -55,33 +55,33 @@
   </div>
 </template>
 
-<script setup>
+<script lang="ts" setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
-const rankAllData = ref([])
-const rankSortedData = ref([])
-const rankPageSize = ref(10)
-const rankCurrentPage = ref(1)
+const rankAllData = ref<any[]>([])
+const rankSortedData = ref<any[]>([])
+const rankPageSize = ref<number>(10)
+const rankCurrentPage = ref<number>(1)
 
-const pagedRankData = computed(() => {
+const pagedRankData = computed<any[]>(() => {
   const start = (rankCurrentPage.value - 1) * rankPageSize.value
   return rankSortedData.value.slice(start, start + rankPageSize.value)
 })
 
 const router = useRouter()
 
-function goToProfile(id) {
+function goToProfile(id: string | number): void {
   router.push(`/profile/${id}`)
 }
 
-async function fetchRankData() {
+async function fetchRankData(): Promise<void> {
   try {
     const res = await axios.get('/api/score/user-total-scores')
     let data = res.data.data || []
-    data.sort((a, b) => b.totalScore - a.totalScore)
+    data.sort((a: any, b: any) => b.totalScore - a.totalScore)
     rankAllData.value = data
     rankSortedData.value = data
   } catch (e) {
@@ -89,11 +89,11 @@ async function fetchRankData() {
   }
 }
 
-function handleRankPageChange(page) {
+function handleRankPageChange(page: number): void {
   rankCurrentPage.value = page
 }
 
-function getImageUrl(imagePath) {
+function getImageUrl(imagePath?: string): string {
   if (!imagePath) return ''
   if (/^https?:\/\//.test(imagePath)) {
     return imagePath

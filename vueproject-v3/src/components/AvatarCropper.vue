@@ -49,61 +49,70 @@
   </el-dialog>
 </template>
 
-<script>
-import { $on, $off, $once, $emit } from '../utils/gogocodeTransfer'
+<script lang="ts" setup>
+import { ref, reactive, computed, watch } from 'vue'
 import { VueCropper } from 'vue-cropper'
-export default {
-  name: 'AvatarCropper',
-  components: { VueCropper },
-  props: {
-    visible: Boolean,
-    imgUrl: String,
-  },
-  data() {
-    return {
-      previewUrl: '',
-      dialogWidth: Math.round((window.innerWidth * 2) / 3) + 'px',
-      dialogHeight: Math.round((window.innerHeight * 2) / 3) + 'px',
-      cropWidth: Math.round((window.innerWidth * 2) / 3) - 40,
-      cropHeight: Math.round((window.innerHeight * 2) / 3) - 40,
-    }
-  },
-  methods: {
-    updatePreview(data) {
-      this.previewUrl = data.url
-    },
-    scale(val) {
-      const c = this.$refs.cropper
-      if (c && typeof c.changeScale === 'function') c.changeScale(val)
-    },
-    rotate(deg) {
-      const c = this.$refs.cropper
-      if (c && typeof c.rotate === 'function') c.rotate(deg)
-      else if (c && typeof c.rotateLeft === 'function')
-        deg < 0 ? c.rotateLeft() : c.rotateRight()
-    },
-    confirm() {
-      const c = this.$refs.cropper
-      if (c && typeof c.getCropBlob === 'function') {
-        c.getCropBlob((blob) => {
-          $emit(this, 'crop', blob)
-          this.close()
-        })
-      } else {
-        console.error('裁剪组件未正确导出 getCropBlob 方法')
-      }
-    },
-    close() {
-      $emit(this, 'update:visible', false)
-    },
-  },
-  watch: {
-    imgUrl() {
-      this.previewUrl = ''
-    },
-  },
-  emits: ['crop', 'update:visible'],
+
+const props = defineProps<{
+  visible?: boolean
+  imgUrl?: string
+}>()
+
+const emit = defineEmits<{
+  (e: 'crop', blob: Blob): void
+  (e: 'update:visible', value: boolean): void
+}>()
+
+const cropper = ref<any>(null)
+const previewUrl = ref<string>('')
+const dialogWidth = ref<string>(Math.round((window.innerWidth * 2) / 3) + 'px')
+const dialogHeight = ref<string>(Math.round((window.innerHeight * 2) / 3) + 'px')
+const cropWidth = ref<number>(Math.round((window.innerWidth * 2) / 3) - 40)
+const cropHeight = ref<number>(Math.round((window.innerHeight * 2) / 3) - 40)
+
+// proxy for v-model:visible in template
+const isModalVisible = computed<boolean>({
+  get: () => !!props.visible,
+  set: (val: boolean) => emit('update:visible', val),
+})
+
+function updatePreview(data: any): void {
+  previewUrl.value = data.url
 }
+
+function scale(val: number): void {
+  const c = cropper.value
+  if (c && typeof c.changeScale === 'function') c.changeScale(val)
+}
+
+function rotate(deg: number): void {
+  const c = cropper.value
+  if (c && typeof c.rotate === 'function') c.rotate(deg)
+  else if (c && typeof c.rotateLeft === 'function') (deg < 0 ? c.rotateLeft() : c.rotateRight())
+}
+
+function confirm(): void {
+  const c = cropper.value
+  if (c && typeof c.getCropBlob === 'function') {
+    c.getCropBlob((blob: Blob) => {
+      emit('crop', blob)
+      close()
+    })
+  } else {
+    console.error('裁剪组件未正确导出 getCropBlob 方法')
+  }
+}
+
+function close(): void {
+  emit('update:visible', false)
+}
+
+watch(
+  () => props.imgUrl,
+  () => {
+    previewUrl.value = ''
+  }
+)
 </script>
 
 <style scoped>

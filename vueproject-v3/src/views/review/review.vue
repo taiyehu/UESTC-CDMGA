@@ -150,7 +150,7 @@
 
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'
-import { Edit as ElIconEdit, Delete as ElIconDelete } from '@element-plus/icons'
+import { Edit as ElIconEdit, Delete as ElIconDelete } from '@element-plus/icons-vue'
 import { fetchUnScoredScores, handleUpdateScore } from '@/api/score'
 import dayjs from 'dayjs'
 import axios from 'axios'

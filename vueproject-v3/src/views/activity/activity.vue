@@ -191,36 +191,36 @@
   </div>
 </template>
 
-<script setup>
+<script lang="ts" setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
-const activities = ref([])
-const assocCourses = ref([])
-const activitiesScore = ref([])
-const loading = ref(true)
-const error = ref(null)
-const rankAllData = ref([])
-const rankSortedData = ref([])
-const rankPageSize = ref(10)
-const rankCurrentPage = ref(1)
-const previewVisible = ref(false)
-const previewImage = ref('')
-const viewDialogVisible = ref(false)
-const viewCourseVisible = ref(false)
-const viewScoreBoardVisible = ref(false)
-const currentActivity = ref(null)
+const activities = ref<any[]>([])
+const assocCourses = ref<any[]>([])
+const activitiesScore = ref<any[]>([])
+const loading = ref<boolean>(true)
+const error = ref<string | null>(null)
+const rankAllData = ref<any[]>([])
+const rankSortedData = ref<any[]>([])
+const rankPageSize = ref<number>(10)
+const rankCurrentPage = ref<number>(1)
+const previewVisible = ref<boolean>(false)
+const previewImage = ref<string>('')
+const viewDialogVisible = ref<boolean>(false)
+const viewCourseVisible = ref<boolean>(false)
+const viewScoreBoardVisible = ref<boolean>(false)
+const currentActivity = ref<any | null>(null)
 
-const pagedRankData = computed(() => {
+const pagedRankData = computed<any[]>(() => {
   const start = (rankCurrentPage.value - 1) * rankPageSize.value
   return rankSortedData.value.slice(start, start + rankPageSize.value)
 })
 
 const router = useRouter()
 
-async function fetchActivities() {
+async function fetchActivities(): Promise<void> {
   try {
     const response = await axios.get('/api/activity/list')
     if (response.data.list) {
@@ -230,16 +230,17 @@ async function fetchActivities() {
     } else {
       activities.value = []
     }
-  } catch (err) {
+  } catch (err: any) {
     error.value = err.message
   } finally {
     loading.value = false
   }
 }
 
-async function fetchAssocCourses() {
+async function fetchAssocCourses(): Promise<void> {
   try {
-    const id = currentActivity.value.id
+    const id = currentActivity.value?.id
+    if (!id) return
     const response = await axios.get(`/api/activity/assoc-activity-courses/${id}`)
     if (response.data.list) {
       assocCourses.value = response.data.list
@@ -248,38 +249,38 @@ async function fetchAssocCourses() {
       assocCourses.value = response.data
       viewCourseVisible.value = true
     }
-  } catch (err) {
+  } catch (err: any) {
     error.value = err.message
   } finally {
     loading.value = false
   }
 }
 
-function handleImageClick(imgUrl) {
+function handleImageClick(imgUrl: string): void {
   previewImage.value = imgUrl
   previewVisible.value = true
 }
 
-function handleCourseView(activity) {
+function handleCourseView(activity: any): void {
   currentActivity.value = activity
   assocCourses.value = []
   fetchAssocCourses()
   viewCourseVisible.value = true
 }
 
-function handleView(activity) {
+function handleView(activity: any): void {
   currentActivity.value = activity
   viewDialogVisible.value = true
 }
 
-function formatDate(date) {
+function formatDate(date: any): string {
   if (!date) return '-'
   const d = new Date(date)
   const options = { year: 'numeric', month: 'long', day: 'numeric' }
   return d.toLocaleDateString('zh-CN', options)
 }
 
-function getImageUrl(imagePath) {
+function getImageUrl(imagePath?: string): string {
   if (!imagePath) return ''
   if (/^https?:\/\//.test(imagePath)) {
     return imagePath
@@ -287,12 +288,13 @@ function getImageUrl(imagePath) {
   return imagePath.startsWith('/') ? imagePath : '/' + imagePath
 }
 
-function getFileName(filePath) {
+function getFileName(filePath?: string): string {
   if (!filePath) return ''
-  return filePath.split('/').pop()
+  return filePath.split('/').pop() || ''
 }
 
-function downloadFile(filePath) {
+function downloadFile(filePath?: string): void {
+  if (!filePath) return
   const url = getImageUrl(filePath)
   const a = document.createElement('a')
   a.href = url
@@ -302,15 +304,16 @@ function downloadFile(filePath) {
   document.body.removeChild(a)
 }
 
-function goToProfile(id) {
+function goToProfile(id: string | number): void {
   router.push(`/profile/${id}`)
 }
 
-async function fetchRankData() {
+async function fetchRankData(): Promise<void> {
   try {
+    if (!currentActivity.value) return
     const res = await axios.get(`/api/score/activity-totalScores/${currentActivity.value.id}`)
     let data = res.data.data || []
-    const promises = data.map(async (item) => {
+    const promises = data.map(async (item: any) => {
       const resp = await axios.get('/api/score/activity-scores', {
         params: {
           activityId: currentActivity.value.id,
@@ -325,7 +328,7 @@ async function fetchRankData() {
       return item
     })
     data = await Promise.all(promises)
-    data.sort((a, b) => b.totalScore - a.totalScore)
+    data.sort((a: any, b: any) => b.totalScore - a.totalScore)
     rankAllData.value = data
     rankSortedData.value = data
   } catch (e) {
@@ -333,11 +336,11 @@ async function fetchRankData() {
   }
 }
 
-function handleRankPageChange(page) {
+function handleRankPageChange(page: number): void {
   rankCurrentPage.value = page
 }
 
-function handleScoreBoardView(activity) {
+function handleScoreBoardView(activity: any): void {
   currentActivity.value = activity
   fetchRankData()
   viewScoreBoardVisible.value = true

@@ -257,7 +257,7 @@
             v-if="loadingMap[activity.id]"
             style="text-align: center; padding: 16px"
           >
-            <el-spinner /> 加载中...
+            <span class="spinner" aria-hidden="true"></span> 加载中...
           </div>
 
           <div
@@ -690,6 +690,25 @@ watch(() => route.params.id, () => {
 img[alt="课题图片"],
 img[alt="成绩图片"] {
   cursor: pointer;
+}
+
+/* simple spinner used for loadingMap indicators */
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  border-top-color: #409eff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
 

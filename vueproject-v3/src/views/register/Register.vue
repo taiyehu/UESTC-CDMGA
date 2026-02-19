@@ -32,11 +32,11 @@
       <div class="btnGroup">
         <el-button
           type="primary"
-          @click="submitForm('ruleForm')"
+          @click="submitForm()"
           :loading="loading"
           >提交</el-button
         >
-        <el-button @click="resetForm('ruleForm')">重置</el-button>
+        <el-button @click="resetForm()">重置</el-button>
         <router-link to="/login">
           <el-button>返回</el-button>
         </router-link>
