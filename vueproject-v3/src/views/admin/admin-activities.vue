@@ -153,121 +153,120 @@
   </div>
 </template>
 
-<script>
+<script lang="ts" setup>
+import { ref, reactive, onMounted } from 'vue'
 import axios from 'axios'
+import { ElMessage } from 'element-plus'
 
-function deleteAndCloseActivity() {
-  deleteActivity(selectedActivity.value.id)
+const activities = ref<any[]>([])
+const dialogVisible = ref(false)
+const selectedActivity = ref<any>({})
+const showUploadForm = ref(false)
+const confirmDialogVisible = ref(false)
+const newActivity = reactive<any>({
+  name: '',
+  startTime: '',
+  endTime: '',
+  description: '',
+  activityBanner: '',
+  activityFile: '',
+})
+const bannerFileList = ref<any[]>([])
+const fileFileList = ref<any[]>([])
+const previewImage = ref('')
+const previewVisible = ref(false)
+
+function getImageUrl(imagePath?: string) {
+  if (!imagePath) return ''
+  if (/^https?:\/\//.test(imagePath)) return imagePath
+  return imagePath.startsWith('/') ? imagePath : '/' + imagePath
+}
+
+function handleImageClick(imgUrl: string) {
+  previewImage.value = imgUrl
+  previewVisible.value = true
+}
+
+async function fetchActivities() {
+  try {
+    const response = await axios.get('/api/activity/list')
+    activities.value = response.data.list || []
+  } catch (error) {
+    activities.value = []
+  }
+}
+
+function openDialog(activity: any) {
+  selectedActivity.value = activity
+  dialogVisible.value = true
+}
+
+function closeDialog() {
+  dialogVisible.value = false
+}
+
+function deleteConfirm(activity: any) {
+  selectedActivity.value = activity
+  confirmDialogVisible.value = true
+}
+
+async function deleteActivity(activityId: any) {
+  try {
+    await axios.delete(`/api/activity/${activityId}`)
+    ElMessage({ message: '活动删除成功', type: 'success' })
+    await fetchActivities()
+  } catch (error) {
+    ElMessage({ message: '删除失败', type: 'error' })
+  }
+}
+
+function openUploadDialog() {
+  showUploadForm.value = true
+}
+
+function handleBannerUploadSuccess(response: any, file: any, fileListParam: any[]) {
+  if (response && response.code === 0) {
+    newActivity.activityBanner = response.data
+    bannerFileList.value = fileListParam
+    ElMessage({ message: '宣传图上传成功', type: 'success' })
+  } else {
+    ElMessage({ message: '宣传图上传失败', type: 'error' })
+  }
+}
+
+function handleFileUploadSuccess(response: any, file: any, fileListParam: any[]) {
+  if (response && response.code === 0) {
+    newActivity.activityFile = response.data
+    fileFileList.value = fileListParam
+    ElMessage({ message: '文件上传成功', type: 'success' })
+  } else {
+    ElMessage({ message: '文件上传失败', type: 'error' })
+  }
+}
+
+async function uploadActivity() {
+  if (!newActivity.name || !newActivity.startTime || !newActivity.endTime || !newActivity.description || !newActivity.activityBanner || !newActivity.activityFile) {
+    ElMessage({ message: '请填写所有必填项', type: 'error' })
+    return
+  }
+  try {
+    await axios.post('/api/activity/post', newActivity)
+    ElMessage({ message: '活动上传成功', type: 'success' })
+    showUploadForm.value = false
+    await fetchActivities()
+  } catch (error) {
+    ElMessage({ message: '上传过程中发生错误', type: 'error' })
+  }
+}
+
+async function deleteAndCloseActivity() {
+  await deleteActivity(selectedActivity.value.id)
   confirmDialogVisible.value = false
 }
 
-export default {
-  data() {
-    return {
-      activities: [],
-      dialogVisible: false,
-      selectedActivity: {},
-      showUploadForm: false,
-      confirmDialogVisible: false,
-      newActivity: {
-        name: '',
-        startTime: '',
-        endTime: '',
-        description: '',
-        activityBanner: '',
-        activityFile: '',
-      },
-      bannerFileList: [],
-      fileFileList: [],
-    }
-  },
-  methods: {
-    getImageUrl(imagePath) {
-      if (!imagePath) return ''
-      if (/^https?:\/\//.test(imagePath)) {
-        return imagePath
-      }
-      return imagePath.startsWith('/') ? imagePath : '/' + imagePath
-    },
-    handleImageClick(imgUrl) {
-      this.previewImage = imgUrl
-      this.previewVisible = true
-    },
-    async fetchActivities() {
-      try {
-        const response = await axios.get('/api/activity/list')
-        this.activities = response.data.list || []
-      } catch (error) {
-        this.activities = []
-      }
-    },
-    openDialog(activity) {
-      this.selectedActivity = activity
-      this.dialogVisible = true
-    },
-    closeDialog() {
-      this.dialogVisible = false
-    },
-    deleteConfirm(activity) {
-      this.selectedActivity = activity
-      this.confirmDialogVisible = true
-    },
-    async deleteActivity(activityId) {
-      try {
-        await axios.delete(`/api/activity/${activityId}`)
-        this.$message.success('活动删除成功')
-        await this.fetchActivities()
-      } catch (error) {
-        this.$message.error('删除失败')
-      }
-    },
-    openUploadDialog() {
-      this.showUploadForm = true
-    },
-    handleBannerUploadSuccess(response, file, fileList) {
-      if (response && response.code === 0) {
-        this.newActivity.activityBanner = response.data
-        this.bannerFileList = fileList
-        this.$message.success('宣传图上传成功')
-      } else {
-        this.$message.error('宣传图上传失败')
-      }
-    },
-    handleFileUploadSuccess(response, file, fileList) {
-      if (response && response.code === 0) {
-        this.newActivity.activityFile = response.data
-        this.fileFileList = fileList
-        this.$message.success('文件上传成功')
-      } else {
-        this.$message.error('文件上传失败')
-      }
-    },
-    async uploadActivity() {
-      if (
-        !this.newActivity.name ||
-        !this.newActivity.startTime ||
-        !this.newActivity.endTime ||
-        !this.newActivity.description ||
-        !this.newActivity.activityBanner ||
-        !this.newActivity.activityFile
-      ) {
-        this.$message.error('请填写所有必填项')
-        return
-      }
-      try {
-        await axios.post('/api/activity/post', this.newActivity)
-        this.$message.success('活动上传成功')
-        this.showUploadForm = false
-        await this.fetchActivities()
-      } catch (error) {
-        this.$message.error('上传过程中发生错误')
-      }
-    },
-  },
-  mounted() {
-    this.fetchActivities()
-  },
-}
+onMounted(() => {
+  fetchActivities()
+})
 </script>
 
 <style scoped>

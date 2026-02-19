@@ -1,0 +1,85 @@
+name: pnpm-update
+
+on:
+  workflow_call:
+    secrets:
+      SSH_HOST: {}
+      SSH_SUDO: {}
+      SSH_PRIVATE_KEY: {}
+      SSH_PORT: {}
+  workflow_dispatch:
+
+jobs:
+  pnpm-build-deploy:
+    name: pnpm build
+    runs-on: ubuntu-22.04
+
+    defaults:
+      run:
+        working-directory: vueproject
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check pnpm lockfile
+      run: ls -la pnpm-lock.yaml
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'pnpm'
+        cache-dependency-path: vueproject/pnpm-lock.yaml
+
+    - name: Enable pnpm
+      run: corepack enable
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+
+    - name: Build project
+      run: pnpm run build
+
+    - name: List build output
+      run: ls -la dist/
+
+    - name: Upload dist to server
+      uses: appleboy/scp-action@v1.0.0
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_SUDO }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: ${{ secrets.SSH_PORT || 22 }}
+        source: "vueproject/dist"
+        target: /var/www/
+        strip_components: 1
+
+    - name: Create backup timestamp
+      id: backup-time
+      run: echo "date=$(date +'%Y%m%d_%H%M%S')" >> $GITHUB_OUTPUT
+
+    - name: Deploy on server
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_SUDO }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: ${{ secrets.SSH_PORT || 22 }}
+        script: |
+          set -e
+
+          sudo mkdir -p /var/www/backup
+
+          if [ -d "/var/www/CDMGA-ui" ]; then
+            BACKUP_FILE="/var/www/backup/CDMGA-ui_${{ steps.backup-time.outputs.date }}.tar.gz"
+            sudo tar -czf "$BACKUP_FILE" /var/www/CDMGA-ui
+            sudo rm -rf /var/www/CDMGA-ui
+          fi
+
+          sudo mv /var/www/dist /var/www/CDMGA-ui
+
+          sudo chown -R www-data:www-data /var/www/CDMGA-ui
+          sudo chmod -R 755 /var/www/CDMGA-ui
+
+          sudo systemctl restart nginx
