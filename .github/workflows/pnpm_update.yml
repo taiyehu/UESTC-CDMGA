@@ -48,7 +48,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-        version: 10.30.0     # 或写 '*' 用 pnpm 版本匹配 package.json
+          version: 10.30.0     # 或写 '*' 用 pnpm 版本匹配 package.json
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
