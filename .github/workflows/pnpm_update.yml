@@ -13,13 +13,6 @@ on:
       SSH_SUDO: {}
       SSH_PRIVATE_KEY: {}
       SSH_PORT: {}
-  workflow_dispatch:
-    inputs:
-      channel:
-        description: 'Branch or channel'
-        required: false
-        type: string
-        default: dev
 
 env:
   PROJECT_DIR: vueproject
@@ -44,7 +37,10 @@ jobs:
           ref: ${{ inputs.channel }}
 
       - name: Show channel
-        run: echo "Using channel: $CHANNEL"
+        shell: bash
+        run: |
+          echo "Current Channel: ${{ inputs.channel }}"
+          echo "Env Channel: $CHANNEL"
 
       - name: List json file  # 帮助确认JAR包的位置和名称
         run: ls -la pnpm-lock.yaml

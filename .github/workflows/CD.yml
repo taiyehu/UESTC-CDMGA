@@ -15,6 +15,7 @@ jobs:
       SSH_PORT: ${{ secrets.SSH_PORT }}
       SSH_DOMIAN: ${{ secrets.SSH_DOMIAN }}
   update_mvn:
+    needs: update_env
     uses: ./.github/workflows/mvn_update.yml
     secrets:
       SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -22,6 +23,7 @@ jobs:
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       SSH_PORT: ${{ secrets.SSH_PORT }}
   update_npm:
+    needs: update_env
     uses: ./.github/workflows/npm_update.yml
     secrets:
       SSH_HOST: ${{ secrets.SSH_HOST }}
