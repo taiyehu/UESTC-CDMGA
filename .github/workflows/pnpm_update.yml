@@ -60,7 +60,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # 👉 根据分支区分构建
       - name: Build project
         run: pnpm run build
 
@@ -95,13 +94,14 @@ jobs:
             BASE_DIR="${TARGET_DIR}"
             RELEASE_BASE="$BASE_DIR/release_${BRANCH}"
             RELEASE_DIR="$RELEASE_BASE/$DATE"
+            sudo mkdir -p "$BASE_DIR"
             sudo mkdir -p "$RELEASE_BASE"
             sudo mkdir -p "$RELEASE_DIR"
 
             REMOTE_DIR="/var/www/dist"
             sudo ls -la "$REMOTE_DIR" || echo "上传文件尚不存在"
 
-            sudo mv "$REMOTE_DIR" "$RELEASE_DIR"
+            sudo mv -f "$REMOTE_DIR" "$RELEASE_DIR"
 
             # No nested 'dist' handling and no backup of the symlink: symlink rotation
             # is intended for zero-downtime updates. Point current-<branch> directly
