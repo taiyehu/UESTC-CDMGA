@@ -22,9 +22,11 @@ jobs:
       SSH_SUDO: ${{ secrets.SSH_SUDO }}
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       SSH_PORT: ${{ secrets.SSH_PORT }}
-  update_npm:
+  update_pnpm:
     needs: update_env
-    uses: ./.github/workflows/npm_update.yml
+    uses: ./.github/workflows/pnpm_update.yml
+    with:
+      channel: dev
     secrets:
       SSH_HOST: ${{ secrets.SSH_HOST }}
       SSH_SUDO: ${{ secrets.SSH_SUDO }}

@@ -101,7 +101,7 @@ jobs:
             REMOTE_DIR="/var/www/dist"
             sudo ls -la "$REMOTE_DIR" || echo "上传文件尚不存在"
 
-            sudo mv -f "$REMOTE_DIR" "$RELEASE_DIR"
+            sudo rsync -a --delete "$REMOTE_DIR"/ "$RELEASE_DIR"/
 
             # No nested 'dist' handling and no backup of the symlink: symlink rotation
             # is intended for zero-downtime updates. Point current-<branch> directly
@@ -137,6 +137,8 @@ jobs:
                 done
               fi
             fi
+
+            sudo rm -rf "$REMOTE_DIR"
 
             sudo chown -R www-data:www-data "$BASE_DIR"
             sudo chmod -R 755 "$RELEASE_DIR"

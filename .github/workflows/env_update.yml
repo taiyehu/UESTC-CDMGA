@@ -69,7 +69,7 @@ jobs:
               systemd=true
             fi
 
-            if ! git diff --quiet $RANGE -- script/cdmga_nginx.conf script/cdmga-assets.conf; then
+            if ! git diff --quiet $RANGE -- script/cdmga_nginx.conf script/cdmga_assets.conf; then
               nginx=true
             fi
           fi
@@ -129,7 +129,7 @@ jobs:
           script: |
             echo "Deploying Nginx..."
             sudo mkdir -p /etc/nginx/snippets
-            sudo cp /opt/webserver/script/cdmga-assets.conf /etc/nginx/snippets/cdmga-assets.conf
+            sudo cp /opt/webserver/script/cdmga_assets.conf /etc/nginx/snippets/cdmga_assets.conf
             sudo cp /opt/webserver/script/cdmga_nginx.conf /etc/nginx/sites-available/cdmga_nginx.conf
             sudo rm -f /etc/nginx/sites-enabled/default
             if [ ! -f /etc/nginx/sites-enabled/cdmga_nginx.conf ]; then
