@@ -25,34 +25,39 @@ jobs:
           fetch-depth: 0
 
       # ----------------------------
-      # Step 2: 计算本地哈希
+      # Step 2: 计算本地哈希（变量）
       # ----------------------------
       - name: Compute local hashes
         id: local_hash
         run: |
-          mkdir -p ./hash
-          sha256sum script/webserver.service | awk '{print $1}' > ./hash/webserver.service.local
-          sha256sum script/cdmga_nginx.conf | awk '{print $1}' > ./hash/cdmga_nginx.conf.local
-          sha256sum script/cdmga-assets.conf | awk '{print $1}' > ./hash/cdmga-assets.conf.local
-          echo "Local hashes computed"
+          SYSTEMD_HASH=$(sha256sum script/webserver.service | awk '{print $1}')
+          NGINX_MAIN_HASH=$(sha256sum script/cdmga_nginx.conf | awk '{print $1}')
+          NGINX_ASSET_HASH=$(sha256sum script/cdmga-assets.conf | awk '{print $1}')
+
+          echo "systemd=$SYSTEMD_HASH" >> $GITHUB_OUTPUT
+          echo "nginx_main=$NGINX_MAIN_HASH" >> $GITHUB_OUTPUT
+          echo "nginx_asset=$NGINX_ASSET_HASH" >> $GITHUB_OUTPUT
 
       # ----------------------------
-      # Step 3: 下载远端 remote 哈希
+      # Step 3: 读取远端哈希（SSH）
       # ----------------------------
-      - name: Download remote hashes
-        id: download_remote
-        uses: appleboy/scp-action@v1.0.0
+      - name: Read remote hashes
+        id: remote_hash
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_SUDO }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          source: "/opt/webserver/env_hash/*.hash"
-          target: "./hash/"
-          fail_on_error: true
+          script: |
+            set +e
+            echo "systemd=$(cat /opt/webserver/env_hash/webserver.service 2>/dev/null || echo MISSING)" >> $GITHUB_OUTPUT
+            echo "nginx_main=$(cat /opt/webserver/env_hash/cdmga_nginx.conf 2>/dev/null || echo MISSING)" >> $GITHUB_OUTPUT
+            echo "nginx_asset=$(cat /opt/webserver/env_hash/cdmga-assets.conf 2>/dev/null || echo MISSING)" >> $GITHUB_OUTPUT
+
 
       # ----------------------------
-      # Step 4: 检测变化
+      # Step 4: 检测变化（变量 diff）
       # ----------------------------
       - name: Detect changes
         id: env_diff
@@ -60,30 +65,16 @@ jobs:
           systemd_changed=false
           nginx_changed=false
 
-          # systemd 文件
-          LOCAL_HASH=$(cat ./hash/webserver.service.local)
-          REMOTE_HASH_FILE=./hash/webserver.service.remote
-          if [ ! -f "$REMOTE_HASH_FILE" ]; then
-            echo "Remote hash for systemd not found, marking as changed"
+          if [ "${{ steps.local_hash.outputs.systemd }}" != "${{ steps.remote_hash.outputs.systemd }}" ]; then
             systemd_changed=true
-          elif [ "$LOCAL_HASH" != "$(cat $REMOTE_HASH_FILE)" ]; then
-            systemd_changed=true
-            echo "Systemd file changed"
-          else
-            echo "Systemd unchanged"
+            echo "Systemd changed"
           fi
 
-          # nginx 文件
-          for f in cdmga_nginx.conf cdmga-assets.conf; do
-            LOCAL_HASH=$(cat ./hash/$f.local)
-            REMOTE_HASH_FILE=./hash/$f.remote
-            if [ ! -f "$REMOTE_HASH_FILE" ] || [ "$LOCAL_HASH" != "$(cat $REMOTE_HASH_FILE)" ]; then
-              nginx_changed=true
-              echo "Nginx file $f changed"
-            else
-              echo "Nginx file $f unchanged"
-            fi
-          done
+          if [ "${{ steps.local_hash.outputs.nginx_main }}" != "${{ steps.remote_hash.outputs.nginx_main }}" ] || \
+            [ "${{ steps.local_hash.outputs.nginx_asset }}" != "${{ steps.remote_hash.outputs.nginx_asset }}" ]; then
+            nginx_changed=true
+            echo "Nginx config changed"
+          fi
 
           echo "systemd_changed=$systemd_changed" >> $GITHUB_OUTPUT
           echo "nginx_changed=$nginx_changed" >> $GITHUB_OUTPUT
@@ -93,6 +84,8 @@ jobs:
           else
             echo "any_changed=false" >> $GITHUB_OUTPUT
             echo "No environment changes detected"
+          fi
+
 
       # ----------------------------
       # Step 5: Systemd 部署
@@ -139,22 +132,7 @@ jobs:
             sudo systemctl restart nginx
             echo "Nginx deployed"
 
-      # ----------------------------
-      # Step 7: 上传 local 哈希并覆盖 remote
-      # ----------------------------
-      - name: Upload hashes as remote
-        if: steps.env_diff.outputs.any_changed == 'true'
-        uses: appleboy/scp-action@v1.0.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_SUDO }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          source: "./hash/*.local"
-          target: "/opt/webserver/env_hash/"
-          strip_components: 0
-
-      - name: Rename uploaded local hashes to remote on server
+      - name: Update remote hashes
         if: steps.env_diff.outputs.any_changed == 'true'
         uses: appleboy/ssh-action@master
         with:
@@ -163,17 +141,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
-            cd /opt/webserver/env_hash
-            for f in *.local; do
-              # 计算目标文件名
-              target_file="${f%.local}.remote"
-              
-              # 如果目标文件存在，则删除它
-              if [ -e "$target_file" ]; then
-                echo "Warning: Removing existing file $target_file"
-                sudo rm "$target_file"
-              fi
-              
-              # 将 .local 文件重命名为 .remote
-              sudo mv "$f" "$target_file"
-            done
+            mkdir -p /opt/webserver/env_hash
+            echo "${{ steps.local_hash.outputs.systemd }}" > /opt/webserver/env_hash/webserver.service.hash
+            echo "${{ steps.local_hash.outputs.nginx_main }}" > /opt/webserver/env_hash/cdmga_nginx.conf.hash
+            echo "${{ steps.local_hash.outputs.nginx_asset }}" > /opt/webserver/env_hash/cdmga-assets.conf.hash
+
