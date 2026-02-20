@@ -92,11 +92,8 @@ jobs:
           username: ${{ secrets.SSH_SUDO }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          source: |
-            script/webserver.service
-            script/cdmga_nginx.conf
-            script/cdmga-assets.conf
-          target: /opt/webserver/script/
+          source: "script/*"
+          target: "/opt/webserver/"
 
 
       # ----------------------------
