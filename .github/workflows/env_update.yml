@@ -1,7 +1,7 @@
 name: Environment update
 
 on:
-  workflow_dispatch: # 允许手动触发
+  workflow_dispatch:
   workflow_call:
     secrets:
       SSH_HOST: {}
@@ -12,96 +12,92 @@ on:
 
 jobs:
   deploy-env:
-    name: Environment deploy (差异驱动)
+    name: Environment deploy (增量)
     runs-on: ubuntu-22.04
 
     steps:
       # ----------------------------
-      # Step 1: Checkout 代码
+      # Step 1: Checkout
       # ----------------------------
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # 获取完整历史，以便 diff 检查
+          fetch-depth: 0
 
       # ----------------------------
-      # Step 2: 检查文件是否存在（可选）
+      # Step 2: 计算本地哈希
       # ----------------------------
-      - name: Verify files exist
+      - name: Compute local hashes
+        id: local_hash
         run: |
-          echo "Checking if required files exist..."
-          ls -la script/ || echo "script/ directory not found"
-          ls -la script/webserver.service || echo "webserver.service not found"
-          ls -la script/cdmga_nginx.conf || echo "cdmga_nginx.conf not found"
-          ls -la script/cdmga-assets.conf || echo "cdmga-assets.conf not found"
+          mkdir -p ./hash
+          sha256sum script/webserver.service | awk '{print $1}' > ./hash/webserver.service.local
+          sha256sum script/cdmga_nginx.conf | awk '{print $1}' > ./hash/cdmga_nginx.conf.local
+          sha256sum script/cdmga-assets.conf | awk '{print $1}' > ./hash/cdmga-assets.conf.local
+          echo "Local hashes computed"
 
       # ----------------------------
-      # Step 3: 检测环境文件是否变化
+      # Step 3: 下载远端 remote 哈希
       # ----------------------------
-      - name: Detect environment file changes
-        id: env_diff
-        run: |
-          # 获取前一次提交与当前提交差异
-          # 如果你在 workflow_dispatch 手动触发时，HEAD~1 可能不存在，可以改成 HEAD^ 或者用 git diff origin/dev...HEAD
-          git fetch origin ${{ github.ref_name }}
-
-          # 判断 webserver.service 是否变化
-          if git diff --quiet HEAD~1 HEAD -- script/webserver.service; then
-            echo "systemd_changed=false" >> $GITHUB_OUTPUT
-          else
-            echo "systemd_changed=true" >> $GITHUB_OUTPUT
-          fi
-
-          # 判断 nginx 配置是否变化
-          if git diff --quiet HEAD~1 HEAD -- script/cdmga_nginx.conf script/cdmga-assets.conf; then
-            echo "nginx_changed=false" >> $GITHUB_OUTPUT
-          else
-            echo "nginx_changed=true" >> $GITHUB_OUTPUT
-          fi
-
-          # 判断脚本文件是否变化（其他脚本）
-          if git diff --quiet HEAD~1 HEAD -- script/*.sh script/*.py; then
-            echo "script_changed=false" >> $GITHUB_OUTPUT
-          else
-            echo "script_changed=true" >> $GITHUB_OUTPUT
-          fi
-
-          # 输出整体变化标识
-          if [ "${{ steps.env_diff.outputs.systemd_changed }}" = "true" ] || \
-             [ "${{ steps.env_diff.outputs.nginx_changed }}" = "true" ] || \
-             [ "${{ steps.env_diff.outputs.script_changed }}" = "true" ]; then
-            echo "any_changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "any_changed=false" >> $GITHUB_OUTPUT
-            echo "No environment changes detected. Skipping deploy steps."
-          fi
-
-      # ----------------------------
-      # Step 4: 仅在有变化时 SCP 脚本文件
-      # ----------------------------
-      - name: Transfer script files to server
-        if: steps.env_diff.outputs.any_changed == 'true'
+      - name: Download remote hashes
+        id: download_remote
         uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_SUDO }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          source: "script/*"
-          target: "/opt/webserver/"
+          source: "/opt/webserver/env_hash/*.hash"
+          target: "./hash/"
+          fail_on_error: true
 
       # ----------------------------
-      # Step 5: Systemd 服务更新
+      # Step 4: 检测变化
       # ----------------------------
-      - name: Check if Systemd update is needed
+      - name: Detect changes
+        id: env_diff
         run: |
-          if [ "${{ steps.env_diff.outputs.systemd_changed }}" != "true" ]; then
-            echo "Systemd service unchanged, skipping deployment."
+          systemd_changed=false
+          nginx_changed=false
+
+          # systemd 文件
+          LOCAL_HASH=$(cat ./hash/webserver.service.local)
+          REMOTE_HASH_FILE=./hash/webserver.service.remote
+          if [ ! -f "$REMOTE_HASH_FILE" ]; then
+            echo "Remote hash for systemd not found, marking as changed"
+            systemd_changed=true
+          elif [ "$LOCAL_HASH" != "$(cat $REMOTE_HASH_FILE)" ]; then
+            systemd_changed=true
+            echo "Systemd file changed"
           else
-            echo "Systemd service changed, will deploy."
+            echo "Systemd unchanged"
           fi
 
-      - name: Deploy and enable Systemd service
+          # nginx 文件
+          for f in cdmga_nginx.conf cdmga-assets.conf; do
+            LOCAL_HASH=$(cat ./hash/$f.local)
+            REMOTE_HASH_FILE=./hash/$f.remote
+            if [ ! -f "$REMOTE_HASH_FILE" ] || [ "$LOCAL_HASH" != "$(cat $REMOTE_HASH_FILE)" ]; then
+              nginx_changed=true
+              echo "Nginx file $f changed"
+            else
+              echo "Nginx file $f unchanged"
+            fi
+          done
+
+          echo "systemd_changed=$systemd_changed" >> $GITHUB_OUTPUT
+          echo "nginx_changed=$nginx_changed" >> $GITHUB_OUTPUT
+
+          if [ "$systemd_changed" = "true" ] || [ "$nginx_changed" = "true" ]; then
+            echo "any_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "any_changed=false" >> $GITHUB_OUTPUT
+            echo "No environment changes detected"
+
+      # ----------------------------
+      # Step 5: Systemd 部署
+      # ----------------------------
+      - name: Deploy Systemd
         if: steps.env_diff.outputs.systemd_changed == 'true'
         uses: appleboy/ssh-action@master
         with:
@@ -110,25 +106,17 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
-            echo "=== Systemd service changes detected, deploying... ==="
+            echo "Deploying systemd service..."
             sudo cp /opt/webserver/script/webserver.service /etc/systemd/system/
             sudo systemctl daemon-reload
             sudo systemctl enable webserver.service
             sudo systemctl restart webserver.service
-            echo "Systemd service updated successfully!"
+            echo "Systemd deployed"
 
       # ----------------------------
-      # Step 6: Nginx 配置更新
+      # Step 6: Nginx 部署
       # ----------------------------
-      - name: Check if Nginx update is needed
-        run: |
-          if [ "${{ steps.env_diff.outputs.nginx_changed }}" != "true" ]; then
-            echo "Nginx config unchanged, skipping reload."
-          else
-            echo "Nginx config changed, will deploy."
-          fi
-
-      - name: Copy and enable Nginx configuration
+      - name: Deploy Nginx
         if: steps.env_diff.outputs.nginx_changed == 'true'
         uses: appleboy/ssh-action@master
         with:
@@ -137,26 +125,37 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
-            echo "=== Nginx config changes detected, deploying... ==="
+            echo "Deploying Nginx..."
             sudo mkdir -p /etc/nginx/snippets
             sudo cp /opt/webserver/script/cdmga-assets.conf /etc/nginx/snippets/cdmga-assets.conf
-            sudo cp /opt/webserver/script/cdmga_nginx.conf /etc/nginx/sites-available/
-
+            sudo cp /opt/webserver/script/cdmga_nginx.conf /etc/nginx/sites-available/cdmga_nginx.conf
             sudo rm -f /etc/nginx/sites-enabled/default
             if [ ! -f /etc/nginx/sites-enabled/cdmga_nginx.conf ]; then
               sudo ln -s /etc/nginx/sites-available/cdmga_nginx.conf /etc/nginx/sites-enabled/
             fi
-
             sudo sed -i "s/server_name localhost;/server_name ${{ secrets.SSH_DOMIAN }};/" /etc/nginx/sites-available/cdmga_nginx.conf
-
+            sudo sed -i "s/server_name dev.localhost;/server_name dev.${{ secrets.SSH_DOMIAN }};/" /etc/nginx/sites-available/cdmga_nginx.conf
             sudo nginx -t
             sudo systemctl restart nginx
-            echo "Nginx configuration applied successfully!"
+            echo "Nginx deployed"
 
       # ----------------------------
-      # Step 7: 验证环境（始终执行）
+      # Step 7: 上传 local 哈希并覆盖 remote
       # ----------------------------
-      - name: Verify installation
+      - name: Upload hashes as remote
+        if: steps.env_diff.outputs.any_changed == 'true'
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_SUDO }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          source: "./hash/*.local"
+          target: "/opt/webserver/env_hash/"
+          strip_components: 0
+
+      - name: Rename uploaded local hashes to remote on server
+        if: steps.env_diff.outputs.any_changed == 'true'
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -164,19 +163,17 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
-            echo "=== Verification ==="
-            echo "Nginx status:"
-            systemctl status nginx --no-pager
-            echo ""
-            echo "Webserver service status:"
-            systemctl status webserver.service --no-pager
-            echo ""
-            echo "Backend directories:"
-            ls -la /opt/webserver
-            ls -la /var/webserver
-            echo ""
-            echo "Frontend directories:"
-            ls -la /var/webserver/ui
-            echo ""
-            echo "Systemd service file:"
-            ls -la /etc/systemd/system/webserver.service
+            cd /opt/webserver/env_hash
+            for f in *.local; do
+              # 计算目标文件名
+              target_file="${f%.local}.remote"
+              
+              # 如果目标文件存在，则删除它
+              if [ -e "$target_file" ]; then
+                echo "Warning: Removing existing file $target_file"
+                sudo rm "$target_file"
+              fi
+              
+              # 将 .local 文件重命名为 .remote
+              sudo mv "$f" "$target_file"
+            done

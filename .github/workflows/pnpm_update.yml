@@ -88,10 +88,10 @@ jobs:
           script: |
             set -e
 
-            BRANCH="$CHANNEL"
+            BRANCH="${{ env.CHANNEL }}"
             DATE=$(date +%Y%m%d_%H%M%S)
 
-            BASE_DIR="${TARGET_DIR}"
+            BASE_DIR="${{ env.TARGET_DIR }}"
             RELEASE_BASE="$BASE_DIR/release_${BRANCH}"
             RELEASE_DIR="$RELEASE_BASE/$DATE"
             sudo mkdir -p "$BASE_DIR"
