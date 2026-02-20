@@ -1,4 +1,4 @@
-name: Environment update
+name: Environment update (commit-based incremental)
 
 on:
   workflow_dispatch:
@@ -12,7 +12,6 @@ on:
 
 jobs:
   deploy-env:
-    name: Environment deploy (增量)
     runs-on: ubuntu-22.04
 
     steps:
@@ -25,66 +24,79 @@ jobs:
           fetch-depth: 0
 
       # ----------------------------
-      # Step 2: 计算本地哈希（变量）
+      # Step 2: 读取上次部署的 commit（唯一一次“读 SSH”）
       # ----------------------------
-      - name: Compute local hashes
-        id: local_hash
+      - name: Read last deployed commit
+        id: deployed
         run: |
-          SYSTEMD_HASH=$(sha256sum script/webserver.service | awk '{print $1}')
-          NGINX_MAIN_HASH=$(sha256sum script/cdmga_nginx.conf | awk '{print $1}')
-          NGINX_ASSET_HASH=$(sha256sum script/cdmga-assets.conf | awk '{print $1}')
+          set +e
+          LAST=$(ssh -p ${{ secrets.SSH_PORT || 22 }} \
+            -o StrictHostKeyChecking=no \
+            -i <(echo "${{ secrets.SSH_PRIVATE_KEY }}") \
+            ${{ secrets.SSH_SUDO }}@${{ secrets.SSH_HOST }} \
+            "cat /opt/webserver/DEPLOYED_COMMIT 2>/dev/null")
 
-          echo "systemd=$SYSTEMD_HASH" >> $GITHUB_OUTPUT
-          echo "nginx_main=$NGINX_MAIN_HASH" >> $GITHUB_OUTPUT
-          echo "nginx_asset=$NGINX_ASSET_HASH" >> $GITHUB_OUTPUT
+          if [ -z "$LAST" ]; then
+            echo "last=NONE" >> $GITHUB_OUTPUT
+            echo "No previous deployment found (first deploy)"
+          else
+            echo "last=$LAST" >> $GITHUB_OUTPUT
+            echo "Last deployed commit: $LAST"
+          fi
 
       # ----------------------------
-      # Step 3: 读取远端哈希（SSH）
+      # Step 3: 基于“上次部署 → 当前 HEAD”做 diff
       # ----------------------------
-      - name: Read remote hashes
-        id: remote_hash
-        uses: appleboy/ssh-action@master
+      - name: Detect environment changes
+        id: env_diff
+        run: |
+          systemd=false
+          nginx=false
+          skip_comp=false
+
+          if [ "${{ steps.deployed.outputs.last }}" = "NONE" ]; then
+            systemd=true
+            nginx=true
+            skip_comp=true
+          else
+            RANGE=${{ steps.deployed.outputs.last }}..HEAD
+          fi
+
+          if [ "$skip_comp" = "false" ]; then 
+            echo "Diff range: $RANGE"
+
+            if ! git diff --quiet $RANGE -- script/webserver.service; then
+              systemd=true
+            fi
+
+            if ! git diff --quiet $RANGE -- script/cdmga_nginx.conf script/cdmga-assets.conf; then
+              nginx=true
+            fi
+          fi
+
+          echo "systemd_changed=$systemd" >> $GITHUB_OUTPUT
+          echo "nginx_changed=$nginx" >> $GITHUB_OUTPUT
+
+          if [ "$systemd" = "false" ] && [ "$nginx" = "false" ]; then
+            echo "No environment changes detected"
+          fi
+
+      # ----------------------------
+      # Step 4: 仅在有变化时上传文件（SCP）
+      # ----------------------------
+      - name: Upload env files
+        if: steps.env_diff.outputs.systemd_changed == 'true' || steps.env_diff.outputs.nginx_changed == 'true'
+        uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_SUDO }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          script: |
-            set +e
-            echo "systemd=$(cat /opt/webserver/env_hash/webserver.service 2>/dev/null || echo MISSING)" >> $GITHUB_OUTPUT
-            echo "nginx_main=$(cat /opt/webserver/env_hash/cdmga_nginx.conf 2>/dev/null || echo MISSING)" >> $GITHUB_OUTPUT
-            echo "nginx_asset=$(cat /opt/webserver/env_hash/cdmga-assets.conf 2>/dev/null || echo MISSING)" >> $GITHUB_OUTPUT
-
-
-      # ----------------------------
-      # Step 4: 检测变化（变量 diff）
-      # ----------------------------
-      - name: Detect changes
-        id: env_diff
-        run: |
-          systemd_changed=false
-          nginx_changed=false
-
-          if [ "${{ steps.local_hash.outputs.systemd }}" != "${{ steps.remote_hash.outputs.systemd }}" ]; then
-            systemd_changed=true
-            echo "Systemd changed"
-          fi
-
-          if [ "${{ steps.local_hash.outputs.nginx_main }}" != "${{ steps.remote_hash.outputs.nginx_main }}" ] || \
-            [ "${{ steps.local_hash.outputs.nginx_asset }}" != "${{ steps.remote_hash.outputs.nginx_asset }}" ]; then
-            nginx_changed=true
-            echo "Nginx config changed"
-          fi
-
-          echo "systemd_changed=$systemd_changed" >> $GITHUB_OUTPUT
-          echo "nginx_changed=$nginx_changed" >> $GITHUB_OUTPUT
-
-          if [ "$systemd_changed" = "true" ] || [ "$nginx_changed" = "true" ]; then
-            echo "any_changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "any_changed=false" >> $GITHUB_OUTPUT
-            echo "No environment changes detected"
-          fi
+          source: |
+            script/webserver.service
+            script/cdmga_nginx.conf
+            script/cdmga-assets.conf
+          target: /opt/webserver/script/
 
 
       # ----------------------------
@@ -133,7 +145,6 @@ jobs:
             echo "Nginx deployed"
 
       - name: Update remote hashes
-        if: steps.env_diff.outputs.any_changed == 'true'
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -141,8 +152,6 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
-            mkdir -p /opt/webserver/env_hash
-            echo "${{ steps.local_hash.outputs.systemd }}" > /opt/webserver/env_hash/webserver.service.hash
-            echo "${{ steps.local_hash.outputs.nginx_main }}" > /opt/webserver/env_hash/cdmga_nginx.conf.hash
-            echo "${{ steps.local_hash.outputs.nginx_asset }}" > /opt/webserver/env_hash/cdmga-assets.conf.hash
+            echo "${GITHUB_SHA}" > /opt/webserver/DEPLOYED_COMMIT
+            echo "Deployment marked at commit ${GITHUB_SHA}"
 
