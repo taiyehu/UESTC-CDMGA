@@ -1,6 +1,6 @@
 <template>
   <el-dialog
-    v-model:visible="isModalVisible"
+    v-model="isModalVisible"
     title="裁剪头像"
     :width="dialogWidth"
     teleported

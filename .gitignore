@@ -5,3 +5,4 @@ vueproject/vue.config.js
 vueproject/dist
 vueproject/.env
 scores/
+ref/

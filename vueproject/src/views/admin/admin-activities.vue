@@ -24,7 +24,7 @@
 
     <el-dialog
       title="警告"
-      v-model:visible="confirmDialogVisible"
+      v-model="confirmDialogVisible"
       width="30%"
       @close="confirmDialogVisible = false"
     >

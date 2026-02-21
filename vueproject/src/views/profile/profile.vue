@@ -124,7 +124,7 @@
 
         <!-- AvatarCropper 子组件（确保子组件正确导出） -->
         <avatar-cropper
-          v-model:visible="cropperVisible"
+          v-model="cropperVisible"
           :imgUrl="cropImgUrl"
           @crop="handleAvatarCrop"
         />
