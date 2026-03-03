@@ -277,7 +277,7 @@ onMounted(() => {
 }
 h2 {
   font-size: 24px;
-  color: #333;
+  color: var(--color-text-primary);
   margin-bottom: 20px;
 }
 </style>

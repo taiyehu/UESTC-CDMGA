@@ -4,8 +4,8 @@ import router from './router'
 import axios from 'axios'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
-import type { StorybookConfig } from '@storybook/vue3-vite';
-// import { configureCompat } from '@vue/compat'
+import './styles/index.css'
+
 
 
 const app = createApp(App)

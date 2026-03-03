@@ -1,5 +1,5 @@
 <template>
-  <div class="main-content">
+  <div class="app-layout">
     <h1>活动列表</h1>
     <div v-if="loading">加载中...</div>
     <div v-else-if="error">{{ error }}</div>
@@ -62,7 +62,7 @@
             :href="getImageUrl(currentActivity.activityFile)"
             :download="getFileName(currentActivity.activityFile)"
             @click.prevent="downloadFile(currentActivity.activityFile)"
-            style="color: #409eff; text-decoration: underline; cursor: pointer"
+            style="color: var(--color-text-primary); text-decoration: underline; cursor: pointer"
             >下载活动文件</a
           >
         </div>
@@ -113,7 +113,7 @@
       >
         <el-table-column type="expand">
           <template v-slot="props">
-            <div style="background: #f9f9f9; padding: 10px 0">
+            <div style="background: var(--color-surface); padding: 10px 0">
               <div
                 v-if="props.row.contestScores && props.row.contestScores.length"
                 style="display: flex; justify-content: center"
@@ -356,15 +356,13 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.main-content {
-  margin-top: var(--navbar-height);
-}
+
 .activity-item {
   margin-bottom: 32px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--color-border);
   padding: 20px;
   border-radius: 8px;
-  background-color: #f9f9f9;
+  background-color: var(--color-surface);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 .activity-image {

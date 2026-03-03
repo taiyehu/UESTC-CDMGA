@@ -1,0 +1,35 @@
+/* 默认内容布局容器 */
+.app-layout {
+  min-height: 100vh;
+
+  padding-top: 72px;   /* 距离导航栏 */
+  padding-bottom: 64px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 限制内容宽度 */
+.app-layout > * {
+  width: clamp(720px, 70%, var(--layout-max-width));
+}
+
+.app-layout::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(154, 92, 255, 0.08),
+    transparent
+  );
+  animation: sweep 8s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}

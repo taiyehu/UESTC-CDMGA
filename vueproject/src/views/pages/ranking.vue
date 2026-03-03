@@ -1,5 +1,5 @@
 <template>
-  <div class="main-content">
+  <div class="app-layout">
     <h2 style="text-align: center; margin-bottom: 20px">用户总分排行榜</h2>
     <el-table
       :data="pagedRankData"
@@ -107,7 +107,5 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.main-content {
-  margin-top: var(--navbar-height);
-}
+
 </style>

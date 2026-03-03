@@ -1,5 +1,5 @@
 <template>
-  <div class="main-content">
+  <div class="app-layout">
     <h1>课题列表</h1>
     <div v-if="loading">加载中...</div>
     <div v-else-if="error">{{ error }}</div>
@@ -81,10 +81,10 @@ onMounted(() => {
 }
 .course-item {
   margin-bottom: 32px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--color-border);
   padding: 20px;
   border-radius: 8px;
-  background-color: #f9f9f9;
+  background-color: var(--color-surface);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 .course-image {

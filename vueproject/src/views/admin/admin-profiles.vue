@@ -288,7 +288,7 @@ onMounted(() => {
 }
 h2 {
   font-size: 24px;
-  color: #333;
+  color: var(--color-text-primary);
   margin-bottom: 40px;
 }
 .profile-item {

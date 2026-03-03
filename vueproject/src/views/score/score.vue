@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="app-layout">
     <el-card class="box-card" v-if="courses.length > 0">
       <h2>成绩提交</h2>
       <div
@@ -535,7 +535,7 @@ onMounted(() => {
 }
 h2 {
   font-size: 24px;
-  color: #333;
+  color: var(--color-text-primary);
   margin-bottom: 40px;
 }
 .course-item p {
@@ -559,7 +559,7 @@ h2 {
 }
 .el-upload__tip {
   font-size: 12px;
-  color: #606266;
+  color: var(--color-text-primary);
   margin-top: 5px;
 }
 </style>

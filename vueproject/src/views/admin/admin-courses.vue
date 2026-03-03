@@ -340,7 +340,7 @@ onMounted(() => {
 }
 h2 {
   font-size: 24px;
-  color: #333;
+  color: var(--color-text-primary);
   margin-bottom: 40px;
 }
 .course-item p {
@@ -357,8 +357,8 @@ h2 {
   margin-top: -42px;
 }
 .el-button:hover {
-  background-color: #409eff;
-  color: white;
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
 }
 .el-dialog {
   min-width: 500px;

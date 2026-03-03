@@ -106,7 +106,7 @@
           </el-form-item>
 
           <el-form-item label="描述">
-            <div style="white-space: pre-wrap; color: #333">
+            <div style="white-space: pre-wrap; color: var(--color-text-primary)">
               {{ currentCourse.description || '-' }}
             </div>
           </el-form-item>
@@ -318,7 +318,7 @@ onBeforeUnmount(() => {
   z-index: 10;
   font-size: 2.6rem;
   font-weight: 900;
-  color: #2176ff;
+  color: var(--color-text-primary);
   text-shadow: 0 2px 8px #fff, 0 1px 0 #b3d8ff;
   pointer-events: none;
 }
@@ -353,13 +353,13 @@ onBeforeUnmount(() => {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #e0e0e0;
+  background: var(--color-surface);
   margin: 0 4px;
   transition: background 0.3s;
   display: inline-block;
 }
 .dot.active {
-  background: #666;
+  background: var(--color-text-primary);
 }
 .banner-controls {
   position: absolute;
@@ -379,7 +379,7 @@ onBeforeUnmount(() => {
   pointer-events: auto;
 }
 .banner-btn {
-  background: rgba(120, 120, 120, 0.35) !important;
+  background: var(--color-surface) !important;
   border: none !important;
   border-radius: 4px !important;
   width: 36px !important;
@@ -388,7 +388,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   box-shadow: none !important;
-  color: #fff !important;
+  color: var(--color-text-primary) !important;
   font-size: 18px !important;
   transition: background 0.2s;
 }
@@ -399,7 +399,7 @@ onBeforeUnmount(() => {
   margin-right: 8px;
 }
 .banner-btn:hover {
-  background: rgba(80, 80, 80, 0.55) !important;
+  background: var(--color-border) !important;
 }
 .course-image {
   max-width: 300px;

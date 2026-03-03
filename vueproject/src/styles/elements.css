@@ -1,0 +1,57 @@
+.el-card {
+  background: rgba(20, 24, 40, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(155, 92, 255, 0.2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  transition: 0.3s ease;
+
+    /* 渐变霓虹边框
+  border-image-slice: 1;
+  border-width: 2px;
+  border-image-source: linear-gradient(
+    45deg,
+    var(--neon-purple),
+    var(--neon-cyan),
+    var(--neon-pink),
+    var(--neon-purple)
+  ); */
+}
+
+.el-card:hover {
+  box-shadow: var(--glow-soft), 0 0 20px rgba(155, 92, 255, 0.5), 0 0 24px rgba(0, 234, 255, 0.4), 0 0 32px rgba(255, 79, 216, 0.35);
+  transform: scale(1.02); /* 放大动画 */
+}
+
+.el-button {
+  background: linear-gradient(
+    135deg,
+    var(--neon-purple),
+    var(--neon-cyan)
+  );
+  border: none;
+  border-radius: var(--radius-md);
+  color: white;
+  transition: 0.25s ease;
+  box-shadow: var(--glow-soft);
+}
+
+.el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--glow-cyan);
+}
+
+
+.el-menu {
+  background: transparent;
+  border-right: none;
+}
+
+.el-menu-item.is-active {
+  background: linear-gradient(
+    90deg,
+    rgba(154, 92, 255, 0.2),
+    transparent
+  );
+  box-shadow: inset 4px 0 var(--neon-purple);
+}

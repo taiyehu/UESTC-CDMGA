@@ -1,26 +1,28 @@
 <template>
-  <div class="links-main">
-    <h1 style="text-align: center; margin-bottom: 32px">欢迎来到我的网站</h1>
-    <div class="links-grid">
-      <div class="link-card" @click="go('card_one/card_one.html')">
-        <h2>抽卡Debuff对决</h2>
-        <p>体验全新抽卡对决玩法，点击进入开始抽卡。</p>
-      </div>
-      <div class="link-card" @click="go('arcaea_radom/arc_radom.html')">
-        <h2>抽arc歌曲</h2>
-        <p>随机抽取 Arcaea 歌曲，点击进入抽曲界面。</p>
-      </div>
-      <div class="link-card" @click="go('arcaea_radom/phi_radom.html')">
-        <h2>抽phi歌曲</h2>
-        <p>随机抽取 Phigros 歌曲，点击进入抽曲界面。</p>
-      </div>
-      <div class="link-card" @click="go('draw2guess/draw2guess.html')">
-        <h2>猜歌抽曲界面</h2>
-        <p>抽曲并猜歌，点击进入游戏。</p>
-      </div>
-      <div class="link-card" @click="go('docs/SCREEN.html')">
-        <h2>转播方案介绍</h2>
-        <p>了解简易比赛转播方案，点击查看详细介绍。</p>
+  <div class="app-layout">
+    <div class="links-main">
+      <h1 style="text-align: center; margin-bottom: 32px">欢迎来到我的网站</h1>
+      <div class="links-grid">
+        <div class="link-card" @click="go('card_one/card_one.html')">
+          <h2>抽卡Debuff对决</h2>
+          <p>体验全新抽卡对决玩法，点击进入开始抽卡。</p>
+        </div>
+        <div class="link-card" @click="go('arcaea_radom/arc_radom.html')">
+          <h2>抽arc歌曲</h2>
+          <p>随机抽取 Arcaea 歌曲，点击进入抽曲界面。</p>
+        </div>
+        <div class="link-card" @click="go('arcaea_radom/phi_radom.html')">
+          <h2>抽phi歌曲</h2>
+          <p>随机抽取 Phigros 歌曲，点击进入抽曲界面。</p>
+        </div>
+        <div class="link-card" @click="go('draw2guess/draw2guess.html')">
+          <h2>猜歌抽曲界面</h2>
+          <p>抽曲并猜歌，点击进入游戏。</p>
+        </div>
+        <div class="link-card" @click="go('docs/SCREEN.html')">
+          <h2>转播方案介绍</h2>
+          <p>了解简易比赛转播方案，点击查看详细介绍。</p>
+        </div>
       </div>
     </div>
   </div>
@@ -36,7 +38,7 @@ function go(path: string) {
 .links-main {
   padding: 40px 0;
   min-height: 100vh;
-  background: #f7f9fa;
+  background: var(--color-surface);
 }
 .links-grid {
   display: grid;
@@ -46,28 +48,28 @@ function go(path: string) {
   margin: 0 auto;
 }
 .link-card {
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 16px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   padding: 32px 24px;
   cursor: pointer;
   transition: box-shadow 0.2s, transform 0.2s;
   text-align: center;
-  border: 2px solid #e3eaf2;
+  border: 1px solid var(--color-border);
 }
 .link-card:hover {
   box-shadow: 0 4px 24px rgba(64, 158, 255, 0.15);
-  border-color: #409eff;
+  border-color: var(--color-border);
   transform: translateY(-4px) scale(1.03);
 }
 .link-card h2 {
   margin-bottom: 16px;
   font-size: 22px;
-  color: #409eff;
+  color: var(--color-text-primary);
 }
 .link-card p {
   font-size: 16px;
-  color: #333;
+  color: var(--color-text-primary);
 }
 @media (max-width: 900px) {
   .links-grid {
