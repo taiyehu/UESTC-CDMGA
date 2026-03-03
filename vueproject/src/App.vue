@@ -24,7 +24,7 @@ const showNavbar = computed(() => {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
-  color: #2c3e50;
+  color: var(--color-text-primary);
   margin-top: 60px;
 }
 </style>

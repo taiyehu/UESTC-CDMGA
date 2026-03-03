@@ -20,19 +20,6 @@ app.config.globalProperties.$axios = axios
 // 全局挂载 axios
 app.config.globalProperties.$axios = axios
 
- 
-const config: StorybookConfig = {
-  framework: {
-    name: '@storybook/vue3-vite',
-    options: {
-      docgen: 'vue-component-meta',
-    },
-  },
-  stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
-  staticDirs: ['../public'],
-};
- 
-export default config;
 // 使用 Element Plus & Router
 app.use(ElementPlus)
 app.use(router)

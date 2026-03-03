@@ -7,6 +7,7 @@ import Login from '@/views/login/Login.vue'
 import Register from '@/views/register/Register.vue'
 import Home from '@/views/home/home.vue'
 import Profile from '@/views/profile/profile.vue'
+import ProfileSetting from '@/views/profile/profile_setting.vue'
 import adminUsers from '@/views/admin/admin-users.vue'
 import adminCourses from '@/views/admin/admin-courses.vue'
 import score from '@/views/score/score.vue'
@@ -41,6 +42,11 @@ const routes = [
     path: '/profile/:id?',
     name: 'Profile',
     component: Profile,
+  },
+  {
+    path: '/profile-setting',
+    name: 'ProfileSetting',
+    component: ProfileSetting,
   },
   {
     path: '/admin-users',
