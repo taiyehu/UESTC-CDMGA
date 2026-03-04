@@ -5,6 +5,6 @@
   </div>
 </template>
 
-<script setup>
+<script lang="ts" setup>
 import GlobalBackground from "@/components/GlobalBackground.vue"
 </script>

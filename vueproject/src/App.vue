@@ -10,7 +10,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import Navbar from '@/components/Navbar-c.vue'
+import Navbar from '@/components/Navbar.vue'
 import DefaultLayout from '@/components/DefaultLayout.vue'
 
 const route = useRoute()
