@@ -4,7 +4,8 @@ import router from './router'
 import axios from 'axios'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
-import './styles/index.css'
+import '@/styles/index.css'
+// import MotionPlugin from 'motion-v'
 
 
 
@@ -23,6 +24,6 @@ app.config.globalProperties.$axios = axios
 // 使用 Element Plus & Router
 app.use(ElementPlus)
 app.use(router)
-
+// app.use(MotionPlugin)
 app.mount('#app')
 

@@ -1,14 +1,17 @@
 <template>
   <div id="app">
+    <DefaultLayout>
     <Navbar v-if="showNavbar" />
     <router-view />
+    </DefaultLayout>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import Navbar from '@/components/Navbar.vue'
+import Navbar from '@/components/Navbar-c.vue'
+import DefaultLayout from '@/components/DefaultLayout.vue'
 
 const route = useRoute()
 

@@ -15,7 +15,7 @@
   width: clamp(720px, 70%, var(--layout-max-width));
 }
 
-.app-layout::before {
+/* .app-layout::before {
   content: "";
   position: fixed;
   inset: 0;
@@ -27,9 +27,9 @@
   );
   animation: sweep 8s linear infinite;
   pointer-events: none;
-}
+} */
 
-@keyframes sweep {
+/* @keyframes sweep {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
-}
+} */

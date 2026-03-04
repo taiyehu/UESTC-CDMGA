@@ -1,4 +1,4 @@
-/* @import '@/styles/tailwind.css'; */
+@import "tailwindcss";
 @import '@/styles/theme.css';
 @import '@/styles/layout.css';
 /* @import '@/styles/elements.css'; */
