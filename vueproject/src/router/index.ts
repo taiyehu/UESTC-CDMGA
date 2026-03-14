@@ -11,6 +11,7 @@ import ProfileSetting from '@/views/profile/profile_setting.vue'
 import adminUsers from '@/views/admin/admin-users.vue'
 import adminCourses from '@/views/admin/admin-courses.vue'
 import adminScores from '@/views/admin/admin-scores.vue'
+import adminBingoSubmissions from '@/views/admin/admin-bingo-submissions.vue'
 import adminProfiles from '@/views/admin/admin-profiles.vue'
 import adminProfilesPassed from '@/views/admin/admin-profiles-passed.vue'
 import AdminLayout from '@/views/admin/AdminLayout.vue'
@@ -25,6 +26,7 @@ import activity from '@/views/activity/activity.vue'
 import ActivityDetailPage from '@/views/activity/ActivityDetailPage.vue'
 import adminActivities from '@/views/admin/admin-activities.vue'
 import contestRanking from '@/views/pages/contest-ranking.vue'
+import NotFoundPage from '@/views/pages/not-found.vue'
 
 // 路由表
 const routes = [
@@ -94,27 +96,11 @@ const routes = [
         path: 'scores',
         component: adminScores,
       },
+      {
+        path: 'bingo-submissions',
+        component: adminBingoSubmissions,
+      },
     ],
-  },
-  {
-    path: '/admin-users',
-    redirect: '/admin/users',
-  },
-  {
-    path: '/admin-courses',
-    redirect: '/admin/courses',
-  },
-  {
-    path: '/admin-profiles',
-    redirect: '/admin/profiles',
-  },
-  {
-    path: '/admin-activities',
-    redirect: '/admin/activities',
-  },
-  {
-    path: '/admin-scores',
-    redirect: '/admin/scores',
   },
   {
     path: '/ranking',
@@ -147,6 +133,11 @@ const routes = [
   {
     path: '/contest-ranking',
     component: contestRanking,
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: NotFoundPage,
   },
 ]
 

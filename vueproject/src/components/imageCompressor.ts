@@ -1,12 +1,12 @@
 import Compressor from 'compressorjs'
 
 /**
- * 压缩图片到目标大小（优先5M，压不下则8M），质量尽量高
+ * 压缩图片到目标大小（优先2M，压不下则5M），质量尽量高
  * @param {File} file 原始图片文件
- * @param {number} targetSize 目标大小（字节），默认5M
+ * @param {number} targetSize 目标大小（字节），默认2M
  * @returns {Promise<File>} 压缩后的图片文件
  */
-export function compressImage(file: Blob | File, targetSize = 5 * 1024 * 1024): Promise<File> {
+export function compressImage(file: Blob | File, targetSize = 2 * 1024 * 1024): Promise<File> {
   const inputFile: File = file instanceof File ? file : new File([file], 'image.jpg', { type: (file as Blob).type })
   const originalName = inputFile.name
   const originalSize = inputFile.size
@@ -44,9 +44,9 @@ export function compressImage(file: Blob | File, targetSize = 5 * 1024 * 1024): 
 
     doCompress(inputFile)
   }).then((result: File) => {
-    if ((result as File).size > 5 * 1024 * 1024 && targetSize === 5 * 1024 * 1024) {
-      // 压到1M失败，尝试压到3M
-      return compressImage(result, 8 * 1024 * 1024)
+    if ((result as File).size > 2 * 1024 * 1024 && targetSize === 2 * 1024 * 1024) {
+      // 压到2M失败，尝试压到5M
+      return compressImage(result, 5 * 1024 * 1024)
     }
     return result
   })

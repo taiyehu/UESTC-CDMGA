@@ -1,39 +1,47 @@
 <template>
   <div>
-    <h2 class="page-title">成绩管理</h2>
+    <h2 class="page-title">常规课题成绩管理</h2>
 
-    <NeonRankTable min-width-class="min-w-250" text-size-class="text-base">
+    <NeonRankTable min-width-class="min-w-260" text-size-class="text-base">
       <template #head>
         <tr>
-          <th class="px-4 py-3 text-center">成绩ID</th>
-          <th class="px-4 py-3 text-center">课题名称</th>
-          <th class="px-4 py-3 text-center">用户名</th>
-          <th class="px-4 py-3 text-center">上传时间</th>
-          <th class="px-4 py-3 text-center">图片</th>
-          <th class="px-4 py-3 text-center">备注</th>
-          <th class="px-4 py-3 text-center">评分</th>
-          <th class="px-4 py-3 text-center">操作</th>
+          <th class="w-20 px-3 py-3 text-center">成绩ID</th>
+          <th class="w-44 px-3 py-3 text-center">课题名称</th>
+          <th class="w-36 px-3 py-3 text-center">用户名</th>
+          <th class="w-44 px-3 py-3 text-center">上传时间</th>
+          <th class="w-28 px-3 py-3 text-center">图片</th>
+          <th class="w-72 px-3 py-3 text-center">备注</th>
+          <th class="w-24 px-3 py-3 text-center">评分</th>
+          <th class="w-36 px-3 py-3 text-center">操作</th>
         </tr>
       </template>
 
-      <tr v-for="score in unscoredScores" :key="score.id" class="border-t border-white/12">
-        <td class="px-4 py-3 text-center">{{ score.id }}</td>
-        <td class="px-4 py-3 text-center">{{ score.course?.title || '-' }}</td>
-        <td class="px-4 py-3 text-center">{{ score.identity?.account || '-' }}</td>
-        <td class="px-4 py-3 text-center">{{ formatDateTime(score.uploadTime) }}</td>
-        <td class="px-4 py-3 text-center">
-          <a v-if="score.image" :href="getImageUrl(score.image)" target="_blank" class="link">查看</a>
+      <tr v-for="score in pagedScores" :key="score.id" class="border-t border-white/12">
+        <td class="px-3 py-3 text-center">{{ score.id }}</td>
+        <td class="px-3 py-3 text-center">{{ score.course?.title || '-' }}</td>
+        <td class="px-3 py-3 text-center">{{ score.identity?.account || '-' }}</td>
+        <td class="px-3 py-3 text-center">{{ formatDateTime(score.uploadTime) }}</td>
+        <td class="px-3 py-3 text-center">
+          <img
+            v-if="score.image"
+            :src="getImageUrl(score.image)"
+            alt="成绩图片"
+            class="thumb mx-auto"
+            @click="openPreview(getImageUrl(score.image))"
+          />
           <span v-else>-</span>
         </td>
-        <td class="px-4 py-3 text-center">{{ score.remark || '-' }}</td>
-        <td class="px-4 py-3 text-center">
+        <td class="px-3 py-3 text-center">
+          <p class="remark-text" :title="score.remark || '-'">{{ score.remark || '-' }}</p>
+        </td>
+        <td class="px-3 py-3 text-center">
           <div class="mx-auto max-w-24">
             <NeonInput :model-value="String(scoreDraft[score.id] ?? score.score ?? '')" placeholder="分数" @update:model-value="(val) => setDraft(score.id, val)" />
           </div>
         </td>
-        <td class="px-4 py-3 text-center">
+        <td class="px-3 py-3 text-center">
           <div class="flex flex-wrap justify-center gap-2">
-            <button type="button" class="neon-btn" @click="updateScore(score)">提交评分</button>
+            <button type="button" class="neon-btn" @click="updateScore(score)">通过</button>
             <button type="button" class="neon-btn danger" @click="deleteScore(score.id)">删除</button>
           </div>
         </td>
@@ -45,6 +53,15 @@
       <span class="text-cyan-100/85">{{ currentPage }} / {{ totalPages }}</span>
       <button type="button" class="neon-btn" :disabled="currentPage >= totalPages" @click="handlePageChange(currentPage + 1)">下一页</button>
     </div>
+
+    <teleport to="body">
+      <div v-if="previewVisible" class="preview-mask" @click.self="previewVisible = false">
+        <div class="preview-wrap">
+          <button type="button" class="neon-btn mb-3" @click="previewVisible = false">关闭</button>
+          <img :src="previewImage" alt="图片预览" class="preview-image" />
+        </div>
+      </div>
+    </teleport>
   </div>
 </template>
 
@@ -57,13 +74,31 @@ import { fetchUnScoredScores, handleUpdateScore } from '@/api/score'
 import NeonRankTable from '@/components/NeonRankTable.vue'
 import NeonInput from '@/components/NeonInput.vue'
 
-const unscoredScores = ref<any[]>([])
+const allScores = ref<any[]>([])
 const currentPage = ref(1)
-const pageSize = ref(10)
-const total = ref(0)
+const pageSize = 10
 const scoreDraft = ref<Record<number, string>>({})
+const previewVisible = ref(false)
+const previewImage = ref('')
 
-const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
+const filteredScores = computed(() => {
+  return allScores.value.filter((item) => {
+    const category = String(item?.course?.category || '').toLowerCase()
+    return category !== 'bingo'
+  })
+})
+
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredScores.value.length / pageSize)))
+
+const pagedScores = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  return filteredScores.value.slice(start, start + pageSize)
+})
+
+function openPreview(src: string): void {
+  previewImage.value = src
+  previewVisible.value = true
+}
 
 function setDraft(scoreId: number, value: string): void {
   scoreDraft.value[scoreId] = value
@@ -82,24 +117,24 @@ function formatDateTime(value: any): string {
 
 async function fetchScores(): Promise<void> {
   try {
-    const response = await fetchUnScoredScores({ page: currentPage.value, pageSize: pageSize.value })
-    unscoredScores.value = response.data.list || []
-    total.value = response.data.total || 0
+    const response = await fetchUnScoredScores({ page: 1, pageSize: 1000 })
+    allScores.value = response.data.list || []
 
     const draft: Record<number, string> = {}
-    for (const item of unscoredScores.value) {
+    for (const item of allScores.value) {
       draft[item.id] = String(item.score ?? '')
     }
     scoreDraft.value = draft
+
+    currentPage.value = 1
   } catch {
-    unscoredScores.value = []
+    allScores.value = []
     ElMessage({ message: '获取成绩列表失败', type: 'error' })
   }
 }
 
 function handlePageChange(page: number): void {
   currentPage.value = Math.min(totalPages.value, Math.max(1, page))
-  fetchScores()
 }
 
 async function updateScore(score: any): Promise<void> {
@@ -126,7 +161,6 @@ async function updateScore(score: any): Promise<void> {
 
     await handleUpdateScore(updatePayload, updatePayload.id)
     ElMessage({ message: '成绩提交成功', type: 'success' })
-    currentPage.value = 1
     await fetchScores()
   } catch (error: any) {
     const errorMsg = error?.response?.data?.message || '成绩提交失败，请重试'
@@ -157,6 +191,23 @@ onMounted(fetchScores)
   margin-bottom: 16px;
 }
 
+.remark-text {
+  max-width: 280px;
+  margin: 0 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.thumb {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  cursor: zoom-in;
+}
+
 .neon-btn {
   border: 1px solid rgba(34, 211, 238, 0.65);
   border-radius: 8px;
@@ -174,7 +225,28 @@ onMounted(fetchScores)
   border-color: rgba(248, 113, 113, 0.55);
 }
 
-.link {
-  color: #a5f3fc;
+.preview-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 6, 23, 0.72);
+  padding: 20px;
+}
+
+.preview-wrap {
+  width: min(900px, 96vw);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.preview-image {
+  width: 100%;
+  max-height: 82vh;
+  object-fit: contain;
+  border-radius: 10px;
 }
 </style>

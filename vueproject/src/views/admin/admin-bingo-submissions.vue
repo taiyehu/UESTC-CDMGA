@@ -1,0 +1,239 @@
+<template>
+  <div>
+    <h2 class="page-title">Bingo 题目提交管理</h2>
+
+    <NeonRankTable min-width-class="min-w-280" text-size-class="text-base">
+      <template #head>
+        <tr>
+          <th class="w-20 px-3 py-3 text-center">成绩ID</th>
+          <th class="w-20 px-3 py-3 text-center">题目ID</th>
+          <th class="w-44 px-3 py-3 text-center">课题名称</th>
+          <th class="w-32 px-3 py-3 text-center">用户名</th>
+          <th class="w-28 px-3 py-3 text-center">组名</th>
+          <th class="w-44 px-3 py-3 text-center">上传时间</th>
+          <th class="w-28 px-3 py-3 text-center">图片</th>
+          <th class="w-32 px-3 py-3 text-center">方式</th>
+          <th class="w-56 px-3 py-3 text-center">操作</th>
+        </tr>
+      </template>
+
+      <tr v-for="row in pagedRows" :key="row.id" class="border-t border-white/12">
+        <td class="px-3 py-3 text-center">{{ row.id }}</td>
+        <td class="px-3 py-3 text-center">{{ row.taskId }}</td>
+        <td class="px-3 py-3 text-center">{{ row.courseName }}</td>
+        <td class="px-3 py-3 text-center">{{ row.account }}</td>
+        <td class="px-3 py-3 text-center">{{ row.groupName }}</td>
+        <td class="px-3 py-3 text-center">{{ row.uploadTime }}</td>
+        <td class="px-3 py-3 text-center">
+          <img v-if="row.image" :src="row.image" alt="提交图片" class="thumb mx-auto" @click="openPreview(row.image)" />
+          <span v-else>-</span>
+        </td>
+        <td class="px-3 py-3 text-center">{{ row.method }}</td>
+        <td class="px-3 py-3 text-center">
+          <div class="flex flex-wrap justify-center gap-2">
+            <button type="button" class="neon-btn ok" @click="markPass(row.id)">通过</button>
+            <button type="button" class="neon-btn danger" @click="toggleReject(row.id)">驳回</button>
+            <template v-if="expandedRejectId === row.id">
+              <button type="button" class="neon-btn warn" @click="rejectWithReason(row.id, '曲目不对')">曲目不对</button>
+              <button type="button" class="neon-btn warn" @click="rejectWithReason(row.id, '游玩方式不对')">游玩方式不对</button>
+            </template>
+          </div>
+        </td>
+      </tr>
+    </NeonRankTable>
+
+    <div class="mt-4 flex items-center justify-end gap-2">
+      <button type="button" class="neon-btn" :disabled="currentPage <= 1" @click="handlePageChange(currentPage - 1)">上一页</button>
+      <span class="text-cyan-100/85">{{ currentPage }} / {{ totalPages }}</span>
+      <button type="button" class="neon-btn" :disabled="currentPage >= totalPages" @click="handlePageChange(currentPage + 1)">下一页</button>
+    </div>
+
+    <teleport to="body">
+      <div v-if="previewVisible" class="preview-mask" @click.self="previewVisible = false">
+        <div class="preview-wrap">
+          <button type="button" class="neon-btn mb-3" @click="previewVisible = false">关闭</button>
+          <img :src="previewImage" alt="图片预览" class="preview-image" />
+        </div>
+      </div>
+    </teleport>
+  </div>
+</template>
+
+<script lang="ts" setup>
+import { computed, onMounted, ref } from 'vue'
+import { ElMessage } from 'element-plus'
+import { fetchUnScoredScores } from '@/api/score'
+import NeonRankTable from '@/components/NeonRankTable.vue'
+
+type BingoRow = {
+  id: number
+  taskId: string
+  courseName: string
+  account: string
+  groupName: string
+  uploadTime: string
+  image: string
+  method: string
+}
+
+const rows = ref<BingoRow[]>([])
+const currentPage = ref(1)
+const pageSize = 10
+const expandedRejectId = ref<number | null>(null)
+const previewVisible = ref(false)
+const previewImage = ref('')
+
+const totalPages = computed(() => Math.max(1, Math.ceil(rows.value.length / pageSize)))
+const pagedRows = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  return rows.value.slice(start, start + pageSize)
+})
+
+function handlePageChange(page: number): void {
+  currentPage.value = Math.min(totalPages.value, Math.max(1, page))
+}
+
+function openPreview(src: string): void {
+  previewImage.value = src
+  previewVisible.value = true
+}
+
+function normalizeUrl(imagePath?: string): string {
+  if (!imagePath) return ''
+  if (/^https?:\/\//.test(imagePath)) return imagePath
+  return imagePath.startsWith('/') ? imagePath : '/' + imagePath
+}
+
+function extractTaskId(remark?: string): string {
+  if (!remark) return '-'
+  const matched = remark.match(/#(\d+)/)
+  return matched?.[1] || '-'
+}
+
+function extractGroupName(item: any): string {
+  return String(item?.groupName || item?.identity?.groupName || '-')
+}
+
+function extractMethod(item: any): string {
+  if (item?.method) return String(item.method)
+  if (item?.playMode) return String(item.playMode)
+  const remark = String(item?.remark || '')
+  const matched = remark.match(/方式[:：]\s*([^\]\n]+)/)
+  return matched?.[1]?.trim() || '-'
+}
+
+function formatDateTime(value: any): string {
+  if (!value) return '-'
+  return new Date(value).toLocaleString('zh-CN')
+}
+
+function toggleReject(scoreId: number): void {
+  expandedRejectId.value = expandedRejectId.value === scoreId ? null : scoreId
+}
+
+function markPass(scoreId: number): void {
+  ElMessage({ message: `已标记成绩 ${scoreId} 通过（暂未接入后端）`, type: 'success' })
+}
+
+function rejectWithReason(scoreId: number, reason: string): void {
+  ElMessage({ message: `已驳回成绩 ${scoreId}：${reason}（暂未接入后端）`, type: 'warning' })
+  expandedRejectId.value = null
+}
+
+async function fetchBingoRows(): Promise<void> {
+  try {
+    const response = await fetchUnScoredScores({ page: 1, pageSize: 1000 })
+    const list = response.data.list || []
+    const mapped = list
+      .filter((item: any) => String(item?.course?.category || '').toLowerCase() === 'bingo')
+      .map((item: any) => {
+        return {
+          id: Number(item.id),
+          taskId: extractTaskId(item.remark),
+          courseName: String(item?.course?.title || '-'),
+          account: String(item?.identity?.account || '-'),
+          groupName: extractGroupName(item),
+          uploadTime: formatDateTime(item.uploadTime),
+          image: normalizeUrl(item.image),
+          method: extractMethod(item),
+        } as BingoRow
+      })
+
+    rows.value = mapped
+    currentPage.value = 1
+  } catch {
+    rows.value = []
+    ElMessage({ message: '获取 Bingo 提交失败', type: 'error' })
+  }
+}
+
+onMounted(fetchBingoRows)
+</script>
+
+<style scoped>
+.page-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin-bottom: 16px;
+}
+
+.thumb {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  cursor: zoom-in;
+}
+
+.neon-btn {
+  border: 1px solid rgba(34, 211, 238, 0.65);
+  border-radius: 8px;
+  padding: 6px 10px;
+  color: #cffafe;
+  background: rgba(8, 47, 73, 0.58);
+}
+
+.neon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.neon-btn.ok {
+  border-color: rgba(52, 211, 153, 0.55);
+}
+
+.neon-btn.warn {
+  border-color: rgba(251, 191, 36, 0.55);
+}
+
+.neon-btn.danger {
+  border-color: rgba(248, 113, 113, 0.55);
+}
+
+.preview-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 6, 23, 0.72);
+  padding: 20px;
+}
+
+.preview-wrap {
+  width: min(900px, 96vw);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.preview-image {
+  width: 100%;
+  max-height: 82vh;
+  object-fit: contain;
+  border-radius: 10px;
+}
+</style>
