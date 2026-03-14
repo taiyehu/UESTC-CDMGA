@@ -34,6 +34,13 @@ export const fetchCourseData = () => {
   })
 }
 
+export const fetchCourseByIdData = (courseId: number | string) => {
+  return request({
+    url: `/course/${courseId}`,
+    method: 'get',
+  })
+}
+
 export const fetchAvailablecourseData = (params: PageParams) => {
   const pageSize = params.pageSize ?? params.size ?? 10
   return request({

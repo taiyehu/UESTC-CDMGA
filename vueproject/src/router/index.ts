@@ -10,11 +10,12 @@ import Profile from '@/views/profile/profile.vue'
 import ProfileSetting from '@/views/profile/profile_setting.vue'
 import adminUsers from '@/views/admin/admin-users.vue'
 import adminCourses from '@/views/admin/admin-courses.vue'
-import score from '@/views/score/score.vue'
 import review from '@/views/review/review.vue'
 import adminProfiles from '@/views/admin/admin-profiles.vue'
 import ranking from '@/views/pages/ranking.vue'
 import task from '@/views/pages/task.vue'
+import TaskDetailPage from '@/views/task/TaskDetailPage.vue'
+import TaskBingoDetail from '@/views/task/TaskBingoDetail.vue'
 import links from '@/views/pages/links.vue'
 import activity from '@/views/activity/activity.vue'
 import adminActivities from '@/views/admin/admin-activities.vue'
@@ -69,16 +70,20 @@ const routes = [
     component: review,
   },
   {
-    path: '/score',
-    component: score,
-  },
-  {
     path: '/ranking',
     component: ranking,
   },
   {
     path: '/task',
     component: task,
+  },
+  {
+    path: '/task/:id',
+    component: TaskDetailPage,
+  },
+  {
+    path: '/task/:id/bingo/:cellId',
+    component: TaskBingoDetail,
   },
   {
     path: '/links',

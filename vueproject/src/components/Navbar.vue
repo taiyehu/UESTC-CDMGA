@@ -1,10 +1,15 @@
 <template>
   <nav
-    class="fixed inset-x-0 top-0 z-50 h-(--navbar-height) bg-transparent"
+    class="fixed inset-x-0 top-0 z-50 h-(--navbar-height) isolate bg-transparent"
   >
     <!-- 毛玻璃底（保持整体透明） -->
     <div
-      class="absolute inset-0 border-b border-white/10 bg-white/5 backdrop-blur-md"
+      class="absolute inset-0 border-b border-cyan-200/20 bg-slate-950/96"
+      aria-hidden="true"
+    />
+
+    <div
+      class="absolute inset-0 bg-linear-to-r from-cyan-400/4 via-fuchsia-400/3 to-cyan-400/4"
       aria-hidden="true"
     />
 
@@ -108,7 +113,6 @@ const avatarUrl = ref(avatarDefault)
 const navLinks = [
   { label: '主页', to: '/home' },
   { label: '课题', to: '/task' },
-  { label: '成绩提交', to: '/score' },
   { label: '活动', to: '/activity' },
   { label: '排行榜', to: '/ranking' },
   { label: '网站功能', to: '/links' },

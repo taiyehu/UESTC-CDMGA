@@ -160,7 +160,7 @@
         <el-form-item label="补充说明">
           <el-input
             type="textarea"
-            v-model="updateForm.remark"
+            v-model="submitForm.remark"
             placeholder="可选，填写补充说明"
             :rows="3"
           ></el-input>
@@ -243,6 +243,11 @@ import { compressImage } from '@/components/imageCompressor'
 import dayjs from 'dayjs'
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useRoute, useRouter } from 'vue-router'
+
+const route = useRoute()
+const router = useRouter()
+const autoOpenedFromQuery = ref(false)
 
 // 状态与数据
 const courses = ref<any[]>([])
@@ -276,6 +281,61 @@ const imageFileList = ref<any[]>([])
 const submittedCourses = ref<any[]>([])
 const ScoredScores = ref<any[]>([])
 
+function firstQueryValue(value: unknown): string | null {
+  if (typeof value === 'string') return value
+  if (Array.isArray(value) && typeof value[0] === 'string') return value[0]
+  return null
+}
+
+async function clearScoreQuery() {
+  await router.replace({ path: '/score' })
+}
+
+async function tryOpenDialogFromQuery() {
+  if (autoOpenedFromQuery.value) return
+
+  const courseIdRaw = firstQueryValue(route.query.courseId)
+  if (!courseIdRaw) return
+
+  const courseId = Number(courseIdRaw)
+  autoOpenedFromQuery.value = true
+
+  if (!Number.isFinite(courseId) || courseId <= 0) {
+    ElMessage({ message: '课题参数无效，已跳过自动提交入口', type: 'warning' })
+    await clearScoreQuery()
+    return
+  }
+
+  const targetCourse = courses.value.find((course) => Number(course.id) === courseId)
+  if (!targetCourse) {
+    ElMessage({ message: `未找到课题 ID ${courseId}，请手动选择提交`, type: 'warning' })
+    await clearScoreQuery()
+    return
+  }
+
+  const bingoCellRaw = firstQueryValue(route.query.bingoCell)
+  const bingoCell = Number(bingoCellRaw)
+  const isValidBingoCell = Number.isFinite(bingoCell) && bingoCell >= 1 && bingoCell <= 25
+  const bingoRemark = isValidBingoCell ? `[Bingo 子题 #${bingoCell}] ` : ''
+
+  if (isScored(targetCourse.id)) {
+    await openViewDialog(targetCourse)
+    ElMessage({ message: '该课题已评分，已为你打开查看窗口', type: 'info' })
+  } else if (isSubmitted(targetCourse.id)) {
+    await openUpdateDialog(targetCourse)
+    if (bingoRemark && !updateForm.remark) {
+      updateForm.remark = bingoRemark
+    }
+  } else {
+    openSubmitDialog(targetCourse)
+    if (bingoRemark && !submitForm.remark) {
+      submitForm.remark = bingoRemark
+    }
+  }
+
+  await clearScoreQuery()
+}
+
 // 工具函数
 function getImageUrl(imagePath?: string) {
   console.log('原始图片路径:', imagePath)
@@ -297,6 +357,7 @@ async function fetchCourses() {
     submittedCourses.value = []
     ScoredScores.value = []
     await checkSubmittedCourses()
+    await tryOpenDialogFromQuery()
     console.log('后端返回的数据:', response.data.list)
   } catch (error: any) {
     console.error('获取课题信息失败:', error)
@@ -375,6 +436,7 @@ function openSubmitDialog(course: any) {
   submitForm.course_id = course.id
   submitForm.course_title = course.title
   submitForm.upload_time = ''
+  submitForm.remark = ''
   submitForm.image = ''
   imageFileList.value = []
   submitDialogVisible.value = true
