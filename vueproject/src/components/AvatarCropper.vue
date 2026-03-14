@@ -1,5 +1,37 @@
 <template>
+  <div v-if="inline" class="inline-cropper-panel">
+    <div v-if="imgUrl" class="cropper-wrapper">
+      <Cropper
+        ref="cropperRef"
+        :src="imgUrl"
+        :stencil-props="{
+          aspectRatio: 1,
+        }"
+        :auto-zoom="true"
+        :background="false"
+        image-restriction="stencil"
+        class="cropper"
+      />
+    </div>
+
+    <div v-else class="empty-tip">
+      请选择图片后裁剪
+    </div>
+
+    <div class="dialog-footer">
+      <el-button @click="zoom(1.1)">放大</el-button>
+      <el-button @click="zoom(0.9)">缩小</el-button>
+      <el-button @click="rotate(-90)">左旋</el-button>
+      <el-button @click="rotate(90)">右旋</el-button>
+      <el-button type="primary" @click="confirm">
+        确定裁剪
+      </el-button>
+      <el-button @click="close">取消</el-button>
+    </div>
+  </div>
+
   <el-dialog
+    v-else
     v-model="isModalVisible"
     title="裁剪头像"
     :width="dialogWidth"
@@ -48,6 +80,7 @@ import 'vue-advanced-cropper/dist/style.css'
 const props = defineProps<{
   visible?: boolean
   imgUrl?: string
+  inline?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -99,6 +132,10 @@ watch(
 .avatar-cropper-dialog {
   top: 50% !important;
   transform: translateY(-50%) !important;
+}
+
+.inline-cropper-panel {
+  width: 100%;
 }
 
 .cropper-wrapper {

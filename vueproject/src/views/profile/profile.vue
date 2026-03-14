@@ -29,13 +29,9 @@
           </div>
 
           <div class="profile-signature" :title="getStatusText()">
-            <NeonInput
-              :model-value="profile.description || ''"
-              placeholder="输入你的个性签名（50字以内）"
-              :disabled="true"
-              :maxlength="50"
-              :show-count="true"
-            />
+            <div class="signature-box">
+              {{ profile.description || '暂无个性签名' }}
+            </div>
           </div>
 
           <div v-if="profileStatus !== 1" class="mt-2 text-cyan-100/85">
@@ -59,21 +55,19 @@
     </NeonCard>
 
     <NeonCard v-if="scoredScores.length > 0" class="box-card mt-5">
-      <h3>已完成课题及分数</h3>
+      <h3 class="section-title mb-3">已完成课题及分数</h3>
 
-      <div class="table-shell mt-3 overflow-x-auto rounded-xl bg-slate-900/35">
-        <table class="w-full min-w-220 text-left text-[15px] text-cyan-50">
-          <thead class="bg-cyan-300/12">
+      <NeonRankTable min-width-class="min-w-220" text-size-class="text-base">
+          <template #head>
             <tr>
-              <th class="px-3 py-3">课题名称</th>
+              <th class="px-4 py-3 text-center">课题名称</th>
               <th class="w-30 px-3 py-3 text-center">课题图片</th>
-              <th class="w-44 px-3 py-3">完成时间</th>
+              <th class="w-44 px-4 py-3 text-center">完成时间</th>
               <th class="w-30 px-3 py-3 text-center">成绩图片</th>
               <th class="w-24 px-3 py-3 text-center">分数</th>
-              <th class="px-3 py-3">备注</th>
+              <th class="px-4 py-3 text-center">备注</th>
             </tr>
-          </thead>
-          <tbody>
+          </template>
             <tr
               v-for="row in pagedScoredScores"
               :key="row.id"
@@ -104,9 +98,7 @@
               <td class="px-3 py-3 text-center">{{ row.score ?? '-' }}</td>
               <td class="px-3 py-3">{{ row.remark || '-' }}</td>
             </tr>
-          </tbody>
-        </table>
-      </div>
+      </NeonRankTable>
 
       <div class="mt-4 flex items-center justify-center gap-2">
         <button
@@ -130,7 +122,7 @@
     </NeonCard>
 
     <NeonCard v-if="RatedActivities.length > 0" class="box-card mt-5" padding-class="p-4">
-      <h3 class="mb-3">已参与的活动与分数详情</h3>
+      <h3 class="section-title mb-3">已参与的活动与分数详情</h3>
 
       <div class="space-y-3">
         <section
@@ -140,7 +132,7 @@
         >
           <button
             type="button"
-            class="flex w-full items-center justify-between text-left"
+            class="flex w-full items-center justify-between text-left text-cyan-50 transition-colors hover:text-white"
             @click="toggleActivity(activity.id)"
           >
             <span class="text-lg font-medium">{{ activity.title || activity.name }}</span>
@@ -160,19 +152,17 @@
             </div>
 
             <template v-else>
-              <div class="table-shell overflow-x-auto rounded-xl bg-slate-900/35">
-                <table class="w-full min-w-220 text-left text-[15px] text-cyan-50">
-                  <thead class="bg-cyan-300/12">
+              <NeonRankTable min-width-class="min-w-220" text-size-class="text-base">
+                  <template #head>
                     <tr>
-                      <th class="px-3 py-3">课题名称</th>
+                      <th class="px-4 py-3 text-center">课题名称</th>
                       <th class="w-30 px-3 py-3 text-center">课题图片</th>
-                      <th class="w-44 px-3 py-3">完成时间</th>
+                      <th class="w-44 px-4 py-3 text-center">完成时间</th>
                       <th class="w-30 px-3 py-3 text-center">成绩图片</th>
                       <th class="w-24 px-3 py-3 text-center">分数</th>
-                      <th class="px-3 py-3">备注</th>
+                      <th class="px-4 py-3 text-center">备注</th>
                     </tr>
-                  </thead>
-                  <tbody>
+                  </template>
                     <tr
                       v-for="row in pagedActivityScores(activity.id)"
                       :key="row.id"
@@ -203,9 +193,7 @@
                       <td class="px-3 py-3 text-center">{{ row.score ?? '-' }}</td>
                       <td class="px-3 py-3">{{ row.remark || '-' }}</td>
                     </tr>
-                  </tbody>
-                </table>
-              </div>
+              </NeonRankTable>
 
               <div v-if="(activityScoresMap[String(activity.id)] || []).length" class="mt-3 flex items-center justify-center gap-2">
                 <button
@@ -261,7 +249,7 @@ import axios from 'axios'
 import defaultAvatar from '@/assets/default-avatar.png'
 import { ElMessage } from 'element-plus'
 import NeonCard from '@/components/NeonCard.vue'
-import NeonInput from '@/components/NeonInput.vue'
+import NeonRankTable from '@/components/NeonRankTable.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -497,6 +485,7 @@ onMounted(() => {
 watch(() => route.params.id, () => {
   loadProfile()
 })
+
 </script>
 
 <style scoped>
@@ -521,9 +510,15 @@ watch(() => route.params.id, () => {
   width: min(92vw, 520px);
 }
 
-.table-shell {
-  position: relative;
+.signature-box {
+  min-height: 88px;
   border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(7, 24, 46, 0.58);
+  color: #e0f7ff;
+  padding: 10px 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
 }
 
 .thumb {
@@ -607,6 +602,12 @@ watch(() => route.params.id, () => {
 
 .box-card h3 {
   font-size: 1.25rem;
+}
+
+.section-title {
+  color: rgba(224, 247, 255, 0.95);
+  font-weight: 600;
+  letter-spacing: 0.04em;
 }
 
 .glitch-title::before,

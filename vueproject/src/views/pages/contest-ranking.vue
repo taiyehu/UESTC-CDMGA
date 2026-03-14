@@ -8,9 +8,8 @@
     <div class="hud-card p-4 md:p-6">
       <h2 class="mb-5 text-center text-xl font-semibold text-cyan-100 md:text-2xl">比赛排行榜（总计）</h2>
 
-      <div class="rank-table-shell overflow-x-auto rounded-xl bg-slate-900/40">
-        <table class="w-full min-w-190 text-sm text-cyan-50">
-          <thead class="bg-cyan-300/12">
+      <NeonRankTable min-width-class="min-w-190" text-size-class="text-lg">
+          <template #head>
             <tr>
               <th class="w-20 px-4 py-3 text-center">展开</th>
               <th class="w-20 px-4 py-3 text-center">排名</th>
@@ -18,8 +17,7 @@
               <th class="px-4 py-3 text-center">用户名</th>
               <th class="w-36 px-4 py-3 text-center">总分</th>
             </tr>
-          </thead>
-          <tbody>
+          </template>
             <template v-for="(row, index) in pagedRankData" :key="row.identityId">
               <tr class="border-t border-white/12 transition hover:bg-white/10">
                 <td class="px-4 py-3 text-center">
@@ -76,9 +74,7 @@
                 </td>
               </tr>
             </template>
-          </tbody>
-        </table>
-      </div>
+      </NeonRankTable>
 
       <div class="mt-5 flex flex-wrap items-center justify-center gap-2">
         <button
@@ -150,6 +146,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import NeonRankTable from '@/components/NeonRankTable.vue'
 
 const rankAllData = ref<any[]>([])
 const rankSortedData = ref<any[]>([])
@@ -319,28 +316,6 @@ onMounted(() => {
   border-radius: inherit;
   padding: 1px;
   background: linear-gradient(120deg, rgba(34, 211, 238, 0.9), rgba(168, 85, 247, 0.86), rgba(244, 114, 182, 0.9));
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
-.rank-table-shell {
-  position: relative;
-}
-
-.rank-table-shell::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 12px;
-  padding: 1px;
-  background: linear-gradient(120deg, rgba(34, 211, 238, 0.7), rgba(168, 85, 247, 0.68), rgba(244, 114, 182, 0.72));
   mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);

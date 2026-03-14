@@ -72,18 +72,31 @@
                     @change="onFileChange"
                 />
               </div>
-              <!-- inline cropper component -->
-              <avatar-cropper
-                v-model="cropperVisible"
-                :imgUrl="cropImgUrl"
-                :inline="true"
-                @crop="handleAvatarCrop"
-              />
             </div>
           </div>
         </section>
       </div>
     </NeonCard>
+
+    <div
+      v-if="cropperVisible"
+      class="fixed inset-0 z-120 flex items-center justify-center bg-black/70 px-4"
+      @click="cropperVisible = false"
+    >
+      <div class="cropper-modal-shell" @click.stop>
+        <div class="cropper-modal-header">
+          <h4>裁剪头像</h4>
+          <button type="button" class="cropper-close" @click="cropperVisible = false">关闭</button>
+        </div>
+        <avatar-cropper
+          :visible="cropperVisible"
+          :imgUrl="cropImgUrl"
+          :inline="true"
+          @update:visible="cropperVisible = $event"
+          @crop="handleAvatarCrop"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -382,5 +395,30 @@ onMounted(() => {
   object-fit: cover;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.32);
+}
+
+.cropper-modal-shell {
+  width: min(92vw, 920px);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(11, 27, 49, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 14px;
+}
+
+.cropper-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  color: #d8f3ff;
+}
+
+.cropper-close {
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(15, 23, 42, 0.7);
+  color: #fff;
+  padding: 4px 10px;
 }
 </style>
