@@ -12,12 +12,17 @@ import adminUsers from '@/views/admin/admin-users.vue'
 import adminCourses from '@/views/admin/admin-courses.vue'
 import adminScores from '@/views/admin/admin-scores.vue'
 import adminProfiles from '@/views/admin/admin-profiles.vue'
+import adminProfilesPassed from '@/views/admin/admin-profiles-passed.vue'
+import AdminLayout from '@/views/admin/AdminLayout.vue'
+import adminCoursesPublish from '@/views/admin/admin-courses-publish.vue'
+import adminActivitiesPublish from '@/views/admin/admin-activities-publish.vue'
 import ranking from '@/views/pages/ranking.vue'
 import task from '@/views/pages/task.vue'
 import TaskDetailPage from '@/views/task/TaskDetailPage.vue'
 import TaskBingoDetail from '@/views/task/TaskBingoDetail.vue'
 import links from '@/views/pages/links.vue'
 import activity from '@/views/activity/activity.vue'
+import ActivityDetailPage from '@/views/activity/ActivityDetailPage.vue'
 import adminActivities from '@/views/admin/admin-activities.vue'
 import contestRanking from '@/views/pages/contest-ranking.vue'
 
@@ -50,24 +55,66 @@ const routes = [
     component: ProfileSetting,
   },
   {
+    path: '/admin',
+    component: AdminLayout,
+    children: [
+      {
+        path: '',
+        redirect: '/admin/users',
+      },
+      {
+        path: 'users',
+        component: adminUsers,
+      },
+      {
+        path: 'courses',
+        component: adminCourses,
+      },
+      {
+        path: 'courses-publish',
+        component: adminCoursesPublish,
+      },
+      {
+        path: 'profiles',
+        component: adminProfiles,
+      },
+      {
+        path: 'profiles-passed',
+        component: adminProfilesPassed,
+      },
+      {
+        path: 'activities',
+        component: adminActivities,
+      },
+      {
+        path: 'activities-publish',
+        component: adminActivitiesPublish,
+      },
+      {
+        path: 'scores',
+        component: adminScores,
+      },
+    ],
+  },
+  {
     path: '/admin-users',
-    component: adminUsers,
+    redirect: '/admin/users',
   },
   {
     path: '/admin-courses',
-    component: adminCourses,
+    redirect: '/admin/courses',
   },
   {
     path: '/admin-profiles',
-    component: adminProfiles,
+    redirect: '/admin/profiles',
   },
   {
     path: '/admin-activities',
-    component: adminActivities,
+    redirect: '/admin/activities',
   },
   {
     path: '/admin-scores',
-    component: adminScores,
+    redirect: '/admin/scores',
   },
   {
     path: '/ranking',
@@ -92,6 +139,10 @@ const routes = [
   {
     path: '/activity',
     component: activity,
+  },
+  {
+    path: '/activity/:id',
+    component: ActivityDetailPage,
   },
   {
     path: '/contest-ranking',
@@ -119,15 +170,7 @@ router.beforeEach((to) => {
   }
 
   // 管理员权限控制
-  const adminPaths = [
-    '/admin-users',
-    '/admin-courses',
-    '/admin-profiles',
-    '/admin-activities',
-    '/admin-scores',
-  ]
-
-  if (adminPaths.includes(to.path)) {
+  if (to.path.startsWith('/admin')) {
     // 更稳健地解析 role：兼容纯文本和 JSON 字符串，优先在已登录的前提下读取
     let userRole: string | null = null
     if (userInfo) {

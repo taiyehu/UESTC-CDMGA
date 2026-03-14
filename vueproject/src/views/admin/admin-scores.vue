@@ -1,285 +1,180 @@
 <template>
   <div>
-    <admin-inner-nav />
-    <el-card class="box-card" v-if="unscoredScores.length > 0">
-      <h2>未审核成绩查看</h2>
+    <h2 class="page-title">成绩管理</h2>
 
-      <el-table :data="unscoredScores" stripe>
-        <el-table-column prop="id" label="成绩ID"></el-table-column>
-        <el-table-column prop="course.title" label="课题名称"></el-table-column>
-        <el-table-column
-          prop="identity.account"
-          label="用户名"
-        ></el-table-column>
-        <el-table-column
-          prop="uploadTime"
-          label="上传时间"
-          :formatter="formatDateTime"
-        ></el-table-column>
-        <el-table-column prop="score" label="分数"></el-table-column>
-        <el-table-column label="图片" width="200">
-          <template #default="scope">
-            <img
-              v-if="scope.row.image"
-              :src="getImageUrl(scope.row.image)"
-              alt="点击查看"
-              style="
-                width: 120px;
-                height: auto;
-                border-radius: 4px;
-                cursor: pointer;
-              "
-              @click="handleImageClick(getImageUrl(scope.row.image))"
-            />
-          </template>
-        </el-table-column>
-        <el-table-column prop="isScored" label="是否评分">
-          <template #default="scope">
-            {{ scope.row.isScored ? '是' : '否' }}
-          </template>
-        </el-table-column>
-        <el-table-column
-          prop="remark"
-          label="备注"
-          width="250"
-        ></el-table-column>
-        <el-table-column fixed="right" label="操作" width="120">
-          <template #default="scope">
-            <el-button
-              @click="openDialog(scope.row)"
-              type="primary"
-              :icon="ElIconEdit"
-              circle
-              size="small"
-            ></el-button>
-            <el-button
-              @click="openDeleteDialog(scope.row)"
-              type="danger"
-              :icon="ElIconDelete"
-              circle
-              size="small"
-            ></el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-      <div>
-        <el-pagination
-          @current-change="handlePageChange"
-          :current-page="currentPage"
-          :page-size="pageSize"
-          :total="total"
-          layout="prev, pager, next"
-        >
-        </el-pagination>
-      </div>
-    </el-card>
-    <el-card v-else>
-      <h2>没有未审核的成绩信息</h2>
-    </el-card>
-    <!--TODO:优化表单结构-->
-    <el-dialog
-      v-model="dialogVisible"
-      width="70%"
-      @close="dialogVisible = false"
-    >
-      <h3>编辑分数</h3>
-      <el-table :data="[selectedScore]">
-        <el-table-column prop="course.title" label="课题名称"></el-table-column>
-        <el-table-column
-          prop="identity.account"
-          label="用户姓名"
-        ></el-table-column>
-        <el-table-column label="成绩图片" width="200">
-          <template #default="scope">
-            <img
-              v-if="scope.row.image"
-              :src="getImageUrl(scope.row.image)"
-              alt="成绩图片"
-              style="
-                width: 120px;
-                height: auto;
-                border-radius: 4px;
-                cursor: pointer;
-              "
-              @click="handleImageClick(getImageUrl(scope.row.image))"
-            />
-          </template>
-        </el-table-column>
-        <el-table-column label="分数">
-          <el-input-number
-            v-model="selectedScore.score"
-            placeholder="请输入得分"
-          ></el-input-number>
-        </el-table-column>
-      </el-table>
-      <template v-slot:footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取 消</el-button>
-          <el-button type="primary" @click="updateScore(selectedScore)"
-            >确 定</el-button
-          >
-        </span>
+    <NeonRankTable min-width-class="min-w-250" text-size-class="text-base">
+      <template #head>
+        <tr>
+          <th class="px-4 py-3 text-center">成绩ID</th>
+          <th class="px-4 py-3 text-center">课题名称</th>
+          <th class="px-4 py-3 text-center">用户名</th>
+          <th class="px-4 py-3 text-center">上传时间</th>
+          <th class="px-4 py-3 text-center">图片</th>
+          <th class="px-4 py-3 text-center">备注</th>
+          <th class="px-4 py-3 text-center">评分</th>
+          <th class="px-4 py-3 text-center">操作</th>
+        </tr>
       </template>
-    </el-dialog>
 
-    <el-dialog v-model="deleteDialogVisible" title="确认删除成绩" width="30%">
-      <span>确定删除成绩？删除后用户需重新提交</span>
-      <template v-slot:footer>
-        <span class="dialog-footer">
-          <el-button @click="deleteDialogVisible = false">取消</el-button>
-          <el-button type="danger" @click="handleDeleteScore"
-            >确定删除</el-button
-          >
-        </span>
-      </template>
-    </el-dialog>
+      <tr v-for="score in unscoredScores" :key="score.id" class="border-t border-white/12">
+        <td class="px-4 py-3 text-center">{{ score.id }}</td>
+        <td class="px-4 py-3 text-center">{{ score.course?.title || '-' }}</td>
+        <td class="px-4 py-3 text-center">{{ score.identity?.account || '-' }}</td>
+        <td class="px-4 py-3 text-center">{{ formatDateTime(score.uploadTime) }}</td>
+        <td class="px-4 py-3 text-center">
+          <a v-if="score.image" :href="getImageUrl(score.image)" target="_blank" class="link">查看</a>
+          <span v-else>-</span>
+        </td>
+        <td class="px-4 py-3 text-center">{{ score.remark || '-' }}</td>
+        <td class="px-4 py-3 text-center">
+          <div class="mx-auto max-w-24">
+            <NeonInput :model-value="String(scoreDraft[score.id] ?? score.score ?? '')" placeholder="分数" @update:model-value="(val) => setDraft(score.id, val)" />
+          </div>
+        </td>
+        <td class="px-4 py-3 text-center">
+          <div class="flex flex-wrap justify-center gap-2">
+            <button type="button" class="neon-btn" @click="updateScore(score)">提交评分</button>
+            <button type="button" class="neon-btn danger" @click="deleteScore(score.id)">删除</button>
+          </div>
+        </td>
+      </tr>
+    </NeonRankTable>
 
-    <el-dialog v-model="previewVisible" width="auto" :show-close="true" center>
-      <img
-        :src="previewImage"
-        alt="预览图片"
-        style="max-width: 90vw; max-height: 80vh; display: block; margin: auto"
-      />
-    </el-dialog>
-    <div>
-      <router-link to="/profile">
-        <el-button style="margin-left: 10px">返回主页</el-button>
-      </router-link>
+    <div class="mt-4 flex items-center justify-end gap-2">
+      <button type="button" class="neon-btn" :disabled="currentPage <= 1" @click="handlePageChange(currentPage - 1)">上一页</button>
+      <span class="text-cyan-100/85">{{ currentPage }} / {{ totalPages }}</span>
+      <button type="button" class="neon-btn" :disabled="currentPage >= totalPages" @click="handlePageChange(currentPage + 1)">下一页</button>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue'
-import { Edit as ElIconEdit, Delete as ElIconDelete } from '@element-plus/icons-vue'
-import { fetchUnScoredScores, handleUpdateScore } from '@/api/score'
+import { computed, onMounted, ref } from 'vue'
 import dayjs from 'dayjs'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-import AdminInnerNav from '@/components/AdminInnerNav.vue'
+import { fetchUnScoredScores, handleUpdateScore } from '@/api/score'
+import NeonRankTable from '@/components/NeonRankTable.vue'
+import NeonInput from '@/components/NeonInput.vue'
 
-// 数据与状态
 const unscoredScores = ref<any[]>([])
-const selectedScore = ref<any>({})
-const dialogVisible = ref(false)
-const previewVisible = ref(false)
-const previewImage = ref('')
-const deleteDialogVisible = ref(false)
-const deleteScoreId = ref<number | null>(null)
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
+const scoreDraft = ref<Record<number, string>>({})
 
-// 获取图片 URL，保留日志用于调试
-function getImageUrl(imagePath?: string) {
-  console.log('原始图片路径:', imagePath)
+const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
+
+function setDraft(scoreId: number, value: string): void {
+  scoreDraft.value[scoreId] = value
+}
+
+function getImageUrl(imagePath?: string): string {
   if (!imagePath) return ''
-  if (/^https?:\/\//.test(imagePath)) {
-    return imagePath
-  }
-  // 只返回相对路径，nginx会自动代理
+  if (/^https?:\/\//.test(imagePath)) return imagePath
   return imagePath.startsWith('/') ? imagePath : '/' + imagePath
 }
 
-function handleImageClick(imgUrl: string) {
-  previewImage.value = imgUrl
-  previewVisible.value = true
+function formatDateTime(value: any): string {
+  if (!value) return '-'
+  return new Date(value).toLocaleString('zh-CN')
 }
 
-// 获取所有成绩信息
-async function fetchScores() {
+async function fetchScores(): Promise<void> {
   try {
     const response = await fetchUnScoredScores({ page: currentPage.value, pageSize: pageSize.value })
     unscoredScores.value = response.data.list || []
     total.value = response.data.total || 0
-    console.log(unscoredScores.value)
-  } catch (error: any) {
-    console.error('获取成绩信息失败:', error)
-    ElMessage({ message: '获取成绩列表失败，请稍后重试', type: 'error' })
+
+    const draft: Record<number, string> = {}
+    for (const item of unscoredScores.value) {
+      draft[item.id] = String(item.score ?? '')
+    }
+    scoreDraft.value = draft
+  } catch {
     unscoredScores.value = []
+    ElMessage({ message: '获取成绩列表失败', type: 'error' })
   }
 }
 
-function handlePageChange(page: number) {
-  currentPage.value = page
+function handlePageChange(page: number): void {
+  currentPage.value = Math.min(totalPages.value, Math.max(1, page))
   fetchScores()
 }
 
-async function updateScore(score: any) {
+async function updateScore(score: any): Promise<void> {
   try {
-    let point: number = score.score
-    // 判断是否为 contest 类型
-    if (score.course && score.course.category === 'contest') {
-      point = Number(point) - 10000000
+    const raw = scoreDraft.value[score.id]
+    let point = Number(raw)
+    if (!Number.isFinite(point)) {
+      ElMessage({ message: '请输入有效分数', type: 'error' })
+      return
     }
+
+    if (score.course && score.course.category === 'contest') {
+      point = point - 10000000
+    }
+
     const updatePayload = {
       id: score.id,
       upload_time: dayjs(score.uploadTime).format('YYYY-MM-DDTHH:mm:ss'),
       image: score.image,
-      point: Number(point), // 转为 float
+      point,
       is_scored: true,
       remark: score.remark,
     }
+
     await handleUpdateScore(updatePayload, updatePayload.id)
-    ElMessage({ message: '成绩提交成功！', type: 'success' })
-    dialogVisible.value = false
-    // 提交后刷新第一页
+    ElMessage({ message: '成绩提交成功', type: 'success' })
     currentPage.value = 1
     await fetchScores()
   } catch (error: any) {
-    console.error('提交失败:', error)
-    const errorMsg = error.response?.data?.message || '成绩提交失败，请重试'
+    const errorMsg = error?.response?.data?.message || '成绩提交失败，请重试'
     ElMessage({ message: errorMsg, type: 'error' })
   }
 }
 
-// 格式化日期时间
-function formatDateTime(cellValue: any) {
-  if (!cellValue) return ''
-  return new Date(cellValue).toLocaleString()
-}
+async function deleteScore(scoreId: number): Promise<void> {
+  if (!window.confirm('确定删除成绩？删除后用户需重新提交')) return
 
-function openDialog(score: any) {
-  console.log(score)
-  selectedScore.value = {
-    ...score,
-    uploadTime: dayjs(score.uploadTime).format('YYYY-MM-DD HH:mm:ss'),
-    createAt: dayjs(score.createAt).format('YYYY-MM-DD HH:mm:ss'),
-    updateAt: dayjs(score.updateAt).format('YYYY-MM-DD HH:mm:ss'),
-  }
-  dialogVisible.value = true
-}
-
-function openDeleteDialog(score: any) {
-  deleteScoreId.value = score.id
-  deleteDialogVisible.value = true
-}
-
-async function handleDeleteScore() {
   try {
-    await axios.delete(`/api/score/delete/${deleteScoreId.value}`)
+    await axios.delete(`/api/score/delete/${scoreId}`)
     ElMessage({ message: '成绩删除成功', type: 'success' })
-    deleteDialogVisible.value = false
     await fetchScores()
-  } catch (error) {
+  } catch {
     ElMessage({ message: '成绩删除失败', type: 'error' })
   }
 }
 
-onMounted(() => {
-  fetchScores()
-})
+onMounted(fetchScores)
 </script>
 
 <style scoped>
-.box-card {
-  margin: auto;
-  width: 1280px;
-  padding: 20px;
-}
-h2 {
+.page-title {
   font-size: 24px;
-  color: var(--color-text-primary);
-  margin-bottom: 20px;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin-bottom: 16px;
+}
+
+.neon-btn {
+  border: 1px solid rgba(34, 211, 238, 0.65);
+  border-radius: 8px;
+  padding: 6px 10px;
+  color: #cffafe;
+  background: rgba(8, 47, 73, 0.58);
+}
+
+.neon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.neon-btn.danger {
+  border-color: rgba(248, 113, 113, 0.55);
+}
+
+.link {
+  color: #a5f3fc;
 }
 </style>

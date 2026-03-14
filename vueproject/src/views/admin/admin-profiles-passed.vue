@@ -1,12 +1,12 @@
 <template>
   <div>
-    <h2 class="page-title">资料审核</h2>
+    <h2 class="page-title">已通过资料</h2>
 
     <div class="mb-4 max-w-sm">
       <NeonInput v-model="keyword" placeholder="按用户名或用户ID筛选" />
     </div>
 
-    <NeonRankTable min-width-class="min-w-220" text-size-class="text-base">
+    <NeonRankTable min-width-class="min-w-180" text-size-class="text-base">
       <template #head>
         <tr>
           <th class="px-4 py-3 text-center">头像</th>
@@ -14,8 +14,6 @@
           <th class="px-4 py-3 text-center">用户ID</th>
           <th class="px-4 py-3 text-center">签名</th>
           <th class="px-4 py-3 text-center">头衔</th>
-          <th class="px-4 py-3 text-center">状态</th>
-          <th class="px-4 py-3 text-center">操作</th>
         </tr>
       </template>
 
@@ -27,22 +25,10 @@
         <td class="px-4 py-3 text-center">{{ profile.identityId || '-' }}</td>
         <td class="px-4 py-3 text-center">{{ profile.description || '-' }}</td>
         <td class="px-4 py-3 text-center">{{ profile.title || '-' }}</td>
-        <td class="px-4 py-3 text-center">
-          <span v-if="profile.status === 0" class="state state-pending">审核中</span>
-          <span v-else-if="profile.status === 1" class="state state-pass">已通过</span>
-          <span v-else class="state state-none">未提交</span>
-        </td>
-        <td class="px-4 py-3 text-center">
-          <div class="flex flex-wrap justify-center gap-2">
-            <button v-if="profile.status === 0" type="button" class="neon-btn ok" @click="approveProfile(profile)">通过</button>
-            <button v-if="profile.status === 0" type="button" class="neon-btn warn" @click="rejectProfile(profile)">驳回</button>
-            <button type="button" class="neon-btn danger" @click="deleteProfile(profile)">删除</button>
-          </div>
-        </td>
       </tr>
     </NeonRankTable>
 
-    <p v-if="!filteredProfiles.length" class="mt-3 text-cyan-100/75">暂无资料可审核</p>
+    <p v-if="!filteredProfiles.length" class="mt-3 text-cyan-100/75">暂无已通过资料</p>
 
     <div class="mt-4 flex items-center justify-end gap-2">
       <button type="button" class="neon-btn" :disabled="currentPage <= 1" @click="handlePageChange(currentPage - 1)">上一页</button>
@@ -60,17 +46,16 @@ import defaultAvatar from '@/assets/default-avatar.png'
 import NeonRankTable from '@/components/NeonRankTable.vue'
 import NeonInput from '@/components/NeonInput.vue'
 
-const profiles = ref<any[]>([])
+const passedProfiles = ref<any[]>([])
 const keyword = ref('')
 const pageSize = 10
 const currentPage = ref(1)
 
 const filteredProfiles = computed(() => {
   const key = keyword.value.trim().toLowerCase()
-  const source = profiles.value.filter((item) => Number(item.status) !== 1)
-  if (!key) return source
+  if (!key) return passedProfiles.value
 
-  return source.filter((item) => {
+  return passedProfiles.value.filter((item) => {
     const account = String(item.account || '').toLowerCase()
     const identityId = String(item.identityId || item.identity_id || '')
     return account.includes(key) || identityId.includes(key)
@@ -100,50 +85,17 @@ function getImageUrl(imagePath?: string): string {
   return imagePath.startsWith('/') ? imagePath : '/' + imagePath
 }
 
-async function fetchProfiles(): Promise<void> {
+async function fetchPassedProfiles(): Promise<void> {
   try {
-    const response = await axios.get('/api/profile/all')
-    profiles.value = response.data || []
+    const response = await axios.get('/api/profile/all-passed')
+    passedProfiles.value = response.data || []
   } catch {
-    profiles.value = []
-    ElMessage({ message: '获取用户资料失败', type: 'error' })
+    passedProfiles.value = []
+    ElMessage({ message: '获取已通过资料失败', type: 'error' })
   }
 }
 
-async function approveProfile(profile: any): Promise<void> {
-  try {
-    await axios.put(`/api/profile/${profile.id}`, { ...profile, status: 1 })
-    ElMessage({ message: '审核通过', type: 'success' })
-    await fetchProfiles()
-  } catch {
-    ElMessage({ message: '操作失败', type: 'error' })
-  }
-}
-
-async function rejectProfile(profile: any): Promise<void> {
-  try {
-    await axios.put(`/api/profile/${profile.id}`, { ...profile, status: -1 })
-    ElMessage({ message: '已驳回', type: 'success' })
-    await fetchProfiles()
-  } catch {
-    ElMessage({ message: '操作失败', type: 'error' })
-  }
-}
-
-async function deleteProfile(profile: any): Promise<void> {
-  if (!window.confirm('确定删除该用户资料吗？')) return
-
-  const profileId = profile.id || profile.identityId || profile.identity_id
-  try {
-    await axios.delete(`/api/profile/${profileId}`)
-    ElMessage({ message: '用户资料删除成功', type: 'success' })
-    await fetchProfiles()
-  } catch {
-    ElMessage({ message: '删除失败', type: 'error' })
-  }
-}
-
-onMounted(fetchProfiles)
+onMounted(fetchPassedProfiles)
 </script>
 
 <style scoped>
@@ -162,23 +114,6 @@ onMounted(fetchProfiles)
   border: 1px solid rgba(34, 211, 238, 0.35);
 }
 
-.state {
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.state-pending {
-  color: #fbbf24;
-}
-
-.state-pass {
-  color: #34d399;
-}
-
-.state-none {
-  color: #94a3b8;
-}
-
 .neon-btn {
   border: 1px solid rgba(34, 211, 238, 0.65);
   border-radius: 8px;
@@ -190,17 +125,5 @@ onMounted(fetchProfiles)
 .neon-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
-}
-
-.neon-btn.ok {
-  border-color: rgba(52, 211, 153, 0.55);
-}
-
-.neon-btn.warn {
-  border-color: rgba(251, 191, 36, 0.55);
-}
-
-.neon-btn.danger {
-  border-color: rgba(248, 113, 113, 0.55);
 }
 </style>

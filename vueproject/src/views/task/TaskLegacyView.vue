@@ -1,11 +1,11 @@
 <template>
   <article class="space-y-5">
     <header class="task-panel text-left">
-      <p class="task-category">legacy</p>
+      <p class="task-category">{{ categoryLabel }}</p>
       <h1 class="task-title">{{ course.title }}</h1>
       <p class="task-time">持续时间：{{ duration }}</p>
       <p class="task-content">{{ course.description || '暂无课题内容。' }}</p>
-      <div class="mt-4">
+      <div v-if="showScoreAction" class="mt-4">
         <TaskScoreAction :course="course" />
       </div>
     </header>
@@ -34,12 +34,24 @@ import { computed } from 'vue'
 import { Motion } from 'motion-v'
 import type { Course } from '@/api/types'
 import { formatDuration, toImageUrl } from './task-utils'
-import TaskScoreAction from '../../components/TaskScoreAction.vue'
+import TaskScoreAction from '@/components/TaskScoreAction.vue'
 
-const props = defineProps<{ course: Course }>()
+const props = withDefaults(
+  defineProps<{
+    course: Course
+    showScoreAction?: boolean
+    categoryLabel?: string
+  }>(),
+  {
+    showScoreAction: true,
+    categoryLabel: 'legacy',
+  }
+)
 
 const duration = computed(() => formatDuration(props.course.startTime, props.course.endTime))
 const imageUrl = computed(() => toImageUrl(props.course.image))
+const categoryLabel = computed(() => props.categoryLabel)
+const showScoreAction = computed(() => props.showScoreAction)
 </script>
 
 <style scoped>
@@ -81,8 +93,17 @@ const imageUrl = computed(() => toImageUrl(props.course.image))
   position: relative;
   overflow: hidden;
   border-radius: 12px;
+  padding: 10px;
   min-height: 280px;
-  background: rgba(17, 24, 39, 0.55);
+  background: radial-gradient(circle at 50% 50%, rgba(126, 34, 206, 0.24), rgba(17, 24, 39, 0.72) 70%);
+}
+
+.legacy-image-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at center, transparent 58%, rgba(147, 51, 234, 0.36) 100%);
 }
 
 .legacy-image-wrap::after {
@@ -104,12 +125,7 @@ const imageUrl = computed(() => toImageUrl(props.course.image))
 .legacy-image {
   width: 100%;
   height: min(65vh, 640px);
-  object-fit: cover;
-  transition: transform 0.35s ease;
-}
-
-.legacy-image:hover {
-  transform: scale(1.02);
+  object-fit: contain;
 }
 
 .legacy-empty {

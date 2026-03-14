@@ -1,235 +1,78 @@
 <template>
-  <div class="app-layout">
-    <h1>活动列表</h1>
-    <div v-if="loading">加载中...</div>
-    <div v-else-if="error">{{ error }}</div>
-    <div v-else>
-      <div
-        v-for="activity in activities"
-        :key="activity.id"
-        class="activity-item"
-      >
-        <h2>{{ activity.name }}</h2>
-        <p>描述: {{ activity.description }}</p>
-        <p>开始时间: {{ formatDate(activity.startTime) }}</p>
-        <p>结束时间: {{ formatDate(activity.endTime) }}</p>
-        <img
-          :src="getImageUrl(activity.activityBanner)"
-          alt="活动宣传图"
-          v-if="activity.activityBanner"
-          class="activity-image"
-          @click="handleView(activity)"
-        />
-        <div class="btn-group" style="text-align: center">
-          <el-button
-            type="success"
-            @click="handleCourseView(activity)"
-            size="small"
-            >查看关联课题</el-button
-          >
-          <el-button
-            type="success"
-            @click="handleScoreBoardView(activity)"
-            size="small"
-            >查看活动排行榜</el-button
-          >
-        </div>
-      </div>
-    </div>
-    <el-dialog v-model="previewVisible" width="auto" :show-close="true" center>
-      <img
-        :src="previewImage"
-        alt="预览图片"
-        style="max-width: 90vw; max-height: 80vh; display: block; margin: auto"
-      />
-    </el-dialog>
-    <!-- 查看弹窗 -->
-    <el-dialog v-model="viewDialogVisible" title="活动详情" width="40%">
-      <div v-if="currentActivity">
-        <h2>{{ currentActivity.name }}</h2>
-        <p>描述: {{ currentActivity.description }}</p>
-        <p>开始时间: {{ formatDate(currentActivity.startTime) }}</p>
-        <p>结束时间: {{ formatDate(currentActivity.endTime) }}</p>
-        <img
-          :src="getImageUrl(currentActivity.activityBanner)"
-          alt="活动宣传图"
-          v-if="currentActivity.activityBanner"
-          class="activity-image"
-          style="max-width: 200px"
-        />
-        <div v-if="currentActivity.activityFile">
-          <a
-            :href="getImageUrl(currentActivity.activityFile)"
-            :download="getFileName(currentActivity.activityFile)"
-            @click.prevent="downloadFile(currentActivity.activityFile)"
-            style="color: var(--color-text-primary); text-decoration: underline; cursor: pointer"
-            >下载活动文件</a
-          >
-        </div>
-      </div>
-    </el-dialog>
-    <el-dialog
-      v-model="viewCourseVisible"
-      title="关联课题详情"
-      width="80%"
-      onclose="viewCourseVisible = false"
-    >
-      <el-table :data="assocCourses">
-        <el-table-column prop="title" label="课题名称" />
-        <el-table-column prop="category" label="类别" />
-        <el-table-column prop="startTime" label="开始时间" />
-        <el-table-column prop="endTime" label="结束时间" />
-        <el-table-column prop="description" label="描述" />
-        <el-table-column prop="rule" label="计分规则" />
-        <el-table-column label="图片">
-          <template v-slot="scope">
-            <img
-              :src="getImageUrl(scope.row.image)"
-              alt="课题图片"
-              style="
-                max-width: 160px;
-                max-height: 120px;
-                border-radius: 6px;
-                cursor: pointer;
-              "
-              @click="handleImageClick(getImageUrl(scope.row.image))"
-            />
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-dialog>
+  <section class="relative mx-auto max-w-6xl px-4 pb-12 pt-6 md:px-8">
+    <header class="mb-8 text-center">
+      <h1 class="glitch-title text-5xl font-semibold md:text-7xl" data-text="ACTIVITY">
+        ACTIVITY
+      </h1>
+    </header>
 
-    <el-dialog
-      v-model="viewScoreBoardVisible"
-      title="课题排行榜"
-      width="80%"
-      onclose="viewScoreBoardVisible = false"
-    >
-      <el-table
-        :data="pagedRankData"
-        style="width: 600px; margin: 0 auto"
-        border
-        :default-sort="{ prop: 'totalScore', order: 'descending' }"
+    <div v-if="loading" class="hud-card p-8 text-cyan-100/80">活动数据加载中...</div>
+    <div v-else-if="error" class="hud-card p-8 text-rose-300">{{ error }}</div>
+
+    <div v-else class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+      <Motion
+        v-for="(activity, index) in activities"
+        :key="activity.id"
+        :initial="{ opacity: 0, y: 18 }"
+        :animate="{ opacity: 1, y: 0 }"
+        :transition="{ duration: 0.35, delay: index * 0.06 }"
+        class="hud-card group overflow-hidden"
       >
-        <el-table-column type="expand">
-          <template v-slot="props">
-            <div style="background: var(--color-surface); padding: 10px 0">
-              <div
-                v-if="props.row.contestScores && props.row.contestScores.length"
-                style="display: flex; justify-content: center"
-              >
-                <div
-                  v-for="(score, idx) in props.row.contestScores"
-                  :key="idx"
-                  style="
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    margin: 0 24px;
-                  "
-                >
-                  <span style="font-weight: bold">第{{ idx + 1 }}首分数</span>
-                  <span style="margin: 8px 0">{{
-                    score.score + 10000000
-                  }}</span>
-                  <img
-                    :src="getImageUrl(score.image)"
-                    alt="课题图片"
-                    style="
-                      width: 60px;
-                      height: 60px;
-                      border-radius: 6px;
-                      cursor: pointer;
-                    "
-                    @click="handleImageClick(getImageUrl(score.image))"
-                  />
-                </div>
-              </div>
-              <div v-else>无比赛成绩</div>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="排名" width="80" align="center">
-          <template v-slot="scope">
-            {{ (rankCurrentPage - 1) * rankPageSize + scope.$index + 1 }}
-          </template>
-        </el-table-column>
-        <el-table-column label="头像" width="80" align="center">
-          <template v-slot="scope">
-            <span
-              @click="goToProfile(scope.row.identityId)"
-              style="cursor: pointer; display: inline-block"
-            >
-              <el-avatar :src="getImageUrl(scope.row.avatar)" />
-            </span>
-          </template>
-        </el-table-column>
-        <el-table-column
-          prop="account"
-          label="用户名"
-          width="160"
-          align="center"
+        <div
+          class="holo-image"
+          :style="{ backgroundImage: getActivityBackground(activity.activityBanner) }"
+          role="img"
+          :aria-label="`${activity.name} 活动图`"
         />
-        <el-table-column
-          prop="totalScore"
-          label="总分"
-          width="120"
-          align="center"
-        />
-      </el-table>
-      <div style="text-align: center; margin-top: 20px">
-        <el-pagination
-          background
-          layout="prev, pager, next"
-          :total="rankSortedData.length"
-          :page-size="rankPageSize"
-          :current-page="rankCurrentPage"
-          @current-change="handleRankPageChange"
-        />
-      </div>
-    </el-dialog>
-  </div>
+
+        <div class="p-4 text-left">
+          <div class="mb-2 flex items-center justify-between gap-2">
+            <h2 class="line-clamp-1 text-lg font-semibold text-cyan-100">{{ activity.name }}</h2>
+            <span class="neon-chip">activity</span>
+          </div>
+
+          <p class="mb-2 text-xs text-cyan-100/70">
+            {{ formatDateTime(activity.startTime) }} - {{ formatDateTime(activity.endTime) }}
+          </p>
+
+          <p class="line-clamp-3 min-h-16 text-sm text-cyan-50/80">
+            {{ activity.description || '暂无活动描述' }}
+          </p>
+
+          <button class="neon-button mt-4 w-full" @click="goActivityDetail(activity.id)">
+            进入活动
+          </button>
+        </div>
+      </Motion>
+    </div>
+  </section>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
-import { ElMessage } from 'element-plus'
+import { Motion } from 'motion-v'
 
 const activities = ref<any[]>([])
-const assocCourses = ref<any[]>([])
-const activitiesScore = ref<any[]>([])
 const loading = ref<boolean>(true)
 const error = ref<string | null>(null)
-const rankAllData = ref<any[]>([])
-const rankSortedData = ref<any[]>([])
-const rankPageSize = ref<number>(10)
-const rankCurrentPage = ref<number>(1)
-const previewVisible = ref<boolean>(false)
-const previewImage = ref<string>('')
-const viewDialogVisible = ref<boolean>(false)
-const viewCourseVisible = ref<boolean>(false)
-const viewScoreBoardVisible = ref<boolean>(false)
-const currentActivity = ref<any | null>(null)
-
-const pagedRankData = computed<any[]>(() => {
-  const start = (rankCurrentPage.value - 1) * rankPageSize.value
-  return rankSortedData.value.slice(start, start + rankPageSize.value)
-})
 
 const router = useRouter()
 
 async function fetchActivities(): Promise<void> {
   try {
     const response = await axios.get('/api/activity/list')
+    let data: any[] = []
     if (response.data.list) {
-      activities.value = response.data.list
+      data = response.data.list
     } else if (Array.isArray(response.data)) {
-      activities.value = response.data
-    } else {
-      activities.value = []
+      data = response.data
     }
+
+    activities.value = [...data].sort(
+      (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+    )
   } catch (err: any) {
     error.value = err.message
   } finally {
@@ -237,51 +80,28 @@ async function fetchActivities(): Promise<void> {
   }
 }
 
-async function fetchAssocCourses(): Promise<void> {
-  try {
-    const id = currentActivity.value?.id
-    if (!id) return
-    const response = await axios.get(`/api/activity/assoc-activity-courses/${id}`)
-    if (response.data.list) {
-      assocCourses.value = response.data.list
-      viewCourseVisible.value = true
-    } else if (Array.isArray(response.data)) {
-      assocCourses.value = response.data
-      viewCourseVisible.value = true
-    }
-  } catch (err: any) {
-    error.value = err.message
-  } finally {
-    loading.value = false
-  }
+function goActivityDetail(id: number | string): void {
+  router.push(`/activity/${id}`)
 }
 
-function handleImageClick(imgUrl: string): void {
-  previewImage.value = imgUrl
-  previewVisible.value = true
-}
-
-function handleCourseView(activity: any): void {
-  currentActivity.value = activity
-  assocCourses.value = []
-  fetchAssocCourses()
-  viewCourseVisible.value = true
-}
-
-function handleView(activity: any): void {
-  currentActivity.value = activity
-  viewDialogVisible.value = true
-}
-
-function formatDate(date: any): string {
+function formatDateTime(date: any): string {
   if (!date) return '-'
   const d = new Date(date)
-    const options: Intl.DateTimeFormatOptions = {
+  const options: Intl.DateTimeFormatOptions = {
     year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
   }
-  return d.toLocaleDateString('zh-CN', options)
+  return d.toLocaleString('zh-CN', options)
+}
+
+function getActivityBackground(imagePath?: string) {
+  if (!imagePath) {
+    return 'linear-gradient(135deg, rgba(34,211,238,0.20), rgba(217,70,239,0.18))'
+  }
+  return `url(${getImageUrl(imagePath)})`
 }
 
 function getImageUrl(imagePath?: string): string {
@@ -292,92 +112,104 @@ function getImageUrl(imagePath?: string): string {
   return imagePath.startsWith('/') ? imagePath : '/' + imagePath
 }
 
-function getFileName(filePath?: string): string {
-  if (!filePath) return ''
-  return filePath.split('/').pop() || ''
-}
-
-function downloadFile(filePath?: string): void {
-  if (!filePath) return
-  const url = getImageUrl(filePath)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = getFileName(filePath)
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-}
-
-function goToProfile(id: string | number): void {
-  router.push(`/profile/${id}`)
-}
-
-async function fetchRankData(): Promise<void> {
-  try {
-    if (!currentActivity.value) return
-    const res = await axios.get(`/api/score/activity-totalScores/${currentActivity.value.id}`)
-    let data = res.data.data || []
-    const promises = data.map(async (item: any) => {
-      const resp = await axios.get('/api/score/activity-scores', {
-        params: {
-          activityId: currentActivity.value.id,
-          identityId: item.identityId,
-        },
-      })
-      activitiesScore.value = resp.data || []
-      const count = activitiesScore.value.length
-      item.totalScore += count * 10000000
-      item.contestCount = count
-      item.contestScores = resp.data || []
-      return item
-    })
-    data = await Promise.all(promises)
-    data.sort((a: any, b: any) => b.totalScore - a.totalScore)
-    rankAllData.value = data
-    rankSortedData.value = data
-  } catch (e) {
-    ElMessage({ message: '获取排行榜失败', type: 'error' })
-  }
-}
-
-function handleRankPageChange(page: number): void {
-  rankCurrentPage.value = page
-}
-
-function handleScoreBoardView(activity: any): void {
-  currentActivity.value = activity
-  fetchRankData()
-  viewScoreBoardVisible.value = true
-}
-
 onMounted(() => {
   fetchActivities()
 })
 </script>
 
 <style scoped>
+.glitch-title {
+  position: relative;
+  display: inline-block;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  background-image: linear-gradient(135deg, #22d3ee 0%, #9333ea 40%, #c026d3 62%, #f472b6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 16px rgba(139, 92, 246, 0.38);
+}
 
-.activity-item {
-  margin-bottom: 32px;
-  border: 1px solid var(--color-border);
-  padding: 20px;
-  border-radius: 8px;
-  background-color: var(--color-surface);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+.glitch-title::before,
+.glitch-title::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
-.activity-image {
-  max-width: 300px;
-  max-height: 200px;
-  width: auto;
-  height: auto;
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-  cursor: pointer;
+
+.glitch-title::before {
+  color: rgba(34, 211, 238, 0.45);
+  transform: translateX(1px);
+  clip-path: polygon(0 4%, 100% 0, 100% 38%, 0 42%);
 }
-.btn-group {
-  margin-top: 16px;
-  display: flex;
-  margin-left: auto;
+
+.glitch-title::after {
+  color: rgba(192, 38, 211, 0.82);
+  transform: translateX(-1px);
+  clip-path: polygon(0 62%, 100% 58%, 100% 100%, 0 96%);
+}
+
+.hud-card {
+  border: 1px solid rgba(103, 232, 249, 0.25);
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(14, 24, 48, 0.5), rgba(23, 12, 42, 0.45));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 0 28px rgba(34, 211, 238, 0.16),
+    0 0 46px rgba(217, 70, 239, 0.08);
+  backdrop-filter: blur(8px);
+}
+
+.holo-image {
+  height: 180px;
+  background-size: cover;
+  background-position: center;
+  filter: saturate(1.1) contrast(1.06);
+  position: relative;
+}
+
+.holo-image::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, rgba(34, 211, 238, 0.06), rgba(217, 70, 239, 0.13)),
+    repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.04),
+      rgba(255, 255, 255, 0.04) 1px,
+      transparent 2px,
+      transparent 4px
+    );
+}
+
+.neon-chip {
+  border-radius: 999px;
+  border: 1px solid rgba(34, 211, 238, 0.45);
+  padding: 2px 9px;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: rgb(165, 243, 252);
+  background: rgba(8, 27, 40, 0.55);
+}
+
+.neon-button {
+  border: 1px solid rgba(34, 211, 238, 0.7);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 600;
+  color: #cffafe;
+  background: linear-gradient(90deg, rgba(8, 47, 73, 0.7), rgba(88, 28, 135, 0.62));
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.neon-button:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 18px rgba(34, 211, 238, 0.4),
+    0 0 24px rgba(217, 70, 239, 0.2);
 }
 </style>

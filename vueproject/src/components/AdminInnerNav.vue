@@ -27,6 +27,12 @@ const adminLinks = [
 </script>
 
 <style scoped>
+.admin-inner-nav {
+  margin-top: 24px;
+  position: relative;
+  z-index: 20;
+}
+
 .admin-nav-btn {
   border-radius: 6px;
   background: rgb(147 51 234);

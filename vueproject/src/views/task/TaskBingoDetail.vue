@@ -1,5 +1,5 @@
 <template>
-  <section class="relative mx-auto max-w-4xl px-4 pb-12 pt-6 md:px-8">
+  <section class="relative mx-auto max-w-6xl px-4 pb-12 pt-6 md:px-8">
     <div class="mb-5 flex flex-wrap items-center gap-3">
       <button type="button" class="neon-back" @click="goBingo">返回 Bingo 面板</button>
       <button type="button" class="neon-back" @click="goList">返回课题列表</button>
@@ -43,7 +43,7 @@ import type { Course } from '@/api/types'
 import { loadCourseById } from './course-loader'
 import { formatDuration, parseBingoItems } from './task-utils'
 import type { BingoTaskItem } from './task-utils'
-import TaskScoreAction from '../../components/TaskScoreAction.vue'
+import TaskScoreAction from '@/components/TaskScoreAction.vue'
 
 const route = useRoute()
 const router = useRouter()

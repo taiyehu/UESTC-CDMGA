@@ -35,7 +35,7 @@ import { computed } from 'vue'
 import { Motion } from 'motion-v'
 import type { Course } from '@/api/types'
 import { formatDuration, parseTypicalItems, toImageUrl } from './task-utils'
-import TaskScoreAction from '../../components/TaskScoreAction.vue'
+import TaskScoreAction from '@/components/TaskScoreAction.vue'
 
 const props = defineProps<{ course: Course }>()
 

@@ -133,7 +133,7 @@ function goProfile() {
 }
 
 function goAdmin() {
-  router.push('/admin-users')
+  router.push('/admin/users')
 }
 
 function logout() {
