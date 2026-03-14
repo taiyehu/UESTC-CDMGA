@@ -3,9 +3,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { ElMessage } from 'element-plus'
 
 // 页面组件
-import Login from '@/views/login/Login.vue'
-import Register from '@/views/register/Register.vue'
-import Home from '@/views/home/home.vue'
+import Login from '@/views/auth/Login.vue'
+import Register from '@/views/auth/Register.vue'
+import Home from '@/views/pages/home.vue'
 import Profile from '@/views/profile/profile.vue'
 import ProfileSetting from '@/views/profile/profile_setting.vue'
 import adminUsers from '@/views/admin/admin-users.vue'
