@@ -1,420 +1,490 @@
 <template>
-  <div class="main-content">
-    <div
-      class="banner-carousel"
-      @mouseenter="pauseCarousel"
-      @mouseleave="resumeCarousel(false)"
-    >
-      <div class="banner-label">
-        <span v-if="bannerList[currentIndex]?.type === 'course'">最新课题</span>
-        <span v-else-if="bannerList[currentIndex]?.type === 'activity'"
-          >最新活动</span
-        >
+  <section class="mx-auto w-full max-w-7xl px-4 pb-10 pt-4 md:px-8 md:pt-6">
+    <div class="mb-5 flex items-end justify-between gap-3 max-md:flex-col max-md:items-start">
+      <div>
+        <p class="text-xs uppercase tracking-[0.26em] text-cyan-100/70">UESTC CDMGA</p>
+        <h1 class="mt-1 text-3xl font-bold text-cyan-50 md:text-4xl">主页看板</h1>
       </div>
-      <transition name="carousel-fade" mode="out-in">
-        <div v-if="bannerList.length" class="banner-content">
-          <!-- 最新课题 -->
-          <template v-if="bannerList[currentIndex].type === 'course'">
-            <div class="banner-info">
-              <h4>{{ bannerList[currentIndex].data.title }}</h4>
-              <p>类别: {{ bannerList[currentIndex].data.category }}</p>
-              <p>
-                开始时间:
-                {{ formatDate(bannerList[currentIndex].data.startTime) }}
-              </p>
-              <p>
-                结束时间:
-                {{ formatDate(bannerList[currentIndex].data.endTime) }}
-              </p>
-              <!--<p>描述: {{ bannerList[currentIndex].data.description }}</p>-->
-              <img
-                :src="getImageUrl(bannerList[currentIndex].data.image)"
-                alt="课程图片"
-                v-if="bannerList[currentIndex].data.image"
-                class="course-image"
-              />
-              <el-button
-                v-if="bannerList[currentIndex].data.image"
-                size="small"
-                @click="
-                  handleImageClick()
-                "
-                style="margin-top: 10px"
-                >查看</el-button
-              >
-            </div>
-          </template>
-          <!-- 最新活动 -->
-          <template v-else-if="bannerList[currentIndex].type === 'activity'">
-            <div class="banner-info">
-              <el-empty description="敬请期待..." />
-            </div>
-          </template>
-        </div>
-      </transition>
-      <div class="banner-dots">
-        <span
-          v-for="(idx) in bannerList"
-          :key="idx"
-          :class="['dot', { active: idx === currentIndex }]"
-        />
-      </div>
-      <div class="banner-controls" :class="{ show: controlsVisible }">
-        <el-button
-          class="banner-btn left"
-          :icon="ElIconArrowLeft"
-          @click="prevCard"
-          size="small"
-        />
-        <el-button
-          class="banner-btn right"
-          :icon="ElIconArrowRight"
-          @click="nextCard"
-          size="small"
-        />
-      </div>
+      <p class="text-sm text-cyan-100/80">当前时间：{{ formatDateTime(nowTick) }}</p>
     </div>
-    <el-dialog
-      v-model="previewVisible"
-      width="760px"
-      :show-close="true"
-      center
-      @close="resumeCarousel"
-    >
-      <template v-if="currentCourse">
-        <el-form :model="currentCourse" label-width="110px" class="view-form">
-          <el-form-item label="课题名称">
-            <el-input :model-value="currentCourse.title || '-'" disabled />
-          </el-form-item>
 
-          <el-form-item label="类别">
-            <el-input :model-value="currentCourse.category || '-'" disabled />
-          </el-form-item>
+    <div class="grid grid-cols-[1.65fr_1fr] gap-5 max-lg:grid-cols-1">
+      <NeonCard
+        class="group relative rounded-3xl p-6 md:p-8"
+        @mouseenter="pauseCourseCarousel"
+        @mouseleave="resumeCourseCarousel"
+      >
+        <div class="absolute -left-20 -top-16 h-52 w-52 rounded-full bg-cyan-300/10 blur-3xl" />
+        <div class="absolute -bottom-20 right-10 h-56 w-56 rounded-full bg-sky-400/10 blur-3xl" />
 
-          <el-form-item label="开始时间">
-            <el-input
-              :model-value="formatDateTime(currentCourse.startTime)"
-              disabled
+        <div class="relative z-10 mb-4 flex items-center justify-between gap-3">
+          <div>
+            <p class="text-xs uppercase tracking-[0.22em] text-cyan-100/65">课题区域</p>
+            <h2 class="mt-1 text-2xl font-semibold text-cyan-50">
+              {{ activeCourseMode === 'running' ? '当前进行课题' : '即将开始课题' }}
+            </h2>
+          </div>
+          <span class="rounded-full border border-cyan-200/35 bg-cyan-100/10 px-3 py-1 text-xs text-cyan-50/85">
+            {{ displayCourses.length }} 个
+          </span>
+        </div>
+
+        <div v-if="loading" class="relative z-10 rounded-2xl border border-cyan-100/20 bg-cyan-100/5 p-8 text-center text-cyan-100/80">
+          主页数据加载中...
+        </div>
+
+        <div v-else-if="error" class="relative z-10 rounded-2xl border border-rose-300/35 bg-rose-400/10 p-8 text-center text-rose-100">
+          {{ error }}
+        </div>
+
+        <div v-else-if="!displayCourses.length" class="relative z-10 rounded-2xl border border-cyan-100/20 bg-cyan-100/5 p-10 text-center text-cyan-100/75">
+          暂无可展示课题
+        </div>
+
+        <div v-else class="relative z-10">
+          <transition name="course-fade" mode="out-in">
+            <article
+              :key="currentCourse?.id"
+              class="grid grid-cols-[1.12fr_1fr] items-center gap-7 rounded-2xl border border-cyan-100/20 bg-cyan-100/5 p-6 md:p-7 max-md:grid-cols-1"
+            >
+              <div class="text-left">
+                <div class="mb-2 flex flex-wrap items-center gap-2">
+                  <span class="inline-flex rounded-full border border-cyan-200/40 bg-cyan-100/10 px-2.5 py-1 text-xs text-cyan-50/90">
+                    {{ activeCourseMode === 'running' ? '进行中' : '即将开始' }}
+                  </span>
+                  <span class="inline-flex rounded-full border border-cyan-200/30 px-2.5 py-1 text-xs text-cyan-100/80">
+                    {{ currentCourse?.category || '未分类' }}
+                  </span>
+                </div>
+
+                <h3 class="line-clamp-2 text-2xl font-bold leading-tight text-cyan-50 md:text-[32px]">
+                  {{ currentCourse?.title || '未命名课题' }}
+                </h3>
+
+                <p class="mt-3 text-sm text-cyan-100/85">开始：{{ formatDateTime(currentCourse?.startTime) }}</p>
+                <p class="mt-1 text-sm text-cyan-100/85">结束：{{ formatDateTime(currentCourse?.endTime) }}</p>
+
+                <p class="mt-5 line-clamp-4 min-h-24 text-base leading-8 text-cyan-50/85">
+                  {{ currentCourse?.description || '暂无课题描述' }}
+                </p>
+
+                <div class="mt-6 flex flex-wrap items-center gap-2">
+                  <button class="home-btn" @click="goTaskDetail(currentCourse?.id)">进入课题</button>
+                  <span v-if="displayCourses.length > 1" class="text-xs text-cyan-100/70">
+                    自动轮播 {{ currentCourseIndex + 1 }}/{{ displayCourses.length }}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <img
+                  :src="getImageUrl(currentCourse?.image)"
+                  alt="课题宣传图"
+                  class="h-auto w-full rounded-2xl border border-cyan-100/20 object-contain object-center shadow-[0_12px_28px_rgba(2,6,23,0.35)]"
+                />
+              </div>
+            </article>
+          </transition>
+
+          <div v-if="displayCourses.length > 1" class="mt-4 flex items-center justify-center gap-2">
+            <button
+              v-for="(_, idx) in displayCourses"
+              :key="`course-dot-${idx}`"
+              type="button"
+              class="h-2.5 w-2.5 rounded-full border border-cyan-100/30 transition"
+              :class="idx === currentCourseIndex ? 'bg-cyan-200' : 'bg-cyan-100/20 hover:bg-cyan-100/50'"
+              @click="jumpCourse(idx)"
             />
-          </el-form-item>
+          </div>
+        </div>
+      </NeonCard>
 
-          <el-form-item label="结束时间">
-            <el-input
-              :model-value="formatDateTime(currentCourse.endTime)"
-              disabled
+      <NeonCard class="rounded-3xl p-4 md:p-5">
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <p class="text-xs uppercase tracking-[0.22em] text-cyan-100/65">活动区域</p>
+            <h2 class="mt-1 text-xl font-semibold text-cyan-50">活动时间窗</h2>
+          </div>
+          <span class="rounded-full border border-cyan-200/35 bg-cyan-100/10 px-3 py-1 text-xs text-cyan-50/85">
+            {{ visibleActivities.length }} 个
+          </span>
+        </div>
+
+        <div v-if="visibleActivities.length" class="space-y-3 max-lg:grid max-lg:grid-cols-2 max-lg:gap-3 max-lg:space-y-0 max-md:grid-cols-1">
+          <article
+            v-for="activity in visibleActivities"
+            :key="activity.id"
+            class="overflow-hidden rounded-2xl border border-cyan-100/20 bg-cyan-100/6"
+          >
+            <img
+              :src="getImageUrl(activity.activityBanner)"
+              alt="活动宣传图"
+              class="h-90 w-full object-cover object-center max-xl:h-77.5 max-lg:h-70"
             />
-          </el-form-item>
-
-          <el-form-item label="描述">
-            <div style="white-space: pre-wrap; color: var(--color-text-primary)">
-              {{ currentCourse.description || '-' }}
+            <div class="p-3 text-left">
+              <h3 class="line-clamp-2 text-lg font-semibold text-cyan-50">{{ activity.name || '未命名活动' }}</h3>
+              <p class="mt-2 text-xs text-cyan-100/80">开始：{{ formatDateTime(activity.startTime) }}</p>
+              <p class="mt-1 text-xs text-cyan-100/80">结束：{{ formatDateTime(activity.endTime) }}</p>
+              <p class="mt-3 line-clamp-4 min-h-21 text-sm leading-6 text-cyan-50/85">
+                {{ activity.description || '暂无活动描述' }}
+              </p>
+              <button class="home-btn mt-3 w-full" @click="goActivityDetail(activity.id)">进入活动</button>
             </div>
-          </el-form-item>
+          </article>
+        </div>
 
-          <el-form-item label="图片">
-            <div v-if="currentCourse.image">
-              <img
-                :src="getImageUrl(currentCourse.image)"
-                alt="课题图片"
-                style="
-                  max-width: 260px;
-                  max-height: 160px;
-                  border-radius: 6px;
-                  cursor: pointer;
-                "
-                @click="previewImage(currentCourse.image)"
-              />
-            </div>
-            <div v-else>-</div>
-          </el-form-item>
-        </el-form>
-      </template>
-
-      <div v-else>
-        <el-empty description="无课题数据" />
-      </div>
-
-      <template v-slot:footer>
-        <span class="dialog-footer">
-          <el-button @click="previewVisible = false">关闭</el-button>
-        </span>
-      </template>
-    </el-dialog>
-    <el-dialog
-      v-model="imagePreviewVisible"
-      width="auto"
-      :show-close="true"
-      center
-    >
-      <img
-        :src="imagePreviewUrl"
-        alt="图片预览"
-        style="max-width: 90vw; max-height: 80vh; display: block; margin: auto"
-      />
-    </el-dialog>
-  </div>
+        <div v-else class="metronome-wrap">
+          <div class="metronome-title">当前活动空窗期</div>
+          <div class="metronome-subtitle">右侧暂时没有处于展示时间窗的活动</div>
+          <div class="metronome-body">
+            <div class="metronome-arm" />
+            <div class="metronome-base" />
+            <div class="metronome-pulse" />
+          </div>
+          <p class="mt-4 text-center text-xs text-cyan-100/70">节拍保持中，等待下一场活动</p>
+        </div>
+      </NeonCard>
+    </div>
+  </section>
 </template>
 
-
 <script lang="ts" setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import {
-  ArrowLeft as ElIconArrowLeft,
-  ArrowRight as ElIconArrowRight,
-} from '@element-plus/icons-vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import axios from 'axios'
 import { fetchCourseData } from '@/api/course'
+import NeonCard from '@/components/NeonCard.vue'
 
-const bannerList = ref<any[]>([])
-const loading = ref<boolean>(true)
-const error = ref<string | null>(null)
-const currentIndex = ref<number>(0)
-const carouselTimer = ref<number | null>(null)
-const previewVisible = ref<boolean>(false)
-const controlsVisible = ref<boolean>(false)
-const pauseCounter = ref<number>(0)
-const imagePreviewVisible = ref<boolean>(false)
-const imagePreviewUrl = ref<string>('')
-
-const currentCourse = computed<any | null>(() => {
-  const item = bannerList.value[currentIndex.value]
-  return item && item.type === 'course' ? item.data || null : null
-})
-
-function previewImage(imgUrl: string): void {
-  imagePreviewUrl.value = getImageUrl(imgUrl)
-  imagePreviewVisible.value = true
+type CourseLike = {
+  id: number
+  title: string
+  category?: string
+  startTime: string
+  endTime: string
+  description?: string
+  image?: string
 }
 
-async function initBannerList(): Promise<void> {
+type ActivityLike = {
+  id: number
+  name: string
+  startTime: string
+  endTime: string
+  description?: string
+  activityBanner?: string
+}
+
+const router = useRouter()
+
+const loading = ref(true)
+const error = ref<string | null>(null)
+const nowTick = ref(new Date())
+const courses = ref<CourseLike[]>([])
+const activities = ref<ActivityLike[]>([])
+const currentCourseIndex = ref(0)
+
+let clockTimer: number | null = null
+let courseTimer: number | null = null
+
+const nowMs = computed(() => nowTick.value.getTime())
+
+const normalizedCourses = computed<CourseLike[]>(() => {
+  return [...courses.value].map((course: any) => ({
+    id: Number(course.id),
+    title: String(course.title || ''),
+    category: String(course.category || ''),
+    startTime: String(course.startTime || course.start_time || ''),
+    endTime: String(course.endTime || course.end_time || ''),
+    description: String(course.description || ''),
+    image: String(course.image || ''),
+  }))
+})
+
+const runningCourses = computed(() => {
+  return normalizedCourses.value.filter((course) => {
+    const start = new Date(course.startTime).getTime()
+    const end = new Date(course.endTime).getTime()
+    return Number.isFinite(start) && Number.isFinite(end) && start <= nowMs.value && nowMs.value <= end
+  })
+})
+
+const upcomingCourses = computed(() => {
+  return normalizedCourses.value
+    .filter((course) => {
+      const start = new Date(course.startTime).getTime()
+      return Number.isFinite(start) && start > nowMs.value
+    })
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+})
+
+const activeCourseMode = computed<'running' | 'upcoming'>(() => {
+  return runningCourses.value.length ? 'running' : 'upcoming'
+})
+
+const displayCourses = computed(() => {
+  if (runningCourses.value.length) {
+    return [...runningCourses.value].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+  }
+  return upcomingCourses.value
+})
+
+const currentCourse = computed(() => {
+  if (!displayCourses.value.length) return null
+  const safeIndex = currentCourseIndex.value % displayCourses.value.length
+  return displayCourses.value[safeIndex]
+})
+
+const visibleActivities = computed(() => {
+  const threeWeeksMs = 21 * 24 * 60 * 60 * 1000
+  return [...activities.value]
+    .filter((activity) => {
+      const start = new Date(activity.startTime).getTime()
+      const end = new Date(activity.endTime).getTime()
+      if (!Number.isFinite(start) || !Number.isFinite(end)) return false
+      return nowMs.value >= start - threeWeeksMs && nowMs.value <= end
+    })
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+})
+
+function getImageUrl(imagePath?: string): string {
+  if (!imagePath) return '/images/logo.png'
+  if (/^https?:\/\//.test(imagePath)) return imagePath
+  return imagePath.startsWith('/') ? imagePath : `/${imagePath}`
+}
+
+function formatDateTime(input?: Date | string): string {
+  if (!input) return '-'
+  const date = input instanceof Date ? input : new Date(input)
+  if (Number.isNaN(date.getTime())) return '-'
+  const options: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }
+  return date.toLocaleString('zh-CN', options)
+}
+
+function jumpCourse(index: number): void {
+  currentCourseIndex.value = index
+}
+
+function nextCourse(): void {
+  if (displayCourses.value.length <= 1) return
+  currentCourseIndex.value = (currentCourseIndex.value + 1) % displayCourses.value.length
+}
+
+function stopCourseTimer(): void {
+  if (courseTimer) {
+    window.clearInterval(courseTimer)
+    courseTimer = null
+  }
+}
+
+function startCourseTimer(): void {
+  stopCourseTimer()
+  if (displayCourses.value.length > 1) {
+    courseTimer = window.setInterval(() => {
+      nextCourse()
+    }, 4200)
+  }
+}
+
+function pauseCourseCarousel(): void {
+  stopCourseTimer()
+}
+
+function resumeCourseCarousel(): void {
+  startCourseTimer()
+}
+
+function goTaskDetail(id?: number): void {
+  if (!id) return
+  router.push(`/task/${id}`)
+}
+
+function goActivityDetail(id: number): void {
+  router.push(`/activity/${id}`)
+}
+
+async function fetchHomeData(): Promise<void> {
+  loading.value = true
+  error.value = null
+
   try {
-    const response = await fetchCourseData()
-    let courses = response.data || []
-    courses = courses.sort(
-      (a: any, b: any) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
-    )
-    const latestCourse = courses.length ? courses[0] : null
-    const bannerArr: any[] = []
-    if (latestCourse) {
-      bannerArr.push({ type: 'course', data: latestCourse })
-    }
-    bannerArr.push({ type: 'activity', data: {} })
-    bannerList.value = bannerArr
-    startCarousel()
-  } catch (err: any) {
-    error.value = err.message
+    const [courseRes, activityRes] = await Promise.all([
+      fetchCourseData(),
+      axios.get('/api/activity/list'),
+    ])
+
+    const courseList = Array.isArray(courseRes.data) ? courseRes.data : []
+    const activityRaw = activityRes.data?.list ?? activityRes.data
+    const activityList = Array.isArray(activityRaw) ? activityRaw : []
+
+    courses.value = courseList
+    activities.value = activityList.map((item: any) => ({
+      id: Number(item.id),
+      name: String(item.name || ''),
+      startTime: String(item.startTime || ''),
+      endTime: String(item.endTime || ''),
+      description: String(item.description || ''),
+      activityBanner: String(item.activityBanner || ''),
+    }))
+
+    currentCourseIndex.value = 0
+    startCourseTimer()
+  } catch (e: any) {
+    error.value = e?.message || '主页数据加载失败'
   } finally {
     loading.value = false
   }
 }
 
-function startCarousel(): void {
-  clearCarouselTimer()
-  if (bannerList.value.length > 1) {
-    carouselTimer.value = window.setInterval(() => {
-      nextCard()
-    }, 4000) as unknown as number
-  }
-}
-
-function pauseCarousel(): void {
-  if (pauseCounter.value === 0) {
-    clearCarouselTimer()
-    controlsVisible.value = true
-  }
-  pauseCounter.value++
-}
-
-function resumeCarousel(force = false): void {
-  if (force) {
-    pauseCounter.value = 0
-  } else if (pauseCounter.value > 0) {
-    pauseCounter.value--
-  }
-  if (pauseCounter.value === 0) {
-    startCarousel()
-    controlsVisible.value = false
-  }
-}
-
-function clearCarouselTimer(): void {
-  if (carouselTimer.value) {
-    clearInterval(carouselTimer.value)
-    carouselTimer.value = null
-  }
-}
-
-function nextCard(): void {
-  if (bannerList.value.length) {
-    currentIndex.value = (currentIndex.value + 1) % bannerList.value.length
-  }
-}
-
-function prevCard(): void {
-  if (bannerList.value.length) {
-    currentIndex.value =
-      (currentIndex.value - 1 + bannerList.value.length) %
-      bannerList.value.length
-  }
-}
-
-function handleImageClick(): void {
-  pauseCarousel()
-  previewVisible.value = true
-}
-
-function formatDate(date: any): string {
-  const d = new Date(date)
-  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' }
-  return d.toLocaleDateString('zh-CN', options)
-}
-
-function formatDateTime(dateTime?: any): string {
-  if (!dateTime) return ''
-  return new Date(dateTime).toLocaleString()
-}
-
-function getImageUrl(imagePath?: string): string {
-  if (!imagePath) return ''
-  if (/^https?:\/\//.test(imagePath)) {
-    return imagePath
-  }
-  return imagePath.startsWith('/') ? imagePath : '/' + imagePath
-}
-
 onMounted(() => {
-  initBannerList()
+  fetchHomeData()
+  clockTimer = window.setInterval(() => {
+    nowTick.value = new Date()
+  }, 1000)
 })
 
 onBeforeUnmount(() => {
-  clearCarouselTimer()
+  if (clockTimer) {
+    window.clearInterval(clockTimer)
+    clockTimer = null
+  }
+  stopCourseTimer()
 })
 </script>
 
 <style scoped>
-.main-content {
-  margin-top: var(--navbar-height);
-  min-height: 60vh;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
+.home-btn {
+  border: 1px solid rgba(125, 220, 255, 0.58);
+  border-radius: 10px;
+  padding: 8px 14px;
+  color: #e0f8ff;
+  background: linear-gradient(110deg, rgba(11, 69, 96, 0.78), rgba(15, 102, 148, 0.58));
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.18);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.banner-carousel {
-  width: 100%;
-  max-width: 1100px;
-  margin: 140px auto 0 auto;
-  background: linear-gradient(135deg, #e3f0ff 0%, #b3d8ff 100%);
-  border-radius: 20px;
-  box-shadow: 0 12px 40px rgba(64, 158, 255, 0.22), 0 0 0 6px #eaf6ff inset,
-    0 1px 12px #fff inset;
-  padding: 56px 56px 40px 56px;
-  position: relative;
-  min-height: 320px;
-  overflow: hidden;
+
+.home-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 24px rgba(56, 189, 248, 0.3);
 }
-.banner-label {
-  position: absolute;
-  top: 24px;
-  left: 40px;
-  z-index: 10;
-  font-size: 2.6rem;
-  font-weight: 900;
-  color: var(--color-text-primary);
-  text-shadow: 0 2px 8px #fff, 0 1px 0 #b3d8ff;
-  pointer-events: none;
+
+.course-fade-enter-active,
+.course-fade-leave-active {
+  transition: opacity 0.35s ease;
 }
-.banner-title {
-  font-size: 0;
-  height: 0;
-  overflow: hidden;
+
+.course-fade-enter-from,
+.course-fade-leave-to {
+  opacity: 0;
 }
-.banner-content {
-  width: 100%;
-  min-height: 200px;
+
+.metronome-wrap {
+  border: 1px dashed rgba(125, 220, 255, 0.35);
+  border-radius: 18px;
+  padding: 18px 14px;
+  min-height: 560px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: transparent;
+}
+
+.metronome-title {
+  font-size: 20px;
+  color: #e6f7ff;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.metronome-subtitle {
+  font-size: 13px;
+  color: rgba(186, 230, 253, 0.78);
   text-align: center;
-  margin: 0 auto;
 }
-.banner-info {
-  margin-bottom: 8px;
-}
-.banner-dots {
-  position: absolute;
-  left: 24px;
-  bottom: 18px;
+
+.metronome-body {
+  position: relative;
+  margin-top: 18px;
+  width: 178px;
+  height: 260px;
   display: flex;
-  align-items: center;
-  z-index: 2;
-}
-.dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--color-surface);
-  margin: 0 4px;
-  transition: background 0.3s;
-  display: inline-block;
-}
-.dot.active {
-  background: var(--color-text-primary);
-}
-.banner-controls {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.2s;
-  z-index: 3;
-}
-.banner-controls.show {
-  opacity: 1;
-  pointer-events: auto;
-}
-.banner-btn {
-  background: var(--color-surface) !important;
-  border: none !important;
-  border-radius: 4px !important;
-  width: 36px !important;
-  height: 36px !important;
-  display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  box-shadow: none !important;
-  color: var(--color-text-primary) !important;
-  font-size: 18px !important;
-  transition: background 0.2s;
 }
-.banner-btn.left {
-  margin-left: 8px;
+
+.metronome-base {
+  width: 138px;
+  height: 180px;
+  clip-path: polygon(18% 100%, 82% 100%, 62% 0, 38% 0);
+  background: linear-gradient(160deg, rgba(14, 116, 144, 0.95), rgba(8, 47, 73, 0.86));
+  box-shadow: inset 0 0 0 1px rgba(165, 243, 252, 0.3);
 }
-.banner-btn.right {
-  margin-right: 8px;
+
+.metronome-arm {
+  position: absolute;
+  bottom: 104px;
+  width: 4px;
+  height: 124px;
+  background: linear-gradient(to bottom, #dbeafe, #38bdf8);
+  transform-origin: bottom center;
+  animation: metronome-swing 1.1s ease-in-out infinite;
+  border-radius: 999px;
 }
-.banner-btn:hover {
-  background: var(--color-border) !important;
+
+.metronome-arm::before {
+  content: '';
+  position: absolute;
+  top: 28px;
+  left: 50%;
+  width: 28px;
+  height: 12px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgba(165, 243, 252, 0.92);
 }
-.course-image {
-  max-width: 300px;
-  max-height: 200px;
-  width: auto;
-  height: auto;
-  display: block;
-  margin: 20px auto 0 auto;
+
+.metronome-pulse {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #7dd3fc;
+  animation: pulse-dot 1.1s ease-in-out infinite;
 }
-.carousel-fade-enter-active,
-.carousel-fade-leave-active {
-  transition: opacity 0.5s;
+
+@keyframes metronome-swing {
+  0% {
+    transform: rotate(-18deg);
+  }
+  50% {
+    transform: rotate(18deg);
+  }
+  100% {
+    transform: rotate(-18deg);
+  }
 }
-.carousel-fade-enter-from,
-.carousel-fade-leave-to {
-  opacity: 0;
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(125, 211, 252, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 16px rgba(125, 211, 252, 0);
+  }
+}
+
+@media (max-width: 1024px) {
+  .metronome-wrap {
+    min-height: 360px;
+  }
 }
 </style>
