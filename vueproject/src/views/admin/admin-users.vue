@@ -1,5 +1,6 @@
 <template>
   <div>
+    <admin-inner-nav />
     <el-card class="box-card" v-if="users.length > 0">
       <h2>用户管理</h2>
       <div v-for="(user) in users" :key="user.id" class="user-item">
@@ -61,6 +62,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { fetchUsersData, deleteUserData } from '@/api/user'
 import { ElMessage } from 'element-plus'
+import AdminInnerNav from '@/components/AdminInnerNav.vue'
 
 const users = ref<any[]>([])
 const dialogVisible = ref(false)

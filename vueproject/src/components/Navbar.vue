@@ -54,6 +54,15 @@
 
       <div class="flex items-center gap-4">
         <button
+          v-if="isAdmin"
+          type="button"
+          class="rounded-md bg-purple-600 px-4 py-2 text-base font-medium text-white transition-colors hover:bg-purple-700 active:bg-purple-800"
+          @click="goAdmin"
+        >
+          管理
+        </button>
+
+        <button
           type="button"
           class="rounded-md bg-purple-600 px-4 py-2 text-base font-medium text-white transition-colors hover:bg-purple-700 active:bg-purple-800"
           @click="logout"
@@ -109,6 +118,7 @@ import avatarDefault from '@/assets/default-avatar.png'
 const router = useRouter()
 
 const avatarUrl = ref(avatarDefault)
+const isAdmin = ref(false)
 
 const navLinks = [
   { label: '主页', to: '/home' },
@@ -120,6 +130,10 @@ const navLinks = [
 
 function goProfile() {
   router.push('/profile')
+}
+
+function goAdmin() {
+  router.push('/admin-users')
 }
 
 function logout() {
@@ -135,11 +149,26 @@ function getImageUrl(imagePath: string) {
 
 function loadProfile() {
   const userInfo = sessionStorage.getItem('userInfo')
+  const roleRaw = sessionStorage.getItem('role')
+  isAdmin.value = false
+
+  if (roleRaw) {
+    try {
+      const parsed = JSON.parse(roleRaw)
+      isAdmin.value = String(parsed?.role ?? parsed?.name ?? parsed) === 'admin'
+    } catch (e) {
+      isAdmin.value = roleRaw === 'admin'
+    }
+  }
+
   if (!userInfo) {
     avatarUrl.value = avatarDefault
     return
   }
   const user = JSON.parse(userInfo)
+  if (!isAdmin.value) {
+    isAdmin.value = String(user.role ?? '') === 'admin'
+  }
   const avatar =
     user.avatar || user.avatarUrl || (user.profile && user.profile.avatar) || ''
   const status = Number(

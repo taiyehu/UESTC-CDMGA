@@ -1,5 +1,6 @@
 <template>
   <div>
+    <admin-inner-nav />
     <!-- 用户资料管理 -->
     <el-card class="box-card" v-if="profiles.length > 0">
       <h2>用户资料管理</h2>
@@ -169,6 +170,7 @@ import { ref, reactive, onMounted } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import defaultAvatar from '@/assets/default-avatar.png'
+import AdminInnerNav from '@/components/AdminInnerNav.vue'
 
 const profiles = ref<any[]>([])
 const dialogVisible = ref(false)

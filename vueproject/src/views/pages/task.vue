@@ -1,8 +1,8 @@
 <template>
   <section class="relative mx-auto max-w-6xl px-4 pb-12 pt-6 md:px-8">
-    <header class="mb-8 text-left">
-      <h1 class="glitch-title text-3xl font-semibold text-cyan-100 md:text-4xl" data-text="TASK MATRIX">
-        TASK MATRIX
+    <header class="mb-8 text-center">
+      <h1 class="glitch-title text-5xl font-semibold md:text-7xl" data-text="TASK">
+        TASK
       </h1>
     </header>
 
@@ -113,8 +113,15 @@ onMounted(fetchCourses)
 <style scoped>
 .glitch-title {
   position: relative;
-  letter-spacing: 0.08em;
-  text-shadow: 0 0 12px rgba(34, 211, 238, 0.5);
+  display: inline-block;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  background-image: linear-gradient(135deg, #22d3ee 0%, #9333ea 40%, #c026d3 62%, #f472b6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 16px rgba(139, 92, 246, 0.38);
 }
 
 .glitch-title::before,
@@ -126,13 +133,13 @@ onMounted(fetchCourses)
 }
 
 .glitch-title::before {
-  color: rgba(34, 211, 238, 0.8);
+  color: rgba(34, 211, 238, 0.45);
   transform: translateX(1px);
   clip-path: polygon(0 4%, 100% 0, 100% 38%, 0 42%);
 }
 
 .glitch-title::after {
-  color: rgba(217, 70, 239, 0.8);
+  color: rgba(192, 38, 211, 0.82);
   transform: translateX(-1px);
   clip-path: polygon(0 62%, 100% 58%, 100% 100%, 0 96%);
 }

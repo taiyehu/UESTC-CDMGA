@@ -12,24 +12,6 @@
 
 /* 限制内容宽度 */
 .app-layout > * {
-  width: clamp(720px, 70%, var(--layout-max-width));
+  width: min(96vw, var(--layout-max-width));
 }
 
-/* .app-layout::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: linear-gradient(
-    120deg,
-    transparent,
-    rgba(154, 92, 255, 0.08),
-    transparent
-  );
-  animation: sweep 8s linear infinite;
-  pointer-events: none;
-} */
-
-/* @keyframes sweep {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-} */

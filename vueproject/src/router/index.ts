@@ -10,7 +10,7 @@ import Profile from '@/views/profile/profile.vue'
 import ProfileSetting from '@/views/profile/profile_setting.vue'
 import adminUsers from '@/views/admin/admin-users.vue'
 import adminCourses from '@/views/admin/admin-courses.vue'
-import review from '@/views/review/review.vue'
+import adminScores from '@/views/admin/admin-scores.vue'
 import adminProfiles from '@/views/admin/admin-profiles.vue'
 import ranking from '@/views/pages/ranking.vue'
 import task from '@/views/pages/task.vue'
@@ -66,8 +66,8 @@ const routes = [
     component: adminActivities,
   },
   {
-    path: '/review',
-    component: review,
+    path: '/admin-scores',
+    component: adminScores,
   },
   {
     path: '/ranking',
@@ -124,7 +124,7 @@ router.beforeEach((to) => {
     '/admin-courses',
     '/admin-profiles',
     '/admin-activities',
-    '/review',
+    '/admin-scores',
   ]
 
   if (adminPaths.includes(to.path)) {

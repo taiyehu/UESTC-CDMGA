@@ -1,5 +1,6 @@
 <template>
   <div>
+    <admin-inner-nav />
     <el-card class="box-card" v-if="activities.length > 0">
       <h2>活动管理</h2>
       <div
@@ -157,6 +158,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import AdminInnerNav from '@/components/AdminInnerNav.vue'
 
 const activities = ref<any[]>([])
 const dialogVisible = ref(false)

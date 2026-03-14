@@ -1,5 +1,6 @@
 <template>
   <div>
+    <admin-inner-nav />
     <!-- 课题管理部分 -->
     <el-card class="box-card" v-if="courses.length > 0">
       <h2>课题管理</h2>
@@ -171,6 +172,7 @@ import dayjs from 'dayjs'
 import axios from 'axios'
 import { compressImage } from '@/components/imageCompressor'
 import { ElMessage } from 'element-plus'
+import AdminInnerNav from '@/components/AdminInnerNav.vue'
 
 const courses = ref<any[]>([])
 const dialogVisible = ref(false)

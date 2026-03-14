@@ -1,5 +1,6 @@
 <template>
   <div>
+    <admin-inner-nav />
     <el-card class="box-card" v-if="unscoredScores.length > 0">
       <h2>未审核成绩查看</h2>
 
@@ -155,6 +156,7 @@ import { fetchUnScoredScores, handleUpdateScore } from '@/api/score'
 import dayjs from 'dayjs'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import AdminInnerNav from '@/components/AdminInnerNav.vue'
 
 // 数据与状态
 const unscoredScores = ref<any[]>([])
