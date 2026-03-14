@@ -70,18 +70,21 @@
 
                 <div class="mt-6 flex flex-wrap items-center gap-2">
                   <button class="home-btn" @click="goTaskDetail(currentCourse?.id)">进入课题</button>
-                  <span v-if="displayCourses.length > 1" class="text-xs text-cyan-100/70">
-                    自动轮播 {{ currentCourseIndex + 1 }}/{{ displayCourses.length }}
-                  </span>
                 </div>
               </div>
 
               <div>
                 <img
+                  v-if="hasImage(currentCourse?.image)"
                   :src="getImageUrl(currentCourse?.image)"
                   alt="课题宣传图"
                   class="h-auto w-full rounded-2xl border border-cyan-100/20 object-contain object-center shadow-[0_12px_28px_rgba(2,6,23,0.35)]"
                 />
+                <div v-else class="rhythm-booth min-h-84 rounded-2xl border border-cyan-100/20">
+                  <MaimaiRing :size="220" />
+                  <p class="rhythm-title">音游元素展位</p>
+                  <p class="rhythm-subtitle">课题暂未上传宣传图</p>
+                </div>
               </div>
             </article>
           </transition>
@@ -117,10 +120,16 @@
             class="overflow-hidden rounded-2xl border border-cyan-100/20 bg-cyan-100/6"
           >
             <img
+              v-if="hasImage(activity.activityBanner)"
               :src="getImageUrl(activity.activityBanner)"
               alt="活动宣传图"
               class="h-90 w-full object-cover object-center max-xl:h-77.5 max-lg:h-70"
             />
+            <div v-else class="rhythm-booth h-90 max-xl:h-77.5 max-lg:h-70 border-b border-cyan-100/20">
+              <MaimaiRing :size="180" />
+              <p class="rhythm-title">音游元素展位</p>
+              <p class="rhythm-subtitle">活动暂未上传宣传图</p>
+            </div>
             <div class="p-3 text-left">
               <h3 class="line-clamp-2 text-lg font-semibold text-cyan-50">{{ activity.name || '未命名活动' }}</h3>
               <p class="mt-2 text-xs text-cyan-100/80">开始：{{ formatDateTime(activity.startTime) }}</p>
@@ -154,6 +163,7 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { fetchCourseData } from '@/api/course'
 import NeonCard from '@/components/NeonCard.vue'
+import { MaimaiRing } from '@/components/effects'
 
 type CourseLike = {
   id: number
@@ -247,9 +257,13 @@ const visibleActivities = computed(() => {
 })
 
 function getImageUrl(imagePath?: string): string {
-  if (!imagePath) return '/images/logo.png'
+  if (!imagePath) return ''
   if (/^https?:\/\//.test(imagePath)) return imagePath
   return imagePath.startsWith('/') ? imagePath : `/${imagePath}`
+}
+
+function hasImage(imagePath?: string): boolean {
+  return Boolean(imagePath && imagePath.trim())
 }
 
 function formatDateTime(input?: Date | string): string {
@@ -392,6 +406,30 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+
+.rhythm-booth {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 50% 36%, rgba(34, 211, 238, 0.14), transparent 58%),
+    linear-gradient(160deg, rgba(6, 22, 44, 0.72), rgba(10, 34, 61, 0.56));
+}
+
+.rhythm-title {
+  margin-top: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #e5f6ff;
+}
+
+.rhythm-subtitle {
+  margin-top: 2px;
+  font-size: 13px;
+  color: rgba(186, 230, 253, 0.76);
 }
 
 .metronome-title {
