@@ -103,7 +103,7 @@ public class ActivityService {
     }
 
     public List<Activity> getRatedActivities(Integer identityId) {
-        List<Score> activityScores = scoreRepository.findByIdentity_IdAndIsScoredOneAndIsDeletedFalseAndCategoryContest(identityId);
+        List<Score> activityScores = scoreRepository.findByIdentity_IdAndIsScoredTrueAndIsDeletedFalseAndCategoryContest(identityId);
         Set<Activity> result = new HashSet<>();
         for(Score score : activityScores){
             Course course = score.getCourse();

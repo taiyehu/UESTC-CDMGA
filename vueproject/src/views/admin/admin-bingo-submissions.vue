@@ -31,10 +31,34 @@
         <td class="px-3 py-3 text-center">{{ row.method }}</td>
         <td class="px-3 py-3 text-center">
           <div class="action-wrap">
-            <button type="button" class="neon-btn ok" @click="reviewScore(row, 1)">通过</button>
+            <button
+              type="button"
+              class="neon-btn ok"
+              :class="{ 'is-pending': pendingStatusMap[row.id] === 1 }"
+              :disabled="Boolean(pendingStatusMap[row.id])"
+              @click="reviewScore(row, 1)"
+            >
+              {{ pendingStatusMap[row.id] === 1 ? '处理中...' : '通过' }}
+            </button>
             <div class="action-right">
-              <button type="button" class="neon-btn warn" @click="reviewScore(row, 2, '曲目不对')">曲目不对</button>
-              <button type="button" class="neon-btn danger" @click="reviewScore(row, 3, '游玩方式不对')">游玩方式不对</button>
+              <button
+                type="button"
+                class="neon-btn warn"
+                :class="{ 'is-pending': pendingStatusMap[row.id] === 2 }"
+                :disabled="Boolean(pendingStatusMap[row.id])"
+                @click="reviewScore(row, 2)"
+              >
+                {{ pendingStatusMap[row.id] === 2 ? '处理中...' : '曲目不对' }}
+              </button>
+              <button
+                type="button"
+                class="neon-btn danger"
+                :class="{ 'is-pending': pendingStatusMap[row.id] === 3 }"
+                :disabled="Boolean(pendingStatusMap[row.id])"
+                @click="reviewScore(row, 3)"
+              >
+                {{ pendingStatusMap[row.id] === 3 ? '处理中...' : '游玩方式不对' }}
+              </button>
             </div>
           </div>
         </td>
@@ -83,6 +107,7 @@ const currentPage = ref(1)
 const pageSize = 10
 const previewVisible = ref(false)
 const previewImage = ref('')
+const pendingStatusMap = ref<Record<number, number | undefined>>({})
 
 const totalPages = computed(() => Math.max(1, Math.ceil(rows.value.length / pageSize)))
 const pagedRows = computed(() => {
@@ -132,23 +157,34 @@ function formatDateTime(value: any): string {
   return new Date(value).toLocaleString('zh-CN')
 }
 
-async function reviewScore(row: BingoRow, status: number, reason?: string): Promise<void> {
+async function reviewScore(row: BingoRow, status: number): Promise<void> {
+  if (pendingStatusMap.value[row.id]) return
+  pendingStatusMap.value[row.id] = status
+
   try {
     const updatePayload: Record<string, any> = {
       upload_time: row.uploadTimeRaw,
       image: row.image,
-      point: 0,
-      is_scored: status,
+      point: status,
+      is_scored: true,
       issue_id: row.issueId,
-      remark: reason ? reason : row.remark,
+      remark: row.remark,
     }
 
     await handleUpdateScore(updatePayload, row.id)
+
+    // 更新成功后直接从待审核列表移除，减少重复全量刷新带来的迟滞感。
+    rows.value = rows.value.filter((item) => item.id !== row.id)
+    if (currentPage.value > totalPages.value) {
+      currentPage.value = totalPages.value
+    }
+
     ElMessage({ message: `成绩 ${row.id} 已处理`, type: status === 1 ? 'success' : 'warning' })
-    await fetchBingoRows()
   } catch (error: any) {
     const errorMsg = error?.response?.data?.message || '处理失败，请重试'
     ElMessage({ message: errorMsg, type: 'error' })
+  } finally {
+    delete pendingStatusMap.value[row.id]
   }
 }
 
@@ -212,6 +248,12 @@ onMounted(fetchBingoRows)
 .neon-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.neon-btn.is-pending {
+  box-shadow:
+    0 0 12px rgba(34, 211, 238, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.15);
 }
 
 .neon-btn.ok {

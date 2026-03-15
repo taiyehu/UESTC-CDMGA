@@ -16,8 +16,7 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
 
     long countByIsDeletedFalse();
 
-    @Query("SELECT COUNT(s) FROM Score s WHERE s.isScored = 0 AND s.isDeleted = false")
-    long countByIsScoredZeroAndIsDeletedFalse();
+    long countByIsScoredFalseAndIsDeletedFalse();
 
     // 按id查找
     Score findByIdAndIsDeletedFalse(Long id);
@@ -39,37 +38,35 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     // 按 id、identity_id 或 course_id 查找（OR 查询）
     List<Score> findByIdOrIdentityIdOrCourseId(Long id, int identityId, int courseId);
 
-    // 查询所有 isScored = 0 且 isDeleted = false 的成绩
-    @Query("SELECT s FROM Score s WHERE s.isScored = 0 AND s.isDeleted = false ORDER BY s.createdAt DESC")
-    Page<Score> findByIsScoredZeroAndIsDeletedFalse(Pageable pageable);
+    // 查询所有 isScored = false 且 isDeleted = false 的成绩
+    Page<Score> findByIsScoredFalseAndIsDeletedFalse(Pageable pageable);
 
-    @Query("SELECT s FROM Score s WHERE s.isScored = 0 AND s.isDeleted = false AND s.course.category = 'bingo' ORDER BY s.createdAt DESC")
+    @Query("SELECT s FROM Score s WHERE s.isScored = false AND s.isDeleted = false AND s.course.category = 'bingo' ORDER BY s.createdAt DESC")
     Page<Score> findUnscoredBingo(Pageable pageable);
 
-    @Query("SELECT s FROM Score s WHERE s.isScored = 0 AND s.isDeleted = false AND s.course.category <> 'bingo' ORDER BY s.createdAt DESC")
+    @Query("SELECT s FROM Score s WHERE s.isScored = false AND s.isDeleted = false AND s.course.category <> 'bingo' ORDER BY s.createdAt DESC")
     Page<Score> findUnscoredNonBingo(Pageable pageable);
 
-    @Query("SELECT COUNT(s) FROM Score s WHERE s.isScored = 0 AND s.isDeleted = false AND s.course.category = 'bingo'")
+    @Query("SELECT COUNT(s) FROM Score s WHERE s.isScored = false AND s.isDeleted = false AND s.course.category = 'bingo'")
     long countUnscoredBingo();
 
-    @Query("SELECT COUNT(s) FROM Score s WHERE s.isScored = 0 AND s.isDeleted = false AND s.course.category <> 'bingo'")
+    @Query("SELECT COUNT(s) FROM Score s WHERE s.isScored = false AND s.isDeleted = false AND s.course.category <> 'bingo'")
     long countUnscoredNonBingo();
 
-    // 查询所有 isScored = 1 且 isDeleted = false 且 category为contest的成绩
-    @Query("SELECT s FROM Score s WHERE s.isScored = 1 AND s.isDeleted = false AND s.course.category = 'contest'")
+    // 查询所有 isScored = true 且 isDeleted = false 且 category为contest的成绩
+    @Query("SELECT s FROM Score s WHERE s.isScored = true AND s.isDeleted = false AND s.course.category = 'contest'")
     List<Score> findScoredNotDeletedAndCategoryIsContest();
 
-    @Query("SELECT s FROM Score s WHERE s.isScored = 1 AND s.isDeleted = false AND s.course.category <> 'contest' AND s.course.category <> 'bingo'")
+    @Query("SELECT s FROM Score s WHERE s.isScored = true AND s.isDeleted = false AND s.course.category <> 'contest' AND s.course.category <> 'bingo'")
     List<Score> findScoredNotDeletedAndCategoryNotContestOrBingo();
 
-    @Query("SELECT s FROM Score s WHERE s.isScored = 1 AND s.isDeleted = false AND s.identity.id = :identityId")
-    List<Score> findByIdentity_IdAndIsScoredOneAndIsDeletedFalse(int identityId);
+    List<Score> findByIdentity_IdAndIsScoredTrueAndIsDeletedFalse(int identityId);
 
-    @Query("SELECT s FROM Score s WHERE s.isScored = 1 AND s.isDeleted = false AND s.identity.id = :identityId AND s.course.category = 'contest'")
-    List<Score> findByIdentity_IdAndIsScoredOneAndIsDeletedFalseAndCategoryContest(int identityId);
+    @Query("SELECT s FROM Score s WHERE s.isScored = true AND s.isDeleted = false AND s.identity.id = :identityId AND s.course.category = 'contest'")
+    List<Score> findByIdentity_IdAndIsScoredTrueAndIsDeletedFalseAndCategoryContest(int identityId);
 
-    @Query("SELECT s FROM Score s WHERE s.isScored = 1 AND s.isDeleted = false AND s.identity.id = :identityId AND s.course.category <> 'contest' AND s.course.category <> 'bingo'")
-    List<Score> findByIdentity_IdAndIsScoredOneAndIsDeletedFalseAndCategoryNotContest(int identityId);
+    @Query("SELECT s FROM Score s WHERE s.isScored = true AND s.isDeleted = false AND s.identity.id = :identityId AND s.course.category <> 'contest' AND s.course.category <> 'bingo'")
+    List<Score> findByIdentity_IdAndIsScoredTrueAndIsDeletedFalseAndCategoryNotContest(int identityId);
 
     boolean existsByIdentityIdAndCourseIdAndIsDeletedFalse(int identityId, int courseId);
 
@@ -84,6 +81,6 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
 
 
 
-    @Query("SELECT s FROM Score s WHERE s.identity.id = :identityId AND s.course.category = 'contest' AND s.isDeleted = false AND s.isScored = 1")
+    @Query("SELECT s FROM Score s WHERE s.identity.id = :identityId AND s.course.category = 'contest' AND s.isDeleted = false AND s.isScored = true")
     List<Score> findContestScoresByIdentityId(Integer identityId);
 }

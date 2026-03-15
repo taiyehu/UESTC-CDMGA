@@ -55,12 +55,12 @@ public class ScoreService {
     }
 
     public Long getUnScoredScoreCount(){
-        return scoreRepository.countByIsScoredZeroAndIsDeletedFalse();
+        return scoreRepository.countByIsScoredFalseAndIsDeletedFalse();
     }
 
     public Score postNewScore(int course_id, int identity_id, Integer issue_id,
         LocalDateTime upload_time, String image,
-        float point, Integer is_scored, String remark,
+        float point, Boolean is_scored, String remark,
         LocalDateTime created_at, LocalDateTime updated_at
         ){
 
@@ -81,7 +81,7 @@ public class ScoreService {
     }
 
     public Score updateScore(Long scoreId, LocalDateTime upload_time, String image,
-                             float point, Integer is_scored, String remark, Integer issue_id) {
+                             float point, Boolean is_scored, String remark, Integer issue_id) {
         // 查找Score
         Score score = scoreRepository.findById(scoreId).orElse(null);
         if (score != null) {
@@ -121,7 +121,7 @@ public class ScoreService {
     }
 
     public List<Score> getUnscoredScores(int page, int size) {
-        return scoreRepository.findByIsScoredZeroAndIsDeletedFalse(PageRequest.of(page, size)).getContent();
+        return scoreRepository.findByIsScoredFalseAndIsDeletedFalse(PageRequest.of(page, size)).getContent();
     }
 
     public List<Score> getUnscoredBingoScores(int page, int size) {
@@ -193,15 +193,15 @@ public class ScoreService {
 
 
     public List<Score> getScoredScoresByIdentityId(int identityId) {
-        return scoreRepository.findByIdentity_IdAndIsScoredOneAndIsDeletedFalse(identityId);
+        return scoreRepository.findByIdentity_IdAndIsScoredTrueAndIsDeletedFalse(identityId);
     }
 
     public List<Score> getScoredContestScoresByIdentityId(int identityId) {
-        return scoreRepository.findByIdentity_IdAndIsScoredOneAndIsDeletedFalseAndCategoryContest(identityId);
+        return scoreRepository.findByIdentity_IdAndIsScoredTrueAndIsDeletedFalseAndCategoryContest(identityId);
     }
 
     public List<Score> getScoredCourseScoresByIdentityId(int identityId) {
-        return scoreRepository.findByIdentity_IdAndIsScoredOneAndIsDeletedFalseAndCategoryNotContest(identityId);
+        return scoreRepository.findByIdentity_IdAndIsScoredTrueAndIsDeletedFalseAndCategoryNotContest(identityId);
     }
 
     public List<UserScoreDto> calculateTotalScoresForContest(){
@@ -216,7 +216,7 @@ public class ScoreService {
             for (ActivityCourseAssoc assoc : activity.getCourseAssocs()) {
                 List<Score> courseScores = scoreRepository.findByCourse_Id(assoc.getCourse().getId());
                 for (Score score : courseScores) {
-                    if (score.getIsScored() != null && score.getIsScored() == 1 && !score.getIsDeleted()) {
+                    if (Boolean.TRUE.equals(score.getIsScored()) && !score.getIsDeleted()) {
                         scores.add(score);
                     }
                 }

@@ -9,7 +9,7 @@ public class ScoreRequest {
     private LocalDateTime upload_time;
     private String image;
     private float point;
-    private Integer is_scored;
+    private Boolean is_scored;
     private String remark;
     private LocalDateTime created_at;
     private LocalDateTime updated_at;
@@ -77,11 +77,11 @@ public class ScoreRequest {
         update();
     }
 
-    public Integer getIs_scored() {
+    public Boolean getIs_scored() {
         return is_scored;
     }
 
-    public void setIs_scored(Integer is_scored) {
+    public void setIs_scored(Boolean is_scored) {
         this.is_scored = is_scored;
         update();
     }

@@ -19,7 +19,7 @@
       </div>
 
       <div class="mt-5">
-        <TaskScoreAction :course="course" :bingo-cell="cellId" />
+        <TaskScoreAction :key="`${course.id}-${cellId}`" :course="course" :bingo-cell="cellId" />
       </div>
 
       <div class="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">

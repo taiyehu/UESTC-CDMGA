@@ -148,7 +148,7 @@ async function updateScore(score: any): Promise<void> {
       upload_time: dayjs(score.uploadTime).format('YYYY-MM-DDTHH:mm:ss'),
       image: score.image,
       point,
-      is_scored: 1,
+      is_scored: true,
       remark: score.remark,
     }
 

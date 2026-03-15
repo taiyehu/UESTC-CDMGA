@@ -60,7 +60,7 @@ public class ScoreController {
                     scoreRequest.getCourse_id(), scoreRequest.getIdentity_id(),
                     scoreRequest.getIssue_id(),
                     scoreRequest.getUpload_time(), scoreRequest.getImage(),
-                    0, 0, scoreRequest.getRemark(),
+                    0, false, scoreRequest.getRemark(),
                     scoreRequest.getCreated_at(), scoreRequest.getUpdated_at());
             return ResponseEntity.ok(Result.success(newScore));
         } catch (Exception e) {
