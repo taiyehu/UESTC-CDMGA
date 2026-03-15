@@ -26,7 +26,8 @@ export interface Score {
   uploadTime: string
   image: string
   score: number
-  isScored: boolean
+  isScored: number
+  issueId?: number
   remark: string | null
   isDeleted: boolean
   createdAt: string | null

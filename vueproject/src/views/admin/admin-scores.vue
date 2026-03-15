@@ -70,7 +70,7 @@ import { computed, onMounted, ref } from 'vue'
 import dayjs from 'dayjs'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-import { fetchUnScoredScores, handleUpdateScore } from '@/api/score'
+import { fetchUnScoredNonBingoScores, handleUpdateScore } from '@/api/score'
 import NeonRankTable from '@/components/NeonRankTable.vue'
 import NeonInput from '@/components/NeonInput.vue'
 
@@ -81,18 +81,11 @@ const scoreDraft = ref<Record<number, string>>({})
 const previewVisible = ref(false)
 const previewImage = ref('')
 
-const filteredScores = computed(() => {
-  return allScores.value.filter((item) => {
-    const category = String(item?.course?.category || '').toLowerCase()
-    return category !== 'bingo'
-  })
-})
-
-const totalPages = computed(() => Math.max(1, Math.ceil(filteredScores.value.length / pageSize)))
+const totalPages = computed(() => Math.max(1, Math.ceil(allScores.value.length / pageSize)))
 
 const pagedScores = computed(() => {
   const start = (currentPage.value - 1) * pageSize
-  return filteredScores.value.slice(start, start + pageSize)
+  return allScores.value.slice(start, start + pageSize)
 })
 
 function openPreview(src: string): void {
@@ -117,7 +110,7 @@ function formatDateTime(value: any): string {
 
 async function fetchScores(): Promise<void> {
   try {
-    const response = await fetchUnScoredScores({ page: 1, pageSize: 1000 })
+    const response = await fetchUnScoredNonBingoScores({ page: 1, pageSize: 1000 })
     allScores.value = response.data.list || []
 
     const draft: Record<number, string> = {}
@@ -155,7 +148,7 @@ async function updateScore(score: any): Promise<void> {
       upload_time: dayjs(score.uploadTime).format('YYYY-MM-DDTHH:mm:ss'),
       image: score.image,
       point,
-      is_scored: true,
+      is_scored: 1,
       remark: score.remark,
     }
 

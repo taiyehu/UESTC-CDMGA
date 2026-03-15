@@ -58,8 +58,9 @@ public class ScoreController {
         try {
             Score newScore = scoreService.postNewScore(
                     scoreRequest.getCourse_id(), scoreRequest.getIdentity_id(),
+                    scoreRequest.getIssue_id(),
                     scoreRequest.getUpload_time(), scoreRequest.getImage(),
-                    0, false, scoreRequest.getRemark(),
+                    0, 0, scoreRequest.getRemark(),
                     scoreRequest.getCreated_at(), scoreRequest.getUpdated_at());
             return ResponseEntity.ok(Result.success(newScore));
         } catch (Exception e) {
@@ -133,8 +134,11 @@ public class ScoreController {
     // }
 
     @GetMapping("/find")
-    public ResponseEntity<Long> findScoreId(@RequestParam Integer identity_id, @RequestParam Integer course_id) {
-        Score score = scoreService.getScoreByIdentityIdAndCourseId(identity_id, course_id);
+    public ResponseEntity<Long> findScoreId(
+            @RequestParam Integer identity_id,
+            @RequestParam Integer course_id,
+            @RequestParam(required = false) Integer issue_id) {
+        Score score = scoreService.getScoreByIdentityIdAndCourseId(identity_id, course_id, issue_id);
         if (score != null) {
             return ResponseEntity.ok(score.getId());
         } else {
@@ -183,7 +187,7 @@ public class ScoreController {
 
 
     // 根据id查找Score
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public ResponseEntity<Score> getScoreById(@PathVariable Long id) {
         return ResponseEntity.ok(scoreService.getScoreById(id));
     }
@@ -206,7 +210,8 @@ public class ScoreController {
                     scoreRequest.getImage(),
                     scoreRequest.getPoint(),
                     scoreRequest.getIs_scored(),
-                    scoreRequest.getRemark()
+                    scoreRequest.getRemark(),
+                    scoreRequest.getIssue_id()
             );
             if (updatedScore != null) {
                 return ResponseEntity.ok(Result.success(updatedScore));
@@ -221,9 +226,10 @@ public class ScoreController {
     @GetMapping("/exists")
         public ResponseEntity<?> checkScoreExists(
                 @RequestParam("identityId") Integer identityId,
-                @RequestParam("courseId") Integer courseId) {
+                @RequestParam("courseId") Integer courseId,
+                @RequestParam(value = "issueId", required = false) Integer issueId) {
 
-            boolean exists = scoreService.existsByIdentityIdAndCourseId(identityId, courseId);
+            boolean exists = scoreService.existsByIdentityIdAndCourseId(identityId, courseId, issueId);
             return ResponseEntity.ok(exists);
         }
     @GetMapping("/unscored")
@@ -233,6 +239,34 @@ public class ScoreController {
     ) {
         List<Score> scores = scoreService.getUnscoredScores(page, size);
         Long total = scoreService.getUnScoredScoreCount();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("list",scores);
+        result.put("total",total);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/unscored-bingo")
+    public ResponseEntity<Object> getUnscoredBingoScores(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        List<Score> scores = scoreService.getUnscoredBingoScores(page, size);
+        Long total = scoreService.getUnScoredBingoScoreCount();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("list",scores);
+        result.put("total",total);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/unscored-non-bingo")
+    public ResponseEntity<Object> getUnscoredNonBingoScores(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        List<Score> scores = scoreService.getUnscoredNonBingoScores(page, size);
+        Long total = scoreService.getUnScoredNonBingoScoreCount();
 
         Map<String, Object> result = new HashMap<>();
         result.put("list",scores);

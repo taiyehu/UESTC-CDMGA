@@ -4,6 +4,7 @@ CREATE TABLE `score` (
                          `identity_id` INT NOT NULL COMMENT '所属用户ID',
                          `upload_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
                          `image` VARCHAR(255) NOT NULL COMMENT '成绩图路径',
+                         `issue_id` TINYINT DEFAULT NULL COMMENT 'bingo子题ID',
                          `score` FLOAT NOT NULL DEFAULT 0 COMMENT '成绩得分',
                          `is_scored` BOOLEAN NOT NULL DEFAULT FALSE COMMENT '是否已评分（0=未评分，1=已评分）',
                          `remark` TEXT DEFAULT NULL COMMENT '备注信息（可选）',

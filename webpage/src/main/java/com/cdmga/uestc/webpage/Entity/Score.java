@@ -24,7 +24,10 @@ public class Score {
     private Float score;
 
     @Column(name = "is_scored")
-    private Boolean isScored;
+    private Integer isScored;
+
+    @Column(name = "issue_id")
+    private Integer issueId;
 
     @Column(name = "remark")
     private String remark;
@@ -106,12 +109,20 @@ public class Score {
         this.score = score;
     }
 
-    public Boolean getIsScored() {
+    public Integer getIsScored() {
         return isScored;
     }
 
-    public void setIsScored(Boolean isScored) {
+    public void setIsScored(Integer isScored) {
         this.isScored = isScored;
+    }
+
+    public Integer getIssueId() {
+        return issueId;
+    }
+
+    public void setIssueId(Integer issueId) {
+        this.issueId = issueId;
     }
 
     public String getRemark() {

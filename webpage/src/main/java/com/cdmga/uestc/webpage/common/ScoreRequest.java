@@ -5,10 +5,11 @@ import java.time.LocalDateTime;
 public class ScoreRequest {
     private Integer course_id;
     private Integer identity_id;
+    private Integer issue_id;
     private LocalDateTime upload_time;
     private String image;
     private float point;
-    private Boolean is_scored;
+    private Integer is_scored;
     private String remark;
     private LocalDateTime created_at;
     private LocalDateTime updated_at;
@@ -40,6 +41,15 @@ public class ScoreRequest {
         update();
     }
 
+    public Integer getIssue_id() {
+        return issue_id;
+    }
+
+    public void setIssue_id(Integer issue_id) {
+        this.issue_id = issue_id;
+        update();
+    }
+
     public LocalDateTime getUpload_time() {
         return upload_time;
     }
@@ -67,11 +77,11 @@ public class ScoreRequest {
         update();
     }
 
-    public Boolean getIs_scored() {
+    public Integer getIs_scored() {
         return is_scored;
     }
 
-    public void setIs_scored(Boolean is_scored) {
+    public void setIs_scored(Integer is_scored) {
         this.is_scored = is_scored;
         update();
     }

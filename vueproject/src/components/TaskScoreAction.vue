@@ -37,11 +37,11 @@
               </div>
               <div class="info-row">
                 <span class="label">成绩状态</span>
-                <span class="value">{{ selectedScore && selectedScore.isScored ? '已评分' : '未评分' }}</span>
+                <span class="value">{{ selectedScore && Number(selectedScore.isScored) === 1 ? '已评分' : '未评分' }}</span>
               </div>
               <div class="info-row">
                 <span class="label">得分</span>
-                <span class="value">{{ selectedScore && selectedScore.isScored ? selectedScore.score : '-' }}</span>
+                <span class="value">{{ selectedScore && Number(selectedScore.isScored) === 1 ? selectedScore.score : '-' }}</span>
               </div>
               <div class="info-row">
                 <span class="label">补充说明</span>
@@ -220,6 +220,13 @@ const isWithinCourseTime = computed(() => {
 
 const isActionDisabled = computed(() => !isWithinCourseTime.value && !scored.value)
 
+const currentIssueId = computed<number | undefined>(() => {
+  if (props.bingoCell === undefined || props.bingoCell === null) return undefined
+  const issueId = Number(props.bingoCell)
+  if (!Number.isFinite(issueId)) return undefined
+  return issueId
+})
+
 const formCourseTitle = computed(() => {
   if (activeModal.value === 'update') return updateForm.course_title
   return submitForm.course_title
@@ -275,7 +282,7 @@ async function refreshStatus(): Promise<void> {
     return
   }
 
-  const submittedRes = await checkSubmitted(identityId, props.course.id)
+  const submittedRes = await checkSubmitted(identityId, props.course.id, currentIssueId.value)
   submitted.value = Boolean(submittedRes?.data)
 
   if (!submitted.value) {
@@ -286,7 +293,11 @@ async function refreshStatus(): Promise<void> {
   }
 
   const scoreIdRes = await axios.get('/api/score/find', {
-    params: { identity_id: identityId, course_id: props.course.id },
+    params: {
+      identity_id: identityId,
+      course_id: props.course.id,
+      ...(currentIssueId.value !== undefined ? { issue_id: currentIssueId.value } : {}),
+    },
   })
 
   const foundScoreId = Number(scoreIdRes.data)
@@ -300,7 +311,7 @@ async function refreshStatus(): Promise<void> {
   scoreId.value = foundScoreId
   const scoreRes = await axios.get(`/api/score/${foundScoreId}`)
   selectedScore.value = scoreRes.data
-  scored.value = Boolean(scoreRes.data?.isScored) && !Boolean(scoreRes.data?.isDeleted)
+  scored.value = Number(scoreRes.data?.isScored) === 1 && !Boolean(scoreRes.data?.isDeleted)
 }
 
 async function handleMainAction(): Promise<void> {
@@ -341,7 +352,11 @@ async function openUpdateDialog(): Promise<void> {
 
   if (!scoreId.value) {
     const response = await axios.get('/api/score/find', {
-      params: { identity_id: identityId, course_id: props.course.id },
+      params: {
+        identity_id: identityId,
+        course_id: props.course.id,
+        ...(currentIssueId.value !== undefined ? { issue_id: currentIssueId.value } : {}),
+      },
     })
     scoreId.value = Number(response.data)
   }
@@ -377,6 +392,7 @@ async function handleSubmit(): Promise<void> {
     const submitData = {
       course_id: submitForm.course_id,
       identity_id: identityId,
+      ...(currentIssueId.value !== undefined ? { issue_id: currentIssueId.value } : {}),
       upload_time: submitForm.upload_time,
       image: submitForm.image,
       remark: submitForm.remark,
@@ -410,8 +426,9 @@ async function handleUpdate(): Promise<void> {
       created_at: updateForm.create_at,
       image: updateForm.image,
       score: 0,
-      is_scored: false,
+      is_scored: 0,
       id: updateForm.score_id,
+      ...(currentIssueId.value !== undefined ? { issue_id: currentIssueId.value } : {}),
       remark: updateForm.remark,
     }
 

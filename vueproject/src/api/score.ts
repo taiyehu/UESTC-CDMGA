@@ -22,14 +22,19 @@ export const Test_handleSubmitScore = (handleScore:Score) => {
  * @param {Number} courseId
  * @returns {Promise}
  */
-export const checkSubmitted = (identityId: number | string, courseId: number | string) => {
+export const checkSubmitted = (identityId: number | string, courseId: number | string, issueId?: number | string) => {
+  const params: Record<string, number | string> = {
+    identityId: identityId,
+    courseId: courseId,
+  }
+  if (issueId !== undefined && issueId !== null && issueId !== '') {
+    params.issueId = issueId
+  }
+
   return request({
     url: '/score/exists',
     method: 'get',
-    params: {
-      identityId: identityId,
-      courseId: courseId,
-    },
+    params,
   })
 }
 /**
@@ -74,6 +79,30 @@ export const fetchUnScoredScores = (params: { page: number; pageSize?: number; s
   const pageSize = params.pageSize ?? params.size ?? 10
   return request({
     url: '/score/unscored',
+    method: 'get',
+    params: {
+      page: params.page - 1,
+      size: pageSize,
+    },
+  })
+}
+
+export const fetchUnScoredBingoScores = (params: { page: number; pageSize?: number; size?: number }) => {
+  const pageSize = params.pageSize ?? params.size ?? 10
+  return request({
+    url: '/score/unscored-bingo',
+    method: 'get',
+    params: {
+      page: params.page - 1,
+      size: pageSize,
+    },
+  })
+}
+
+export const fetchUnScoredNonBingoScores = (params: { page: number; pageSize?: number; size?: number }) => {
+  const pageSize = params.pageSize ?? params.size ?? 10
+  return request({
+    url: '/score/unscored-non-bingo',
     method: 'get',
     params: {
       page: params.page - 1,

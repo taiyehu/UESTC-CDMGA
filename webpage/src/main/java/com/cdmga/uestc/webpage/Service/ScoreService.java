@@ -55,12 +55,12 @@ public class ScoreService {
     }
 
     public Long getUnScoredScoreCount(){
-        return scoreRepository.countByIsScoredFalseAndIsDeletedFalse();
+        return scoreRepository.countByIsScoredZeroAndIsDeletedFalse();
     }
 
-    public Score postNewScore(int course_id, int identity_id,
+    public Score postNewScore(int course_id, int identity_id, Integer issue_id,
         LocalDateTime upload_time, String image,
-        float point, Boolean is_scored, String remark,
+        float point, Integer is_scored, String remark,
         LocalDateTime created_at, LocalDateTime updated_at
         ){
 
@@ -73,6 +73,7 @@ public class ScoreService {
             score.setImage(image);
             score.setScore(point);
             score.setIsScored(is_scored);
+            score.setIssueId(issue_id);
             score.setRemark(remark);
             score.setUpdatedAt(updated_at);
 
@@ -80,7 +81,7 @@ public class ScoreService {
     }
 
     public Score updateScore(Long scoreId, LocalDateTime upload_time, String image,
-                             float point, Boolean is_scored, String remark) {
+                             float point, Integer is_scored, String remark, Integer issue_id) {
         // 查找Score
         Score score = scoreRepository.findById(scoreId).orElse(null);
         if (score != null) {
@@ -88,6 +89,7 @@ public class ScoreService {
             score.setImage(image);
             score.setScore(point);
             score.setIsScored(is_scored);
+            score.setIssueId(issue_id);
             score.setRemark(remark);
             score.setUpdatedAt(LocalDateTime.now()); // 更新时间
             return scoreRepository.save(score); // 保存更新后的Score
@@ -119,15 +121,37 @@ public class ScoreService {
     }
 
     public List<Score> getUnscoredScores(int page, int size) {
-        return scoreRepository.findByIsScoredFalseAndIsDeletedFalse(PageRequest.of(page, size)).getContent();
+        return scoreRepository.findByIsScoredZeroAndIsDeletedFalse(PageRequest.of(page, size)).getContent();
     }
 
-    public boolean existsByIdentityIdAndCourseId(int identityId, int courseId) {
-        return scoreRepository.existsByIdentityIdAndCourseIdAndIsDeletedFalse(identityId, courseId);
+    public List<Score> getUnscoredBingoScores(int page, int size) {
+        return scoreRepository.findUnscoredBingo(PageRequest.of(page, size)).getContent();
     }
 
-    public Score getScoreByIdentityIdAndCourseId(Integer identityId, Integer courseId) {
-        return scoreRepository.findByIdentityIdAndCourseIdAndIsDeletedFalse(identityId, courseId);
+    public List<Score> getUnscoredNonBingoScores(int page, int size) {
+        return scoreRepository.findUnscoredNonBingo(PageRequest.of(page, size)).getContent();
+    }
+
+    public Long getUnScoredBingoScoreCount(){
+        return scoreRepository.countUnscoredBingo();
+    }
+
+    public Long getUnScoredNonBingoScoreCount(){
+        return scoreRepository.countUnscoredNonBingo();
+    }
+
+    public boolean existsByIdentityIdAndCourseId(int identityId, int courseId, Integer issueId) {
+        if (issueId == null) {
+            return scoreRepository.existsByIdentityIdAndCourseIdAndIsDeletedFalse(identityId, courseId);
+        }
+        return scoreRepository.existsByIdentityIdAndCourseIdAndIssueIdAndIsDeletedFalse(identityId, courseId, issueId);
+    }
+
+    public Score getScoreByIdentityIdAndCourseId(Integer identityId, Integer courseId, Integer issueId) {
+        if (issueId == null) {
+            return scoreRepository.findByIdentityIdAndCourseIdAndIsDeletedFalse(identityId, courseId);
+        }
+        return scoreRepository.findByIdentityIdAndCourseIdAndIssueIdAndIsDeletedFalse(identityId, courseId, issueId);
 
     }
 
@@ -163,21 +187,21 @@ public class ScoreService {
     }
 
     public List<UserScoreDto> calculateTotalScoreForAllUsers() {
-        List<Score> scores = scoreRepository.findScoredNotDeletedAndCategoryNotContest();
+        List<Score> scores = scoreRepository.findScoredNotDeletedAndCategoryNotContestOrBingo();
         return calculateScoresForAllUsers(scores);
     }
 
 
     public List<Score> getScoredScoresByIdentityId(int identityId) {
-        return scoreRepository.findByIdentity_IdAndIsScoredTrueAndIsDeletedFalse(identityId);
+        return scoreRepository.findByIdentity_IdAndIsScoredOneAndIsDeletedFalse(identityId);
     }
 
     public List<Score> getScoredContestScoresByIdentityId(int identityId) {
-        return scoreRepository.findByIdentity_IdAndIsScoredTrueAndIsDeletedFalseAndCategoryContest(identityId);
+        return scoreRepository.findByIdentity_IdAndIsScoredOneAndIsDeletedFalseAndCategoryContest(identityId);
     }
 
     public List<Score> getScoredCourseScoresByIdentityId(int identityId) {
-        return scoreRepository.findByIdentity_IdAndIsScoredTrueAndIsDeletedFalseAndCategoryNotContest(identityId);
+        return scoreRepository.findByIdentity_IdAndIsScoredOneAndIsDeletedFalseAndCategoryNotContest(identityId);
     }
 
     public List<UserScoreDto> calculateTotalScoresForContest(){
@@ -192,7 +216,7 @@ public class ScoreService {
             for (ActivityCourseAssoc assoc : activity.getCourseAssocs()) {
                 List<Score> courseScores = scoreRepository.findByCourse_Id(assoc.getCourse().getId());
                 for (Score score : courseScores) {
-                    if (score.getIsScored() && !score.getIsDeleted()) {
+                    if (score.getIsScored() != null && score.getIsScored() == 1 && !score.getIsDeleted()) {
                         scores.add(score);
                     }
                 }

@@ -30,13 +30,12 @@
         </td>
         <td class="px-3 py-3 text-center">{{ row.method }}</td>
         <td class="px-3 py-3 text-center">
-          <div class="flex flex-wrap justify-center gap-2">
-            <button type="button" class="neon-btn ok" @click="markPass(row.id)">通过</button>
-            <button type="button" class="neon-btn danger" @click="toggleReject(row.id)">驳回</button>
-            <template v-if="expandedRejectId === row.id">
-              <button type="button" class="neon-btn warn" @click="rejectWithReason(row.id, '曲目不对')">曲目不对</button>
-              <button type="button" class="neon-btn warn" @click="rejectWithReason(row.id, '游玩方式不对')">游玩方式不对</button>
-            </template>
+          <div class="action-wrap">
+            <button type="button" class="neon-btn ok" @click="reviewScore(row, 1)">通过</button>
+            <div class="action-right">
+              <button type="button" class="neon-btn warn" @click="reviewScore(row, 2, '曲目不对')">曲目不对</button>
+              <button type="button" class="neon-btn danger" @click="reviewScore(row, 3, '游玩方式不对')">游玩方式不对</button>
+            </div>
           </div>
         </td>
       </tr>
@@ -62,7 +61,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { fetchUnScoredScores } from '@/api/score'
+import { fetchUnScoredBingoScores, handleUpdateScore } from '@/api/score'
 import NeonRankTable from '@/components/NeonRankTable.vue'
 
 type BingoRow = {
@@ -74,12 +73,14 @@ type BingoRow = {
   uploadTime: string
   image: string
   method: string
+  uploadTimeRaw: string
+  remark: string
+  issueId?: number
 }
 
 const rows = ref<BingoRow[]>([])
 const currentPage = ref(1)
 const pageSize = 10
-const expandedRejectId = ref<number | null>(null)
 const previewVisible = ref(false)
 const previewImage = ref('')
 
@@ -104,7 +105,11 @@ function normalizeUrl(imagePath?: string): string {
   return imagePath.startsWith('/') ? imagePath : '/' + imagePath
 }
 
-function extractTaskId(remark?: string): string {
+function extractTaskId(item: any): string {
+  if (item?.issueId !== undefined && item?.issueId !== null && item?.issueId !== '') {
+    return String(item.issueId)
+  }
+  const remark = item?.remark
   if (!remark) return '-'
   const matched = remark.match(/#(\d+)/)
   return matched?.[1] || '-'
@@ -127,35 +132,44 @@ function formatDateTime(value: any): string {
   return new Date(value).toLocaleString('zh-CN')
 }
 
-function toggleReject(scoreId: number): void {
-  expandedRejectId.value = expandedRejectId.value === scoreId ? null : scoreId
-}
+async function reviewScore(row: BingoRow, status: number, reason?: string): Promise<void> {
+  try {
+    const updatePayload: Record<string, any> = {
+      upload_time: row.uploadTimeRaw,
+      image: row.image,
+      point: 0,
+      is_scored: status,
+      issue_id: row.issueId,
+      remark: reason ? reason : row.remark,
+    }
 
-function markPass(scoreId: number): void {
-  ElMessage({ message: `已标记成绩 ${scoreId} 通过（暂未接入后端）`, type: 'success' })
-}
-
-function rejectWithReason(scoreId: number, reason: string): void {
-  ElMessage({ message: `已驳回成绩 ${scoreId}：${reason}（暂未接入后端）`, type: 'warning' })
-  expandedRejectId.value = null
+    await handleUpdateScore(updatePayload, row.id)
+    ElMessage({ message: `成绩 ${row.id} 已处理`, type: status === 1 ? 'success' : 'warning' })
+    await fetchBingoRows()
+  } catch (error: any) {
+    const errorMsg = error?.response?.data?.message || '处理失败，请重试'
+    ElMessage({ message: errorMsg, type: 'error' })
+  }
 }
 
 async function fetchBingoRows(): Promise<void> {
   try {
-    const response = await fetchUnScoredScores({ page: 1, pageSize: 1000 })
+    const response = await fetchUnScoredBingoScores({ page: 1, pageSize: 1000 })
     const list = response.data.list || []
     const mapped = list
-      .filter((item: any) => String(item?.course?.category || '').toLowerCase() === 'bingo')
       .map((item: any) => {
         return {
           id: Number(item.id),
-          taskId: extractTaskId(item.remark),
+          taskId: extractTaskId(item),
           courseName: String(item?.course?.title || '-'),
           account: String(item?.identity?.account || '-'),
           groupName: extractGroupName(item),
           uploadTime: formatDateTime(item.uploadTime),
+          uploadTimeRaw: item.uploadTime,
           image: normalizeUrl(item.image),
           method: extractMethod(item),
+          remark: String(item?.remark || ''),
+          issueId: item?.issueId,
         } as BingoRow
       })
 
@@ -210,6 +224,20 @@ onMounted(fetchBingoRows)
 
 .neon-btn.danger {
   border-color: rgba(248, 113, 113, 0.55);
+}
+
+.action-wrap {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.action-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
 }
 
 .preview-mask {
