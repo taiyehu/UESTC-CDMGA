@@ -10,7 +10,10 @@
 
     <article v-else-if="course" class="hud-shell p-6 text-left md:p-8">
       <p class="mb-2 text-xs uppercase tracking-widest text-cyan-300/90">bingo mission</p>
-      <h1 class="text-2xl font-semibold text-cyan-100 md:text-3xl">{{ selectedItem.title }}</h1>
+      <div class="title-row">
+        <h1 class="text-2xl font-semibold text-cyan-100 md:text-3xl">{{ selectedItem.title }}</h1>
+        <span v-if="selectedItem.songName" class="song-mark">{{ selectedItem.songName }}</span>
+      </div>
       <p class="mt-2 text-sm text-cyan-100/75">所属课题：{{ course.title }}</p>
       <p class="mt-1 text-sm text-cyan-100/75">持续时间：{{ duration }}</p>
 
@@ -75,7 +78,7 @@ const router = useRouter()
 const loading = ref(true)
 const error = ref<string | null>(null)
 const course = ref<Course | null>(null)
-const issueMap = ref<Map<number, { text?: string; image?: string; file?: string }>>(new Map())
+const issueMap = ref<Map<number, { text?: string; image?: string; file?: string; songName?: string }>>(new Map())
 
 const courseId = computed(() => Number(route.params.id))
 const cellId = computed(() => {
@@ -91,7 +94,7 @@ const duration = computed(() => {
 
 const issueNavIds = computed(() => Array.from({ length: 25 }, (_, index) => index + 1))
 
-const selectedItem = computed<BingoTaskItem & { image?: string; file?: string }>(() => {
+const selectedItem = computed<BingoTaskItem & { image?: string; file?: string; songName?: string }>(() => {
   if (!course.value) {
     return {
       id: cellId.value,
@@ -99,6 +102,7 @@ const selectedItem = computed<BingoTaskItem & { image?: string; file?: string }>
       description: '',
       image: '',
       file: '',
+      songName: '',
     }
   }
   const items = parseBingoItems(course.value)
@@ -115,6 +119,7 @@ const selectedItem = computed<BingoTaskItem & { image?: string; file?: string }>
       description: issue?.text?.trim() ? String(issue.text) : base.description,
       image: issue?.image || '',
       file: issue?.file || '',
+      songName: issue?.songName || '',
     }
   )
 })
@@ -127,7 +132,7 @@ async function loadIssues() {
     }
     const res = await fetchCourseIssues(courseId.value, 1, 25)
     const list = Array.isArray(res.data?.list) ? res.data.list : []
-    const map = new Map<number, { text?: string; image?: string; file?: string }>()
+    const map = new Map<number, { text?: string; image?: string; file?: string; songName?: string }>()
     for (const item of list) {
       const issueId = Number(item?.issueId)
       if (Number.isFinite(issueId) && issueId > 0) {
@@ -135,6 +140,7 @@ async function loadIssues() {
           text: item?.text || '',
           image: item?.image || '',
           file: item?.file || '',
+          songName: item?.songName || '',
         })
       }
     }
@@ -233,6 +239,27 @@ watch(
   opacity: 0.45;
   cursor: not-allowed;
   box-shadow: none;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.song-mark {
+  display: inline-flex;
+  min-width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(110, 231, 183, 0.6);
+  background: rgba(6, 78, 59, 0.35);
+  color: #d1fae5;
+  font-size: 18px;
+  font-weight: 700;
 }
 
 .issue-nav-grid {

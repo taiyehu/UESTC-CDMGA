@@ -38,7 +38,7 @@
           <th class="w-36 px-3 py-3 text-center">图片</th>
           <th class="px-3 py-3 text-center">文本描述</th>
           <th class="w-40 px-3 py-3 text-center">文件</th>
-          <th v-if="normalizedCategory === 'typical'" class="w-40 px-3 py-3 text-center">song_name</th>
+          <th class="w-40 px-3 py-3 text-center">{{ normalizedCategory === 'bingo' ? '标记字符' : 'song_name' }}</th>
           <th class="w-28 px-3 py-3 text-center">操作</th>
         </tr>
       </template>
@@ -62,11 +62,11 @@
             <button type="button" class="neon-btn" @click="triggerPick(`file-${row.issueId}`)">上传文件</button>
           </div>
         </td>
-        <td v-if="normalizedCategory === 'typical'" class="px-3 py-3 text-center">
+        <td class="px-3 py-3 text-center">
           <input
             v-model="row.songName"
             class="song-input"
-            placeholder="必填"
+            :placeholder="normalizedCategory === 'bingo' ? '单个字符（如 A / ★ / 中）' : '必填'"
           />
         </td>
         <td class="px-3 py-3 text-center">
@@ -200,9 +200,23 @@ async function onPickFile(event: Event, issueId: number) {
 
 async function saveRow(row: IssueRow) {
   if (!selectedCourse.value) return
+
+  const normalizedSongName = (row.songName || '').trim()
+
   if (normalizedCategory.value === 'typical' && !row.songName.trim()) {
     ElMessage.warning(`Typical 课题的 issue #${row.issueId} 需要填写 song_name`)
     return
+  }
+
+  if (normalizedCategory.value === 'bingo') {
+    if (!normalizedSongName) {
+      ElMessage.warning(`Bingo 课题的 issue #${row.issueId} 需要填写单个标记字符`)
+      return
+    }
+    if ([...normalizedSongName].length !== 1) {
+      ElMessage.warning(`Bingo 课题的 issue #${row.issueId} 标记只能是单个字符`)
+      return
+    }
   }
 
   savingMap[row.issueId] = true
@@ -212,7 +226,7 @@ async function saveRow(row: IssueRow) {
       image: row.image,
       text: row.text,
       file: row.file,
-      song_name: normalizedCategory.value === 'typical' ? row.songName : undefined,
+      song_name: normalizedSongName || undefined,
     })
     ElMessage.success(`Issue #${row.issueId} 保存成功`)
   } catch (e: any) {

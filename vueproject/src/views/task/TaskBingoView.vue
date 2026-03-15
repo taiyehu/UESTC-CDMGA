@@ -17,7 +17,8 @@
           class="bingo-cell"
           @click="goCell(cellId)"
         >
-          B-{{ String(cellId).padStart(2, '0') }}
+          <span>B-{{ String(cellId).padStart(2, '0') }}</span>
+          <span v-if="issueMarks.get(cellId)" class="cell-mark">{{ issueMarks.get(cellId) }}</span>
         </button>
       </div>
     </section>
@@ -25,20 +26,48 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Course } from '@/api/types'
 import { formatDuration } from './task-utils'
+import { fetchCourseIssues } from '@/api/issue'
 
 const props = defineProps<{ course: Course }>()
 const router = useRouter()
+const issueMarks = ref<Map<number, string>>(new Map())
 
 const duration = computed(() => formatDuration(props.course.startTime, props.course.endTime))
 const cells = Array.from({ length: 25 }, (_, index) => index + 1)
 
+async function loadIssueMarks() {
+  try {
+    const res = await fetchCourseIssues(props.course.id, 1, 25)
+    const list = Array.isArray(res.data?.list) ? res.data.list : []
+    const map = new Map<number, string>()
+    for (const item of list) {
+      const issueId = Number(item?.issueId)
+      const mark = String(item?.songName || '').trim()
+      if (Number.isFinite(issueId) && issueId > 0 && mark) {
+        map.set(issueId, mark)
+      }
+    }
+    issueMarks.value = map
+  } catch {
+    issueMarks.value = new Map()
+  }
+}
+
 function goCell(cellId: number) {
   router.push(`/task/${props.course.id}/bingo/${cellId}`)
 }
+
+watch(
+  () => props.course.id,
+  () => {
+    loadIssueMarks()
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped>
@@ -92,6 +121,11 @@ function goCell(cellId: number) {
   color: #cffafe;
   font-weight: 700;
   letter-spacing: 0.06em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -100,5 +134,11 @@ function goCell(cellId: number) {
   box-shadow:
     0 0 16px rgba(34, 211, 238, 0.45),
     0 0 22px rgba(217, 70, 239, 0.22);
+}
+
+.cell-mark {
+  font-size: 15px;
+  line-height: 1;
+  color: #d1fae5;
 }
 </style>

@@ -41,10 +41,21 @@ public class IssueService {
             throw new IllegalArgumentException("issue_id 超出课题类别允许范围");
         }
 
+        String normalizedSongName = songName == null ? null : songName.trim();
+
         if ("typical".equals(category)) {
-            if (songName == null || songName.trim().isEmpty()) {
+            if (normalizedSongName == null || normalizedSongName.isEmpty()) {
                 throw new IllegalArgumentException("typical 课题必须填写 song_name");
             }
+            songName = normalizedSongName;
+        } else if ("bingo".equals(category)) {
+            if (normalizedSongName == null || normalizedSongName.isEmpty()) {
+                throw new IllegalArgumentException("bingo 课题必须填写单个标记字符");
+            }
+            if (normalizedSongName.codePointCount(0, normalizedSongName.length()) != 1) {
+                throw new IllegalArgumentException("bingo 课题 song_name 必须是单个字符");
+            }
+            songName = normalizedSongName;
         } else {
             songName = null;
         }
