@@ -24,6 +24,10 @@
           <p class="subtask-level">难度：{{ item.level }}</p>
           <h3 class="subtask-title">#{{ item.id }} {{ item.title }}</h3>
           <p class="subtask-desc">{{ item.description }}</p>
+          <div v-if="item.file" class="subtask-file-wrap">
+            <audio v-if="isAudioFile(item.file)" :src="resolveUrl(item.file)" controls class="subtask-audio" preload="none" />
+            <a v-else :href="resolveUrl(item.file)" target="_blank" class="subtask-file-link">查看附件</a>
+          </div>
         </div>
       </Motion>
     </section>
@@ -31,16 +35,71 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Motion } from 'motion-v'
 import type { Course } from '@/api/types'
 import { formatDuration, parseTypicalItems, toImageUrl } from './task-utils'
 import TaskScoreAction from '@/components/TaskScoreAction.vue'
+import { fetchCourseIssues } from '@/api/issue'
 
 const props = defineProps<{ course: Course }>()
 
+interface IssueItem {
+  issueId: number
+  image?: string
+  text?: string
+  file?: string
+  songName?: string
+}
+
+interface ViewItem {
+  id: number
+  title: string
+  description: string
+  image?: string
+  file?: string
+  level: '简单' | '一般' | '困难'
+}
+
+const issueMap = ref<Map<number, IssueItem>>(new Map())
+
 const duration = computed(() => formatDuration(props.course.startTime, props.course.endTime))
-const items = computed(() => parseTypicalItems(props.course))
+const items = computed<ViewItem[]>(() => {
+  const base = parseTypicalItems(props.course)
+  return base.map((item) => {
+    const issue = issueMap.value.get(item.id)
+    return {
+      ...item,
+      title: issue?.songName?.trim() ? String(issue.songName) : item.title,
+      description: issue?.text?.trim() ? String(issue.text) : item.description,
+      image: issue?.image || item.image || '',
+      file: issue?.file || '',
+    }
+  })
+})
+
+async function loadIssues() {
+  try {
+    const res = await fetchCourseIssues(props.course.id, 1, 6)
+    const list = Array.isArray(res.data?.list) ? res.data.list : []
+    const map = new Map<number, IssueItem>()
+    for (const item of list) {
+      const issueId = Number(item?.issueId)
+      if (Number.isFinite(issueId) && issueId > 0) {
+        map.set(issueId, {
+          issueId,
+          image: item?.image || '',
+          text: item?.text || '',
+          file: item?.file || '',
+          songName: item?.songName || '',
+        })
+      }
+    }
+    issueMap.value = map
+  } catch {
+    issueMap.value = new Map()
+  }
+}
 
 function getCoverStyle(image?: string) {
   const imageUrl = toImageUrl(image)
@@ -54,6 +113,23 @@ function getCoverStyle(image?: string) {
     backgroundImage: `url(${imageUrl})`,
   }
 }
+
+function resolveUrl(path?: string) {
+  return toImageUrl(path)
+}
+
+function isAudioFile(path?: string) {
+  const url = ((path || '').split('?')[0] || '').toLowerCase()
+  return /\.(mp3|wav|ogg|m4a|flac|aac)$/.test(url)
+}
+
+watch(
+  () => props.course.id,
+  () => {
+    loadIssues()
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped>
@@ -129,5 +205,18 @@ function getCoverStyle(image?: string) {
   min-height: 48px;
   color: rgba(207, 250, 254, 0.85);
   line-height: 1.65;
+}
+
+.subtask-file-wrap {
+  margin-top: 10px;
+}
+
+.subtask-audio {
+  width: 100%;
+}
+
+.subtask-file-link {
+  color: #67e8f9;
+  text-decoration: underline;
 }
 </style>

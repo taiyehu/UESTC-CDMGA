@@ -12,6 +12,7 @@ import adminUsers from '@/views/admin/admin-users.vue'
 import adminCourses from '@/views/admin/admin-courses.vue'
 import adminScores from '@/views/admin/admin-scores.vue'
 import adminBingoSubmissions from '@/views/admin/admin-bingo-submissions.vue'
+import adminIssues from '@/views/admin/admin-issues.vue'
 import adminProfiles from '@/views/admin/admin-profiles.vue'
 import adminProfilesPassed from '@/views/admin/admin-profiles-passed.vue'
 import AdminLayout from '@/views/admin/AdminLayout.vue'
@@ -99,6 +100,10 @@ const routes = [
       {
         path: 'bingo-submissions',
         component: adminBingoSubmissions,
+      },
+      {
+        path: 'issues/:courseId?',
+        component: adminIssues,
       },
     ],
   },

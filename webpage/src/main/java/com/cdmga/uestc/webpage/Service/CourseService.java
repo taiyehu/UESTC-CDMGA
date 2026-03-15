@@ -35,6 +35,10 @@ public class CourseService {
         return courseRepository.findByCategoryAndIsDeletedFalse(category);
     }
 
+    public Course getCourseById(Integer id) {
+        return courseRepository.findByIdAndIsDeletedFalse(id);
+    }
+
     // 获取所有未删除的课程
     public List<Course> getAllCourse() {
         return courseRepository.findByIsDeletedFalse();

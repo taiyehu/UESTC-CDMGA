@@ -59,6 +59,15 @@ public class CourseController {
         }
     }
 
+    @GetMapping("/{id:\\d+}")
+    public ResponseEntity<Course> getCourseById(@PathVariable Integer id) {
+        Course course = courseService.getCourseById(id);
+        if (course != null) {
+            return ResponseEntity.ok(course);
+        }
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+    }
+
     //上传课题
     @PostMapping("/post")
     public Result postCourse(@RequestBody CourseRequest courseRequest) {

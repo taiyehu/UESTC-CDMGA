@@ -1,0 +1,64 @@
+package com.cdmga.uestc.webpage.Service;
+
+import com.cdmga.uestc.webpage.Entity.Course;
+import com.cdmga.uestc.webpage.Entity.Issue;
+import com.cdmga.uestc.webpage.Repository.CourseRepository;
+import com.cdmga.uestc.webpage.Repository.IssueRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+
+import java.util.Optional;
+
+@Service
+public class IssueService {
+
+    @Autowired
+    private IssueRepository issueRepository;
+
+    @Autowired
+    private CourseRepository courseRepository;
+
+    public Page<Issue> getCourseIssues(Integer courseId, int page, int size) {
+        return issueRepository.findByCourseIdOrderByIssueIdAsc(courseId, PageRequest.of(page, size));
+    }
+
+    public Issue upsertIssue(Integer courseId, Integer issueId, String image, String text, String file, String songName) {
+        if (issueId == null || issueId <= 0) {
+            throw new IllegalArgumentException("issue_id 必须是正整数");
+        }
+
+        Course course = courseRepository.findById(courseId).orElse(null);
+        if (course == null || Boolean.TRUE.equals(course.getIsDeleted())) {
+            throw new IllegalArgumentException("课题不存在");
+        }
+
+        String category = course.getCategory() == null ? "" : course.getCategory().trim().toLowerCase();
+        int maxIssueCount = "bingo".equals(category) ? 25 : 6;
+
+        if (issueId > maxIssueCount) {
+            throw new IllegalArgumentException("issue_id 超出课题类别允许范围");
+        }
+
+        if ("typical".equals(category)) {
+            if (songName == null || songName.trim().isEmpty()) {
+                throw new IllegalArgumentException("typical 课题必须填写 song_name");
+            }
+        } else {
+            songName = null;
+        }
+
+        Optional<Issue> existing = issueRepository.findByCourseIdAndIssueId(courseId, issueId);
+        Issue issue = existing.orElseGet(Issue::new);
+
+        issue.setCourse(course);
+        issue.setIssueId(issueId);
+        issue.setImage(image);
+        issue.setText(text);
+        issue.setFile(file);
+        issue.setSongName(songName);
+
+        return issueRepository.save(issue);
+    }
+}
