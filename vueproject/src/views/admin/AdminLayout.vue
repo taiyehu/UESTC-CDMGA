@@ -17,6 +17,7 @@
           <el-menu-item index="/admin/scores">成绩管理</el-menu-item>
           <el-menu-item index="/admin/bingo-submissions">Bingo提交管理</el-menu-item>
           <el-menu-item index="/admin/issues">Issue管理</el-menu-item>
+          <el-menu-item index="/admin/teams">队伍管理</el-menu-item>
           <el-menu-item index="/admin/profiles">资料审核</el-menu-item>
           <el-menu-item index="/admin/profiles-passed">已通过资料</el-menu-item>
           <el-menu-item index="/admin/activities">活动管理</el-menu-item>
@@ -38,6 +39,7 @@ import { useRoute } from 'vue-router'
 const route = useRoute()
 const activePath = computed(() => {
   if (route.path.startsWith('/admin/issues')) return '/admin/issues'
+  if (route.path.startsWith('/admin/teams')) return '/admin/teams'
   return route.path
 })
 </script>

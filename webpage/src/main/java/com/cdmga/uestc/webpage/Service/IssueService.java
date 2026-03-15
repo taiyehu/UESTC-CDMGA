@@ -66,7 +66,7 @@ public class IssueService {
         issue.setCourse(course);
         issue.setIssueId(issueId);
         issue.setImage(image);
-        issue.setText(text);
+        issue.setText(text == null ? "" : text);
         issue.setFile(file);
         issue.setSongName(songName);
 
