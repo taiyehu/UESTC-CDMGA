@@ -31,9 +31,9 @@
     <p v-if="!filteredProfiles.length" class="mt-3 text-cyan-100/75">暂无已通过资料</p>
 
     <div class="mt-4 flex items-center justify-end gap-2">
-      <button type="button" class="neon-btn" :disabled="currentPage <= 1" @click="handlePageChange(currentPage - 1)">上一页</button>
+      <NeonActionButton size="sm" :disabled="currentPage <= 1" @click="handlePageChange(currentPage - 1)">上一页</NeonActionButton>
       <span class="text-cyan-100/85">{{ currentPage }} / {{ totalPages }}</span>
-      <button type="button" class="neon-btn" :disabled="currentPage >= totalPages" @click="handlePageChange(currentPage + 1)">下一页</button>
+      <NeonActionButton size="sm" :disabled="currentPage >= totalPages" @click="handlePageChange(currentPage + 1)">下一页</NeonActionButton>
     </div>
   </div>
 </template>
@@ -45,6 +45,7 @@ import { ElMessage } from 'element-plus'
 import defaultAvatar from '@/assets/default-avatar.png'
 import NeonRankTable from '@/components/NeonRankTable.vue'
 import NeonInput from '@/components/NeonInput.vue'
+import NeonActionButton from '@/components/NeonActionButton.vue'
 
 const passedProfiles = ref<any[]>([])
 const keyword = ref('')
@@ -114,16 +115,4 @@ onMounted(fetchPassedProfiles)
   border: 1px solid rgba(34, 211, 238, 0.35);
 }
 
-.neon-btn {
-  border: 1px solid rgba(34, 211, 238, 0.65);
-  border-radius: 8px;
-  padding: 6px 10px;
-  color: #cffafe;
-  background: rgba(8, 47, 73, 0.58);
-}
-
-.neon-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
 </style>

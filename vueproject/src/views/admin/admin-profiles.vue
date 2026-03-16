@@ -34,9 +34,9 @@
         </td>
         <td class="px-4 py-3 text-center">
           <div class="flex flex-wrap justify-center gap-2">
-            <button v-if="profile.status === 0" type="button" class="neon-btn ok" @click="approveProfile(profile)">通过</button>
-            <button v-if="profile.status === 0" type="button" class="neon-btn warn" @click="rejectProfile(profile)">驳回</button>
-            <button type="button" class="neon-btn danger" @click="deleteProfile(profile)">删除</button>
+            <NeonActionButton v-if="profile.status === 0" size="sm" variant="green" @click="approveProfile(profile)">通过</NeonActionButton>
+            <NeonActionButton v-if="profile.status === 0" size="sm" variant="yellow" @click="rejectProfile(profile)">驳回</NeonActionButton>
+            <NeonActionButton size="sm" variant="red" @click="deleteProfile(profile)">删除</NeonActionButton>
           </div>
         </td>
       </tr>
@@ -45,9 +45,9 @@
     <p v-if="!filteredProfiles.length" class="mt-3 text-cyan-100/75">暂无资料可审核</p>
 
     <div class="mt-4 flex items-center justify-end gap-2">
-      <button type="button" class="neon-btn" :disabled="currentPage <= 1" @click="handlePageChange(currentPage - 1)">上一页</button>
+      <NeonActionButton size="sm" :disabled="currentPage <= 1" @click="handlePageChange(currentPage - 1)">上一页</NeonActionButton>
       <span class="text-cyan-100/85">{{ currentPage }} / {{ totalPages }}</span>
-      <button type="button" class="neon-btn" :disabled="currentPage >= totalPages" @click="handlePageChange(currentPage + 1)">下一页</button>
+      <NeonActionButton size="sm" :disabled="currentPage >= totalPages" @click="handlePageChange(currentPage + 1)">下一页</NeonActionButton>
     </div>
   </div>
 </template>
@@ -59,6 +59,7 @@ import { ElMessage } from 'element-plus'
 import defaultAvatar from '@/assets/default-avatar.png'
 import NeonRankTable from '@/components/NeonRankTable.vue'
 import NeonInput from '@/components/NeonInput.vue'
+import NeonActionButton from '@/components/NeonActionButton.vue'
 
 const profiles = ref<any[]>([])
 const keyword = ref('')
@@ -179,28 +180,4 @@ onMounted(fetchProfiles)
   color: #94a3b8;
 }
 
-.neon-btn {
-  border: 1px solid rgba(34, 211, 238, 0.65);
-  border-radius: 8px;
-  padding: 6px 10px;
-  color: #cffafe;
-  background: rgba(8, 47, 73, 0.58);
-}
-
-.neon-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.neon-btn.ok {
-  border-color: rgba(52, 211, 153, 0.55);
-}
-
-.neon-btn.warn {
-  border-color: rgba(251, 191, 36, 0.55);
-}
-
-.neon-btn.danger {
-  border-color: rgba(248, 113, 113, 0.55);
-}
 </style>

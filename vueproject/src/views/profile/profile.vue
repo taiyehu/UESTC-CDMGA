@@ -25,7 +25,7 @@
 
         <div class="flex flex-1 flex-col items-center pt-4">
           <div class="mb-4">
-            <h2>{{ profile.account || user.account }}</h2>
+            <h2 class="profile-name">{{ profile.account || user.account }}</h2>
           </div>
 
           <div class="profile-signature" :title="getStatusText()">
@@ -39,7 +39,7 @@
           </div>
 
           <div v-if="isSelf" class="mt-3">
-            <button type="button" class="neon-button" @click="goToSettings()">设置个人资料</button>
+            <NeonActionButton variant="profile-outline" @click="goToSettings()">设置个人资料</NeonActionButton>
           </div>
         </div>
       </div>
@@ -50,7 +50,7 @@
     <NeonCard v-else class="box-card">
       <h2>加载用户信息失败</h2>
       <div class="mt-3">
-        <button type="button" class="neon-button" @click="redirectToLogin">重新登录</button>
+        <NeonActionButton variant="profile-outline" @click="redirectToLogin">重新登录</NeonActionButton>
       </div>
     </NeonCard>
 
@@ -101,23 +101,21 @@
       </NeonRankTable>
 
       <div class="mt-4 flex items-center justify-center gap-2">
-        <button
-          type="button"
-          class="neon-button disabled:cursor-not-allowed disabled:opacity-40"
+        <NeonActionButton
+          variant="profile-outline"
           :disabled="scoredPage <= 1"
           @click="goScoredPage(scoredPage - 1)"
         >
           上一页
-        </button>
+        </NeonActionButton>
         <span class="text-cyan-100/85">{{ scoredPage }} / {{ scoredTotalPages }}</span>
-        <button
-          type="button"
-          class="neon-button disabled:cursor-not-allowed disabled:opacity-40"
+        <NeonActionButton
+          variant="profile-outline"
           :disabled="scoredPage >= scoredTotalPages"
           @click="goScoredPage(scoredPage + 1)"
         >
           下一页
-        </button>
+        </NeonActionButton>
       </div>
     </NeonCard>
 
@@ -196,23 +194,21 @@
               </NeonRankTable>
 
               <div v-if="(activityScoresMap[String(activity.id)] || []).length" class="mt-3 flex items-center justify-center gap-2">
-                <button
-                  type="button"
-                  class="neon-button disabled:cursor-not-allowed disabled:opacity-40"
+                <NeonActionButton
+                  variant="profile-outline"
                   :disabled="activityCurrentPage(activity.id) <= 1"
                   @click="setActivityPage(activity.id, activityCurrentPage(activity.id) - 1)"
                 >
                   上一页
-                </button>
+                </NeonActionButton>
                 <span class="text-cyan-100/85">{{ activityCurrentPage(activity.id) }} / {{ activityTotalPages(activity.id) }}</span>
-                <button
-                  type="button"
-                  class="neon-button disabled:cursor-not-allowed disabled:opacity-40"
+                <NeonActionButton
+                  variant="profile-outline"
                   :disabled="activityCurrentPage(activity.id) >= activityTotalPages(activity.id)"
                   @click="setActivityPage(activity.id, activityCurrentPage(activity.id) + 1)"
                 >
                   下一页
-                </button>
+                </NeonActionButton>
               </div>
 
               <div v-if="!(activityScoresMap[String(activity.id)] || []).length" class="py-3 text-center text-cyan-100/85">暂无成绩</div>
@@ -227,7 +223,7 @@
       class="fixed inset-0 z-120 flex items-center justify-center bg-black/70 px-4"
       @click="avatarPreviewVisible = false"
     >
-      <button type="button" class="close-btn" @click.stop="avatarPreviewVisible = false">关闭</button>
+      <NeonActionButton type="button" variant="gray" size="sm" class="close-btn" @click.stop="avatarPreviewVisible = false">关闭</NeonActionButton>
       <img :src="avatarPreviewUrl" alt="头像大图" class="preview-image" @click.stop />
     </div>
 
@@ -236,7 +232,7 @@
       class="fixed inset-0 z-120 flex items-center justify-center bg-black/70 px-4"
       @click="imagePreviewVisible = false"
     >
-      <button type="button" class="close-btn" @click.stop="imagePreviewVisible = false">关闭</button>
+      <NeonActionButton type="button" variant="gray" size="sm" class="close-btn" @click.stop="imagePreviewVisible = false">关闭</NeonActionButton>
       <img :src="imagePreviewUrl" alt="图片预览" class="preview-image" @click.stop />
     </div>
   </div>
@@ -250,6 +246,7 @@ import defaultAvatar from '@/assets/default-avatar.png'
 import { ElMessage } from 'element-plus'
 import NeonCard from '@/components/NeonCard.vue'
 import NeonRankTable from '@/components/NeonRankTable.vue'
+import NeonActionButton from '@/components/NeonActionButton.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -506,6 +503,12 @@ watch(() => route.params.id, () => {
   font-size: 16px;
 }
 
+.profile-name {
+  margin: 0;
+  color: #f5fbff;
+  text-shadow: 0 0 10px rgba(125, 211, 252, 0.25);
+}
+
 .profile-signature {
   width: min(92vw, 520px);
 }
@@ -565,35 +568,6 @@ watch(() => route.params.id, () => {
   max-width: 90vw;
   max-height: 80vh;
   border-radius: 12px;
-}
-
-.neon-button {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  padding: 8px 14px;
-  color: #cffafe;
-  background: rgba(8, 47, 73, 0.58);
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
-}
-
-.neon-button::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(120deg, rgba(34, 211, 238, 0.86), rgba(168, 85, 247, 0.82), rgba(244, 114, 182, 0.88));
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
 }
 
 .box-card h2 {

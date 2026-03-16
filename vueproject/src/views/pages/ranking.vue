@@ -44,20 +44,17 @@
       </NeonRankTable>
 
       <div class="mt-5 flex flex-wrap items-center justify-center gap-2">
-        <button
-          type="button"
-          class="neon-button disabled:cursor-not-allowed disabled:opacity-40"
+        <NeonActionButton
           :disabled="rankCurrentPage <= 1"
           @click="goPage(rankCurrentPage - 1)"
         >
           上一页
-        </button>
+        </NeonActionButton>
 
-        <button
+        <NeonActionButton
           v-for="page in visiblePages"
           :key="page"
-          type="button"
-          class="neon-button"
+          variant="neon"
           :class="
             page === rankCurrentPage
               ? 'is-active'
@@ -66,25 +63,23 @@
           @click="goPage(page)"
         >
           {{ page }}
-        </button>
+        </NeonActionButton>
 
-        <button
-          type="button"
-          class="neon-button disabled:cursor-not-allowed disabled:opacity-40"
+        <NeonActionButton
           :disabled="rankCurrentPage >= totalPages"
           @click="goPage(rankCurrentPage + 1)"
         >
           下一页
-        </button>
+        </NeonActionButton>
       </div>
     </div>
 
-    <router-link
-      to="/contest-ranking"
-      class="fixed bottom-5 right-5 neon-button"
+    <NeonActionButton
+      class="fixed bottom-5 right-5"
+      @click="router.push('/contest-ranking')"
     >
       查看比赛排行榜
-    </router-link>
+    </NeonActionButton>
   </section>
 </template>
 
@@ -94,6 +89,7 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import NeonRankTable from '@/components/NeonRankTable.vue'
+import NeonActionButton from '@/components/NeonActionButton.vue'
 
 const rankAllData = ref<any[]>([])
 const rankSortedData = ref<any[]>([])

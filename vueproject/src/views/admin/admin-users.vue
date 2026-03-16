@@ -17,15 +17,15 @@
         <td class="px-4 py-3 text-center">{{ user.account }}</td>
         <td class="px-4 py-3 text-center">{{ user.role }}</td>
         <td class="px-4 py-3 text-center">
-          <button type="button" class="neon-btn danger" @click="deleteUser(user.id)">删除</button>
+          <NeonActionButton size="sm" variant="red" @click="deleteUser(user.id)">删除</NeonActionButton>
         </td>
       </tr>
     </NeonRankTable>
 
     <div class="mt-4 flex items-center justify-end gap-2">
-      <button type="button" class="neon-btn" :disabled="currentPage <= 1" @click="handlePageChange(currentPage - 1)">上一页</button>
+      <NeonActionButton size="sm" :disabled="currentPage <= 1" @click="handlePageChange(currentPage - 1)">上一页</NeonActionButton>
       <span class="text-cyan-100/85">{{ currentPage }} / {{ totalPages }}</span>
-      <button type="button" class="neon-btn" :disabled="currentPage >= totalPages" @click="handlePageChange(currentPage + 1)">下一页</button>
+      <NeonActionButton size="sm" :disabled="currentPage >= totalPages" @click="handlePageChange(currentPage + 1)">下一页</NeonActionButton>
     </div>
   </div>
 </template>
@@ -35,6 +35,7 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { fetchUsersData, deleteUserData } from '@/api/user'
 import NeonRankTable from '@/components/NeonRankTable.vue'
+import NeonActionButton from '@/components/NeonActionButton.vue'
 
 const users = ref<any[]>([])
 const currentPage = ref(1)
@@ -86,20 +87,4 @@ onMounted(fetchUsers)
   margin-bottom: 16px;
 }
 
-.neon-btn {
-  border: 1px solid rgba(34, 211, 238, 0.65);
-  border-radius: 8px;
-  padding: 6px 10px;
-  color: #cffafe;
-  background: rgba(8, 47, 73, 0.58);
-}
-
-.neon-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.neon-btn.danger {
-  border-color: rgba(248, 113, 113, 0.55);
-}
 </style>

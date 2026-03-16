@@ -39,9 +39,9 @@
             {{ activity.description || '暂无活动描述' }}
           </p>
 
-          <button class="neon-button mt-4 w-full" @click="goActivityDetail(activity.id)">
+          <NeonActionButton class="mt-4 w-full" @click="goActivityDetail(activity.id)">
             进入活动
-          </button>
+          </NeonActionButton>
         </div>
       </Motion>
     </div>
@@ -53,6 +53,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { Motion } from 'motion-v'
+import NeonActionButton from '@/components/NeonActionButton.vue'
 
 const activities = ref<any[]>([])
 const loading = ref<boolean>(true)

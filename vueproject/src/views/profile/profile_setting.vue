@@ -6,10 +6,6 @@
       </h1>
     </header>
     <NeonCard class="relative">
-      <div class="mb-4">
-        <button type="button" class="neon-button" @click="router.back()">返回</button>
-      </div>
-
       <div class="settings-grid">
         <aside class="relative pr-2 md:pr-4">
           <div class="menu-shell rounded-2xl bg-slate-900/50 backdrop-blur-xl p-2">
@@ -46,7 +42,7 @@
                 placeholder="输入你的个性签名（50字以内）"
               />
               <div class="mt-4">
-                <button type="button" class="neon-button" @click="submitEditProfile">保存</button>
+                <NeonActionButton variant="green" @click="submitEditProfile">保存</NeonActionButton>
               </div>
             </div>
           </div>
@@ -63,7 +59,7 @@
                 />
               </div>
               <div class="mb-4">
-                <button type="button" class="neon-button" @click="triggerFileInput">选择头像</button>
+                <NeonActionButton variant="blue" @click="triggerFileInput">选择头像</NeonActionButton>
                 <input
                     ref="fileInput"
                     type="file"
@@ -97,6 +93,9 @@
         />
       </div>
     </div>
+    <div class="mb-4">
+      <NeonActionButton @click="router.back()">返回</NeonActionButton>
+    </div>
   </div>
 </template>
 
@@ -112,6 +111,7 @@ import defaultAvatar from '@/assets/default-avatar.png'
 import { ElMessage } from 'element-plus'
 import NeonCard from '@/components/NeonCard.vue'
 import NeonInput from '@/components/NeonInput.vue'
+import NeonActionButton from '@/components/NeonActionButton.vue'
 
 const router = useRouter()
 

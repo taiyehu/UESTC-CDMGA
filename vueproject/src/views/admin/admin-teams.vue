@@ -5,7 +5,7 @@
     <div class="mb-4 flex flex-wrap items-center gap-3 text-cyan-100/85" v-if="selectedCourse">
       <span>课题ID: {{ selectedCourse.id }}</span>
       <span>课题名称: {{ selectedCourse.title }}</span>
-      <button type="button" class="neon-btn" @click="backToTeamHome">返回队伍首页</button>
+      <NeonActionButton size="sm" @click="backToTeamHome">返回队伍首页</NeonActionButton>
     </div>
 
     <div v-if="!selectedCourse" class="space-y-3">
@@ -24,7 +24,7 @@
           <td class="px-3 py-3 text-center">{{ item.title }}</td>
           <td class="px-3 py-3 text-center">{{ item.category }}</td>
           <td class="px-3 py-3 text-center">
-            <button type="button" class="neon-btn" @click="goConfigureCourse(item)">进入配置</button>
+            <NeonActionButton size="sm" @click="goConfigureCourse(item)">进入配置</NeonActionButton>
           </td>
         </tr>
       </NeonRankTable>
@@ -108,17 +108,17 @@
             </el-select>
           </td>
           <td class="px-3 py-3 text-center">
-            <button class="neon-btn ok" type="button" :disabled="savingMap[row.teamId]" @click="saveTeamRow(row)">
+            <NeonActionButton size="sm" variant="green" :disabled="savingMap[row.teamId]" @click="saveTeamRow(row)">
               {{ savingMap[row.teamId] ? '保存中...' : '保存' }}
-            </button>
+            </NeonActionButton>
           </td>
         </tr>
       </NeonRankTable>
 
       <div class="mt-2 flex items-center justify-end gap-2">
-        <button type="button" class="neon-btn" :disabled="currentPage <= 1" @click="changePage(currentPage - 1)">上一页</button>
+        <NeonActionButton size="sm" :disabled="currentPage <= 1" @click="changePage(currentPage - 1)">上一页</NeonActionButton>
         <span class="text-cyan-100/85">{{ currentPage }} / {{ totalPages }}</span>
-        <button type="button" class="neon-btn" :disabled="currentPage >= totalPages" @click="changePage(currentPage + 1)">下一页</button>
+        <NeonActionButton size="sm" :disabled="currentPage >= totalPages" @click="changePage(currentPage + 1)">下一页</NeonActionButton>
       </div>
     </div>
   </div>
@@ -129,6 +129,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import NeonRankTable from '@/components/NeonRankTable.vue'
+import NeonActionButton from '@/components/NeonActionButton.vue'
 import { fetchCourseByIdData, fetchCourseData } from '@/api/course'
 import { fetchCourseTeams, saveCourseTeam, searchTeamMemberOptions, type TeamMemberOption } from '@/api/team'
 

@@ -53,22 +53,20 @@
       </div>
 
       <div class="flex items-center gap-4">
-        <button
+        <NeonActionButton
           v-if="isAdmin"
-          type="button"
-          class="rounded-md bg-purple-600 px-4 py-2 text-base font-medium text-white transition-colors hover:bg-purple-700 active:bg-purple-800"
+          variant="violet"
           @click="goAdmin"
         >
           管理
-        </button>
+        </NeonActionButton>
 
-        <button
-          type="button"
-          class="rounded-md bg-purple-600 px-4 py-2 text-base font-medium text-white transition-colors hover:bg-purple-700 active:bg-purple-800"
+        <NeonActionButton
+          variant="violet"
           @click="logout"
         >
           登出
-        </button>
+        </NeonActionButton>
 
         <button
           type="button"
@@ -114,6 +112,7 @@ import { motion } from 'motion-v'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import avatarDefault from '@/assets/default-avatar.png'
+import NeonActionButton from '@/components/NeonActionButton.vue'
 
 const router = useRouter()
 

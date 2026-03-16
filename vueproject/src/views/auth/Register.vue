@@ -49,10 +49,10 @@
         </el-form>
 
         <div class="auth-buttons mt-1 flex gap-2.5">
-          <el-button type="primary" :loading="loading" @click="submitForm">
+          <NeonActionButton class="flex-1" variant="auth-primary" :loading="loading" @click="submitForm">
             提交
-          </el-button>
-          <el-button @click="resetForm">重置</el-button>
+          </NeonActionButton>
+          <NeonActionButton class="flex-1" variant="auth-secondary" :disabled="loading" @click="resetForm">重置</NeonActionButton>
         </div>
 
         <p class="mt-4 mb-0 text-center text-[13px] text-[rgba(193,222,247,0.86)]">
@@ -75,6 +75,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import { register } from '@/api/auth'
+import NeonActionButton from '@/components/NeonActionButton.vue'
 
 const router = useRouter()
 const loading = ref(false)
@@ -182,13 +183,4 @@ function resetForm() {
   color: rgba(181, 213, 238, 0.66);
 }
 
-.auth-buttons :deep(.el-button) {
-  flex: 1;
-  border-radius: 12px;
-}
-
-.auth-buttons :deep(.el-button--primary) {
-  border-color: rgba(113, 205, 255, 0.45);
-  background: linear-gradient(120deg, #1d7bff, #36ccff);
-}
 </style>

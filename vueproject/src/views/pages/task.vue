@@ -39,9 +39,9 @@
             {{ course.description || '暂无课题描述' }}
           </p>
 
-          <button class="neon-button mt-4 w-full" @click="goTaskDetail(course.id)">
+          <NeonActionButton class="mt-4 w-full" @click="goTaskDetail(course.id)">
             进入课题
-          </button>
+          </NeonActionButton>
         </div>
       </Motion>
     </div>
@@ -54,6 +54,7 @@ import { useRouter } from 'vue-router'
 import { Motion } from 'motion-v'
 import { fetchCourseData } from '@/api/course'
 import type { Course } from '@/api/types'
+import NeonActionButton from '@/components/NeonActionButton.vue'
 
 const router = useRouter()
 

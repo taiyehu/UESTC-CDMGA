@@ -2,10 +2,11 @@
   <button
     :type="type"
     class="neon-action-btn"
-    :class="[`variant-${variant}`, `size-${size}`]"
-    :disabled="disabled"
+    :class="[`variant-${variant}`, `size-${size}`, { 'is-loading': loading }]"
+    :disabled="disabled || loading"
     @click="$emit('click', $event)"
   >
+    <span v-if="loading" class="loading-dot" aria-hidden="true" />
     <slot />
   </button>
 </template>
@@ -14,15 +15,17 @@
 withDefaults(
   defineProps<{
     type?: 'button' | 'submit' | 'reset'
-    variant?: 'neon' | 'gray' | 'cyan' | 'green' | 'blue' | 'yellow' | 'gold' | 'red'
+    variant?: 'neon' | 'gray' | 'cyan' | 'green' | 'blue' | 'yellow' | 'gold' | 'red' | 'violet' | 'auth-primary' | 'auth-secondary' | 'profile-outline'
     size?: 'sm' | 'md'
     disabled?: boolean
+    loading?: boolean
   }>(),
   {
     type: 'button',
     variant: 'neon',
     size: 'md',
     disabled: false,
+    loading: false,
   }
 )
 
@@ -33,6 +36,12 @@ defineEmits<{
 
 <style scoped>
 .neon-action-btn {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   border: 1px solid rgba(34, 211, 238, 0.65);
   border-radius: 10px;
   color: #cffafe;
@@ -111,5 +120,67 @@ defineEmits<{
   border-color: rgba(248, 113, 113, 0.62);
   color: #fecaca;
   background: rgba(127, 29, 29, 0.52);
+}
+
+.variant-violet {
+  border-color: rgba(196, 181, 253, 0.72);
+  color: #f3e8ff;
+  background: linear-gradient(145deg, rgba(147, 51, 234, 0.52), rgba(126, 34, 206, 0.44));
+}
+
+.variant-auth-primary {
+  border-color: rgba(132, 223, 255, 0.5);
+  color: #f6fdff;
+  text-shadow: 0 0 8px rgba(199, 234, 255, 0.38);
+  background: linear-gradient(120deg, rgba(34, 211, 238, 0.64), rgba(147, 51, 234, 0.58), rgba(244, 114, 182, 0.64));
+  box-shadow:
+    inset 0 0 0 1px rgba(232, 250, 255, 0.12),
+    0 0 14px rgba(56, 189, 248, 0.18),
+    0 0 24px rgba(217, 70, 239, 0.15);
+}
+
+.variant-auth-secondary {
+  border-color: rgba(139, 212, 255, 0.38);
+  color: rgba(227, 242, 255, 0.94);
+  background: rgba(19, 48, 86, 0.62);
+}
+
+.variant-profile-outline {
+  border-color: transparent;
+  color: #cffafe;
+  background: rgba(8, 47, 73, 0.58);
+}
+
+.variant-profile-outline::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(120deg, rgba(34, 211, 238, 0.86), rgba(168, 85, 247, 0.82), rgba(244, 114, 182, 0.88));
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.loading-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.42);
+  border-top-color: rgba(255, 255, 255, 0.95);
+  animation: btn-spin 0.7s linear infinite;
+}
+
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

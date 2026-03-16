@@ -21,13 +21,12 @@
             <template v-for="(row, index) in pagedRankData" :key="row.identityId">
               <tr class="border-t border-white/12 transition hover:bg-white/10">
                 <td class="px-4 py-3 text-center">
-                  <button
-                    type="button"
-                    class="neon-button text-xs"
+                  <NeonActionButton
+                    size="sm"
                     @click="toggleExpanded(row.identityId)"
                   >
                     {{ isExpanded(row.identityId) ? '收起' : '展开' }}
-                  </button>
+                  </NeonActionButton>
                 </td>
                 <td class="px-4 py-3 text-center font-semibold text-fuchsia-100">
                   {{ (rankCurrentPage - 1) * rankPageSize + index + 1 }}
@@ -77,20 +76,17 @@
       </NeonRankTable>
 
       <div class="mt-5 flex flex-wrap items-center justify-center gap-2">
-        <button
-          type="button"
-          class="neon-button disabled:cursor-not-allowed disabled:opacity-40"
+        <NeonActionButton
           :disabled="rankCurrentPage <= 1"
           @click="goPage(rankCurrentPage - 1)"
         >
           上一页
-        </button>
+        </NeonActionButton>
 
-        <button
+        <NeonActionButton
           v-for="page in visiblePages"
           :key="page"
-          type="button"
-          class="neon-button"
+          variant="neon"
           :class="
             page === rankCurrentPage
               ? 'is-active'
@@ -99,38 +95,38 @@
           @click="goPage(page)"
         >
           {{ page }}
-        </button>
+        </NeonActionButton>
 
-        <button
-          type="button"
-          class="neon-button disabled:cursor-not-allowed disabled:opacity-40"
+        <NeonActionButton
           :disabled="rankCurrentPage >= totalPages"
           @click="goPage(rankCurrentPage + 1)"
         >
           下一页
-        </button>
+        </NeonActionButton>
       </div>
     </div>
 
-    <router-link
-      to="/ranking"
-      class="fixed bottom-(-5) right-5 neon-button"
+    <NeonActionButton
+      class="fixed bottom-(-5) right-5"
+      @click="router.push('/ranking')"
     >
       查看课题排行榜
-    </router-link>
+    </NeonActionButton>
 
     <div
       v-if="previewVisible"
       class="fixed inset-0 z-120 flex items-center justify-center bg-black/70 px-4"
       @click="previewVisible = false"
     >
-      <button
+      <NeonActionButton
         type="button"
-        class="absolute right-4 top-4 neon-button"
+        variant="gray"
+        size="sm"
+        class="absolute right-4 top-4"
         @click.stop="previewVisible = false"
       >
         关闭
-      </button>
+      </NeonActionButton>
       <img
         :src="previewImage"
         alt="预览图片"
@@ -147,6 +143,7 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import NeonRankTable from '@/components/NeonRankTable.vue'
+import NeonActionButton from '@/components/NeonActionButton.vue'
 
 const rankAllData = ref<any[]>([])
 const rankSortedData = ref<any[]>([])
