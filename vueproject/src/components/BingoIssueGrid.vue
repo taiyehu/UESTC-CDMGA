@@ -9,6 +9,12 @@
       :disabled="!clickable"
       @click="onSelect(cellId)"
     >
+      <Motion
+        v-if="lineScoredCells.has(cellId)"
+        class="line-flow-layer"
+        :animate="{ backgroundPosition: ['0% 0%', '100% 100%'] }"
+        :transition="{ duration: 3.2, repeat: Infinity, ease: 'linear' }"
+      />
       <span class="cell-score">{{ getCellScoreText(cellId) }}</span>
     </button>
   </div>
@@ -16,6 +22,7 @@
 
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue'
+import { Motion } from 'motion-v'
 import { fetchCourseIssues } from '@/api/issue'
 import { fetchBingoBoardState } from '@/api/team'
 
@@ -182,6 +189,7 @@ watch(
 
 .issue-cell {
   position: relative;
+  overflow: hidden;
   aspect-ratio: 1 / 1;
   min-height: 0;
   border-radius: 10px;
@@ -208,9 +216,29 @@ watch(
 }
 
 .cell-score {
+  position: relative;
+  z-index: 1;
   font-size: clamp(22px, 6.4vw, 42px);
   font-weight: 800;
   line-height: 0.95;
+}
+
+.line-flow-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    120deg,
+    rgba(250, 255, 0, 0.86) 0%,
+    rgba(190, 242, 100, 0.85) 16%,
+    rgba(125, 211, 252, 0.84) 33%,
+    rgba(110, 221, 242, 0.84) 49%,
+    rgba(255, 62, 191, 0.84) 66%,
+    rgba(255, 145, 120, 0.85) 82%,
+    rgba(250, 255, 0, 0.86) 100%
+  );
+  background-size: 100% 100%;
 }
 
 .compact .cell-score {
@@ -255,12 +283,11 @@ watch(
 
 .issue-cell.cell-line-scored {
   border-width: 3px;
-  background: linear-gradient(120deg, rgba(250, 255, 0, 0.8), rgba(125, 211, 252, 0.76), rgba(167, 139, 250, 0.74), rgba(255, 62, 191, 0.78));
   box-shadow: 0 0 16px rgba(34, 211, 238, 0.24);
 }
 
 .issue-cell.cell-line-scored.cell-completed {
-  background: linear-gradient(120deg, rgba(250, 255, 0, 0.8), rgba(125, 211, 252, 0.76), rgba(167, 139, 250, 0.74), rgba(255, 62, 191, 0.78));
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.24);
 }
 
 .issue-cell.active {
