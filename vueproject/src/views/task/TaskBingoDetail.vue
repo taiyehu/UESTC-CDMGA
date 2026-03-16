@@ -4,30 +4,34 @@
     <div v-else-if="error" class="hud-shell p-8 text-rose-300">{{ error }}</div>
 
     <article v-else-if="course" class="hud-shell p-6 text-left md:p-8">
-      <div class="mission-head">
-        <p class="mission-label">bingo mission</p>
-        <button type="button" class="neon-back neon-back-mini" @click="goBingo">返回 Bingo 面板</button>
-      </div>
-      <div class="title-row">
-        <h1 class="text-2xl font-semibold text-cyan-100 md:text-3xl">{{ selectedItem.title }}</h1>
-        <span v-if="selectedItem.songName" class="song-mark">{{ selectedItem.songName }}</span>
-      </div>
-      <p class="mt-2 text-sm text-cyan-100/75">所属课题：{{ course.title }}</p>
-      <p class="mt-1 text-sm text-cyan-100/75">持续时间：{{ duration }}</p>
+      <div class="top-wrap">
+        <div class="top-main">
+          <div class="mission-head">
+            <p class="mission-label">bingo mission</p>
+            <button type="button" class="neon-back neon-back-mini" @click="goBingo">返回 Bingo 面板</button>
+          </div>
+          <div class="title-row">
+            <h1 class="text-2xl font-semibold text-cyan-100 md:text-3xl">{{ selectedItem.title }}</h1>
+            <span v-if="selectedItem.songName" class="song-mark">{{ selectedItem.songName }}</span>
+          </div>
+          <p class="mt-2 text-sm text-cyan-100/75">所属课题：{{ course.title }}</p>
+          <p class="mt-1 text-sm text-cyan-100/75">持续时间：{{ duration }}</p>
+        </div>
 
-      <div class="mt-5 rounded-xl border border-cyan-300/25 bg-slate-900/45 p-3">
-        <p class="mb-2 text-sm text-cyan-100/80">题号导航（点击切换）</p>
-        <div class="issue-nav-grid">
-          <button
-            v-for="n in issueNavIds"
-            :key="n"
-            type="button"
-            class="issue-nav-btn"
-            :class="{ active: n === cellId }"
-            @click="jumpTo(n)"
-          >
-            {{ n }}
-          </button>
+        <div class="nav-card rounded-xl border border-cyan-300/25 bg-slate-900/45 p-3">
+          <p class="mb-2 text-sm text-cyan-100/85">team: {{ teamSummary }}</p>
+          <div class="issue-nav-grid">
+            <button
+              v-for="n in issueNavIds"
+              :key="n"
+              type="button"
+              class="issue-nav-btn"
+              :class="getNavCellClass(n)"
+              @click="jumpTo(n)"
+            >
+              {{ getNavCellText(n) }}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -57,6 +61,7 @@
         </button>
       </div>
     </article>、
+
     <div class="mt-6 flex justify-end">
       <button type="button" class="neon-back" @click="goList">返回课题列表</button>
     </div>
@@ -72,6 +77,7 @@ import { formatDuration, parseBingoItems, toImageUrl } from './task-utils'
 import type { BingoTaskItem } from './task-utils'
 import TaskScoreAction from '@/components/TaskScoreAction.vue'
 import { fetchCourseIssues } from '@/api/issue'
+import { fetchBingoBoardState, fetchMyTeamPanel, fetchMyTeamScore } from '@/api/team'
 
 const route = useRoute()
 const router = useRouter()
@@ -80,6 +86,9 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const course = ref<Course | null>(null)
 const issueMap = ref<Map<number, { text?: string; image?: string; file?: string; songName?: string }>>(new Map())
+const myTeamId = ref<number | null>(null)
+const myTeamScore = ref(0)
+const boardStateMap = ref<Map<number, { maxScore: 2 | 3 | 5; myCompleted: boolean; myScore: number }>>(new Map())
 
 const courseId = computed(() => Number(route.params.id))
 const cellId = computed(() => {
@@ -94,6 +103,34 @@ const duration = computed(() => {
 })
 
 const issueNavIds = computed(() => Array.from({ length: 25 }, (_, index) => index + 1))
+const lineScoredCells = computed(() => {
+  const result = new Set<number>()
+  const lines: number[][] = []
+
+  for (let i = 0; i < 5; i += 1) {
+    const start = 5 * i + 1
+    lines.push([start, start + 1, start + 2, start + 3, start + 4])
+  }
+  for (let i = 1; i <= 5; i += 1) {
+    lines.push([i, i + 5, i + 10, i + 15, i + 20])
+  }
+  lines.push([1, 7, 13, 19, 25])
+  lines.push([5, 9, 13, 17, 21])
+
+  for (const line of lines) {
+    const completed = line.every((id) => getCellState(id).myCompleted)
+    if (completed) {
+      for (const id of line) result.add(id)
+    }
+  }
+
+  return result
+})
+
+const teamSummary = computed(() => {
+  if (!myTeamId.value) return '- | 0.00'
+  return `#${myTeamId.value} | ${Number(myTeamScore.value || 0).toFixed(2)}`
+})
 
 const selectedItem = computed<BingoTaskItem & { image?: string; file?: string; songName?: string }>(() => {
   if (!course.value) {
@@ -151,6 +188,93 @@ async function loadIssues() {
   }
 }
 
+function parseSessionValue(raw: string | null): any {
+  if (!raw) return null
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return raw
+  }
+}
+
+const currentUser = computed(() => parseSessionValue(sessionStorage.getItem('userInfo')))
+const currentIdentityId = computed<number | null>(() => {
+  const value = Number(currentUser.value?.id ?? currentUser.value?.identityId ?? currentUser.value?.userId)
+  return Number.isFinite(value) && value > 0 ? value : null
+})
+
+function getCellState(cellId: number) {
+  return boardStateMap.value.get(cellId) || { maxScore: 5 as 2 | 3 | 5, myCompleted: false, myScore: 0 }
+}
+
+function getCellColorLevel(cellId: number): 2 | 3 | 5 {
+  const state = getCellState(cellId)
+  const myScore = Number(state.myScore)
+  if (state.myCompleted && (myScore === 2 || myScore === 3 || myScore === 5)) {
+    return myScore as 2 | 3 | 5
+  }
+  return state.maxScore
+}
+
+function getNavCellClass(issueId: number) {
+  const level = getCellColorLevel(issueId)
+  return {
+    active: issueId === cellId.value,
+    'cell-score-2': level === 2,
+    'cell-score-3': level === 3,
+    'cell-score-5': level === 5,
+    'cell-completed': getCellState(issueId).myCompleted,
+    'cell-line-scored': lineScoredCells.value.has(issueId),
+  }
+}
+
+function getNavCellText(cellId: number) {
+  const state = getCellState(cellId)
+  if (state.myCompleted) {
+    const mark = String(issueMap.value.get(cellId)?.songName || '').trim()
+    if (mark) return mark
+  }
+  return String(getCellColorLevel(cellId))
+}
+
+async function loadTeamAndBoard() {
+  if (!currentIdentityId.value || !Number.isFinite(courseId.value) || courseId.value <= 0) {
+    myTeamId.value = null
+    myTeamScore.value = 0
+    boardStateMap.value = new Map()
+    return
+  }
+
+  try {
+    const panel = await fetchMyTeamPanel(courseId.value, currentIdentityId.value)
+    myTeamId.value = panel?.teamId || null
+    myTeamScore.value = myTeamId.value ? await fetchMyTeamScore(courseId.value, currentIdentityId.value) : 0
+  } catch {
+    myTeamId.value = null
+    myTeamScore.value = 0
+  }
+
+  try {
+    const data = await fetchBingoBoardState(courseId.value, currentIdentityId.value)
+    const list = Array.isArray(data?.cells) ? data.cells : []
+    const map = new Map<number, { maxScore: 2 | 3 | 5; myCompleted: boolean; myScore: number }>()
+    for (const item of list) {
+      const issueId = Number(item?.issueId)
+      const maxScore = Number(item?.maxScore)
+      if (!Number.isFinite(issueId) || issueId < 1 || issueId > 25) continue
+      if (maxScore !== 2 && maxScore !== 3 && maxScore !== 5) continue
+      map.set(issueId, {
+        maxScore: maxScore as 2 | 3 | 5,
+        myCompleted: Boolean(item?.myCompleted),
+        myScore: Number(item?.myScore || 0),
+      })
+    }
+    boardStateMap.value = map
+  } catch {
+    boardStateMap.value = new Map()
+  }
+}
+
 async function loadData() {
   loading.value = true
   error.value = null
@@ -170,6 +294,7 @@ async function loadData() {
       return
     }
     await loadIssues()
+    await loadTeamAndBoard()
   } catch (err: any) {
     error.value = err?.message || String(err)
   } finally {
@@ -249,6 +374,19 @@ watch(
   gap: 10px;
 }
 
+.top-wrap {
+  display: grid;
+  gap: 12px;
+}
+
+.top-main {
+  min-width: 0;
+}
+
+.nav-card {
+  align-self: start;
+}
+
 .mission-label {
   margin: 0;
   font-size: 13px;
@@ -291,19 +429,61 @@ watch(
 }
 
 .issue-nav-btn {
-  border: 1px solid rgba(34, 211, 238, 0.45);
+  aspect-ratio: 1 / 1;
+  border: 2px solid rgba(34, 211, 238, 0.45);
   border-radius: 8px;
-  padding: 6px 0;
-  color: #cffafe;
+  padding: 0;
+  color: #d1fae5;
   background: rgba(8, 47, 73, 0.45);
-  font-size: 13px;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .issue-nav-btn.active {
-  border-color: rgba(110, 231, 183, 0.75);
-  background: rgba(6, 78, 59, 0.5);
-  color: #d1fae5;
-  box-shadow: 0 0 10px rgba(110, 231, 183, 0.35);
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.24);
+}
+
+.issue-nav-btn.cell-score-2 {
+  border-color: rgba(74, 222, 128, 0.9);
+  color: #86efac;
+}
+
+.issue-nav-btn.cell-score-3 {
+  border-color: rgba(244, 114, 182, 0.9);
+  color: #f9a8d4;
+}
+
+.issue-nav-btn.cell-score-5 {
+  border-color: rgba(251, 191, 36, 0.9);
+  color: #fde68a;
+}
+
+.issue-nav-btn.cell-completed.cell-score-2 {
+  background: linear-gradient(145deg, rgba(22, 101, 52, 0.78), rgba(21, 128, 61, 0.66));
+}
+
+.issue-nav-btn.cell-completed.cell-score-3 {
+  background: linear-gradient(145deg, rgba(131, 24, 67, 0.8), rgba(157, 23, 77, 0.68));
+}
+
+.issue-nav-btn.cell-completed.cell-score-5 {
+  background: linear-gradient(145deg, rgba(120, 53, 15, 0.8), rgba(146, 64, 14, 0.72));
+}
+
+.issue-nav-btn.cell-line-scored {
+  border-width: 3px;
+  background: linear-gradient(120deg, rgba(250, 255, 0, 0.8), rgba(125, 211, 252, 0.76), rgba(167, 139, 250, 0.74), rgba(255, 62, 191, 0.78));
+}
+
+@media (min-width: 1024px) {
+  .top-wrap {
+    grid-template-columns: minmax(0, 1fr) 290px;
+    align-items: start;
+  }
 }
 
 .bingo-desc {
