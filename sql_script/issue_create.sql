@@ -1,5 +1,5 @@
 CREATE TABLE `issue` (
-  `uid` INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+  `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
   `course_id` INT NOT NULL COMMENT '所属课题ID',
   `issue_id` INT NOT NULL COMMENT '子题ID(typical:1-6, bingo:1-25)',
   `image` VARCHAR(255) DEFAULT NULL COMMENT '图片URL',

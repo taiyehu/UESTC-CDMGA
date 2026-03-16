@@ -10,6 +10,24 @@ export interface TeamRow {
   members: TeamMemberOption[]
 }
 
+export interface TeamPanelMember {
+  identityId: number
+  account: string
+  avatar?: string
+}
+
+export interface TeamPanel {
+  teamId: number
+  totalScore: number
+  members: TeamPanelMember[]
+}
+
+export interface TeamJoinOption {
+  teamId: number
+  memberCount: number
+  memberAccounts: string[]
+}
+
 export const fetchCourseTeams = (courseId: number | string, page: number, size = 10) => {
   return request({
     url: `/team/course/${courseId}`,
@@ -42,4 +60,70 @@ export const saveCourseTeam = (courseId: number | string, payload: { team_id: nu
     method: 'post',
     data: payload,
   })
+}
+
+export const fetchMyTeamPanel = async (courseId: number | string, identityId: number | string): Promise<TeamPanel | null> => {
+  const res = await request({
+    url: `/team/course/${courseId}/my`,
+    method: 'get',
+    params: { identityId },
+  })
+  if (res?.data?.code === 0) return (res.data.data || null) as TeamPanel | null
+  if (res?.data && !('code' in res.data)) return (res.data || null) as TeamPanel | null
+  return null
+}
+
+export const createMyTeam = (courseId: number | string, identityId: number | string) => {
+  return request({
+    url: `/team/course/${courseId}/create`,
+    method: 'post',
+    data: { identity_id: identityId },
+  })
+}
+
+export const joinCourseTeam = (courseId: number | string, identityId: number | string, teamId: number | string) => {
+  return request({
+    url: `/team/course/${courseId}/join`,
+    method: 'post',
+    data: {
+      identity_id: identityId,
+      team_id: teamId,
+    },
+  })
+}
+
+export const inviteCourseTeamMember = (courseId: number | string, ownerIdentityId: number | string, targetIdentityId: number | string) => {
+  return request({
+    url: `/team/course/${courseId}/invite`,
+    method: 'post',
+    data: {
+      owner_identity_id: ownerIdentityId,
+      target_identity_id: targetIdentityId,
+    },
+  })
+}
+
+export const leaveCourseTeam = (courseId: number | string, identityId: number | string) => {
+  return request({
+    url: `/team/course/${courseId}/leave`,
+    method: 'post',
+    data: {
+      identity_id: identityId,
+    },
+  })
+}
+
+export const searchJoinTeamOptions = async (
+  courseId: number | string,
+  identityId: number | string,
+  keyword: string
+): Promise<TeamJoinOption[]> => {
+  const res = await request({
+    url: `/team/course/${courseId}/join-options`,
+    method: 'get',
+    params: { identityId, keyword },
+  })
+  if (res?.data?.code === 0 && Array.isArray(res.data.data)) return res.data.data as TeamJoinOption[]
+  if (Array.isArray(res?.data)) return res.data as TeamJoinOption[]
+  return []
 }

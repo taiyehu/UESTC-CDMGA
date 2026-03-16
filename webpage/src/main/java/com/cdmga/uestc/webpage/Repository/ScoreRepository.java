@@ -4,12 +4,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.cdmga.uestc.webpage.Entity.Score;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface ScoreRepository extends JpaRepository<Score, Long> {
@@ -83,4 +85,7 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
 
     @Query("SELECT s FROM Score s WHERE s.identity.id = :identityId AND s.course.category = 'contest' AND s.isDeleted = false AND s.isScored = true")
     List<Score> findContestScoresByIdentityId(Integer identityId);
+
+    @Query("SELECT coalesce(sum(s.score), 0) FROM Score s WHERE s.course.id = :courseId AND s.isDeleted = false AND s.isScored = true AND s.identity.id in :identityIds")
+    Double sumTeamScoreByCourseAndIdentityIds(@Param("courseId") Integer courseId, @Param("identityIds") Set<Integer> identityIds);
 }
