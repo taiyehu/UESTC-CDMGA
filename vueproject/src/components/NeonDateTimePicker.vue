@@ -1,6 +1,7 @@
 <template>
-  <div class="picker-wrap">
+  <div ref="pickerWrapRef" class="picker-wrap" @click="openPanelFromWrap">
     <el-date-picker
+      ref="pickerRef"
       :model-value="modelValue"
       type="datetime"
       :placeholder="placeholder"
@@ -12,6 +13,8 @@
 </template>
 
 <script lang="ts" setup>
+import { ref } from 'vue'
+
 const props = withDefaults(
   defineProps<{
     modelValue: string | null
@@ -27,8 +30,24 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: string | null): void
 }>()
 
+const pickerRef = ref<any>(null)
+const pickerWrapRef = ref<HTMLElement | null>(null)
+
 function onUpdate(value: string | null): void {
   emit('update:modelValue', value)
+}
+
+function openPanelFromWrap(): void {
+  const picker = pickerRef.value as any
+  if (typeof picker?.handleOpen === 'function') {
+    picker.handleOpen()
+    return
+  }
+
+  const input = pickerWrapRef.value?.querySelector('input') as HTMLInputElement | null
+  if (!input) return
+  input.focus()
+  input.click()
 }
 </script>
 
