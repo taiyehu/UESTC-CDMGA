@@ -70,6 +70,35 @@ public class TeamController {
         }
     }
 
+    @GetMapping("/course/{courseId}/my-score")
+    public ResponseEntity<Object> getMyTeamScore(
+            @PathVariable Integer courseId,
+            @RequestParam Integer identityId
+    ) {
+        try {
+            Double score = teamService.getMyTeamTotalScore(courseId, identityId);
+            return ResponseEntity.ok(Result.success(score));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/course/{courseId}/board-state")
+    public ResponseEntity<Object> getBingoBoardState(
+            @PathVariable Integer courseId,
+            @RequestParam Integer identityId
+    ) {
+        try {
+            return ResponseEntity.ok(Result.success(teamService.getBingoBoardState(courseId, identityId)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(e.getMessage()));
+        }
+    }
+
     @GetMapping("/course/{courseId}/join-options")
     public ResponseEntity<Object> searchJoinOptions(
             @PathVariable Integer courseId,

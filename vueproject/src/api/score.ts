@@ -64,6 +64,22 @@ export const handleUpdateScore = (updateData: Partial<Score> | Record<string, an
     data: updateData,
   })
 }
+
+export const fetchScoreHistory = (identityId: number | string, courseId: number | string, issueId?: number | string) => {
+  const params: Record<string, number | string> = {
+    identity_id: identityId,
+    course_id: courseId,
+  }
+  if (issueId !== undefined && issueId !== null && issueId !== '') {
+    params.issue_id = issueId
+  }
+
+  return request({
+    url: '/score/history',
+    method: 'get',
+    params,
+  })
+}
 export const fetchScore = (params: { page: number; pageSize?: number; size?: number }) => {
   const pageSize = params.pageSize ?? params.size ?? 10
   return request({

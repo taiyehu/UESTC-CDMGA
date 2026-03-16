@@ -1,15 +1,13 @@
 <template>
   <section class="relative mx-auto max-w-6xl px-4 pb-12 pt-6 md:px-8">
-    <div class="mb-5 flex flex-wrap items-center gap-3">
-      <button type="button" class="neon-back" @click="goBingo">返回 Bingo 面板</button>
-      <button type="button" class="neon-back" @click="goList">返回课题列表</button>
-    </div>
-
     <div v-if="loading" class="hud-shell p-8 text-cyan-100/80">Bingo 题目加载中...</div>
     <div v-else-if="error" class="hud-shell p-8 text-rose-300">{{ error }}</div>
 
     <article v-else-if="course" class="hud-shell p-6 text-left md:p-8">
-      <p class="mb-2 text-xs uppercase tracking-widest text-cyan-300/90">bingo mission</p>
+      <div class="mission-head">
+        <p class="mission-label">bingo mission</p>
+        <button type="button" class="neon-back neon-back-mini" @click="goBingo">返回 Bingo 面板</button>
+      </div>
       <div class="title-row">
         <h1 class="text-2xl font-semibold text-cyan-100 md:text-3xl">{{ selectedItem.title }}</h1>
         <span v-if="selectedItem.songName" class="song-mark">{{ selectedItem.songName }}</span>
@@ -33,7 +31,7 @@
         </div>
       </div>
 
-      <div v-if="selectedItem.image" class="mt-5 overflow-hidden rounded-xl border border-cyan-300/25 bg-slate-900/45">
+      <div v-if="selectedItem.image" class="mt-5 bingo-image-wrap overflow-hidden rounded-xl border border-cyan-300/25 bg-slate-900/45">
         <img :src="toUrl(selectedItem.image)" alt="bingo题目图片" class="bingo-image" />
       </div>
 
@@ -58,7 +56,10 @@
           下一题
         </button>
       </div>
-    </article>
+    </article>、
+    <div class="mt-6 flex justify-end">
+      <button type="button" class="neon-back" @click="goList">返回课题列表</button>
+    </div>
   </section>
 </template>
 
@@ -241,6 +242,27 @@ watch(
   box-shadow: none;
 }
 
+.mission-head {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mission-label {
+  margin: 0;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: rgba(34, 211, 238, 0.92);
+}
+
+.neon-back-mini {
+  padding: 5px 10px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
 .title-row {
   display: flex;
   align-items: center;
@@ -292,8 +314,13 @@ watch(
 .bingo-image {
   display: block;
   width: 100%;
-  max-height: 340px;
+  height: 100%;
   object-fit: cover;
+}
+
+.bingo-image-wrap {
+  width: min(100%, 560px);
+  aspect-ratio: 1 / 1;
 }
 
 .bingo-audio {

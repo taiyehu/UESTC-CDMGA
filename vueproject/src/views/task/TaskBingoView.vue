@@ -2,7 +2,14 @@
   <article class="space-y-5">
     <header class="task-panel text-left header-wrap">
       <div class="header-main">
-        <p class="task-category">bingo</p>
+        <div class="task-category-row">
+          <div class="score-legend" aria-label="分值图例">
+            <span class="legend-dot score-5">5</span>
+            <span class="legend-dot score-3">3</span>
+            <span class="legend-dot score-2">2</span>
+          </div>
+          <p class="task-category">bingo</p>
+        </div>
         <h1 class="task-title">{{ course.title }}</h1>
         <p class="task-time">持续时间：{{ duration }}</p>
         <p class="task-content">{{ course.description || '暂无课题内容。' }}</p>
@@ -53,10 +60,10 @@
           :key="cellId"
           type="button"
           class="bingo-cell"
+          :class="getCellClass(cellId)"
           @click="goCell(cellId)"
         >
-          <span>B-{{ String(cellId).padStart(2, '0') }}</span>
-          <span v-if="issueMarks.get(cellId)" class="cell-mark">{{ issueMarks.get(cellId) }}</span>
+          <span class="cell-score">{{ getCellScoreText(cellId) }}</span>
         </button>
       </div>
     </section>
@@ -127,8 +134,10 @@ import type { Course } from '@/api/types'
 import { formatDuration } from './task-utils'
 import { fetchCourseIssues } from '@/api/issue'
 import {
+  fetchBingoBoardState,
   createMyTeam,
   fetchMyTeamPanel,
+  fetchMyTeamScore,
   inviteCourseTeamMember,
   joinCourseTeam,
   leaveCourseTeam,
@@ -153,6 +162,7 @@ const inviteOptions = ref<TeamMemberOption[]>([])
 const inviteTargetId = ref<number | null>(null)
 const inviteLoading = ref(false)
 const leaveConfirmVisible = ref(false)
+const boardStateMap = ref<Map<number, { maxScore: 2 | 3 | 5; myCompleted: boolean; myScore: number; myLineScored: boolean }>>(new Map())
 
 function parseSessionValue(raw: string | null): any {
   if (!raw) return null
@@ -182,6 +192,59 @@ const memberSlots = computed(() => {
 
 const duration = computed(() => formatDuration(props.course.startTime, props.course.endTime))
 const cells = Array.from({ length: 25 }, (_, index) => index + 1)
+
+const lineScoredCells = computed(() => {
+  const result = new Set<number>()
+  const lines: number[][] = []
+
+  for (let i = 0; i < 5; i += 1) {
+    const start = 5 * i + 1
+    lines.push([start, start + 1, start + 2, start + 3, start + 4])
+  }
+  for (let i = 1; i <= 5; i += 1) {
+    lines.push([i, i + 5, i + 10, i + 15, i + 20])
+  }
+  lines.push([1, 7, 13, 19, 25])
+  lines.push([5, 9, 13, 17, 21])
+
+  for (const line of lines) {
+    const completed = line.every((id) => getCellState(id).myCompleted)
+    if (completed) {
+      for (const id of line) result.add(id)
+    }
+  }
+
+  return result
+})
+
+function getCellState(cellId: number) {
+  return boardStateMap.value.get(cellId) || { maxScore: 5 as 2 | 3 | 5, myCompleted: false, myScore: 0, myLineScored: false }
+}
+
+function getCellColorLevel(cellId: number): 2 | 3 | 5 {
+  const state = getCellState(cellId)
+  const myScore = Number(state.myScore)
+  if (state.myCompleted && (myScore === 2 || myScore === 3 || myScore === 5)) {
+    return myScore as 2 | 3 | 5
+  }
+  return state.maxScore
+}
+
+function getCellClass(cellId: number) {
+  const state = getCellState(cellId)
+  const level = getCellColorLevel(cellId)
+  return {
+    'cell-score-2': level === 2,
+    'cell-score-3': level === 3,
+    'cell-score-5': level === 5,
+    'cell-completed': state.myCompleted,
+    'cell-line-scored': lineScoredCells.value.has(cellId),
+  }
+}
+
+function getCellScoreText(cellId: number) {
+  return String(getCellColorLevel(cellId))
+}
 
 async function loadIssueMarks() {
   try {
@@ -213,9 +276,43 @@ async function loadMyTeamPanel() {
     return
   }
   try {
-    myTeam.value = await fetchMyTeamPanel(props.course.id, currentIdentityId.value)
+    const panel = await fetchMyTeamPanel(props.course.id, currentIdentityId.value)
+    if (!panel) {
+      myTeam.value = null
+      return
+    }
+    const score = await fetchMyTeamScore(props.course.id, currentIdentityId.value)
+    panel.totalScore = Number.isFinite(score) ? score : Number(panel.totalScore || 0)
+    myTeam.value = panel
   } catch {
     myTeam.value = null
+  }
+}
+
+async function loadBoardState() {
+  if (!currentIdentityId.value) {
+    boardStateMap.value = new Map()
+    return
+  }
+  try {
+    const data = await fetchBingoBoardState(props.course.id, currentIdentityId.value)
+    const list = Array.isArray(data?.cells) ? data.cells : []
+    const map = new Map<number, { maxScore: 2 | 3 | 5; myCompleted: boolean; myScore: number; myLineScored: boolean }>()
+    for (const item of list) {
+      const issueId = Number(item?.issueId)
+      const maxScore = Number(item?.maxScore)
+      if (!Number.isFinite(issueId) || issueId < 1 || issueId > 25) continue
+      if (maxScore !== 2 && maxScore !== 3 && maxScore !== 5) continue
+      map.set(issueId, {
+        maxScore: maxScore as 2 | 3 | 5,
+        myCompleted: Boolean(item?.myCompleted),
+        myScore: Number(item?.myScore || 0),
+        myLineScored: Boolean(item?.myLineScored),
+      })
+    }
+    boardStateMap.value = map
+  } catch {
+    boardStateMap.value = new Map()
   }
 }
 
@@ -311,6 +408,7 @@ watch(
   () => {
     loadIssueMarks()
     loadMyTeamPanel()
+    loadBoardState()
   },
   { immediate: true }
 )
@@ -328,10 +426,53 @@ watch(
 }
 
 .task-category {
-  margin-bottom: 6px;
+  margin-bottom: 0;
   font-size: 12px;
   text-transform: uppercase;
   color: rgba(34, 211, 238, 0.9);
+}
+
+.task-category-row {
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.score-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.legend-dot.score-5 {
+  color: #fef3c7;
+  background: rgba(146, 64, 14, 0.8);
+  border: 1px solid rgba(251, 191, 36, 0.8);
+}
+
+.legend-dot.score-3 {
+  color: #fce7f3;
+  background: rgba(157, 23, 77, 0.78);
+  border: 1px solid rgba(244, 114, 182, 0.8);
+}
+
+.legend-dot.score-2 {
+  color: #dcfce7;
+  background: rgba(22, 101, 52, 0.82);
+  border: 1px solid rgba(74, 222, 128, 0.8);
 }
 
 .task-title {
@@ -588,18 +729,12 @@ watch(
 }
 
 .bingo-cell {
-  min-height: 72px;
+  position: relative;
+  aspect-ratio: 1 / 1;
+  min-height: 0;
   border-radius: 10px;
-  border: 1px solid rgba(34, 211, 238, 0.55);
-  background:
-    linear-gradient(145deg, rgba(5, 46, 70, 0.75), rgba(88, 28, 135, 0.55)),
-    repeating-linear-gradient(
-      to right,
-      rgba(255, 255, 255, 0.05),
-      rgba(255, 255, 255, 0.05) 1px,
-      transparent 2px,
-      transparent 6px
-    );
+  border: 2px solid rgba(34, 211, 238, 0.55);
+  background: linear-gradient(145deg, rgba(5, 46, 70, 0.75), rgba(88, 28, 135, 0.55));
   color: #cffafe;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -618,10 +753,52 @@ watch(
     0 0 22px rgba(217, 70, 239, 0.22);
 }
 
-.cell-mark {
-  font-size: 15px;
-  line-height: 1;
-  color: #d1fae5;
+.cell-score {
+  font-size: clamp(28px, 8vw, 54px);
+  font-weight: 800;
+  line-height: 0.95;
+}
+
+.bingo-cell.cell-score-2 {
+  border-color: rgba(74, 222, 128, 0.9);
+}
+
+.bingo-cell.cell-score-3 {
+  border-color: rgba(244, 114, 182, 0.9);
+}
+
+.bingo-cell.cell-score-5 {
+  border-color: rgba(251, 191, 36, 0.9);
+}
+
+.bingo-cell.cell-score-2 .cell-score {
+  color: #86efac;
+}
+
+.bingo-cell.cell-score-3 .cell-score {
+  color: #f9a8d4;
+}
+
+.bingo-cell.cell-score-5 .cell-score {
+  color: #fde68a;
+}
+
+.bingo-cell.cell-completed.cell-score-2 {
+  background: linear-gradient(145deg, rgba(22, 101, 52, 0.78), rgba(21, 128, 61, 0.66));
+}
+
+.bingo-cell.cell-completed.cell-score-3 {
+  background: linear-gradient(145deg, rgba(131, 24, 67, 0.8), rgba(157, 23, 77, 0.68));
+}
+
+.bingo-cell.cell-completed.cell-score-5 {
+  background: linear-gradient(145deg, rgba(120, 53, 15, 0.8), rgba(146, 64, 14, 0.72));
+}
+
+.bingo-cell.cell-line-scored {
+  border-width: 3px;
+  background:
+    linear-gradient(135deg, rgba(34, 211, 238, 0.82), rgba(59, 130, 246, 0.78), rgba(244, 114, 182, 0.74), rgba(168, 85, 247, 0.72));
 }
 
 :global(.team-dialog-mask) {

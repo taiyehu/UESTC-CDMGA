@@ -145,6 +145,15 @@ public class ScoreController {
             return ResponseEntity.ok(null);
         }
     }
+
+    @GetMapping("/history")
+    public ResponseEntity<Object> getScoreHistory(
+            @RequestParam Integer identity_id,
+            @RequestParam Integer course_id,
+            @RequestParam(required = false) Integer issue_id) {
+        return ResponseEntity.ok(scoreService.getScoreHistoryByIdentityIdAndCourseId(identity_id, course_id, issue_id));
+    }
+
     // 获取文件扩展名
     private String getFileExtension(String fileName) {
         int index = fileName.lastIndexOf('.');

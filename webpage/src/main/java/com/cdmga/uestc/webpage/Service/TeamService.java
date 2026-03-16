@@ -8,6 +8,7 @@ import com.cdmga.uestc.webpage.Dto.TeamPanelMemberDto;
 import com.cdmga.uestc.webpage.Entity.Course;
 import com.cdmga.uestc.webpage.Entity.Identity;
 import com.cdmga.uestc.webpage.Entity.Profile;
+import com.cdmga.uestc.webpage.Entity.Score;
 import com.cdmga.uestc.webpage.Entity.Team;
 import com.cdmga.uestc.webpage.Repository.CourseRepository;
 import com.cdmga.uestc.webpage.Repository.IdentityRepository;
@@ -22,6 +23,8 @@ import java.util.*;
 
 @Service
 public class TeamService {
+
+    private static final List<int[]> BINGO_LINES = buildBingoLines();
 
     @Autowired
     private TeamRepository teamRepository;
@@ -106,8 +109,8 @@ public class TeamService {
             memberIds.add(row.getIdentityId());
         }
 
-        Double totalScore = scoreRepository.sumTeamScoreByCourseAndIdentityIds(courseId, memberIds);
-        TeamPanelDto panel = new TeamPanelDto(teamId, totalScore == null ? 0D : totalScore);
+        Double totalScore = calculateBingoLineScore(courseId, memberIds);
+        TeamPanelDto panel = new TeamPanelDto(teamId, totalScore);
 
         for (Team row : teamRows) {
             Identity member = identityRepository.findById(row.getIdentityId()).orElse(null);
@@ -118,6 +121,171 @@ public class TeamService {
         }
 
         return panel;
+    }
+
+    public Double getMyTeamTotalScore(Integer courseId, Integer identityId) {
+        validateBingoCourse(courseId);
+        if (identityId == null || identityId <= 0) {
+            throw new IllegalArgumentException("identity_id 无效");
+        }
+
+        Team self = teamRepository.findByCourseIdAndIdentityId(courseId, identityId).orElse(null);
+        if (self == null || self.getTeamId() == null) {
+            return 0D;
+        }
+
+        List<Team> teamRows = teamRepository.findByCourseIdAndTeamId(courseId, self.getTeamId());
+        Set<Integer> memberIds = new LinkedHashSet<>();
+        for (Team row : teamRows) {
+            memberIds.add(row.getIdentityId());
+        }
+        return calculateBingoLineScore(courseId, memberIds);
+    }
+
+    public Map<String, Object> getBingoBoardState(Integer courseId, Integer identityId) {
+        validateBingoCourse(courseId);
+        if (identityId == null || identityId <= 0) {
+            throw new IllegalArgumentException("identity_id 无效");
+        }
+
+        List<Team> teamRows = teamRepository.findByCourseIdAndTeamIdIsNotNull(courseId);
+        Map<Integer, Integer> identityToTeam = new HashMap<>();
+        for (Team row : teamRows) {
+            if (row.getTeamId() != null) {
+                identityToTeam.put(row.getIdentityId(), row.getTeamId());
+            }
+        }
+
+        Integer myTeamId = identityToTeam.get(identityId);
+        Map<Integer, Map<Integer, Float>> teamIssueBestScore = new HashMap<>();
+
+        List<Score> scores = scoreRepository.findByCourse_Id(courseId);
+        for (Score score : scores) {
+            if (score == null || Boolean.TRUE.equals(score.getIsDeleted())) continue;
+            if (!Boolean.TRUE.equals(score.getIsScored())) continue;
+
+            Integer issueId = score.getIssueId();
+            Float point = score.getScore();
+            Integer who = score.getIdentity() == null ? null : score.getIdentity().getId();
+            Integer teamId = who == null ? null : identityToTeam.get(who);
+
+            if (teamId == null) continue;
+            if (issueId == null || issueId < 1 || issueId > 25) continue;
+            if (point == null || point <= 0f) continue;
+
+            teamIssueBestScore
+                    .computeIfAbsent(teamId, ignored -> new HashMap<>())
+                    .merge(issueId, point, Math::max);
+        }
+
+        Map<Integer, Integer> completedTeamCountByIssue = new HashMap<>();
+        for (Map<Integer, Float> issueScoreMap : teamIssueBestScore.values()) {
+            for (Integer issueId : issueScoreMap.keySet()) {
+                completedTeamCountByIssue.merge(issueId, 1, Integer::sum);
+            }
+        }
+
+        Map<Integer, Float> myIssueScoreMap = myTeamId == null
+                ? Collections.emptyMap()
+                : teamIssueBestScore.getOrDefault(myTeamId, Collections.emptyMap());
+
+        Set<Integer> myLineScoredIssues = new LinkedHashSet<>();
+        for (int[] line : BINGO_LINES) {
+            boolean completed = true;
+            for (int issueId : line) {
+                if (!myIssueScoreMap.containsKey(issueId)) {
+                    completed = false;
+                    break;
+                }
+            }
+            if (completed) {
+                for (int issueId : line) {
+                    myLineScoredIssues.add(issueId);
+                }
+            }
+        }
+
+        List<Map<String, Object>> cells = new ArrayList<>();
+        for (int issueId = 1; issueId <= 25; issueId += 1) {
+            int completedTeams = completedTeamCountByIssue.getOrDefault(issueId, 0);
+            int maxScore = completedTeams == 0 ? 5 : (completedTeams <= 2 ? 3 : 2);
+
+            Float myScoreValue = myIssueScoreMap.get(issueId);
+            boolean myCompleted = myScoreValue != null && myScoreValue > 0f;
+
+            Map<String, Object> cell = new HashMap<>();
+            cell.put("issueId", issueId);
+            cell.put("maxScore", maxScore);
+            cell.put("myCompleted", myCompleted);
+            cell.put("myScore", myCompleted ? myScoreValue.intValue() : 0);
+            cell.put("myLineScored", myLineScoredIssues.contains(issueId));
+            cells.add(cell);
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("hasTeam", myTeamId != null);
+        result.put("teamId", myTeamId);
+        result.put("cells", cells);
+        return result;
+    }
+
+    private static List<int[]> buildBingoLines() {
+        List<int[]> lines = new ArrayList<>();
+
+        for (int i = 0; i < 5; i += 1) {
+            int start = 5 * i + 1;
+            lines.add(new int[]{start, start + 1, start + 2, start + 3, start + 4});
+        }
+
+        for (int i = 1; i <= 5; i += 1) {
+            lines.add(new int[]{i, i + 5, i + 10, i + 15, i + 20});
+        }
+
+        lines.add(new int[]{1, 7, 13, 19, 25});
+        lines.add(new int[]{5, 9, 13, 17, 21});
+        return lines;
+    }
+
+    private Double calculateBingoLineScore(Integer courseId, Set<Integer> memberIds) {
+        if (memberIds == null || memberIds.isEmpty()) {
+            return 0D;
+        }
+
+        List<com.cdmga.uestc.webpage.Entity.Score> submissions =
+                scoreRepository.findByIdentityIdInAndCourseIdAndIsDeletedFalseOrderByUploadTimeDescIdDesc(memberIds, courseId);
+
+        Map<Integer, Float> approvedBestScoreByIssue = new HashMap<>();
+        for (com.cdmga.uestc.webpage.Entity.Score submission : submissions) {
+            Integer issueId = submission.getIssueId();
+            Float point = submission.getScore();
+            if (!Boolean.TRUE.equals(submission.getIsScored())) continue;
+            if (point == null || point <= 0f) continue;
+            if (issueId == null || issueId < 1 || issueId > 25) continue;
+
+            approvedBestScoreByIssue.merge(issueId, point, Math::max);
+        }
+
+        Set<Integer> countedIssueIds = new LinkedHashSet<>();
+        for (int[] line : BINGO_LINES) {
+            boolean completed = true;
+            for (int issueId : line) {
+                if (!approvedBestScoreByIssue.containsKey(issueId)) {
+                    completed = false;
+                    break;
+                }
+            }
+            if (completed) {
+                for (int issueId : line) {
+                    countedIssueIds.add(issueId);
+                }
+            }
+        }
+
+        double total = 0D;
+        for (Integer issueId : countedIssueIds) {
+            total += approvedBestScoreByIssue.getOrDefault(issueId, 0f);
+        }
+        return total;
     }
 
     public List<TeamJoinOptionDto> searchJoinOptions(Integer courseId, Integer identityId, String keyword) {

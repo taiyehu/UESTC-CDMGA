@@ -1,7 +1,5 @@
 <template>
   <section class="relative mx-auto max-w-6xl px-4 pb-12 pt-6 md:px-8">
-    <button type="button" class="neon-back mb-5" @click="goList">返回课题列表</button>
-
     <div v-if="loading" class="hud-shell p-8 text-cyan-100/80">课题加载中...</div>
     <div v-else-if="error" class="hud-shell p-8 text-rose-300">{{ error }}</div>
 
@@ -10,6 +8,10 @@
     <article v-else class="hud-shell p-8 text-left text-cyan-100/75">
       课题不存在或已被删除。
     </article>
+
+    <div class="mt-6 flex justify-end">
+      <button type="button" class="neon-back" @click="goList">返回课题列表</button>
+    </div>
   </section>
 </template>
 

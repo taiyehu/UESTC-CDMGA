@@ -2,6 +2,8 @@ package com.cdmga.uestc.webpage.Service;
 
 import com.cdmga.uestc.webpage.Entity.Activity;
 import com.cdmga.uestc.webpage.Entity.ActivityCourseAssoc;
+import com.cdmga.uestc.webpage.Entity.Course;
+import com.cdmga.uestc.webpage.Entity.Team;
 import com.cdmga.uestc.webpage.Repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -15,8 +17,10 @@ import com.cdmga.uestc.webpage.Entity.Score;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class ScoreService {
@@ -35,6 +39,9 @@ public class ScoreService {
 
     @Autowired
     private ActivityRepository activityRepository;
+
+    @Autowired
+    private TeamRepository teamRepository;
 
     public Score getScoreById(long id) {return scoreRepository.findByIdAndIsDeletedFalse(id);}
 
@@ -85,9 +92,84 @@ public class ScoreService {
         // 查找Score
         Score score = scoreRepository.findById(scoreId).orElse(null);
         if (score != null) {
+            // 负分记录视为已定性结果，后续不允许再修改。
+            if (Boolean.TRUE.equals(score.getIsScored()) && score.getScore() != null && score.getScore() < 0f) {
+                return score;
+            }
+
+            float finalPoint = point;
+            Integer effectiveIssueId = issue_id != null ? issue_id : score.getIssueId();
+            LocalDateTime effectiveUploadTime = upload_time != null ? upload_time : score.getUploadTime();
+
+            // bingo 审核通过时，按同课题同子题上传时间排名给予阶梯分：1st=5, 2nd/3rd=3, others=2。
+            if (Float.compare(point, 2f) == 0
+                    && score.getCourse() != null
+                    && "bingo".equals(score.getCourse().getCategory())
+                    && effectiveIssueId != null
+                    && effectiveUploadTime != null) {
+                List<Score> earlierApproved = scoreRepository.findEarlierApprovedByCourseIssueAndUploadTime(
+                        score.getCourse().getId(),
+                        effectiveIssueId,
+                        score.getId(),
+                        effectiveUploadTime
+                );
+
+                Integer courseId = score.getCourse().getId();
+                Integer currentIdentityId = score.getIdentity() == null ? null : score.getIdentity().getId();
+                Integer currentTeamId = null;
+                if (currentIdentityId != null) {
+                    Team currentTeam = teamRepository.findByCourseIdAndIdentityId(courseId, currentIdentityId).orElse(null);
+                    currentTeamId = currentTeam == null ? null : currentTeam.getTeamId();
+                }
+
+                long rank;
+                if (currentTeamId != null) {
+                    Set<Integer> identityIds = new LinkedHashSet<>();
+                    for (Score item : earlierApproved) {
+                        if (item.getIdentity() != null && item.getIdentity().getId() != null) {
+                            identityIds.add(item.getIdentity().getId());
+                        }
+                    }
+
+                    Map<Integer, Integer> identityToTeam = new HashMap<>();
+                    if (!identityIds.isEmpty()) {
+                        List<Team> teamRows = teamRepository.findByCourseIdAndIdentityIdIn(courseId, identityIds);
+                        for (Team row : teamRows) {
+                            if (row.getTeamId() != null) {
+                                identityToTeam.put(row.getIdentityId(), row.getTeamId());
+                            }
+                        }
+                    }
+
+                    List<Integer> orderedTeamIds = new ArrayList<>();
+                    Set<Integer> seenTeamIds = new LinkedHashSet<>();
+                    for (Score item : earlierApproved) {
+                        if (item.getIdentity() == null || item.getIdentity().getId() == null) continue;
+                        Integer teamId = identityToTeam.get(item.getIdentity().getId());
+                        if (teamId == null) continue;
+                        if (seenTeamIds.add(teamId)) {
+                            orderedTeamIds.add(teamId);
+                        }
+                    }
+
+                    int existingIndex = orderedTeamIds.indexOf(currentTeamId);
+                    rank = existingIndex >= 0 ? (existingIndex + 1L) : (orderedTeamIds.size() + 1L);
+                } else {
+                    rank = earlierApproved.size() + 1L;
+                }
+
+                if (rank == 1) {
+                    finalPoint = 5f;
+                } else if (rank == 2 || rank == 3) {
+                    finalPoint = 3f;
+                } else {
+                    finalPoint = 2f;
+                }
+            }
+
             score.setUploadTime(upload_time);
             score.setImage(image);
-            score.setScore(point);
+            score.setScore(finalPoint);
             score.setIsScored(is_scored);
             score.setIssueId(issue_id);
             score.setRemark(remark);
@@ -153,6 +235,63 @@ public class ScoreService {
         }
         return scoreRepository.findByIdentityIdAndCourseIdAndIssueIdAndIsDeletedFalse(identityId, courseId, issueId);
 
+    }
+
+    public Map<String, Object> getScoreHistoryByIdentityIdAndCourseId(Integer identityId, Integer courseId, Integer issueId) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("hasTeam", false);
+        result.put("teamId", null);
+        result.put("list", new ArrayList<Score>());
+
+        if (identityId == null || identityId <= 0 || courseId == null || courseId <= 0) {
+            return result;
+        }
+
+        Course course = courseRepository.findById(courseId).orElse(null);
+        String category = course == null || course.getCategory() == null ? "" : course.getCategory().trim().toLowerCase();
+        boolean isBingoCourse = "bingo".equals(category);
+
+        if (!isBingoCourse) {
+            List<Score> list;
+            if (issueId == null) {
+                list = scoreRepository.findByIdentityIdAndCourseIdAndIsDeletedFalseOrderByUploadTimeDescIdDesc(identityId, courseId);
+            } else {
+                list = scoreRepository.findByIdentityIdAndCourseIdAndIssueIdAndIsDeletedFalseOrderByUploadTimeDescIdDesc(identityId, courseId, issueId);
+            }
+            result.put("hasTeam", true);
+            result.put("list", list);
+            return result;
+        }
+
+        Team self = teamRepository.findByCourseIdAndIdentityId(courseId, identityId).orElse(null);
+        if (self == null || self.getTeamId() == null) {
+            return result;
+        }
+
+        Integer teamId = self.getTeamId();
+        result.put("hasTeam", true);
+        result.put("teamId", teamId);
+
+        List<Team> members = teamRepository.findByCourseIdAndTeamId(courseId, teamId);
+        Set<Integer> memberIds = new LinkedHashSet<>();
+        for (Team row : members) {
+            if (row.getIdentityId() != null) {
+                memberIds.add(row.getIdentityId());
+            }
+        }
+
+        if (memberIds.isEmpty()) {
+            return result;
+        }
+
+        List<Score> list;
+        if (issueId == null) {
+            list = scoreRepository.findByIdentityIdInAndCourseIdAndIsDeletedFalseOrderByUploadTimeDescIdDesc(memberIds, courseId);
+        } else {
+            list = scoreRepository.findByIdentityIdInAndCourseIdAndIssueIdAndIsDeletedFalseOrderByUploadTimeDescIdDesc(memberIds, courseId, issueId);
+        }
+        result.put("list", list);
+        return result;
     }
 
     public List<UserScoreDto> calculateScoresForAllUsers(List<Score> scores) {

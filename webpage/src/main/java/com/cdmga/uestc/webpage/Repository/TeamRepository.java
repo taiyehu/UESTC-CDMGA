@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface TeamRepository extends JpaRepository<Team, Integer> {
@@ -36,6 +37,8 @@ public interface TeamRepository extends JpaRepository<Team, Integer> {
     long countByCourseIdAndTeamId(@Param("courseId") Integer courseId, @Param("teamId") Integer teamId);
 
     List<Team> findByCourseIdAndTeamId(Integer courseId, Integer teamId);
+
+    List<Team> findByCourseIdAndIdentityIdIn(Integer courseId, Set<Integer> identityIds);
 
     List<Team> findByCourseIdAndTeamIdIsNotNull(Integer courseId);
 

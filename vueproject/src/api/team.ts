@@ -28,6 +28,20 @@ export interface TeamJoinOption {
   memberAccounts: string[]
 }
 
+export interface BingoBoardCellState {
+  issueId: number
+  maxScore: 2 | 3 | 5
+  myCompleted: boolean
+  myScore: number
+  myLineScored: boolean
+}
+
+export interface BingoBoardState {
+  hasTeam: boolean
+  teamId: number | null
+  cells: BingoBoardCellState[]
+}
+
 export const fetchCourseTeams = (courseId: number | string, page: number, size = 10) => {
   return request({
     url: `/team/course/${courseId}`,
@@ -70,6 +84,28 @@ export const fetchMyTeamPanel = async (courseId: number | string, identityId: nu
   })
   if (res?.data?.code === 0) return (res.data.data || null) as TeamPanel | null
   if (res?.data && !('code' in res.data)) return (res.data || null) as TeamPanel | null
+  return null
+}
+
+export const fetchMyTeamScore = async (courseId: number | string, identityId: number | string): Promise<number> => {
+  const res = await request({
+    url: `/team/course/${courseId}/my-score`,
+    method: 'get',
+    params: { identityId },
+  })
+  if (res?.data?.code === 0) return Number(res.data.data || 0)
+  if (typeof res?.data === 'number') return Number(res.data)
+  return 0
+}
+
+export const fetchBingoBoardState = async (courseId: number | string, identityId: number | string): Promise<BingoBoardState | null> => {
+  const res = await request({
+    url: `/team/course/${courseId}/board-state`,
+    method: 'get',
+    params: { identityId },
+  })
+  if (res?.data?.code === 0) return (res.data.data || null) as BingoBoardState | null
+  if (res?.data && !('code' in res.data)) return (res.data || null) as BingoBoardState | null
   return null
 }
 

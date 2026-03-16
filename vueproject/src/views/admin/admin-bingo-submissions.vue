@@ -34,30 +34,30 @@
             <button
               type="button"
               class="neon-btn ok"
-              :class="{ 'is-pending': pendingStatusMap[row.id] === 1 }"
+              :class="{ 'is-pending': pendingStatusMap[row.id] === 2 }"
               :disabled="Boolean(pendingStatusMap[row.id])"
-              @click="reviewScore(row, 1)"
+              @click="reviewScore(row, 2)"
             >
-              {{ pendingStatusMap[row.id] === 1 ? '处理中...' : '通过' }}
+              {{ pendingStatusMap[row.id] === 2 ? '处理中...' : '通过' }}
             </button>
             <div class="action-right">
               <button
                 type="button"
                 class="neon-btn warn"
-                :class="{ 'is-pending': pendingStatusMap[row.id] === 2 }"
+                :class="{ 'is-pending': pendingStatusMap[row.id] === -2 }"
                 :disabled="Boolean(pendingStatusMap[row.id])"
-                @click="reviewScore(row, 2)"
+                @click="reviewScore(row, -2)"
               >
-                {{ pendingStatusMap[row.id] === 2 ? '处理中...' : '曲目不对' }}
+                {{ pendingStatusMap[row.id] === -2 ? '处理中...' : '曲目不对' }}
               </button>
               <button
                 type="button"
                 class="neon-btn danger"
-                :class="{ 'is-pending': pendingStatusMap[row.id] === 3 }"
+                :class="{ 'is-pending': pendingStatusMap[row.id] === -1 }"
                 :disabled="Boolean(pendingStatusMap[row.id])"
-                @click="reviewScore(row, 3)"
+                @click="reviewScore(row, -1)"
               >
-                {{ pendingStatusMap[row.id] === 3 ? '处理中...' : '游玩方式不对' }}
+                {{ pendingStatusMap[row.id] === -1 ? '处理中...' : '游玩方式不对' }}
               </button>
             </div>
           </div>
@@ -179,7 +179,7 @@ async function reviewScore(row: BingoRow, status: number): Promise<void> {
       currentPage.value = totalPages.value
     }
 
-    ElMessage({ message: `成绩 ${row.id} 已处理`, type: status === 1 ? 'success' : 'warning' })
+    ElMessage({ message: `成绩 ${row.id} 已处理`, type: status === 2 ? 'success' : 'warning' })
   } catch (error: any) {
     const errorMsg = error?.response?.data?.message || '处理失败，请重试'
     ElMessage({ message: errorMsg, type: 'error' })

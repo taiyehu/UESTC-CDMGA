@@ -78,6 +78,14 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
 
     Score findByIdentityIdAndCourseIdAndIssueIdAndIsDeletedFalse(Integer identityId, Integer courseId, Integer issueId);
 
+    List<Score> findByIdentityIdAndCourseIdAndIsDeletedFalseOrderByUploadTimeDescIdDesc(Integer identityId, Integer courseId);
+
+    List<Score> findByIdentityIdAndCourseIdAndIssueIdAndIsDeletedFalseOrderByUploadTimeDescIdDesc(Integer identityId, Integer courseId, Integer issueId);
+
+    List<Score> findByIdentityIdInAndCourseIdAndIsDeletedFalseOrderByUploadTimeDescIdDesc(Set<Integer> identityIds, Integer courseId);
+
+    List<Score> findByIdentityIdInAndCourseIdAndIssueIdAndIsDeletedFalseOrderByUploadTimeDescIdDesc(Set<Integer> identityIds, Integer courseId, Integer issueId);
+
     @Query("SELECT COUNT(s) FROM Score s WHERE s.identity.id = :identityId AND s.course.category = 'contest' AND s.isDeleted = false")
     long countContestScoreByIdentityId(Integer identityId);
 
@@ -88,4 +96,20 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
 
     @Query("SELECT coalesce(sum(s.score), 0) FROM Score s WHERE s.course.id = :courseId AND s.isDeleted = false AND s.isScored = true AND s.identity.id in :identityIds")
     Double sumTeamScoreByCourseAndIdentityIds(@Param("courseId") Integer courseId, @Param("identityIds") Set<Integer> identityIds);
+
+    @Query("SELECT COUNT(s) FROM Score s WHERE s.isDeleted = false AND s.isScored = true AND s.course.id = :courseId AND s.issueId = :issueId AND s.score > 0 AND s.id <> :scoreId AND (s.uploadTime < :uploadTime OR (s.uploadTime = :uploadTime AND s.id < :scoreId))")
+    long countEarlierApprovedByCourseIssueAndUploadTime(
+            @Param("courseId") Integer courseId,
+            @Param("issueId") Integer issueId,
+            @Param("scoreId") Long scoreId,
+            @Param("uploadTime") java.time.LocalDateTime uploadTime
+    );
+
+        @Query("SELECT s FROM Score s WHERE s.isDeleted = false AND s.isScored = true AND s.course.id = :courseId AND s.issueId = :issueId AND s.score > 0 AND s.id <> :scoreId AND (s.uploadTime < :uploadTime OR (s.uploadTime = :uploadTime AND s.id < :scoreId)) ORDER BY s.uploadTime ASC, s.id ASC")
+        List<Score> findEarlierApprovedByCourseIssueAndUploadTime(
+            @Param("courseId") Integer courseId,
+            @Param("issueId") Integer issueId,
+            @Param("scoreId") Long scoreId,
+            @Param("uploadTime") java.time.LocalDateTime uploadTime
+        );
 }

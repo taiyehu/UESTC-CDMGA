@@ -65,7 +65,7 @@
 
 <script lang="ts" setup>
 function go(path: string) {
-  window.open(`https://qglint.github.io/Qcdmga/${path}`, '_blank')
+  window.open(`https://qglint.github.io/cdmga_link/${path}`, '_blank')
 }
 </script>
 
