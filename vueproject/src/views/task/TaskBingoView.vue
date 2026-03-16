@@ -55,21 +55,13 @@
 
     <section class="task-panel">
       <div class="bingo-outer-frame">
-        <!-- <div class="bingo-inner-frame"> -->
-          <div class="grid grid-cols-5 gap-2 md:gap-3 bingo-grid">
-        <button
-          v-for="cellId in cells"
-          :key="cellId"
-          type="button"
-          class="bingo-cell"
-          :class="getCellClass(cellId)"
-          @click="goCell(cellId)"
-        >
-          <span class="cell-score">{{ getCellScoreText(cellId) }}</span>
-        </button>
-          </div>
-        </div>
-      <!-- </div> -->
+        <BingoIssueGrid
+          :course-id="props.course.id"
+          :identity-id="currentIdentityId"
+          :refresh-token="gridRefreshToken"
+          @select="goCell"
+        />
+      </div>
     </section>
 
     <el-dialog v-model="joinDialogVisible" title="加入队伍" width="520px" class="team-dialog" modal-class="team-dialog-mask">
@@ -136,9 +128,8 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Course } from '@/api/types'
 import { formatDuration } from './task-utils'
-import { fetchCourseIssues } from '@/api/issue'
+import BingoIssueGrid from '@/components/BingoIssueGrid.vue'
 import {
-  fetchBingoBoardState,
   createMyTeam,
   fetchMyTeamPanel,
   fetchMyTeamScore,
@@ -155,8 +146,8 @@ import { ElMessage } from 'element-plus'
 
 const props = defineProps<{ course: Course }>()
 const router = useRouter()
-const issueMarks = ref<Map<number, string>>(new Map())
 const myTeam = ref<TeamPanel | null>(null)
+const gridRefreshToken = ref(0)
 const joinDialogVisible = ref(false)
 const inviteDialogVisible = ref(false)
 const joinKeyword = ref('')
@@ -166,7 +157,6 @@ const inviteOptions = ref<TeamMemberOption[]>([])
 const inviteTargetId = ref<number | null>(null)
 const inviteLoading = ref(false)
 const leaveConfirmVisible = ref(false)
-const boardStateMap = ref<Map<number, { maxScore: 2 | 3 | 5; myCompleted: boolean; myScore: number }>>(new Map())
 
 function parseSessionValue(raw: string | null): any {
   if (!raw) return null
@@ -195,82 +185,6 @@ const memberSlots = computed(() => {
 })
 
 const duration = computed(() => formatDuration(props.course.startTime, props.course.endTime))
-const cells = Array.from({ length: 25 }, (_, index) => index + 1)
-
-const lineScoredCells = computed(() => {
-  const result = new Set<number>()
-  const lines: number[][] = []
-
-  for (let i = 0; i < 5; i += 1) {
-    const start = 5 * i + 1
-    lines.push([start, start + 1, start + 2, start + 3, start + 4])
-  }
-  for (let i = 1; i <= 5; i += 1) {
-    lines.push([i, i + 5, i + 10, i + 15, i + 20])
-  }
-  lines.push([1, 7, 13, 19, 25])
-  lines.push([5, 9, 13, 17, 21])
-
-  for (const line of lines) {
-    const completed = line.every((id) => getCellState(id).myCompleted)
-    if (completed) {
-      for (const id of line) result.add(id)
-    }
-  }
-
-  return result
-})
-
-function getCellState(cellId: number) {
-  return boardStateMap.value.get(cellId) || { maxScore: 5 as 2 | 3 | 5, myCompleted: false, myScore: 0 }
-}
-
-function getCellColorLevel(cellId: number): 2 | 3 | 5 {
-  const state = getCellState(cellId)
-  const myScore = Number(state.myScore)
-  if (state.myCompleted && (myScore === 2 || myScore === 3 || myScore === 5)) {
-    return myScore as 2 | 3 | 5
-  }
-  return state.maxScore
-}
-
-function getCellClass(cellId: number) {
-  const level = getCellColorLevel(cellId)
-  return {
-    'cell-score-2': level === 2,
-    'cell-score-3': level === 3,
-    'cell-score-5': level === 5,
-    'cell-completed': getCellState(cellId).myCompleted,
-    'cell-line-scored': lineScoredCells.value.has(cellId),
-  }
-}
-
-function getCellScoreText(cellId: number) {
-  const state = getCellState(cellId)
-  if (state.myCompleted) {
-    const mark = String(issueMarks.value.get(cellId) || '').trim()
-    if (mark) return mark
-  }
-  return String(getCellColorLevel(cellId))
-}
-
-async function loadIssueMarks() {
-  try {
-    const res = await fetchCourseIssues(props.course.id, 1, 25)
-    const list = Array.isArray(res.data?.list) ? res.data.list : []
-    const map = new Map<number, string>()
-    for (const item of list) {
-      const issueId = Number(item?.issueId)
-      const mark = String(item?.songName || '').trim()
-      if (Number.isFinite(issueId) && issueId > 0 && mark) {
-        map.set(issueId, mark)
-      }
-    }
-    issueMarks.value = map
-  } catch {
-    issueMarks.value = new Map()
-  }
-}
 
 function toUrl(path?: string) {
   if (!path) return ''
@@ -281,6 +195,7 @@ function toUrl(path?: string) {
 async function loadMyTeamPanel() {
   if (!currentIdentityId.value) {
     myTeam.value = null
+    gridRefreshToken.value += 1
     return
   }
   try {
@@ -294,32 +209,8 @@ async function loadMyTeamPanel() {
     myTeam.value = panel
   } catch {
     myTeam.value = null
-  }
-}
-
-async function loadBoardState() {
-  if (!currentIdentityId.value) {
-    boardStateMap.value = new Map()
-    return
-  }
-  try {
-    const data = await fetchBingoBoardState(props.course.id, currentIdentityId.value)
-    const list = Array.isArray(data?.cells) ? data.cells : []
-    const map = new Map<number, { maxScore: 2 | 3 | 5; myCompleted: boolean; myScore: number }>()
-    for (const item of list) {
-      const issueId = Number(item?.issueId)
-      const maxScore = Number(item?.maxScore)
-      if (!Number.isFinite(issueId) || issueId < 1 || issueId > 25) continue
-      if (maxScore !== 2 && maxScore !== 3 && maxScore !== 5) continue
-      map.set(issueId, {
-        maxScore: maxScore as 2 | 3 | 5,
-        myCompleted: Boolean(item?.myCompleted),
-        myScore: Number(item?.myScore || 0),
-      })
-    }
-    boardStateMap.value = map
-  } catch {
-    boardStateMap.value = new Map()
+  } finally {
+    gridRefreshToken.value += 1
   }
 }
 
@@ -413,9 +304,7 @@ function goCell(cellId: number) {
 watch(
   () => props.course.id,
   () => {
-    loadIssueMarks()
     loadMyTeamPanel()
-    loadBoardState()
   },
   { immediate: true }
 )
