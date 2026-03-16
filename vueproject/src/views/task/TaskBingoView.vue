@@ -825,12 +825,13 @@ watch(
 .bingo-cell.cell-line-scored {
   border-width: 3px;
   background:
-    linear-gradient(135deg, rgba(34, 211, 238, 0.82), rgba(59, 130, 246, 0.78), rgba(244, 114, 182, 0.74), rgba(168, 85, 247, 0.72));
+    linear-gradient(120deg, rgba(250, 255, 0, 0.8), rgba(125, 211, 252, 0.76), rgba(167, 139, 250, 0.74), rgba(255, 62, 191, 0.78));
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.24);
 }
 
-.bingo-cell.cell-line-scored .cell-score {
-  color: #f8fafc !important;
-  text-shadow: 0 0 10px rgba(2, 6, 23, 0.35);
+.bingo-cell.cell-line-scored.cell-completed {
+  background:
+    linear-gradient(120deg, rgba(250, 255, 0, 0.8), rgba(125, 211, 252, 0.76), rgba(167, 139, 250, 0.74), rgba(255, 62, 191, 0.78));
 }
 
 :global(.team-dialog-mask) {
