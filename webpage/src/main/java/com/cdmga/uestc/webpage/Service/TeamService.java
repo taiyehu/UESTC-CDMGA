@@ -189,22 +189,6 @@ public class TeamService {
                 ? Collections.emptyMap()
                 : teamIssueBestScore.getOrDefault(myTeamId, Collections.emptyMap());
 
-        Set<Integer> myLineScoredIssues = new LinkedHashSet<>();
-        for (int[] line : BINGO_LINES) {
-            boolean completed = true;
-            for (int issueId : line) {
-                if (!myIssueScoreMap.containsKey(issueId)) {
-                    completed = false;
-                    break;
-                }
-            }
-            if (completed) {
-                for (int issueId : line) {
-                    myLineScoredIssues.add(issueId);
-                }
-            }
-        }
-
         List<Map<String, Object>> cells = new ArrayList<>();
         for (int issueId = 1; issueId <= 25; issueId += 1) {
             int completedTeams = completedTeamCountByIssue.getOrDefault(issueId, 0);
@@ -218,7 +202,6 @@ public class TeamService {
             cell.put("maxScore", maxScore);
             cell.put("myCompleted", myCompleted);
             cell.put("myScore", myCompleted ? myScoreValue.intValue() : 0);
-            cell.put("myLineScored", myLineScoredIssues.contains(issueId));
             cells.add(cell);
         }
 

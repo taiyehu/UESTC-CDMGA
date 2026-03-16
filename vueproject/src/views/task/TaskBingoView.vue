@@ -54,7 +54,9 @@
     </header>
 
     <section class="task-panel">
-      <div class="grid grid-cols-5 gap-2 md:gap-3">
+      <div class="bingo-outer-frame">
+        <!-- <div class="bingo-inner-frame"> -->
+          <div class="grid grid-cols-5 gap-2 md:gap-3 bingo-grid">
         <button
           v-for="cellId in cells"
           :key="cellId"
@@ -65,7 +67,9 @@
         >
           <span class="cell-score">{{ getCellScoreText(cellId) }}</span>
         </button>
-      </div>
+          </div>
+        </div>
+      <!-- </div> -->
     </section>
 
     <el-dialog v-model="joinDialogVisible" title="加入队伍" width="520px" class="team-dialog" modal-class="team-dialog-mask">
@@ -162,7 +166,7 @@ const inviteOptions = ref<TeamMemberOption[]>([])
 const inviteTargetId = ref<number | null>(null)
 const inviteLoading = ref(false)
 const leaveConfirmVisible = ref(false)
-const boardStateMap = ref<Map<number, { maxScore: 2 | 3 | 5; myCompleted: boolean; myScore: number; myLineScored: boolean }>>(new Map())
+const boardStateMap = ref<Map<number, { maxScore: 2 | 3 | 5; myCompleted: boolean; myScore: number }>>(new Map())
 
 function parseSessionValue(raw: string | null): any {
   if (!raw) return null
@@ -218,7 +222,7 @@ const lineScoredCells = computed(() => {
 })
 
 function getCellState(cellId: number) {
-  return boardStateMap.value.get(cellId) || { maxScore: 5 as 2 | 3 | 5, myCompleted: false, myScore: 0, myLineScored: false }
+  return boardStateMap.value.get(cellId) || { maxScore: 5 as 2 | 3 | 5, myCompleted: false, myScore: 0 }
 }
 
 function getCellColorLevel(cellId: number): 2 | 3 | 5 {
@@ -231,18 +235,22 @@ function getCellColorLevel(cellId: number): 2 | 3 | 5 {
 }
 
 function getCellClass(cellId: number) {
-  const state = getCellState(cellId)
   const level = getCellColorLevel(cellId)
   return {
     'cell-score-2': level === 2,
     'cell-score-3': level === 3,
     'cell-score-5': level === 5,
-    'cell-completed': state.myCompleted,
+    'cell-completed': getCellState(cellId).myCompleted,
     'cell-line-scored': lineScoredCells.value.has(cellId),
   }
 }
 
 function getCellScoreText(cellId: number) {
+  const state = getCellState(cellId)
+  if (state.myCompleted) {
+    const mark = String(issueMarks.value.get(cellId) || '').trim()
+    if (mark) return mark
+  }
   return String(getCellColorLevel(cellId))
 }
 
@@ -297,7 +305,7 @@ async function loadBoardState() {
   try {
     const data = await fetchBingoBoardState(props.course.id, currentIdentityId.value)
     const list = Array.isArray(data?.cells) ? data.cells : []
-    const map = new Map<number, { maxScore: 2 | 3 | 5; myCompleted: boolean; myScore: number; myLineScored: boolean }>()
+    const map = new Map<number, { maxScore: 2 | 3 | 5; myCompleted: boolean; myScore: number }>()
     for (const item of list) {
       const issueId = Number(item?.issueId)
       const maxScore = Number(item?.maxScore)
@@ -307,7 +315,6 @@ async function loadBoardState() {
         maxScore: maxScore as 2 | 3 | 5,
         myCompleted: Boolean(item?.myCompleted),
         myScore: Number(item?.myScore || 0),
-        myLineScored: Boolean(item?.myLineScored),
       })
     }
     boardStateMap.value = map
@@ -754,9 +761,29 @@ watch(
 }
 
 .cell-score {
-  font-size: clamp(28px, 8vw, 54px);
+  font-size: clamp(22px, 6.4vw, 42px);
   font-weight: 800;
   line-height: 0.95;
+}
+
+.bingo-outer-frame {
+  border: 1px solid rgba(34, 211, 238, 0.32);
+  border-radius: 14px;
+  padding: 10px;
+  background: rgba(2, 6, 23, 0.3);
+}
+
+.bingo-inner-frame {
+  border: 1px solid rgba(34, 211, 238, 0.22);
+  border-radius: 12px;
+  padding: 8px;
+  max-height: max(340px, calc(100vh - 360px));
+  overflow: auto;
+}
+
+.bingo-grid {
+  width: min(100%, min(68vh, 520px));
+  margin: 0 auto;
 }
 
 .bingo-cell.cell-score-2 {
@@ -799,6 +826,11 @@ watch(
   border-width: 3px;
   background:
     linear-gradient(135deg, rgba(34, 211, 238, 0.82), rgba(59, 130, 246, 0.78), rgba(244, 114, 182, 0.74), rgba(168, 85, 247, 0.72));
+}
+
+.bingo-cell.cell-line-scored .cell-score {
+  color: #f8fafc !important;
+  text-shadow: 0 0 10px rgba(2, 6, 23, 0.35);
 }
 
 :global(.team-dialog-mask) {

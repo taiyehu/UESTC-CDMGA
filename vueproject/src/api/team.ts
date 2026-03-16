@@ -33,7 +33,6 @@ export interface BingoBoardCellState {
   maxScore: 2 | 3 | 5
   myCompleted: boolean
   myScore: number
-  myLineScored: boolean
 }
 
 export interface BingoBoardState {
