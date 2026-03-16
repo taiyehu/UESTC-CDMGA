@@ -355,7 +355,7 @@ watch(
 
 .legend-dot.score-5 {
   color: #fef3c7;
-  background: rgba(146, 64, 14, 0.8);
+  background: linear-gradient(145deg, rgba(245, 193, 49, 0.74), rgba(213, 154, 18, 0.62));
   border: 1px solid rgba(251, 191, 36, 0.8);
 }
 

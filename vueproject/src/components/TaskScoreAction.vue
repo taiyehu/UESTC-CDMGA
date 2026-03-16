@@ -635,8 +635,8 @@ onUnmounted(() => {
 .submit-button.is-done,
 .submit-button.is-done:disabled {
   border-color: rgba(251, 191, 36, 0.75);
-  color: #fef3c7;
-  background: rgba(120, 53, 15, 0.55);
+  color: #fff8d6;
+  background: linear-gradient(145deg, rgba(245, 193, 49, 0.74), rgba(213, 154, 18, 0.62));
   box-shadow:
     0 0 14px rgba(251, 191, 36, 0.28),
     0 0 18px rgba(245, 158, 11, 0.2);
@@ -748,7 +748,7 @@ onUnmounted(() => {
 .score-tag.is-gold {
   border-color: rgba(251, 191, 36, 0.75);
   color: #fef3c7;
-  background: rgba(120, 53, 15, 0.55);
+  background: linear-gradient(145deg, rgba(245, 193, 49, 0.74), rgba(213, 154, 18, 0.62));
 }
 
 .score-tag.is-pink {

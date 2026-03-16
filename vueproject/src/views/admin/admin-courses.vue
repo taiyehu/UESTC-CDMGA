@@ -36,21 +36,21 @@
           <span v-else>-</span>
         </td>
         <td class="px-3 py-3 text-center">
-          <button type="button" class="neon-btn danger" @click="deleteCourse(course.id)">删除</button>
+          <NeonActionButton size="sm" variant="red" @click="deleteCourse(course.id)">删除</NeonActionButton>
         </td>
       </tr>
     </NeonRankTable>
 
     <div class="mt-4 flex items-center justify-end gap-2">
-      <button type="button" class="neon-btn" :disabled="currentPage <= 1" @click="handlePageChange(currentPage - 1)">上一页</button>
+      <NeonActionButton size="sm" :disabled="currentPage <= 1" @click="handlePageChange(currentPage - 1)">上一页</NeonActionButton>
       <span class="text-cyan-100/85">{{ currentPage }} / {{ totalPages }}</span>
-      <button type="button" class="neon-btn" :disabled="currentPage >= totalPages" @click="handlePageChange(currentPage + 1)">下一页</button>
+      <NeonActionButton size="sm" :disabled="currentPage >= totalPages" @click="handlePageChange(currentPage + 1)">下一页</NeonActionButton>
     </div>
 
     <teleport to="body">
       <div v-if="previewVisible" class="preview-mask" @click.self="previewVisible = false">
         <div class="preview-wrap">
-          <button type="button" class="neon-btn mb-3" @click="previewVisible = false">关闭</button>
+          <NeonActionButton size="sm" class="mb-3" @click="previewVisible = false">关闭</NeonActionButton>
           <img :src="previewImage" alt="图片预览" class="preview-image" />
         </div>
       </div>
@@ -63,6 +63,7 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { fetchAllCourseData, deleteCourseData } from '@/api/course'
 import NeonRankTable from '@/components/NeonRankTable.vue'
+import NeonActionButton from '@/components/NeonActionButton.vue'
 
 const courses = ref<any[]>([])
 const currentPage = ref(1)
@@ -147,23 +148,6 @@ onMounted(fetchCourses)
   object-fit: cover;
   border: 1px solid rgba(34, 211, 238, 0.35);
   cursor: zoom-in;
-}
-
-.neon-btn {
-  border: 1px solid rgba(34, 211, 238, 0.65);
-  border-radius: 8px;
-  padding: 6px 10px;
-  color: #cffafe;
-  background: rgba(8, 47, 73, 0.58);
-}
-
-.neon-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.neon-btn.danger {
-  border-color: rgba(248, 113, 113, 0.55);
 }
 
 .preview-mask {

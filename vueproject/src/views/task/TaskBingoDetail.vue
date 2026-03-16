@@ -8,7 +8,7 @@
         <div class="top-main">
           <div class="mission-head">
             <p class="mission-label">bingo mission</p>
-            <button type="button" class="neon-back neon-back-mini" @click="goBingo">返回 Bingo 面板</button>
+            <NeonActionButton size="sm" @click="goBingo">返回 Bingo 面板</NeonActionButton>
           </div>
           <h1 class="text-2xl font-semibold text-cyan-100 md:text-3xl">{{ detailHeading }}</h1>
           <p class="mt-2 text-sm text-cyan-100/75">所属课题：{{ course.title }}</p>
@@ -47,17 +47,17 @@
       </div>
 
       <div class="mt-6 grid grid-cols-2 gap-3">
-        <button type="button" class="neon-op" :disabled="cellId <= 1" @click="jumpTo(cellId - 1)">
+        <NeonActionButton variant="blue" :disabled="cellId <= 1" @click="jumpTo(cellId - 1)">
           上一题
-        </button>
-        <button type="button" class="neon-op" :disabled="cellId >= 25" @click="jumpTo(cellId + 1)">
+        </NeonActionButton>
+        <NeonActionButton variant="blue" :disabled="cellId >= 25" @click="jumpTo(cellId + 1)">
           下一题
-        </button>
+        </NeonActionButton>
       </div>
     </article>
 
     <div class="mt-6 flex justify-end">
-      <button type="button" class="neon-back" @click="goList">返回课题列表</button>
+      <NeonActionButton variant="yellow" @click="goList">返回课题列表</NeonActionButton>
     </div>
   </section>
 </template>
@@ -71,6 +71,7 @@ import { formatDuration, parseBingoItems, toImageUrl } from './task-utils'
 import type { BingoTaskItem } from './task-utils'
 import TaskScoreAction from '@/components/TaskScoreAction.vue'
 import BingoIssueGrid from '@/components/BingoIssueGrid.vue'
+import NeonActionButton from '@/components/NeonActionButton.vue'
 import { fetchCourseIssues } from '@/api/issue'
 import { fetchMyTeamPanel, fetchMyTeamScore } from '@/api/team'
 
@@ -258,29 +259,6 @@ watch(
   backdrop-filter: blur(8px);
 }
 
-.neon-back,
-.neon-op {
-  border: 1px solid rgba(34, 211, 238, 0.65);
-  border-radius: 10px;
-  padding: 8px 14px;
-  color: #cffafe;
-  background: rgba(8, 47, 73, 0.58);
-  transition: box-shadow 0.2s ease;
-}
-
-.neon-back:hover,
-.neon-op:hover {
-  box-shadow:
-    0 0 14px rgba(34, 211, 238, 0.45),
-    0 0 18px rgba(217, 70, 239, 0.18);
-}
-
-.neon-op:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
 .mission-head {
   margin-bottom: 8px;
   display: flex;
@@ -305,12 +283,6 @@ watch(
   text-transform: uppercase;
   letter-spacing: 0.16em;
   color: rgba(34, 211, 238, 0.92);
-}
-
-.neon-back-mini {
-  padding: 5px 10px;
-  font-size: 12px;
-  line-height: 1.2;
 }
 
 .nav-card {

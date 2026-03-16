@@ -55,14 +55,14 @@
       <div v-if="publishType === 'activity'">
         <p class="label">上传文件</p>
         <el-upload action="/api/activity/uploadFile" name="file" :file-list="activityFileList" :on-success="handleFileUploadSuccess">
-          <button type="button" class="action-btn action-upload">选择文件</button>
+          <NeonActionButton variant="blue">选择文件</NeonActionButton>
         </el-upload>
       </div>
     </div>
 
     <div class="mt-4 flex gap-3">
-      <button type="button" class="action-btn action-primary" @click="submitContent">提交{{ publishType === 'course' ? '课题' : '活动' }}</button>
-      <button type="button" class="action-btn action-secondary" @click="resetForm">重置</button>
+      <NeonActionButton variant="green" @click="submitContent">提交{{ publishType === 'course' ? '课题' : '活动' }}</NeonActionButton>
+      <NeonActionButton variant="yellow" @click="resetForm">重置</NeonActionButton>
     </div>
   </div>
 </template>
@@ -75,6 +75,7 @@ import { ElMessage } from 'element-plus'
 import NeonInput from '@/components/NeonInput.vue'
 import ScoreImageUploader from '@/components/ScoreImageUploader.vue'
 import NeonDateTimePicker from '@/components/NeonDateTimePicker.vue'
+import NeonActionButton from '@/components/NeonActionButton.vue'
 
 type PublishType = 'course' | 'activity'
 
@@ -215,40 +216,6 @@ async function submitContent(): Promise<void> {
 
 .full-width {
   width: 100%;
-}
-
-.action-btn {
-  border: 1px solid rgba(34, 211, 238, 0.65);
-  border-radius: 10px;
-  padding: 8px 14px;
-  color: #cffafe;
-  background: rgba(8, 47, 73, 0.58);
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
-}
-
-.action-btn:hover {
-  transform: translateY(-1px);
-  box-shadow:
-    0 0 14px rgba(34, 211, 238, 0.45),
-    0 0 18px rgba(217, 70, 239, 0.18);
-}
-
-.action-primary {
-  border-color: rgba(16, 185, 129, 0.7);
-  background: rgba(6, 78, 59, 0.55);
-  color: #d1fae5;
-}
-
-.action-secondary {
-  border-color: rgba(251, 191, 36, 0.7);
-  background: rgba(120, 53, 15, 0.5);
-  color: #fde68a;
-}
-
-.action-upload {
-  border-color: rgba(56, 189, 248, 0.7);
-  background: rgba(12, 74, 110, 0.6);
-  color: #bae6fd;
 }
 
 :deep(.neon-select .el-select__wrapper) {

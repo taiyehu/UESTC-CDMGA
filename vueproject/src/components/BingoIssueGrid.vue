@@ -9,12 +9,6 @@
       :disabled="!clickable"
       @click="onSelect(cellId)"
     >
-      <Motion
-        v-if="lineScoredCells.has(cellId)"
-        class="line-flow-layer"
-        :animate="{ backgroundPosition: ['0% 0%', '100% 100%'] }"
-        :transition="{ duration: 3.2, repeat: Infinity, ease: 'linear' }"
-      />
       <span class="cell-score">{{ getCellScoreText(cellId) }}</span>
     </button>
   </div>
@@ -22,7 +16,6 @@
 
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue'
-import { Motion } from 'motion-v'
 import { fetchCourseIssues } from '@/api/issue'
 import { fetchBingoBoardState } from '@/api/team'
 
@@ -223,24 +216,6 @@ watch(
   line-height: 0.95;
 }
 
-.line-flow-layer {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background: repeating-linear-gradient(
-    120deg,
-    rgba(250, 255, 0, 0.86) 0%,
-    rgba(190, 242, 100, 0.85) 16%,
-    rgba(125, 211, 252, 0.84) 33%,
-    rgba(110, 221, 242, 0.84) 49%,
-    rgba(255, 62, 191, 0.84) 66%,
-    rgba(255, 145, 120, 0.85) 82%,
-    rgba(250, 255, 0, 0.86) 100%
-  );
-  background-size: 100% 100%;
-}
-
 .compact .cell-score {
   font-size: clamp(16px, 3.4vw, 24px);
 }
@@ -278,19 +253,56 @@ watch(
 }
 
 .issue-cell.cell-completed.cell-score-5 {
-  background: linear-gradient(145deg, rgba(120, 53, 15, 0.8), rgba(146, 64, 14, 0.72));
+  background: linear-gradient(145deg, rgba(245, 193, 49, 0.74), rgba(213, 154, 18, 0.62));
 }
 
 .issue-cell.cell-line-scored {
   border-width: 3px;
-  box-shadow: 0 0 16px rgba(34, 211, 238, 0.24);
+  background: linear-gradient(120deg, rgba(250, 255, 0, 0.8), rgba(125, 211, 252, 0.76), rgba(255, 62, 191, 0.78));
+  box-shadow:
+    0 0 16px rgba(34, 211, 238, 0.24),
+    0 0 24px rgba(255, 225, 80, 0.24);
+}
+
+.issue-cell.cell-line-scored::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -45%;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.42), transparent);
+  transform: skewX(-18deg);
+  animation: line-sheen 2.6s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .issue-cell.cell-line-scored.cell-completed {
-  box-shadow: 0 0 16px rgba(34, 211, 238, 0.24);
+  background: linear-gradient(120deg, rgba(250, 255, 0, 0.8), rgba(125, 211, 252, 0.76), rgba(255, 62, 191, 0.78));
+  box-shadow:
+    0 0 16px rgba(34, 211, 238, 0.24),
+    0 0 24px rgba(255, 225, 80, 0.24);
 }
 
 .issue-cell.active {
   box-shadow: 0 0 10px rgba(34, 211, 238, 0.24);
+}
+
+@keyframes line-sheen {
+  0% {
+    left: -45%;
+    opacity: 0;
+  }
+  14% {
+    opacity: 0.8;
+  }
+  48% {
+    left: 112%;
+    opacity: 0;
+  }
+  100% {
+    left: 112%;
+    opacity: 0;
+  }
 }
 </style>
