@@ -5,7 +5,7 @@
     <div class="form-grid">
       <div>
         <p class="label">发布类型</p>
-        <el-select v-model="publishType" class="full-width" placeholder="选择发布类型">
+        <el-select v-model="publishType" class="full-width neon-select" popper-class="neon-select-popper" placeholder="选择发布类型">
           <el-option label="课题" value="course" />
           <el-option label="活动" value="activity" />
         </el-select>
@@ -18,7 +18,7 @@
 
       <div v-if="publishType === 'course'">
         <p class="label">课题类别</p>
-        <el-select v-model="form.category" class="full-width" placeholder="请选择课题类别">
+        <el-select v-model="form.category" class="full-width neon-select" popper-class="neon-select-popper" placeholder="请选择课题类别">
           <el-option label="typical" value="typical" />
           <el-option label="bingo" value="bingo" />
           <el-option label="legacy" value="legacy" />
@@ -55,14 +55,14 @@
       <div v-if="publishType === 'activity'">
         <p class="label">上传文件</p>
         <el-upload action="/api/activity/uploadFile" name="file" :file-list="activityFileList" :on-success="handleFileUploadSuccess">
-          <el-button>点击上传</el-button>
+          <button type="button" class="action-btn action-upload">选择文件</button>
         </el-upload>
       </div>
     </div>
 
     <div class="mt-4 flex gap-3">
-      <el-button type="primary" @click="submitContent">提交{{ publishType === 'course' ? '课题' : '活动' }}</el-button>
-      <el-button @click="resetForm">重置</el-button>
+      <button type="button" class="action-btn action-primary" @click="submitContent">提交{{ publishType === 'course' ? '课题' : '活动' }}</button>
+      <button type="button" class="action-btn action-secondary" @click="resetForm">重置</button>
     </div>
   </div>
 </template>
@@ -215,5 +215,94 @@ async function submitContent(): Promise<void> {
 
 .full-width {
   width: 100%;
+}
+
+.action-btn {
+  border: 1px solid rgba(34, 211, 238, 0.65);
+  border-radius: 10px;
+  padding: 8px 14px;
+  color: #cffafe;
+  background: rgba(8, 47, 73, 0.58);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 14px rgba(34, 211, 238, 0.45),
+    0 0 18px rgba(217, 70, 239, 0.18);
+}
+
+.action-primary {
+  border-color: rgba(16, 185, 129, 0.7);
+  background: rgba(6, 78, 59, 0.55);
+  color: #d1fae5;
+}
+
+.action-secondary {
+  border-color: rgba(251, 191, 36, 0.7);
+  background: rgba(120, 53, 15, 0.5);
+  color: #fde68a;
+}
+
+.action-upload {
+  border-color: rgba(56, 189, 248, 0.7);
+  background: rgba(12, 74, 110, 0.6);
+  color: #bae6fd;
+}
+
+:deep(.neon-select .el-select__wrapper) {
+  min-height: 40px;
+  border-radius: 10px;
+  border: 1px solid rgba(34, 211, 238, 0.45);
+  background: rgba(15, 23, 42, 0.35);
+  box-shadow: none;
+}
+
+:deep(.neon-select .el-select__wrapper:hover) {
+  border-color: rgba(34, 211, 238, 0.65);
+}
+
+:deep(.neon-select .el-select__wrapper.is-focused) {
+  border-color: rgba(34, 211, 238, 0.75);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.3);
+}
+
+:deep(.neon-select .el-select__selected-item),
+:deep(.neon-select .el-select__placeholder) {
+  color: #e2e8f0;
+}
+
+:deep(.neon-select .el-select__caret) {
+  color: rgba(103, 232, 249, 0.9);
+}
+
+:global(.neon-select-popper.el-select__popper) {
+  --el-bg-color-overlay: rgba(15, 23, 42, 0.96);
+  --el-text-color-regular: #dbeafe;
+  --el-border-color-light: rgba(34, 211, 238, 0.35);
+  --el-fill-color-light: rgba(8, 47, 73, 0.6);
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  background: rgba(15, 23, 42, 0.96);
+}
+
+:global(.neon-select-popper.el-popper .el-popper__arrow::before) {
+  border-color: rgba(34, 211, 238, 0.35);
+  background: rgba(15, 23, 42, 0.96);
+}
+
+:global(.neon-select-popper .el-select-dropdown__item) {
+  color: #dbeafe;
+}
+
+:global(.neon-select-popper .el-select-dropdown__item:hover),
+:global(.neon-select-popper .el-select-dropdown__item.hover) {
+  background: rgba(8, 47, 73, 0.45);
+  color: #cffafe;
+}
+
+:global(.neon-select-popper .el-select-dropdown__item.is-selected) {
+  color: #67e8f9;
+  background: rgba(8, 47, 73, 0.6);
 }
 </style>

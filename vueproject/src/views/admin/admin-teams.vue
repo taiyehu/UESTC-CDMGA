@@ -54,7 +54,8 @@
               :loading="memberSearchLoading"
               :remote-method="onSearchMembers"
               placeholder="---"
-              class="team-select"
+              class="team-select neon-select"
+              popper-class="neon-select-popper"
             >
               <el-option
                 v-for="option in memberOptions"
@@ -74,7 +75,8 @@
               :loading="memberSearchLoading"
               :remote-method="onSearchMembers"
               placeholder="---"
-              class="team-select"
+              class="team-select neon-select"
+              popper-class="neon-select-popper"
             >
               <el-option
                 v-for="option in memberOptions"
@@ -94,7 +96,8 @@
               :loading="memberSearchLoading"
               :remote-method="onSearchMembers"
               placeholder="---"
-              class="team-select"
+              class="team-select neon-select"
+              popper-class="neon-select-popper"
             >
               <el-option
                 v-for="option in memberOptions"
@@ -302,6 +305,62 @@ watch(
 
 .team-select {
   width: 100%;
+}
+
+:deep(.neon-select .el-select__wrapper) {
+  min-height: 38px;
+  border-radius: 10px;
+  border: 1px solid rgba(34, 211, 238, 0.45);
+  background: rgba(15, 23, 42, 0.35);
+  box-shadow: none;
+}
+
+:deep(.neon-select .el-select__wrapper:hover) {
+  border-color: rgba(34, 211, 238, 0.65);
+}
+
+:deep(.neon-select .el-select__wrapper.is-focused) {
+  border-color: rgba(34, 211, 238, 0.75);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.3);
+}
+
+:deep(.neon-select .el-select__selected-item),
+:deep(.neon-select .el-select__placeholder),
+:deep(.neon-select .el-select__input) {
+  color: #e2e8f0;
+}
+
+:deep(.neon-select .el-select__caret) {
+  color: rgba(103, 232, 249, 0.9);
+}
+
+:global(.neon-select-popper.el-select__popper) {
+  --el-bg-color-overlay: rgba(15, 23, 42, 0.96);
+  --el-text-color-regular: #dbeafe;
+  --el-border-color-light: rgba(34, 211, 238, 0.35);
+  --el-fill-color-light: rgba(8, 47, 73, 0.6);
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  background: rgba(15, 23, 42, 0.96);
+}
+
+:global(.neon-select-popper.el-popper .el-popper__arrow::before) {
+  border-color: rgba(34, 211, 238, 0.35);
+  background: rgba(15, 23, 42, 0.96);
+}
+
+:global(.neon-select-popper .el-select-dropdown__item) {
+  color: #dbeafe;
+}
+
+:global(.neon-select-popper .el-select-dropdown__item:hover),
+:global(.neon-select-popper .el-select-dropdown__item.hover) {
+  background: rgba(8, 47, 73, 0.45);
+  color: #cffafe;
+}
+
+:global(.neon-select-popper .el-select-dropdown__item.is-selected) {
+  color: #67e8f9;
+  background: rgba(8, 47, 73, 0.6);
 }
 
 .neon-btn {
