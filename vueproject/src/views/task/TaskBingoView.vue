@@ -26,9 +26,6 @@
             <p class="team-meta">队伍号：#{{ myTeam.teamId }}</p>
             <p class="team-meta">总分：{{ Number(myTeam.totalScore || 0).toFixed(2) }}</p>
           </div>
-          <div class="team-actions">
-            <button type="button" class="team-btn leave" @click="handleLeaveTeam">退出队伍</button>
-          </div>
           <div class="member-row">
             <div v-for="slot in memberSlots" :key="slot.slot" class="member-card" :class="{ empty: !slot.member }" @click="onMemberSlotClick(slot.member)">
               <template v-if="slot.member">
@@ -41,6 +38,9 @@
                 <p class="member-name">邀请队员</p>
               </template>
             </div>
+          </div>
+          <div class="leave-wrap">
+            <button type="button" class="team-btn leave leave-mini" @click="leaveConfirmVisible = true">退出队伍</button>
           </div>
         </template>
       </aside>
@@ -61,9 +61,9 @@
       </div>
     </section>
 
-    <el-dialog v-model="joinDialogVisible" title="加入队伍" width="520px">
+    <el-dialog v-model="joinDialogVisible" title="加入队伍" width="520px" class="team-dialog" modal-class="team-dialog-mask">
       <div class="space-y-3">
-        <el-input v-model="joinKeyword" placeholder="搜索队伍ID或队员名称" />
+        <el-input v-model="joinKeyword" placeholder="搜索队伍ID或队员名称" class="team-input" />
         <div class="flex gap-2">
           <button type="button" class="team-btn join" @click="searchJoinOptions">搜索</button>
         </div>
@@ -75,14 +75,15 @@
             class="join-option"
             @click="handleJoinTeam(item.teamId)"
           >
-            队伍 #{{ item.teamId }} | {{ item.memberAccounts.join(' / ') || '暂无成员' }} | {{ item.memberCount }}/3
+            <span class="join-option-main">队伍 #{{ item.teamId }} | {{ item.memberAccounts.join(' / ') || '暂无成员' }} | {{ item.memberCount }}/3</span>
+            <span class="join-option-hint">点击加入</span>
           </button>
           <p v-if="joinSearched && joinOptions.length === 0" class="team-empty">未检索到可加入队伍</p>
         </div>
       </div>
     </el-dialog>
 
-    <el-dialog v-model="inviteDialogVisible" title="邀请队员" width="460px">
+    <el-dialog v-model="inviteDialogVisible" title="邀请队员" width="460px" class="team-dialog" modal-class="team-dialog-mask">
       <el-select
         v-model="inviteTargetId"
         clearable
@@ -92,7 +93,8 @@
         :loading="inviteLoading"
         :remote-method="searchInviteOptions"
         placeholder="输入ID或用户名搜索"
-        class="w-full"
+        class="w-full team-select"
+        popper-class="team-select-popper"
       >
         <el-option
           v-for="option in inviteOptions"
@@ -103,6 +105,16 @@
       </el-select>
       <template #footer>
         <button type="button" class="team-btn create" @click="handleInviteMember">邀请加入</button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="leaveConfirmVisible" title="确认退出队伍" width="420px" class="team-dialog" modal-class="team-dialog-mask">
+      <p class="team-empty">确认要退出当前队伍吗？</p>
+      <template #footer>
+        <div class="flex gap-2 justify-end">
+          <button type="button" class="team-btn" @click="leaveConfirmVisible = false">取消</button>
+          <button type="button" class="team-btn leave leave-mini" @click="confirmLeaveTeam">确认退出</button>
+        </div>
       </template>
     </el-dialog>
   </article>
@@ -140,6 +152,7 @@ const joinSearched = ref(false)
 const inviteOptions = ref<TeamMemberOption[]>([])
 const inviteTargetId = ref<number | null>(null)
 const inviteLoading = ref(false)
+const leaveConfirmVisible = ref(false)
 
 function parseSessionValue(raw: string | null): any {
   if (!raw) return null
@@ -277,11 +290,12 @@ async function handleInviteMember() {
   }
 }
 
-async function handleLeaveTeam() {
+async function confirmLeaveTeam() {
   if (!currentIdentityId.value) return
   try {
     await leaveCourseTeam(props.course.id, currentIdentityId.value)
     ElMessage.success('已退出队伍')
+    leaveConfirmVisible.value = false
     myTeam.value = null
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.message || e?.message || '退出失败')
@@ -419,6 +433,18 @@ watch(
   gap: 8px;
 }
 
+.leave-wrap {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.leave-mini {
+  padding: 4px 9px;
+  font-size: 12px;
+  border-radius: 7px;
+}
+
 .member-card {
   border: 1px solid rgba(34, 211, 238, 0.3);
   border-radius: 10px;
@@ -457,18 +483,101 @@ watch(
 
 .join-list {
   max-height: 280px;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   display: grid;
   gap: 8px;
 }
 
+.join-list::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 .join-option {
+  position: relative;
+  overflow: hidden;
   text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   border: 1px solid rgba(34, 211, 238, 0.35);
   border-radius: 8px;
-  background: rgba(15, 23, 42, 0.45);
+  background: linear-gradient(120deg, rgba(15, 23, 42, 0.62), rgba(12, 74, 110, 0.45));
   color: #dbeafe;
   padding: 8px 10px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  animation: join-option-pulse 2.1s ease-in-out infinite;
+}
+
+.join-option::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -35%;
+  width: 24%;
+  background: linear-gradient(90deg, transparent, rgba(165, 243, 252, 0.34), transparent);
+  transform: skewX(-18deg);
+  animation: join-option-sheen 2.6s ease-in-out infinite;
+}
+
+.join-option:hover {
+  transform: translateY(-1px) scale(1.01);
+  border-color: rgba(103, 232, 249, 0.9);
+  box-shadow:
+    0 0 14px rgba(34, 211, 238, 0.32),
+    0 0 22px rgba(14, 116, 144, 0.24);
+}
+
+.join-option-main {
+  position: relative;
+  z-index: 1;
+}
+
+.join-option-hint {
+  position: relative;
+  z-index: 1;
+  white-space: nowrap;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #ccfbf1;
+  border: 1px solid rgba(45, 212, 191, 0.45);
+  background: rgba(15, 118, 110, 0.32);
+}
+
+@keyframes join-option-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(34, 211, 238, 0.04);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(34, 211, 238, 0.22);
+  }
+}
+
+@keyframes join-option-sheen {
+  0% {
+    left: -35%;
+    opacity: 0;
+  }
+  14% {
+    opacity: 0.78;
+  }
+  48% {
+    left: 112%;
+    opacity: 0;
+  }
+  100% {
+    left: 112%;
+    opacity: 0;
+  }
 }
 
 @media (min-width: 1024px) {
@@ -513,5 +622,130 @@ watch(
   font-size: 15px;
   line-height: 1;
   color: #d1fae5;
+}
+
+:global(.team-dialog-mask) {
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(2px);
+}
+
+:global(.team-dialog.el-dialog) {
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.94));
+  box-shadow:
+    0 0 24px rgba(34, 211, 238, 0.2),
+    0 0 36px rgba(217, 70, 239, 0.12);
+}
+
+:global(.team-dialog .el-dialog__header) {
+  border-bottom: 1px solid rgba(34, 211, 238, 0.2);
+  margin-right: 0;
+  padding-bottom: 12px;
+}
+
+:global(.team-dialog .el-dialog__title) {
+  color: #e2e8f0;
+  font-weight: 700;
+}
+
+:global(.team-dialog .el-dialog__body) {
+  color: #dbeafe;
+}
+
+:global(.team-dialog .el-dialog__footer) {
+  border-top: 1px solid rgba(34, 211, 238, 0.2);
+  padding-top: 12px;
+}
+
+:deep(.team-input .el-input__wrapper) {
+  border-radius: 10px;
+  border: 1px solid rgba(34, 211, 238, 0.45);
+  background: rgba(15, 23, 42, 0.45);
+  box-shadow: none;
+}
+
+:deep(.team-input .el-input__inner) {
+  color: #e2e8f0;
+}
+
+:deep(.team-input .el-input__inner::placeholder) {
+  color: rgba(186, 230, 253, 0.7);
+}
+
+:deep(.team-select .el-select__wrapper) {
+  border-radius: 10px;
+  border: 1px solid rgba(34, 211, 238, 0.45);
+  background: rgba(15, 23, 42, 0.45);
+  box-shadow: none;
+}
+
+:deep(.team-select .el-select__selected-item),
+:deep(.team-select .el-select__placeholder),
+:deep(.team-select .el-select__input) {
+  color: #e2e8f0;
+}
+
+:global(.team-select-popper.el-select__popper) {
+  --el-bg-color-overlay: rgba(15, 23, 42, 0.98);
+  --el-fill-color-light: rgba(8, 47, 73, 0.45);
+  --el-fill-color-blank: rgba(15, 23, 42, 0.98);
+  --el-border-color-light: rgba(34, 211, 238, 0.35);
+  --el-text-color-regular: #dbeafe;
+  --el-text-color-primary: #e2e8f0;
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  background: linear-gradient(165deg, rgba(15, 23, 42, 0.98), rgba(12, 74, 110, 0.82));
+  box-shadow:
+    0 0 18px rgba(34, 211, 238, 0.25),
+    0 0 30px rgba(14, 116, 144, 0.2);
+}
+
+:global(body .team-select-popper.el-select__popper) {
+  border-color: rgba(34, 211, 238, 0.42) !important;
+  background: linear-gradient(165deg, rgba(15, 23, 42, 0.98), rgba(12, 74, 110, 0.82)) !important;
+}
+
+:global(.team-select-popper.el-popper .el-popper__arrow::before) {
+  border-color: rgba(34, 211, 238, 0.42);
+  background: rgba(15, 23, 42, 0.96);
+}
+
+:global(body .team-select-popper .el-popper__arrow::before) {
+  border-color: rgba(34, 211, 238, 0.42) !important;
+  background: rgba(15, 23, 42, 0.96) !important;
+}
+
+:global(.team-select-popper .el-select-dropdown__item) {
+  color: #dbeafe;
+  transition: background-color 0.14s ease, color 0.14s ease;
+}
+
+:global(body .team-select-popper .el-select-dropdown__item) {
+  color: #dbeafe !important;
+}
+
+:global(.team-select-popper .el-select-dropdown__item:hover),
+:global(.team-select-popper .el-select-dropdown__item.hover) {
+  background: rgba(8, 47, 73, 0.45);
+  color: #cffafe;
+}
+
+:global(body .team-select-popper .el-select-dropdown__item:hover),
+:global(body .team-select-popper .el-select-dropdown__item.hover) {
+  background: rgba(8, 47, 73, 0.45) !important;
+  color: #cffafe !important;
+}
+
+:global(.team-select-popper .el-select-dropdown__item.is-selected) {
+  color: #67e8f9;
+  background: rgba(8, 47, 73, 0.62);
+}
+
+:global(body .team-select-popper .el-select-dropdown__item.is-selected) {
+  color: #67e8f9 !important;
+  background: rgba(8, 47, 73, 0.62) !important;
+}
+
+:global(.team-select-popper .el-select-dropdown__empty) {
+  color: rgba(186, 230, 253, 0.78);
 }
 </style>
