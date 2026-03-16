@@ -13,7 +13,7 @@
         >
           <el-menu-item index="/admin/users">用户管理</el-menu-item>
           <el-menu-item index="/admin/courses">课题管理</el-menu-item>
-          <el-menu-item index="/admin/courses-publish">发布课题</el-menu-item>
+          <el-menu-item index="/admin/content-publish">发布内容</el-menu-item>
           <el-menu-item index="/admin/scores">成绩管理</el-menu-item>
           <el-menu-item index="/admin/bingo-submissions">Bingo提交管理</el-menu-item>
           <el-menu-item index="/admin/issues">Issue管理</el-menu-item>
@@ -21,7 +21,6 @@
           <el-menu-item index="/admin/profiles">资料审核</el-menu-item>
           <el-menu-item index="/admin/profiles-passed">已通过资料</el-menu-item>
           <el-menu-item index="/admin/activities">活动管理</el-menu-item>
-          <el-menu-item index="/admin/activities-publish">发布活动</el-menu-item>
         </el-menu>
       </el-aside>
 
@@ -38,6 +37,9 @@ import { useRoute } from 'vue-router'
 
 const route = useRoute()
 const activePath = computed(() => {
+  if (route.path.startsWith('/admin/content-publish')) return '/admin/content-publish'
+  if (route.path.startsWith('/admin/courses-publish')) return '/admin/content-publish'
+  if (route.path.startsWith('/admin/activities-publish')) return '/admin/content-publish'
   if (route.path.startsWith('/admin/issues')) return '/admin/issues'
   if (route.path.startsWith('/admin/teams')) return '/admin/teams'
   return route.path

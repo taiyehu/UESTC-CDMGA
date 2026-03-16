@@ -17,8 +17,7 @@ import adminTeams from '@/views/admin/admin-teams.vue'
 import adminProfiles from '@/views/admin/admin-profiles.vue'
 import adminProfilesPassed from '@/views/admin/admin-profiles-passed.vue'
 import AdminLayout from '@/views/admin/AdminLayout.vue'
-import adminCoursesPublish from '@/views/admin/admin-courses-publish.vue'
-import adminActivitiesPublish from '@/views/admin/admin-activities-publish.vue'
+import adminContentPublish from '@/views/admin/admin-content-publish.vue'
 import ranking from '@/views/pages/ranking.vue'
 import task from '@/views/pages/task.vue'
 import TaskDetailPage from '@/views/task/TaskDetailPage.vue'
@@ -75,8 +74,8 @@ const routes = [
         component: adminCourses,
       },
       {
-        path: 'courses-publish',
-        component: adminCoursesPublish,
+        path: 'content-publish',
+        component: adminContentPublish,
       },
       {
         path: 'profiles',
@@ -91,8 +90,12 @@ const routes = [
         component: adminActivities,
       },
       {
+        path: 'courses-publish',
+        redirect: '/admin/content-publish',
+      },
+      {
         path: 'activities-publish',
-        component: adminActivitiesPublish,
+        redirect: '/admin/content-publish',
       },
       {
         path: 'scores',
