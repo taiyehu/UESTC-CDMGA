@@ -1,5 +1,6 @@
 // src/api/course.js
 import request from '@/utils/request'
+import axios from 'axios'
 
 export interface PageParams {
   page: number
@@ -51,4 +52,31 @@ export const fetchAvailablecourseData = (params: PageParams) => {
       size: pageSize,
     },
   })
+}
+
+export interface UpdateCoursePayload {
+  title: string
+  category: string
+  startTime: string
+  endTime: string
+  description: string
+  image: string
+}
+
+export const updateCourseData = (courseId: number | string, payload: UpdateCoursePayload) => {
+  return request({
+    url: `/course/update/${courseId}`,
+    method: 'put',
+    data: payload,
+  })
+}
+
+export const uploadCourseImage = async (file: File) => {
+  const formData = new FormData()
+  formData.append('image', file)
+  const res = await axios.post('/api/course/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  if (res.data?.code === 0) return String(res.data.data || '')
+  throw new Error(res.data?.message || '图片上传失败')
 }

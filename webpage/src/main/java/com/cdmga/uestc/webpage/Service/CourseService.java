@@ -73,6 +73,30 @@ public class CourseService {
         return courseRepository.save(course);
     }
 
+    public Course updateCourse(
+        Integer courseId,
+        String title,
+        String category,
+        LocalDateTime startTime,
+        LocalDateTime endTime,
+        String description,
+        String image
+    ) {
+        Course course = courseRepository.findById(courseId).orElse(null);
+        if (course == null || Boolean.TRUE.equals(course.getIsDeleted())) {
+            return null;
+        }
+
+        course.setTitle(title);
+        course.setCategory(category);
+        course.setStartTime(startTime);
+        course.setEndTime(endTime);
+        course.setDescription(description);
+        course.setImage(image);
+        course.setUpdatedAt(LocalDateTime.now());
+        return courseRepository.save(course);
+    }
+
     // 设置课程为删除状态
     public Course deleteCourse(Integer courseId) {
         Course course = courseRepository.findById(courseId).orElse(null);
