@@ -5,15 +5,15 @@
     <NeonRankTable min-width-class="min-w-280" text-size-class="text-base">
       <template #head>
         <tr>
-          <th class="w-20 px-3 py-3 text-center">成绩ID</th>
-          <th class="w-20 px-3 py-3 text-center">题目ID</th>
-          <th class="w-44 px-3 py-3 text-center">课题名称</th>
-          <th class="w-32 px-3 py-3 text-center">用户名</th>
-          <th class="w-28 px-3 py-3 text-center">组名</th>
-          <th class="w-44 px-3 py-3 text-center">上传时间</th>
-          <th class="w-28 px-3 py-3 text-center">图片</th>
-          <th class="w-32 px-3 py-3 text-center">方式</th>
-          <th class="w-56 px-3 py-3 text-center">操作</th>
+          <th class="w-14 px-2 py-3 text-center">成绩ID</th>
+          <th class="w-14 px-2 py-3 text-center">题目ID</th>
+          <th class="w-32 px-2 py-3 text-center">课题名称</th>
+          <th class="w-24 px-2 py-3 text-center">用户名</th>
+          <th class="w-18 px-2 py-3 text-center">Team ID</th>
+          <th class="w-32 px-2 py-3 text-center">上传时间</th>
+          <th class="w-18 px-2 py-3 text-center">图片</th>
+          <th class="w-72 px-2 py-3 text-center">补充说明</th>
+          <th class="w-48 px-2 py-3 text-center">操作</th>
         </tr>
       </template>
 
@@ -22,13 +22,13 @@
         <td class="px-3 py-3 text-center">{{ row.taskId }}</td>
         <td class="px-3 py-3 text-center">{{ row.courseName }}</td>
         <td class="px-3 py-3 text-center">{{ row.account }}</td>
-        <td class="px-3 py-3 text-center">{{ row.groupName }}</td>
+        <td class="px-3 py-3 text-center">{{ row.teamId }}</td>
         <td class="px-3 py-3 text-center">{{ row.uploadTime }}</td>
         <td class="px-3 py-3 text-center">
           <img v-if="row.image" :src="row.image" alt="提交图片" class="thumb mx-auto" @click="openPreview(row.image)" />
           <span v-else>-</span>
         </td>
-        <td class="px-3 py-3 text-center">{{ row.method }}</td>
+        <td class="px-2 py-3 text-left wrap-break-word">{{ row.method }}</td>
         <td class="px-3 py-3 text-center">
           <div class="action-wrap">
             <button
@@ -93,7 +93,7 @@ type BingoRow = {
   taskId: string
   courseName: string
   account: string
-  groupName: string
+  teamId: string
   uploadTime: string
   image: string
   method: string
@@ -138,18 +138,6 @@ function extractTaskId(item: any): string {
   if (!remark) return '-'
   const matched = remark.match(/#(\d+)/)
   return matched?.[1] || '-'
-}
-
-function extractGroupName(item: any): string {
-  return String(item?.groupName || item?.identity?.groupName || '-')
-}
-
-function extractMethod(item: any): string {
-  if (item?.method) return String(item.method)
-  if (item?.playMode) return String(item.playMode)
-  const remark = String(item?.remark || '')
-  const matched = remark.match(/方式[:：]\s*([^\]\n]+)/)
-  return matched?.[1]?.trim() || '-'
 }
 
 function formatDateTime(value: any): string {
@@ -197,13 +185,13 @@ async function fetchBingoRows(): Promise<void> {
         return {
           id: Number(item.id),
           taskId: extractTaskId(item),
-          courseName: String(item?.course?.title || '-'),
-          account: String(item?.identity?.account || '-'),
-          groupName: extractGroupName(item),
+          courseName: String(item?.courseName || item?.course?.title || '-'),
+          account: String(item?.account || item?.identity?.account || '-'),
+          teamId: item?.teamId === null || item?.teamId === undefined ? '-' : String(item.teamId),
           uploadTime: formatDateTime(item.uploadTime),
           uploadTimeRaw: item.uploadTime,
           image: normalizeUrl(item.image),
-          method: extractMethod(item),
+          method: String(item?.remark || '-'),
           remark: String(item?.remark || ''),
           issueId: item?.issueId,
         } as BingoRow

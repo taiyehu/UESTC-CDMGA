@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
+import com.cdmga.uestc.webpage.Dto.BingoSubmissionDto;
 import com.cdmga.uestc.webpage.Dto.UserScoreDto;
 import com.cdmga.uestc.webpage.Entity.Profile;
 import com.cdmga.uestc.webpage.Entity.Score;
@@ -209,6 +210,61 @@ public class ScoreService {
 
     public List<Score> getUnscoredBingoScores(int page, int size) {
         return scoreRepository.findUnscoredBingo(PageRequest.of(page, size)).getContent();
+    }
+
+    public List<BingoSubmissionDto> getUnscoredBingoSubmissionDtos(int page, int size) {
+        List<Score> scores = scoreRepository.findUnscoredBingo(PageRequest.of(page, size)).getContent();
+
+        Map<String, Integer> teamIdByCourseAndIdentity = new HashMap<>();
+        Map<Integer, Set<Integer>> identityIdsByCourse = new HashMap<>();
+
+        for (Score score : scores) {
+            if (score.getCourse() == null || score.getCourse().getId() == null || score.getIdentity() == null || score.getIdentity().getId() == null) {
+                continue;
+            }
+            identityIdsByCourse
+                    .computeIfAbsent(score.getCourse().getId(), key -> new LinkedHashSet<>())
+                    .add(score.getIdentity().getId());
+        }
+
+        for (Map.Entry<Integer, Set<Integer>> entry : identityIdsByCourse.entrySet()) {
+            Integer courseId = entry.getKey();
+            List<Team> teamRows = teamRepository.findByCourseIdAndIdentityIdIn(courseId, entry.getValue());
+            for (Team team : teamRows) {
+                if (team.getIdentityId() == null || team.getTeamId() == null) {
+                    continue;
+                }
+                teamIdByCourseAndIdentity.put(courseId + "#" + team.getIdentityId(), team.getTeamId());
+            }
+        }
+
+        List<BingoSubmissionDto> result = new ArrayList<>();
+        for (Score score : scores) {
+            BingoSubmissionDto dto = new BingoSubmissionDto();
+            dto.setId(score.getId());
+            dto.setIssueId(score.getIssueId());
+            dto.setUploadTime(score.getUploadTime());
+            dto.setImage(score.getImage());
+            dto.setRemark(score.getRemark());
+
+            if (score.getCourse() != null) {
+                dto.setCourseId(score.getCourse().getId());
+                dto.setCourseName(score.getCourse().getTitle());
+            }
+
+            if (score.getIdentity() != null) {
+                dto.setIdentityId(score.getIdentity().getId());
+                dto.setAccount(score.getIdentity().getAccount());
+            }
+
+            if (dto.getCourseId() != null && dto.getIdentityId() != null) {
+                dto.setTeamId(teamIdByCourseAndIdentity.get(dto.getCourseId() + "#" + dto.getIdentityId()));
+            }
+
+            result.add(dto);
+        }
+
+        return result;
     }
 
     public List<Score> getUnscoredNonBingoScores(int page, int size) {

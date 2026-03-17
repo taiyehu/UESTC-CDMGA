@@ -18,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.cdmga.uestc.webpage.common.Result;
 import com.cdmga.uestc.webpage.common.ScoreRequest;
+import com.cdmga.uestc.webpage.Dto.BingoSubmissionDto;
 import com.cdmga.uestc.webpage.Dto.UserScoreDto;
 import com.cdmga.uestc.webpage.Entity.Score;
 import com.cdmga.uestc.webpage.Service.ScoreService;
@@ -299,7 +300,7 @@ public class ScoreController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        List<Score> scores = scoreService.getUnscoredBingoScores(page, size);
+        List<BingoSubmissionDto> scores = scoreService.getUnscoredBingoSubmissionDtos(page, size);
         Long total = scoreService.getUnScoredBingoScoreCount();
 
         Map<String, Object> result = new HashMap<>();
