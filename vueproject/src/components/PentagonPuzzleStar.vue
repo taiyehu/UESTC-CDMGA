@@ -1,23 +1,41 @@
 <template>
   <section class="pentagon-shell" aria-label="Pentagon Puzzle">
+    <svg class="arrow-svg" viewBox="0 0 100 100" aria-hidden="true">
+      <defs>
+        <linearGradient id="ribbon-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#22d3ee" />
+          <stop offset="52%" stop-color="#a855f7" />
+          <stop offset="100%" stop-color="#f472b6" />
+        </linearGradient>
+        <filter id="ribbon-glow" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="0.45" result="g" />
+          <feMerge>
+            <feMergeNode in="g" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <path v-for="(shape, idx) in arrowShapes" :key="`ribbon-${idx}`" :d="shape" class="ribbon-arrow" />
+    </svg>
+
     <svg class="star-svg" viewBox="0 0 100 100" role="img" aria-label="三层边框五角星">
       <defs>
-        <linearGradient id="star-neon-cyan" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="star-cyan" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="#67e8f9" />
           <stop offset="100%" stop-color="#22d3ee" />
         </linearGradient>
-        <linearGradient id="star-neon-pink" x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stop-color="#f472b6" />
-          <stop offset="100%" stop-color="#e879f9" />
+        <linearGradient id="star-purple" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#c084fc" />
+          <stop offset="100%" stop-color="#a855f7" />
         </linearGradient>
-        <linearGradient id="star-neon-gold" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stop-color="#fde68a" />
-          <stop offset="100%" stop-color="#fbbf24" />
+        <linearGradient id="star-pink" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#f9a8d4" />
+          <stop offset="100%" stop-color="#f472b6" />
         </linearGradient>
-        <filter id="star-neon-glow" x="-30%" y="-30%" width="160%" height="160%">
-          <feGaussianBlur stdDeviation="0.45" result="blurred" />
+        <filter id="star-glow" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="0.34" result="s" />
           <feMerge>
-            <feMergeNode in="blurred" />
+            <feMergeNode in="s" />
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
@@ -27,58 +45,46 @@
       <polygon class="star-layer layer-3" :points="starPointsInner" />
     </svg>
 
-    <svg class="arrow-svg" viewBox="0 0 100 100" aria-hidden="true">
-      <defs>
-        <marker id="pentagon-arrow-head" markerWidth="10" markerHeight="10" refX="8.4" refY="5" orient="auto">
-          <path d="M0,0 L10,5 L0,10 z" fill="rgba(103, 232, 249, 0.95)" />
-        </marker>
-      </defs>
-      <path
-        v-for="(pathDef, idx) in arrowPaths"
-        :key="`arrow-${idx}`"
-        :d="pathDef"
-        class="flow-arrow-path"
-        marker-end="url(#pentagon-arrow-head)"
-      />
-    </svg>
-
-    <div
+    <a
       v-for="node in nodes"
       :key="`hint-${node.id}`"
       class="info-circle hint-circle"
       :style="at(node.hint)"
+      :href="node.url"
+      target="_blank"
+      rel="noopener noreferrer"
+      role="button"
+      tabindex="0"
     >
-      <a class="hint-link" :href="node.url" target="_blank" rel="noopener noreferrer">点击得到线索</a>
-    </div>
+      <span class="hint-link">点击得到线索</span>
+    </a>
 
-    <div
-      v-for="node in nodes"
-      :key="`mode-${node.id}`"
-      class="info-circle mode-circle"
-      :style="at(node.mode)"
-    >
+    <div v-for="node in nodes" :key="`mode-${node.id}`" class="info-circle mode-circle" :style="at(node.mode)">
       {{ node.position || '游玩方式' }}
     </div>
 
-    <div
-      v-for="node in nodes"
-      :key="`id-${node.id}`"
-      class="info-circle id-circle"
-      :style="at(node.issue)"
-    >
-      题号 {{ node.id }}
+    <div v-for="node in nodes" :key="`id-${node.id}`" class="info-circle id-circle" :style="at(node.issue)">
+      第 ? 题
     </div>
   </section>
 </template>
 
 <script lang="ts" setup>
 import { computed, onMounted, ref } from 'vue'
+import type { CSSProperties } from 'vue'
 
 type Point = { x: number; y: number }
 type PuzzleLinkItem = { id: number; url: string; position?: string }
+type PuzzleJson = { 'Pentagon Puzzle'?: PuzzleLinkItem[] }
 
-type PuzzleJson = {
-  'Pentagon Puzzle'?: PuzzleLinkItem[]
+type RenderNode = {
+  id: number
+  url: string
+  position?: string
+  groupCenter: Point
+  hint: Point
+  mode: Point
+  issue: Point
 }
 
 const props = withDefaults(
@@ -100,31 +106,36 @@ const fallbackNodes: PuzzleLinkItem[] = [
   { id: 5, url: 'https://b23.tv/R7mSynS' },
 ]
 
+const center: Point = { x: 50, y: 50 }
+
 function starPolygon(cx: number, cy: number, outerR: number, innerR: number): string {
   const points: Point[] = []
   for (let i = 0; i < 10; i += 1) {
     const angleDeg = -90 + i * 36
     const angle = (angleDeg * Math.PI) / 180
     const radius = i % 2 === 0 ? outerR : innerR
-    points.push({
-      x: cx + Math.cos(angle) * radius,
-      y: cy + Math.sin(angle) * radius,
-    })
+    points.push({ x: cx + Math.cos(angle) * radius, y: cy + Math.sin(angle) * radius })
   }
   return points.map((p) => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ')
 }
 
-const starPointsOuter = computed(() => starPolygon(50, 50, 31.5, 13.4))
-const starPointsMid = computed(() => starPolygon(50, 50, 23.4, 9.5))
-const starPointsInner = computed(() => starPolygon(50, 50, 15.3, 5.9))
+const starPointsOuter = computed(() => starPolygon(center.x, center.y, 34.2, 14.6))
+const starPointsMid = computed(() => starPolygon(center.x, center.y, 25.2, 9.8))
+const starPointsInner = computed(() => starPolygon(center.x, center.y, 16.8, 6.1))
+
+function normalizeVector(x: number, y: number): Point {
+  const len = Math.hypot(x, y) || 1
+  return { x: x / len, y: y / len }
+}
+
+function offset(base: Point, unit: Point, distance: number): Point {
+  return { x: base.x + unit.x * distance, y: base.y + unit.y * distance }
+}
 
 function pointOnRing(index: number, radius: number): Point {
   const angleDeg = -90 + index * 72
   const angle = (angleDeg * Math.PI) / 180
-  return {
-    x: 50 + Math.cos(angle) * radius,
-    y: 50 + Math.sin(angle) * radius,
-  }
+  return { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius }
 }
 
 function normalize(nodesInput: PuzzleLinkItem[]): PuzzleLinkItem[] {
@@ -138,17 +149,17 @@ function normalize(nodesInput: PuzzleLinkItem[]): PuzzleLinkItem[] {
       position: item?.position ? String(item.position) : undefined,
     })
   }
-  const result: PuzzleLinkItem[] = []
+
+  const list: PuzzleLinkItem[] = []
   for (let id = 1; id <= 5; id += 1) {
     const item = map.get(id)
     if (item?.url) {
-      result.push(item)
+      list.push(item)
     } else {
-      const fallback = fallbackNodes[id - 1] ?? { id, url: '#' }
-      result.push({ ...fallback })
+      list.push({ ...(fallbackNodes[id - 1] ?? { id, url: '#' }) })
     }
   }
-  return result
+  return list
 }
 
 async function loadPuzzleLinks() {
@@ -162,177 +173,194 @@ async function loadPuzzleLinks() {
   }
 }
 
-function at(point: Point) {
-  return {
-    left: `${point.x}%`,
-    top: `${point.y}%`,
-  }
-}
+const nodes = computed<RenderNode[]>(() => {
+  return Array.from({ length: 5 }, (_, i) => {
+    const item = puzzleNodes.value[i] ?? fallbackNodes[i] ?? { id: i + 1, url: '#', position: undefined }
+    const vertex = pointOnRing(i, 32.6)
+    const radial = normalizeVector(vertex.x - center.x, vertex.y - center.y)
+    const tangent = { x: radial.y, y: -radial.x }
 
-function offset(base: Point, unit: Point, distance: number): Point {
-  return {
-    x: base.x + unit.x * distance,
-    y: base.y + unit.y * distance,
-  }
-}
+    const hint = offset(vertex, radial, 2)
+    const triangleSide = 9.8
+    const triangleHeight = triangleSide * 0.8660254
+    const baseCenter = offset(hint, radial, triangleHeight)
+    const mode = offset(baseCenter, tangent, -triangleSide / 2)
+    const issue = offset(baseCenter, tangent, triangleSide / 2)
+    const groupCenter = baseCenter
 
-const clusterPoints = computed(() => {
-  const clusters: Array<{ id: number; hint: Point; mode: Point; issue: Point; groupCenter: Point }> = []
-  for (let i = 0; i < 5; i += 1) {
-    const item = puzzleNodes.value[i]
-    const vertex = pointOnRing(i, 32)
-    const direction = { x: vertex.x - 50, y: vertex.y - 50 }
-    const length = Math.hypot(direction.x, direction.y) || 1
-    const unit = { x: direction.x / length, y: direction.y / length }
-    const tangent = { x: unit.y, y: -unit.x }
-
-    const hint = offset(vertex, unit, 4.6)
-    const groupCenter = offset(hint, unit, 8.8)
-    const mode = offset(groupCenter, tangent, -6.2)
-    const issue = offset(groupCenter, tangent, 6.2)
-
-    clusters.push({
-      id: item?.id ?? i + 1,
+    return {
+      id: item.id,
+      url: item.url,
+      position: item.position,
+      groupCenter,
       hint,
       mode,
       issue,
-      groupCenter,
-    })
-  }
-  return clusters
-})
-
-const renderedNodes = computed(() => {
-  return clusterPoints.value.map((cluster, index) => {
-    const source = puzzleNodes.value[index] || fallbackNodes[index]
-    return {
-      id: cluster.id,
-      url: source?.url || '#',
-      position: source?.position,
-      hint: cluster.hint,
-      mode: cluster.mode,
-      issue: cluster.issue,
     }
   })
 })
 
-const arrowPaths = computed(() => {
-  const paths: string[] = []
-  const points = clusterPoints.value.map((c) => c.groupCenter)
-  if (points.length < 5) return paths
+function buildRibbonArrowPath(from: Point, to: Point): string {
+  const width = 8.7
+  const headLength = 3.2
+  const tailNotch = 2.2
+  const bend = 8.2
+
+  const mid = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 }
+  const outward = normalizeVector(mid.x - center.x, mid.y - center.y)
+  const control = { x: mid.x + outward.x * bend, y: mid.y + outward.y * bend }
+
+  const tangentStart = normalizeVector(control.x - from.x, control.y - from.y)
+  const tangentEnd = normalizeVector(to.x - control.x, to.y - control.y)
+  const normalStart = { x: -tangentStart.y, y: tangentStart.x }
+  const normalEnd = { x: -tangentEnd.y, y: tangentEnd.x }
+  const avgNormal = normalizeVector(normalStart.x + normalEnd.x, normalStart.y + normalEnd.y)
+
+  const half = width / 2
+  const startTop = offset(from, normalStart, half)
+  const startBottom = offset(from, normalStart, -half)
+  const endTop = offset(to, normalEnd, half)
+  const endBottom = offset(to, normalEnd, -half)
+
+  const controlTop = offset(control, avgNormal, half)
+  const controlBottom = offset(control, avgNormal, -half)
+
+  const tip = offset(to, tangentEnd, headLength)
+  const notch = offset(from, tangentStart, tailNotch)
+
+  return [
+    `M ${startTop.x.toFixed(2)} ${startTop.y.toFixed(2)}`,
+    `Q ${controlTop.x.toFixed(2)} ${controlTop.y.toFixed(2)} ${endTop.x.toFixed(2)} ${endTop.y.toFixed(2)}`,
+    `L ${tip.x.toFixed(2)} ${tip.y.toFixed(2)}`,
+    `L ${endBottom.x.toFixed(2)} ${endBottom.y.toFixed(2)}`,
+    `Q ${controlBottom.x.toFixed(2)} ${controlBottom.y.toFixed(2)} ${startBottom.x.toFixed(2)} ${startBottom.y.toFixed(2)}`,
+    `L ${notch.x.toFixed(2)} ${notch.y.toFixed(2)}`,
+    'Z',
+  ].join(' ')
+}
+
+const arrowShapes = computed(() => {
+  const points = nodes.value.map((n) => n.groupCenter)
+  const shapes: string[] = []
+  if (points.length < 5) return shapes
+
   for (let i = 0; i < points.length; i += 1) {
     const from = points[i]
     const to = points[(i + 4) % points.length]
     if (!from || !to) continue
-    const mid = {
-      x: (from.x + to.x) / 2,
-      y: (from.y + to.y) / 2,
-    }
-    const radial = { x: mid.x - 50, y: mid.y - 50 }
-    const radialLength = Math.hypot(radial.x, radial.y) || 1
-    const control = {
-      x: mid.x + (radial.x / radialLength) * 7.2,
-      y: mid.y + (radial.y / radialLength) * 7.2,
-    }
-    paths.push(`M ${from.x.toFixed(2)} ${from.y.toFixed(2)} Q ${control.x.toFixed(2)} ${control.y.toFixed(2)} ${to.x.toFixed(2)} ${to.y.toFixed(2)}`)
+
+    const unit = normalizeVector(to.x - from.x, to.y - from.y)
+    const start = offset(from, unit, 11.2)
+    const end = offset(to, unit, -13)
+    shapes.push(buildRibbonArrowPath(start, end))
   }
-  return paths
+  return shapes
 })
+
+function at(point: Point): CSSProperties {
+  return { left: `${point.x}%`, top: `${point.y}%` }
+}
 
 onMounted(() => {
   loadPuzzleLinks()
 })
-
-const nodes = computed(() => renderedNodes.value)
 </script>
 
 <style scoped>
 .pentagon-shell {
   position: relative;
   width: min(100%, 820px);
-  margin: 20px auto 4px;
+  margin: 18px auto 4px;
   aspect-ratio: 1 / 1;
   border-radius: 999px;
-  border: 2px solid rgba(34, 211, 238, 0.45);
+  border: 2px solid rgba(103, 232, 249, 0.58);
   background:
-    radial-gradient(circle at 50% 50%, rgba(14, 116, 144, 0.24), rgba(8, 47, 73, 0.06) 55%, transparent 72%),
-    radial-gradient(circle at 20% 16%, rgba(236, 72, 153, 0.2), transparent 35%),
-    linear-gradient(140deg, rgba(15, 23, 42, 0.86), rgba(17, 24, 39, 0.92));
+    radial-gradient(circle at 50% 45%, rgba(34, 211, 238, 0.2), rgba(17, 24, 39, 0.08) 48%, transparent 68%),
+    radial-gradient(circle at 18% 18%, rgba(168, 85, 247, 0.22), transparent 34%),
+    radial-gradient(circle at 82% 78%, rgba(244, 114, 182, 0.2), transparent 34%),
+    linear-gradient(140deg, rgba(7, 14, 28, 0.96), rgba(18, 12, 35, 0.95));
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.06),
-    0 0 20px rgba(34, 211, 238, 0.28),
-    0 0 42px rgba(168, 85, 247, 0.2);
-  overflow: visible;
+    0 0 24px rgba(34, 211, 238, 0.22),
+    0 0 36px rgba(168, 85, 247, 0.17),
+    0 0 28px rgba(244, 114, 182, 0.12);
+  overflow: hidden;
 }
 
-.star-svg,
-.arrow-svg {
+.arrow-svg,
+.star-svg {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
 }
 
+.ribbon-arrow {
+  fill: url(#ribbon-grad);
+  filter: url(#ribbon-glow);
+  opacity: 0.96;
+}
+
 .star-layer {
   fill: transparent;
   stroke-linejoin: round;
-  filter: url(#star-neon-glow);
+  filter: url(#star-glow);
 }
 
 .layer-1 {
-  stroke: url(#star-neon-cyan);
-  stroke-width: 1.5;
+  stroke: url(#star-cyan);
+  stroke-width: 0.98;
 }
 
 .layer-2 {
-  stroke: url(#star-neon-pink);
-  stroke-width: 1.22;
+  stroke: url(#star-purple);
+  stroke-width: 0.78;
 }
 
 .layer-3 {
-  stroke: url(#star-neon-gold);
-  stroke-width: 1.04;
-}
-
-.flow-arrow-path {
-  fill: none;
-  stroke: rgba(103, 232, 249, 0.95);
-  stroke-width: 1.65;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  filter: drop-shadow(0 0 6px rgba(103, 232, 249, 0.55));
+  stroke: url(#star-pink);
+  stroke-width: 0.62;
 }
 
 .info-circle {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: clamp(68px, 9.2vw, 88px);
-  height: clamp(68px, 9.2vw, 88px);
+  width: clamp(62px, 8.4vw, 78px);
+  height: clamp(62px, 8.4vw, 78px);
   border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.58);
+  border: 1px solid rgba(186, 230, 253, 0.62);
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
   padding: 10px;
   font-size: clamp(11px, 1.35vw, 13px);
-  line-height: 1.25;
-  color: #e2e8f0;
+  line-height: 1.24;
+  color: #f8fafc;
   backdrop-filter: blur(6px);
+  z-index: 10;
 }
 
 .hint-circle {
-  background: linear-gradient(135deg, rgba(22, 78, 99, 0.8), rgba(99, 102, 241, 0.72));
-  border-color: rgba(103, 232, 249, 0.64);
-  box-shadow: 0 0 16px rgba(34, 211, 238, 0.3);
+  text-decoration: none;
+  cursor: pointer;
+  background: linear-gradient(140deg, rgba(6, 95, 115, 0.86), rgba(147, 51, 234, 0.78), rgba(236, 72, 153, 0.74));
+  border-color: rgba(103, 232, 249, 0.86);
+  box-shadow:
+    0 0 14px rgba(34, 211, 238, 0.44),
+    0 0 14px rgba(236, 72, 153, 0.26);
+}
+
+.hint-circle:hover {
+  transform: translate(-50%, -50%) scale(1.03);
 }
 
 .mode-circle {
-  background: linear-gradient(135deg, rgba(30, 64, 175, 0.55), rgba(16, 185, 129, 0.45));
+  background: linear-gradient(135deg, rgba(12, 74, 110, 0.8), rgba(126, 34, 206, 0.74));
 }
 
 .id-circle {
-  background: linear-gradient(135deg, rgba(147, 51, 234, 0.56), rgba(236, 72, 153, 0.45));
+  background: linear-gradient(135deg, rgba(91, 33, 182, 0.74), rgba(190, 24, 93, 0.66));
 }
 
 .hint-link {
@@ -341,16 +369,12 @@ const nodes = computed(() => renderedNodes.value)
   text-decoration: none;
 }
 
-.hint-link:hover {
-  text-decoration: underline;
-}
-
 @media (max-width: 780px) {
   .info-circle {
-    width: clamp(54px, 16.4vw, 74px);
-    height: clamp(54px, 16.4vw, 74px);
+    width: clamp(50px, 14.5vw, 68px);
+    height: clamp(50px, 14.5vw, 68px);
     padding: 6px;
-    font-size: clamp(10px, 2.8vw, 12px);
+    font-size: clamp(10px, 2.7vw, 12px);
   }
 }
 </style>
