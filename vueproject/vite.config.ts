@@ -3,10 +3,35 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
+import Components from 'unplugin-vue-components/vite'
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue(), tailwindcss()],
+  plugins: [
+    vue(),
+    tailwindcss(),
+    Components({
+      resolvers: [ElementPlusResolver({ importStyle: 'css' })],
+    }),
+  ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('element-plus') || id.includes('@element-plus')) {
+              const componentMatch = id.match(/element-plus\/es\/components\/([^/]+)/)
+              if (componentMatch?.[1]) return `el-${componentMatch[1]}`
+              return 'vendor-element-core'
+            }
+            if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router')) return 'vendor-vue'
+            return 'vendor-misc'
+          }
+        },
+      },
+    },
+  },
   server: {
     port: 8081,
     proxy: {
