@@ -43,7 +43,7 @@ const emit = defineEmits<{
 
 const cells = Array.from({ length: 25 }, (_, index) => index + 1)
 const issueMarks = ref<Map<number, string>>(new Map())
-const boardStateMap = ref<Map<number, { maxScore: 2 | 3 | 5; myCompleted: boolean; myScore: number }>>(new Map())
+const boardStateMap = ref<Map<number, { maxScore: 2 | 3 | 5 | 10 | 15; myCompleted: boolean; myScore: number }>>(new Map())
 
 const lineScoredCells = computed(() => {
   const result = new Set<number>()
@@ -75,14 +75,14 @@ function onSelect(issueId: number) {
 }
 
 function getCellState(cellId: number) {
-  return boardStateMap.value.get(cellId) || { maxScore: 5 as 2 | 3 | 5, myCompleted: false, myScore: 0 }
+  return boardStateMap.value.get(cellId) || { maxScore: 5 as 2 | 3 | 5 | 10 | 15, myCompleted: false, myScore: 0 }
 }
 
-function getCellColorLevel(cellId: number): 2 | 3 | 5 {
+function getCellColorLevel(cellId: number): 2 | 3 | 5 | 10 | 15 {
   const state = getCellState(cellId)
   const myScore = Number(state.myScore)
-  if (state.myCompleted && (myScore === 2 || myScore === 3 || myScore === 5)) {
-    return myScore as 2 | 3 | 5
+  if (state.myCompleted && (myScore === 2 || myScore === 3 || myScore === 5 || myScore === 10 || myScore === 15)) {
+    return myScore as 2 | 3 | 5 | 10 | 15
   }
   return state.maxScore
 }
@@ -94,6 +94,8 @@ function getCellClass(cellId: number) {
     'cell-score-2': level === 2,
     'cell-score-3': level === 3,
     'cell-score-5': level === 5,
+    'cell-score-10': level === 10,
+    'cell-score-15': level === 15,
     'cell-completed': getCellState(cellId).myCompleted,
     'cell-line-scored': lineScoredCells.value.has(cellId),
   }
@@ -138,14 +140,14 @@ async function loadBoardState() {
   try {
     const data = await fetchBingoBoardState(props.courseId, props.identityId)
     const list = Array.isArray(data?.cells) ? data.cells : []
-    const map = new Map<number, { maxScore: 2 | 3 | 5; myCompleted: boolean; myScore: number }>()
+    const map = new Map<number, { maxScore: 2 | 3 | 5 | 10 | 15; myCompleted: boolean; myScore: number }>()
     for (const item of list) {
       const issueId = Number(item?.issueId)
       const maxScore = Number(item?.maxScore)
       if (!Number.isFinite(issueId) || issueId < 1 || issueId > 25) continue
-      if (maxScore !== 2 && maxScore !== 3 && maxScore !== 5) continue
+      if (maxScore !== 2 && maxScore !== 3 && maxScore !== 5 && maxScore !== 10 && maxScore !== 15) continue
       map.set(issueId, {
-        maxScore: maxScore as 2 | 3 | 5,
+        maxScore: maxScore as 2 | 3 | 5 | 10 | 15,
         myCompleted: Boolean(item?.myCompleted),
         myScore: Number(item?.myScore || 0),
       })
@@ -244,6 +246,28 @@ watch(
   color: #fde68a;
 }
 
+.issue-cell.cell-score-10 {
+  border-color: transparent;
+  background:
+    linear-gradient(145deg, rgba(5, 46, 70, 0.75), rgba(88, 28, 135, 0.55)) padding-box,
+    linear-gradient(120deg, rgba(34, 211, 238, 0.87), rgb(136, 11, 238), rgb(247, 7, 155)) border-box;
+}
+
+.issue-cell.cell-score-10 .cell-score {
+  color: #e5e7eb;
+}
+
+.issue-cell.cell-score-15 {
+  border-color: transparent;
+  background:
+    linear-gradient(145deg, rgba(5, 46, 70, 0.75), rgba(88, 28, 135, 0.55)) padding-box,
+    linear-gradient(120deg, rgba(59, 246, 221, 0.9), rgba(34, 211, 238, 0.86), rgba(251, 191, 36, 0.9)) border-box;
+}
+
+.issue-cell.cell-score-15 .cell-score {
+  color: #fbbf24;
+}
+
 .issue-cell.cell-completed.cell-score-2 {
   background: linear-gradient(145deg, rgba(22, 101, 52, 0.78), rgba(21, 128, 61, 0.66));
 }
@@ -254,6 +278,24 @@ watch(
 
 .issue-cell.cell-completed.cell-score-5 {
   background: linear-gradient(145deg, rgba(245, 193, 49, 0.74), rgba(213, 154, 18, 0.62));
+}
+
+.issue-cell.cell-completed.cell-score-10::after,
+.issue-cell.cell-completed.cell-score-15::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 7px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.issue-cell.cell-completed.cell-score-10::after {
+  background: linear-gradient(120deg, rgba(34, 211, 238, 0.64), rgba(147, 51, 234, 0.58), rgba(244, 114, 182, 0.64));
+}
+
+.issue-cell.cell-completed.cell-score-15::after {
+  background: linear-gradient(120deg, rgba(59, 130, 246, 0.9), rgba(34, 211, 238, 0.86), rgba(251, 191, 36, 0.9));
 }
 
 .issue-cell.cell-line-scored {
@@ -282,6 +324,41 @@ watch(
   box-shadow:
     0 0 16px rgba(34, 211, 238, 0.24),
     0 0 24px rgba(255, 225, 80, 0.24);
+}
+
+.issue-cell.cell-line-scored:not(.cell-score-10):not(.cell-score-15)::after {
+  display: none;
+}
+
+.issue-cell.cell-line-scored.cell-score-10 {
+  border-color: transparent;
+  background:
+    linear-gradient(145deg, rgba(5, 46, 70, 0.75), rgba(88, 28, 135, 0.55)) padding-box,
+    linear-gradient(120deg, rgba(34, 211, 238, 0.87), rgb(136, 11, 238), rgb(247, 7, 155)) border-box;
+}
+
+.issue-cell.cell-line-scored.cell-score-15 {
+  border-color: transparent;
+  background:
+    linear-gradient(145deg, rgba(5, 46, 70, 0.75), rgba(88, 28, 135, 0.55)) padding-box,
+    linear-gradient(120deg, rgba(59, 246, 221, 0.9), rgba(34, 211, 238, 0.86), rgba(251, 191, 36, 0.9)) border-box;
+}
+
+.issue-cell.cell-line-scored.cell-score-10::after,
+.issue-cell.cell-line-scored.cell-score-15::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 7px;
+  z-index: 0;
+  pointer-events: none;
+  display: block;
+  background: linear-gradient(120deg, rgba(250, 255, 0, 0.8), rgba(125, 211, 252, 0.76), rgba(255, 62, 191, 0.78));
+}
+
+.issue-cell.cell-line-scored.cell-score-10::before,
+.issue-cell.cell-line-scored.cell-score-15::before {
+  display: block;
 }
 
 .issue-cell.active {

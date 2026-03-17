@@ -242,7 +242,9 @@ public class ScoreService {
                     rank = earlierApproved.size() + 1L;
                 }
 
-                if (rank == 1) {
+                if (effectiveIssueId == 13) {
+                    finalPoint = rank == 1 ? 15f : 10f;
+                } else if (rank == 1) {
                     finalPoint = 5f;
                 } else if (rank == 2 || rank == 3) {
                     finalPoint = 3f;

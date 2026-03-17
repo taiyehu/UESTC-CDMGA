@@ -212,7 +212,12 @@ public class TeamService {
         List<Map<String, Object>> cells = new ArrayList<>();
         for (int issueId = 1; issueId <= 25; issueId += 1) {
             int completedTeams = completedTeamCountByIssue.getOrDefault(issueId, 0);
-            int maxScore = completedTeams == 0 ? 5 : (completedTeams <= 2 ? 3 : 2);
+            int maxScore;
+            if (issueId == 13) {
+                maxScore = completedTeams == 0 ? 15 : 10;
+            } else {
+                maxScore = completedTeams == 0 ? 5 : (completedTeams <= 2 ? 3 : 2);
+            }
 
             Float myScoreValue = myIssueScoreMap.get(issueId);
             boolean myCompleted = myScoreValue != null && myScoreValue > 0f;
