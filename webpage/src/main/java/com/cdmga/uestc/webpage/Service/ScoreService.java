@@ -294,6 +294,62 @@ public class ScoreService {
         return result;
     }
 
+    public Map<String, Object> getBingoIssueHistoryByCourseId(Integer identityId, Integer courseId, Integer issueId) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("hasTeam", false);
+        result.put("teamId", null);
+        result.put("list", new ArrayList<Score>());
+
+        if (identityId == null || identityId <= 0 || courseId == null || courseId <= 0 || issueId == null || issueId <= 0) {
+            return result;
+        }
+
+        Course course = courseRepository.findById(courseId).orElse(null);
+        String category = course == null || course.getCategory() == null ? "" : course.getCategory().trim().toLowerCase();
+        if (!"bingo".equals(category)) {
+            return result;
+        }
+
+        Team self = teamRepository.findByCourseIdAndIdentityId(courseId, identityId).orElse(null);
+        if (self != null && self.getTeamId() != null) {
+            result.put("hasTeam", true);
+            result.put("teamId", self.getTeamId());
+        }
+
+        List<Score> list = scoreRepository.findByCourseIdAndIssueIdAndIsDeletedFalseOrderByUploadTimeDescIdDesc(courseId, issueId);
+        Set<Integer> identityIds = new LinkedHashSet<>();
+        for (Score score : list) {
+            if (score.getIdentity() != null && score.getIdentity().getId() != null) {
+                identityIds.add(score.getIdentity().getId());
+            }
+        }
+
+        Map<Integer, Integer> identityToTeamId = new HashMap<>();
+        if (!identityIds.isEmpty()) {
+            List<Team> teamRows = teamRepository.findByCourseIdAndIdentityIdIn(courseId, identityIds);
+            for (Team row : teamRows) {
+                if (row.getIdentityId() != null) {
+                    identityToTeamId.put(row.getIdentityId(), row.getTeamId());
+                }
+            }
+        }
+
+        List<Map<String, Object>> viewList = new ArrayList<>();
+        for (Score score : list) {
+            Map<String, Object> item = new HashMap<>();
+            Integer identity = score.getIdentity() == null ? null : score.getIdentity().getId();
+            item.put("id", score.getId());
+            item.put("uploadTime", score.getUploadTime());
+            item.put("isScored", score.getIsScored());
+            item.put("score", score.getScore());
+            item.put("teamId", identity == null ? null : identityToTeamId.get(identity));
+            viewList.add(item);
+        }
+
+        result.put("list", viewList);
+        return result;
+    }
+
     public List<UserScoreDto> calculateScoresForAllUsers(List<Score> scores) {
         Map<Integer, Float> userScoreMap = new HashMap<>();
         Map<Integer, String> userAvatarMap = new HashMap<>();

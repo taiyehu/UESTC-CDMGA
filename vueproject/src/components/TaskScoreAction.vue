@@ -14,27 +14,40 @@
     </p>
 
     <div v-if="isBingoMode" class="mt-4">
+      <div class="mb-2 flex items-center justify-between gap-3">
+        <span class="text-sm text-cyan-100/80">{{ historyModeLabel }}</span>
+        <button type="button" class="history-toggle-btn" @click="switchHistoryMode">
+          {{ isGlobalHistoryMode ? '切换到队伍内部记录' : '切换到全局记录' }}
+        </button>
+      </div>
+
       <NeonRankTable min-width-class="min-w-220" text-size-class="text-sm">
         <template #head>
           <tr>
+            <th class="w-20 px-3 py-2 text-center">标识</th>
             <th class="px-3 py-2 text-center">提交时间</th>
-            <th class="px-3 py-2 text-center">图片</th>
-            <th class="px-3 py-2 text-center">说明</th>
+            <th v-if="isGlobalHistoryMode" class="px-3 py-2 text-center">队伍ID</th>
+            <th v-else class="px-3 py-2 text-center">图片</th>
+            <th v-if="!isGlobalHistoryMode" class="px-3 py-2 text-center">说明</th>
             <th class="px-3 py-2 text-center">状态</th>
           </tr>
         </template>
 
         <tr v-if="!historyLoaded" class="border-t border-white/12">
-          <td colspan="4" class="px-3 py-3 text-center text-cyan-100/70">等待连接</td>
+          <td :colspan="historyColumnCount" class="px-3 py-3 text-center text-cyan-100/70">等待连接</td>
         </tr>
 
         <tr v-else-if="historyRows.length === 0" class="border-t border-white/12">
-          <td colspan="4" class="px-3 py-3 text-center text-cyan-100/70">暂无提交记录</td>
+          <td :colspan="historyColumnCount" class="px-3 py-3 text-center text-cyan-100/70">暂无提交记录</td>
         </tr>
 
         <tr v-for="row in historyRows" :key="row.id" class="border-t border-white/12">
-          <td class="px-3 py-3 text-center">{{ formatDateTime(row.uploadTime) }}</td>
           <td class="px-3 py-3 text-center">
+            <span class="history-source-tag" :class="isGlobalHistoryMode ? 'is-global' : 'is-team'">{{ isGlobalHistoryMode ? '全局' : '队内' }}</span>
+          </td>
+          <td class="px-3 py-3 text-center">{{ formatDateTime(row.uploadTime) }}</td>
+          <td v-if="isGlobalHistoryMode" class="px-3 py-3 text-center">{{ row.teamId ?? '-' }}</td>
+          <td v-else class="px-3 py-3 text-center">
             <img
               v-if="row.image"
               :src="getImageUrl(row.image)"
@@ -44,12 +57,13 @@
             />
             <span v-else>-</span>
           </td>
-          <td class="px-3 py-3 text-center">{{ row.remark || '-' }}</td>
+          <td v-if="!isGlobalHistoryMode" class="px-3 py-3 text-center">{{ row.remark || '-' }}</td>
           <td class="px-3 py-3 text-center">
             <span class="score-tag" :class="scoreTagClass(row)">{{ scoreTagText(row) }}</span>
           </td>
         </tr>
       </NeonRankTable>
+      
     </div>
 
     <teleport to="body">
@@ -186,7 +200,7 @@
 import axios from 'axios'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import type { Course } from '@/api/types'
-import { checkSubmitted, fetchScoreHistory, handleSubmitScore, handleUpdateScore } from '@/api/score'
+import { checkSubmitted, fetchBingoIssueHistory, fetchScoreHistory, handleSubmitScore, handleUpdateScore } from '@/api/score'
 import NeonInput from '@/components/NeonInput.vue'
 import NeonRankTable from '@/components/NeonRankTable.vue'
 import ScoreImageUploader from '@/components/ScoreImageUploader.vue'
@@ -213,8 +227,11 @@ const updateUploaderRef = ref<ScoreImageUploaderExpose | null>(null)
 const previewVisible = ref(false)
 const previewImage = ref('')
 const nowTimestamp = ref(Date.now())
-const historyLoaded = ref(false)
-const historyRows = ref<Record<string, any>[]>([])
+const teamHistoryLoaded = ref(false)
+const teamHistoryRows = ref<Record<string, any>[]>([])
+const globalHistoryLoaded = ref(false)
+const globalHistoryRows = ref<Record<string, any>[]>([])
+const historyMode = ref<'team' | 'global'>('team')
 const bingoActionState = ref<'connecting' | 'no-team' | 'pending' | 'ready' | 'done'>('connecting')
 let timer: ReturnType<typeof setInterval> | null = null
 
@@ -249,6 +266,16 @@ const modalTitle = computed(() => {
 
 const isBingoMode = computed(() => currentIssueId.value !== undefined)
 
+const isGlobalHistoryMode = computed(() => historyMode.value === 'global')
+
+const historyLoaded = computed(() => (isGlobalHistoryMode.value ? globalHistoryLoaded.value : teamHistoryLoaded.value))
+
+const historyRows = computed(() => (isGlobalHistoryMode.value ? globalHistoryRows.value : teamHistoryRows.value))
+
+const historyModeLabel = computed(() => (isGlobalHistoryMode.value ? '当前显示：全局提交记录' : '当前显示：队伍内部提交记录'))
+
+const historyColumnCount = computed(() => (isGlobalHistoryMode.value ? 4 : 5))
+
 const mainButtonStateClass = computed(() => {
   if (!isBingoMode.value) return ''
   if (bingoActionState.value === 'done') return 'is-done'
@@ -262,7 +289,7 @@ const mainButtonText = computed(() => {
     if (bingoActionState.value === 'pending') return '成绩审核中'
     if (bingoActionState.value === 'done') return '已完成'
     const issueText = `第${props.bingoCell}题`
-    return historyRows.value.length > 0 ? `重新提交${issueText}` : `提交${issueText}`
+    return teamHistoryRows.value.length > 0 ? `重新提交${issueText}` : `提交${issueText}`
   }
   if (!isWithinCourseTime.value && !scored.value) return '不在课题时间'
   if (scored.value) return '查看已评分成绩'
@@ -336,6 +363,10 @@ function buildBingoRemarkPrefix(): string {
   return props.bingoCell ? `[Bingo 子题 #${props.bingoCell}] ` : ''
 }
 
+function switchHistoryMode(): void {
+  historyMode.value = historyMode.value === 'team' ? 'global' : 'team'
+}
+
 async function refreshStatus(): Promise<void> {
   if (isBingoMode.value) {
     await refreshBingoStatus()
@@ -385,31 +416,50 @@ async function refreshStatus(): Promise<void> {
 
 async function refreshBingoStatus(): Promise<void> {
   const identityId = getCurrentIdentityId()
-  historyLoaded.value = false
-  historyRows.value = []
+  teamHistoryLoaded.value = false
+  teamHistoryRows.value = []
+  globalHistoryLoaded.value = false
+  globalHistoryRows.value = []
   bingoActionState.value = 'connecting'
 
   if (!identityId) {
-    historyLoaded.value = true
+    teamHistoryLoaded.value = true
+    globalHistoryLoaded.value = true
     bingoActionState.value = 'no-team'
     setFeedback('error', '未获取到用户信息，请重新登录')
     return
   }
 
-  const res = await fetchScoreHistory(identityId, props.course.id, currentIssueId.value)
-  const payload = res?.data || {}
-  const hasTeam = Boolean(payload?.hasTeam)
-  const list = Array.isArray(payload?.list) ? payload.list : []
-  historyRows.value = list
-  historyLoaded.value = true
+  if (currentIssueId.value === undefined) {
+    teamHistoryLoaded.value = true
+    globalHistoryLoaded.value = true
+    bingoActionState.value = 'ready'
+    return
+  }
+
+  const [teamRes, globalRes] = await Promise.all([
+    fetchScoreHistory(identityId, props.course.id, currentIssueId.value),
+    fetchBingoIssueHistory(identityId, props.course.id, currentIssueId.value),
+  ])
+
+  const teamPayload = teamRes?.data || {}
+  const globalPayload = globalRes?.data || {}
+  const hasTeam = Boolean(teamPayload?.hasTeam)
+  const teamList = Array.isArray(teamPayload?.list) ? teamPayload.list : []
+  const globalList = Array.isArray(globalPayload?.list) ? globalPayload.list : []
+
+  teamHistoryRows.value = teamList
+  globalHistoryRows.value = globalList
+  teamHistoryLoaded.value = true
+  globalHistoryLoaded.value = true
 
   if (!hasTeam) {
     bingoActionState.value = 'no-team'
     return
   }
 
-  const hasPending = list.some((item: any) => !Boolean(item?.isScored))
-  const hasPositive = list.some((item: any) => Number(item?.score) > 0)
+  const hasPending = teamList.some((item: any) => !Boolean(item?.isScored))
+  const hasPositive = teamList.some((item: any) => Number(item?.score) > 0)
 
   if (hasPending) {
     bingoActionState.value = 'pending'
@@ -592,6 +642,7 @@ onMounted(() => {
 watch(
   [() => props.course.id, () => props.bingoCell],
   () => {
+    historyMode.value = 'team'
     refreshStatus().catch((err: any) => {
       setFeedback('error', err?.message || '成绩状态加载失败')
     })
@@ -640,6 +691,21 @@ onUnmounted(() => {
   box-shadow:
     0 0 14px rgba(251, 191, 36, 0.28),
     0 0 18px rgba(245, 158, 11, 0.2);
+}
+
+.history-toggle-btn {
+  border: 1px solid rgba(34, 211, 238, 0.5);
+  border-radius: 8px;
+  padding: 6px 10px;
+  color: rgba(207, 250, 254, 0.95);
+  background: rgba(8, 47, 73, 0.45);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.history-toggle-btn:hover {
+  border-color: rgba(34, 211, 238, 0.72);
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.25);
 }
 
 .score-modal-mask {
@@ -722,6 +788,27 @@ onUnmounted(() => {
   border: 1px solid rgba(34, 211, 238, 0.35);
   cursor: zoom-in;
   margin: 0 auto;
+}
+
+.history-source-tag {
+  display: inline-block;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.history-source-tag.is-team {
+  border-color: rgba(34, 211, 238, 0.6);
+  color: #a5f3fc;
+  background: rgba(8, 47, 73, 0.45);
+}
+
+.history-source-tag.is-global {
+  border-color: rgba(251, 191, 36, 0.6);
+  color: #fde68a;
+  background: rgba(120, 53, 15, 0.45);
 }
 
 .score-tag {

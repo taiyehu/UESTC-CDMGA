@@ -86,6 +86,8 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
 
     List<Score> findByIdentityIdInAndCourseIdAndIssueIdAndIsDeletedFalseOrderByUploadTimeDescIdDesc(Set<Integer> identityIds, Integer courseId, Integer issueId);
 
+    List<Score> findByCourseIdAndIssueIdAndIsDeletedFalseOrderByUploadTimeDescIdDesc(Integer courseId, Integer issueId);
+
     @Query("SELECT COUNT(s) FROM Score s WHERE s.identity.id = :identityId AND s.course.category = 'contest' AND s.isDeleted = false")
     long countContestScoreByIdentityId(Integer identityId);
 

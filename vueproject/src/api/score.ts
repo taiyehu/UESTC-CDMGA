@@ -80,6 +80,18 @@ export const fetchScoreHistory = (identityId: number | string, courseId: number 
     params,
   })
 }
+
+export const fetchBingoIssueHistory = (identityId: number | string, courseId: number | string, issueId: number | string) => {
+  return request({
+    url: '/score/history/bingo-issue',
+    method: 'get',
+    params: {
+      identity_id: identityId,
+      course_id: courseId,
+      issue_id: issueId,
+    },
+  })
+}
 export const fetchScore = (params: { page: number; pageSize?: number; size?: number }) => {
   const pageSize = params.pageSize ?? params.size ?? 10
   return request({

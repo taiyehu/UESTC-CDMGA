@@ -14,7 +14,7 @@
     "axios": "^1.13.6",
     "compressorjs": "^1.2.1",
     "dayjs": "^1.11.19",
-    "element-plus": "^2.13.3",
+    "element-plus": "^2.13.5",
     "motion-v": "^2.0.0",
     "pinia": "^3.0.4",
     "tailwindcss": "^4.2.1",

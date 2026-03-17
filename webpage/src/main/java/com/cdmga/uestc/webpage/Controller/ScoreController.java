@@ -154,6 +154,14 @@ public class ScoreController {
         return ResponseEntity.ok(scoreService.getScoreHistoryByIdentityIdAndCourseId(identity_id, course_id, issue_id));
     }
 
+    @GetMapping("/history/bingo-issue")
+    public ResponseEntity<Object> getBingoIssueHistory(
+            @RequestParam Integer identity_id,
+            @RequestParam Integer course_id,
+            @RequestParam Integer issue_id) {
+        return ResponseEntity.ok(scoreService.getBingoIssueHistoryByCourseId(identity_id, course_id, issue_id));
+    }
+
     // 获取文件扩展名
     private String getFileExtension(String fileName) {
         int index = fileName.lastIndexOf('.');

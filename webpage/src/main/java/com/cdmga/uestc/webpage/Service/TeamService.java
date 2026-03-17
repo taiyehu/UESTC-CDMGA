@@ -139,7 +139,9 @@ public class TeamService {
         for (Team row : teamRows) {
             memberIds.add(row.getIdentityId());
         }
-        return calculateBingoLineScore(courseId, memberIds);
+        double bingoScore = calculateBingoScore(courseId, memberIds);
+        double bingoLineScore = calculateBingoLineScore(courseId, memberIds);
+        return bingoScore + bingoLineScore;
     }
 
     public Map<String, Object> getBingoBoardState(Integer courseId, Integer identityId) {
@@ -267,6 +269,32 @@ public class TeamService {
         double total = 0D;
         for (Integer issueId : countedIssueIds) {
             total += approvedBestScoreByIssue.getOrDefault(issueId, 0f);
+        }
+        return total;
+    }
+
+    private Double calculateBingoScore(Integer courseId, Set<Integer> memberIds) {
+        if (memberIds == null || memberIds.isEmpty()) {
+            return 0D;
+        }
+
+        List<com.cdmga.uestc.webpage.Entity.Score> submissions =
+                scoreRepository.findByIdentityIdInAndCourseIdAndIsDeletedFalseOrderByUploadTimeDescIdDesc(memberIds, courseId);
+
+        Map<Integer, Float> approvedBestScoreByIssue = new HashMap<>();
+        for (com.cdmga.uestc.webpage.Entity.Score submission : submissions) {
+            Integer issueId = submission.getIssueId();
+            Float point = submission.getScore();
+            if (!Boolean.TRUE.equals(submission.getIsScored())) continue;
+            if (point == null || point <= 0f) continue;
+            if (issueId == null || issueId < 1 || issueId > 25) continue;
+
+            approvedBestScoreByIssue.merge(issueId, point, Math::max);
+        }
+
+        double total = 0D;
+        for (Float point : approvedBestScoreByIssue.values()) {
+            total += point;
         }
         return total;
     }

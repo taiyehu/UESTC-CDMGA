@@ -153,6 +153,7 @@ const memberSearchLoading = ref(false)
 
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
 
+
 async function loadBingoCourses() {
   const res = await fetchCourseData()
   const list = Array.isArray(res.data) ? res.data : []
