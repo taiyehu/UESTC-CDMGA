@@ -11,6 +11,7 @@ import ProfileSetting from '@/views/profile/profile_setting.vue'
 import adminUsers from '@/views/admin/admin-users.vue'
 import adminCourses from '@/views/admin/admin-courses.vue'
 import adminScores from '@/views/admin/admin-scores.vue'
+import adminScoreLogs from '@/views/admin/admin-score-logs.vue'
 import adminBingoSubmissions from '@/views/admin/admin-bingo-submissions.vue'
 import adminIssues from '@/views/admin/admin-issues.vue'
 import adminTeams from '@/views/admin/admin-teams.vue'
@@ -100,6 +101,10 @@ const routes = [
       {
         path: 'scores',
         component: adminScores,
+      },
+      {
+        path: 'score-logs',
+        component: adminScoreLogs,
       },
       {
         path: 'bingo-submissions',

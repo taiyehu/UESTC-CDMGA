@@ -114,4 +114,34 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
             @Param("scoreId") Long scoreId,
             @Param("uploadTime") java.time.LocalDateTime uploadTime
         );
+
+            @Query("SELECT s FROM Score s WHERE s.isDeleted = false " +
+                "AND s.course.category = 'bingo' " +
+                "AND (:courseId IS NULL OR s.course.id = :courseId) " +
+                "AND (:identityId IS NULL OR s.identity.id = :identityId) " +
+                "AND (:issueId IS NULL OR s.issueId = :issueId) " +
+                "AND (:isScored IS NULL OR s.isScored = :isScored) " +
+                "ORDER BY s.uploadTime DESC, s.id DESC")
+            Page<Score> searchAdminBingoLogs(
+                @Param("courseId") Integer courseId,
+                @Param("identityId") Integer identityId,
+                @Param("issueId") Integer issueId,
+                @Param("isScored") Boolean isScored,
+                Pageable pageable
+            );
+
+            @Query("SELECT s FROM Score s WHERE s.isDeleted = false " +
+                "AND s.course.category <> 'bingo' " +
+                "AND (:courseId IS NULL OR s.course.id = :courseId) " +
+                "AND (:identityId IS NULL OR s.identity.id = :identityId) " +
+                "AND (:issueId IS NULL OR s.issueId = :issueId) " +
+                "AND (:isScored IS NULL OR s.isScored = :isScored) " +
+                "ORDER BY s.uploadTime DESC, s.id DESC")
+            Page<Score> searchAdminNonBingoLogs(
+                @Param("courseId") Integer courseId,
+                @Param("identityId") Integer identityId,
+                @Param("issueId") Integer issueId,
+                @Param("isScored") Boolean isScored,
+                Pageable pageable
+            );
 }

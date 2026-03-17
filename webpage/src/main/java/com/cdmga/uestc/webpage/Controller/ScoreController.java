@@ -162,6 +162,37 @@ public class ScoreController {
         return ResponseEntity.ok(scoreService.getBingoIssueHistoryByCourseId(identity_id, course_id, issue_id));
     }
 
+    @GetMapping("/admin/logs")
+    public ResponseEntity<Object> getAdminScoreLogs(
+            @RequestParam("admin_identity_id") Integer adminIdentityId,
+            @RequestParam(defaultValue = "non-bingo") String category,
+            @RequestParam(required = false) Integer course_id,
+            @RequestParam(required = false) Integer identity_id,
+            @RequestParam(required = false) Integer issue_id,
+            @RequestParam(required = false) Boolean is_scored,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        try {
+            return ResponseEntity.ok(scoreService.getAdminScoreLogs(
+                    adminIdentityId,
+                    category,
+                    course_id,
+                    identity_id,
+                    issue_id,
+                    is_scored,
+                    page,
+                    size
+            ));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Result.error(e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(e.getMessage()));
+        }
+    }
+
     // 获取文件扩展名
     private String getFileExtension(String fileName) {
         int index = fileName.lastIndexOf('.');

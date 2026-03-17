@@ -8,6 +8,7 @@ import com.cdmga.uestc.webpage.Repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 import com.cdmga.uestc.webpage.Dto.UserScoreDto;
@@ -220,6 +221,49 @@ public class ScoreService {
 
     public Long getUnScoredNonBingoScoreCount(){
         return scoreRepository.countUnscoredNonBingo();
+    }
+
+    private void validateAdmin(Integer adminIdentityId) {
+        if (adminIdentityId == null || adminIdentityId <= 0) {
+            throw new IllegalArgumentException("admin_identity_id 无效");
+        }
+        var identity = identityRepository.findById(adminIdentityId).orElse(null);
+        if (identity == null || Boolean.TRUE.equals(identity.getIsDeleted()) || !"admin".equalsIgnoreCase(identity.getRole())) {
+            throw new SecurityException("仅管理员可查看成绩日志");
+        }
+    }
+
+    public Map<String, Object> getAdminScoreLogs(
+            Integer adminIdentityId,
+            String category,
+            Integer courseId,
+            Integer identityId,
+            Integer issueId,
+            Boolean isScored,
+            int page,
+            int size
+    ) {
+        validateAdmin(adminIdentityId);
+
+        String normalizedCategory = category == null ? "non-bingo" : category.trim().toLowerCase();
+        int safePage = Math.max(0, page);
+        int safeSize = Math.max(1, size);
+        Pageable pageable = PageRequest.of(safePage, safeSize);
+
+        Page<Score> scorePage;
+        if ("bingo".equals(normalizedCategory)) {
+            scorePage = scoreRepository.searchAdminBingoLogs(courseId, identityId, issueId, isScored, pageable);
+        } else {
+            scorePage = scoreRepository.searchAdminNonBingoLogs(courseId, identityId, issueId, isScored, pageable);
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("list", scorePage.getContent());
+        result.put("total", scorePage.getTotalElements());
+        result.put("page", safePage);
+        result.put("size", safeSize);
+        result.put("category", "bingo".equals(normalizedCategory) ? "bingo" : "non-bingo");
+        return result;
     }
 
     public boolean existsByIdentityIdAndCourseId(int identityId, int courseId, Integer issueId) {

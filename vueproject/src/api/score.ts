@@ -138,3 +138,42 @@ export const fetchUnScoredNonBingoScores = (params: { page: number; pageSize?: n
     },
   })
 }
+
+export const fetchAdminScoreLogs = (params: {
+  adminIdentityId: number | string
+  category: 'bingo' | 'non-bingo'
+  page: number
+  pageSize?: number
+  size?: number
+  courseId?: number | string
+  identityId?: number | string
+  issueId?: number | string
+  isScored?: boolean | null
+}) => {
+  const pageSize = params.pageSize ?? params.size ?? 10
+  const query: Record<string, any> = {
+    admin_identity_id: params.adminIdentityId,
+    category: params.category,
+    page: params.page - 1,
+    size: pageSize,
+  }
+
+  if (params.courseId !== undefined && params.courseId !== null && params.courseId !== '') {
+    query.course_id = params.courseId
+  }
+  if (params.identityId !== undefined && params.identityId !== null && params.identityId !== '') {
+    query.identity_id = params.identityId
+  }
+  if (params.issueId !== undefined && params.issueId !== null && params.issueId !== '') {
+    query.issue_id = params.issueId
+  }
+  if (typeof params.isScored === 'boolean') {
+    query.is_scored = params.isScored
+  }
+
+  return request({
+    url: '/score/admin/logs',
+    method: 'get',
+    params: query,
+  })
+}
