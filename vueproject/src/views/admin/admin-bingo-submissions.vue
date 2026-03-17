@@ -104,15 +104,15 @@ type BingoRow = {
 
 const rows = ref<BingoRow[]>([])
 const currentPage = ref(1)
-const pageSize = 10
+const pageSize = ref(5)
 const previewVisible = ref(false)
 const previewImage = ref('')
 const pendingStatusMap = ref<Record<number, number | undefined>>({})
 
-const totalPages = computed(() => Math.max(1, Math.ceil(rows.value.length / pageSize)))
+const totalPages = computed(() => Math.max(1, Math.ceil(rows.value.length / pageSize.value)))
 const pagedRows = computed(() => {
-  const start = (currentPage.value - 1) * pageSize
-  return rows.value.slice(start, start + pageSize)
+  const start = (currentPage.value - 1) * pageSize.value
+  return rows.value.slice(start, start + pageSize.value)
 })
 
 function handlePageChange(page: number): void {

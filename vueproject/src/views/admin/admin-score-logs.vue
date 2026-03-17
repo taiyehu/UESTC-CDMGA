@@ -145,7 +145,7 @@ const loading = ref(false)
 const rows = ref<ScoreRow[]>([])
 const total = ref(0)
 const currentPage = ref(1)
-const pageSize = 10
+const pageSize = 5
 const activeCategory = ref<'bingo' | 'non-bingo'>('non-bingo')
 
 const query = reactive({

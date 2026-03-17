@@ -33,11 +33,13 @@
         </div>
       </div>
 
-      <div v-if="selectedItem.image" class="mt-4 bingo-image-wrap overflow-hidden rounded-xl border border-cyan-300/25 bg-slate-900/45">
+      <PentagonPuzzleStar v-if="isPentagonPuzzle" :data-url="pentagonPuzzleDataUrl" />
+
+      <div v-if="!isPentagonPuzzle && selectedItem.image" class="mt-4 bingo-image-wrap overflow-hidden rounded-xl border border-cyan-300/25 bg-slate-900/45">
         <img :src="toUrl(selectedItem.image)" alt="bingo题目图片" class="bingo-image" />
       </div>
 
-      <div v-if="selectedItem.file" class="mt-4 rounded-xl border border-cyan-300/25 bg-slate-900/45 p-4 text-cyan-50/85">
+      <div v-if="!isPentagonPuzzle && selectedItem.file" class="mt-4 rounded-xl border border-cyan-300/25 bg-slate-900/45 p-4 text-cyan-50/85">
         <audio v-if="isAudioFile(selectedItem.file)" :src="toUrl(selectedItem.file)" controls class="bingo-audio" preload="none" />
         <a v-else :href="toUrl(selectedItem.file)" target="_blank" class="bingo-file-link">查看附件文件</a>
       </div>
@@ -72,6 +74,7 @@ import type { BingoTaskItem } from './task-utils'
 import TaskScoreAction from '@/components/TaskScoreAction.vue'
 import BingoIssueGrid from '@/components/BingoIssueGrid.vue'
 import NeonActionButton from '@/components/NeonActionButton.vue'
+import PentagonPuzzleStar from '@/components/PentagonPuzzleStar.vue'
 import { fetchCourseIssues } from '@/api/issue'
 import { fetchMyTeamPanel, fetchMyTeamScore } from '@/api/team'
 
@@ -84,6 +87,8 @@ const course = ref<Course | null>(null)
 const issueMap = ref<Map<number, { text?: string; image?: string; file?: string; songName?: string }>>(new Map())
 const myTeamId = ref<number | null>(null)
 const myTeamScore = ref(0)
+const isPentagonPuzzle = ref(false)
+const pentagonPuzzleDataUrl = ref('')
 
 const courseId = computed(() => Number(route.params.id))
 const cellId = computed(() => {
@@ -131,6 +136,32 @@ const selectedItem = computed<BingoTaskItem & { image?: string; file?: string; s
     }
   )
 })
+
+async function detectPentagonPuzzleByAttachment(filePath?: string) {
+  isPentagonPuzzle.value = false
+  pentagonPuzzleDataUrl.value = ''
+
+  const normalized = String(filePath || '').trim()
+  if (!normalized) return
+
+  const cleanPath = (normalized.split('?')[0] || '').toLowerCase()
+  if (!cleanPath.endsWith('.json')) return
+
+  const url = toUrl(normalized)
+  try {
+    const response = await fetch(url, { cache: 'no-store' })
+    if (!response.ok) return
+    const data = (await response.json()) as Record<string, unknown>
+    const puzzle = data?.['Pentagon Puzzle']
+    if (Array.isArray(puzzle)) {
+      pentagonPuzzleDataUrl.value = url
+      isPentagonPuzzle.value = true
+    }
+  } catch {
+    isPentagonPuzzle.value = false
+    pentagonPuzzleDataUrl.value = ''
+  }
+}
 
 async function loadIssues() {
   try {
@@ -242,6 +273,14 @@ watch(
   () => route.params.id,
   () => {
     loadData()
+  },
+  { immediate: true }
+)
+
+watch(
+  () => selectedItem.value.file,
+  (file) => {
+    void detectPentagonPuzzleByAttachment(file)
   },
   { immediate: true }
 )

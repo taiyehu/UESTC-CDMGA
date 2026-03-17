@@ -77,7 +77,7 @@ import NeonActionButton from '@/components/NeonActionButton.vue'
 
 const allScores = ref<any[]>([])
 const currentPage = ref(1)
-const pageSize = 10
+const pageSize = 5
 const scoreDraft = ref<Record<number, string>>({})
 const previewVisible = ref(false)
 const previewImage = ref('')

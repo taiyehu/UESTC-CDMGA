@@ -52,14 +52,14 @@ import NeonRankTable from '@/components/NeonRankTable.vue'
 import NeonActionButton from '@/components/NeonActionButton.vue'
 
 const activities = ref<any[]>([])
-const pageSize = 10
+const pageSize = ref(5)
 const currentPage = ref(1)
 
-const totalPages = computed(() => Math.max(1, Math.ceil(activities.value.length / pageSize)))
+const totalPages = computed(() => Math.max(1, Math.ceil(activities.value.length / pageSize.value)))
 
 const pagedActivities = computed(() => {
-  const start = (currentPage.value - 1) * pageSize
-  return activities.value.slice(start, start + pageSize)
+  const start = (currentPage.value - 1) * pageSize.value
+  return activities.value.slice(start, start + pageSize.value)
 })
 
 function handlePageChange(page: number): void {

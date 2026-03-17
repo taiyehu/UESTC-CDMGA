@@ -49,7 +49,7 @@ import NeonActionButton from '@/components/NeonActionButton.vue'
 
 const passedProfiles = ref<any[]>([])
 const keyword = ref('')
-const pageSize = 10
+const pageSize = 5
 const currentPage = ref(1)
 
 const filteredProfiles = computed(() => {
