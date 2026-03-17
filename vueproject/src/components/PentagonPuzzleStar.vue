@@ -1,6 +1,27 @@
 <template>
   <section class="pentagon-shell" aria-label="Pentagon Puzzle">
     <svg class="star-svg" viewBox="0 0 100 100" role="img" aria-label="三层边框五角星">
+      <defs>
+        <linearGradient id="star-neon-cyan" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#67e8f9" />
+          <stop offset="100%" stop-color="#22d3ee" />
+        </linearGradient>
+        <linearGradient id="star-neon-pink" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#f472b6" />
+          <stop offset="100%" stop-color="#e879f9" />
+        </linearGradient>
+        <linearGradient id="star-neon-gold" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#fde68a" />
+          <stop offset="100%" stop-color="#fbbf24" />
+        </linearGradient>
+        <filter id="star-neon-glow" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="0.45" result="blurred" />
+          <feMerge>
+            <feMergeNode in="blurred" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
       <polygon class="star-layer layer-1" :points="starPointsOuter" />
       <polygon class="star-layer layer-2" :points="starPointsMid" />
       <polygon class="star-layer layer-3" :points="starPointsInner" />
@@ -8,8 +29,8 @@
 
     <svg class="arrow-svg" viewBox="0 0 100 100" aria-hidden="true">
       <defs>
-        <marker id="pentagon-arrow-head" markerWidth="6" markerHeight="6" refX="4.6" refY="3" orient="auto">
-          <path d="M0,0 L6,3 L0,6 z" fill="rgba(148, 163, 184, 0.9)" />
+        <marker id="pentagon-arrow-head" markerWidth="10" markerHeight="10" refX="8.4" refY="5" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="rgba(103, 232, 249, 0.95)" />
         </marker>
       </defs>
       <path
@@ -93,9 +114,9 @@ function starPolygon(cx: number, cy: number, outerR: number, innerR: number): st
   return points.map((p) => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ')
 }
 
-const starPointsOuter = computed(() => starPolygon(50, 50, 29, 12.4))
-const starPointsMid = computed(() => starPolygon(50, 50, 24.6, 10.4))
-const starPointsInner = computed(() => starPolygon(50, 50, 20.2, 8.4))
+const starPointsOuter = computed(() => starPolygon(50, 50, 31.5, 13.4))
+const starPointsMid = computed(() => starPolygon(50, 50, 23.4, 9.5))
+const starPointsInner = computed(() => starPolygon(50, 50, 15.3, 5.9))
 
 function pointOnRing(index: number, radius: number): Point {
   const angleDeg = -90 + index * 72
@@ -156,25 +177,26 @@ function offset(base: Point, unit: Point, distance: number): Point {
 }
 
 const clusterPoints = computed(() => {
-  const clusters: Array<{ id: number; hint: Point; mode: Point; issue: Point }> = []
+  const clusters: Array<{ id: number; hint: Point; mode: Point; issue: Point; groupCenter: Point }> = []
   for (let i = 0; i < 5; i += 1) {
     const item = puzzleNodes.value[i]
-    const vertex = pointOnRing(i, 35)
+    const vertex = pointOnRing(i, 32)
     const direction = { x: vertex.x - 50, y: vertex.y - 50 }
     const length = Math.hypot(direction.x, direction.y) || 1
     const unit = { x: direction.x / length, y: direction.y / length }
     const tangent = { x: unit.y, y: -unit.x }
 
-    const hint = offset(vertex, unit, 6.4)
-    const baseCenter = offset(hint, unit, 11.6)
-    const mode = offset(baseCenter, tangent, -7.6)
-    const issue = offset(baseCenter, tangent, 7.6)
+    const hint = offset(vertex, unit, 4.6)
+    const groupCenter = offset(hint, unit, 8.8)
+    const mode = offset(groupCenter, tangent, -6.2)
+    const issue = offset(groupCenter, tangent, 6.2)
 
     clusters.push({
       id: item?.id ?? i + 1,
       hint,
       mode,
       issue,
+      groupCenter,
     })
   }
   return clusters
@@ -196,15 +218,21 @@ const renderedNodes = computed(() => {
 
 const arrowPaths = computed(() => {
   const paths: string[] = []
-  const points = clusterPoints.value.map((c) => c.hint)
+  const points = clusterPoints.value.map((c) => c.groupCenter)
   if (points.length < 5) return paths
   for (let i = 0; i < points.length; i += 1) {
     const from = points[i]
     const to = points[(i + 4) % points.length]
     if (!from || !to) continue
+    const mid = {
+      x: (from.x + to.x) / 2,
+      y: (from.y + to.y) / 2,
+    }
+    const radial = { x: mid.x - 50, y: mid.y - 50 }
+    const radialLength = Math.hypot(radial.x, radial.y) || 1
     const control = {
-      x: (from.x + to.x) / 2 + (50 - (from.x + to.x) / 2) * 0.1,
-      y: (from.y + to.y) / 2 + (50 - (from.y + to.y) / 2) * 0.1,
+      x: mid.x + (radial.x / radialLength) * 7.2,
+      y: mid.y + (radial.y / radialLength) * 7.2,
     }
     paths.push(`M ${from.x.toFixed(2)} ${from.y.toFixed(2)} Q ${control.x.toFixed(2)} ${control.y.toFixed(2)} ${to.x.toFixed(2)} ${to.y.toFixed(2)}`)
   }
@@ -221,19 +249,20 @@ const nodes = computed(() => renderedNodes.value)
 <style scoped>
 .pentagon-shell {
   position: relative;
-  width: min(100%, 760px);
-  margin: 14px auto 0;
+  width: min(100%, 820px);
+  margin: 20px auto 4px;
   aspect-ratio: 1 / 1;
-  border-radius: 20px;
-  border: 1px solid rgba(34, 211, 238, 0.25);
+  border-radius: 999px;
+  border: 2px solid rgba(34, 211, 238, 0.45);
   background:
-    radial-gradient(circle at 50% 42%, rgba(14, 116, 144, 0.24), transparent 40%),
-    radial-gradient(circle at 15% 10%, rgba(236, 72, 153, 0.2), transparent 35%),
+    radial-gradient(circle at 50% 50%, rgba(14, 116, 144, 0.24), rgba(8, 47, 73, 0.06) 55%, transparent 72%),
+    radial-gradient(circle at 20% 16%, rgba(236, 72, 153, 0.2), transparent 35%),
     linear-gradient(140deg, rgba(15, 23, 42, 0.86), rgba(17, 24, 39, 0.92));
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
-    0 18px 40px rgba(2, 6, 23, 0.5);
-  overflow: hidden;
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 0 20px rgba(34, 211, 238, 0.28),
+    0 0 42px rgba(168, 85, 247, 0.2);
+  overflow: visible;
 }
 
 .star-svg,
@@ -247,38 +276,40 @@ const nodes = computed(() => renderedNodes.value)
 .star-layer {
   fill: transparent;
   stroke-linejoin: round;
+  filter: url(#star-neon-glow);
 }
 
 .layer-1 {
-  stroke: rgba(56, 189, 248, 0.82);
-  stroke-width: 1.25;
+  stroke: url(#star-neon-cyan);
+  stroke-width: 1.5;
 }
 
 .layer-2 {
-  stroke: rgba(236, 72, 153, 0.72);
-  stroke-width: 1;
+  stroke: url(#star-neon-pink);
+  stroke-width: 1.22;
 }
 
 .layer-3 {
-  stroke: rgba(250, 204, 21, 0.76);
-  stroke-width: 0.92;
+  stroke: url(#star-neon-gold);
+  stroke-width: 1.04;
 }
 
 .flow-arrow-path {
   fill: none;
-  stroke: rgba(148, 163, 184, 0.72);
-  stroke-width: 0.55;
+  stroke: rgba(103, 232, 249, 0.95);
+  stroke-width: 1.65;
   stroke-linecap: round;
-  stroke-dasharray: 1.2 1.2;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 6px rgba(103, 232, 249, 0.55));
 }
 
 .info-circle {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: clamp(72px, 10vw, 96px);
-  height: clamp(72px, 10vw, 96px);
+  width: clamp(68px, 9.2vw, 88px);
+  height: clamp(68px, 9.2vw, 88px);
   border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.45);
+  border: 1px solid rgba(148, 163, 184, 0.58);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -316,8 +347,8 @@ const nodes = computed(() => renderedNodes.value)
 
 @media (max-width: 780px) {
   .info-circle {
-    width: clamp(58px, 18vw, 78px);
-    height: clamp(58px, 18vw, 78px);
+    width: clamp(54px, 16.4vw, 74px);
+    height: clamp(54px, 16.4vw, 74px);
     padding: 6px;
     font-size: clamp(10px, 2.8vw, 12px);
   }
