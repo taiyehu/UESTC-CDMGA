@@ -67,7 +67,10 @@ export const searchTeamMemberOptions = async (courseId: number | string, keyword
   return []
 }
 
-export const saveCourseTeam = (courseId: number | string, payload: { team_id: number; member_ids: number[] }) => {
+export const saveCourseTeam = (
+  courseId: number | string,
+  payload: { team_id: number; member_ids: number[]; admin_identity_id: number }
+) => {
   return request({
     url: `/team/course/${courseId}/save`,
     method: 'post',

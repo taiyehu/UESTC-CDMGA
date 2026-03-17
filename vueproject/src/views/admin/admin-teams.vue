@@ -151,6 +151,21 @@ const savingMap = reactive<Record<number, boolean>>({})
 const memberOptions = ref<TeamMemberOption[]>([])
 const memberSearchLoading = ref(false)
 
+function parseSessionValue(raw: string | null): any {
+  if (!raw) return null
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return raw
+  }
+}
+
+const currentUser = computed(() => parseSessionValue(sessionStorage.getItem('userInfo')))
+const currentAdminIdentityId = computed<number | null>(() => {
+  const value = Number(currentUser.value?.id ?? currentUser.value?.identityId ?? currentUser.value?.userId)
+  return Number.isFinite(value) && value > 0 ? value : null
+})
+
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
 
 
@@ -206,6 +221,10 @@ async function onSearchMembers(keyword: string) {
 
 async function saveTeamRow(row: TeamRowView) {
   if (!selectedCourse.value) return
+  if (!currentAdminIdentityId.value) {
+    ElMessage.error('未获取到管理员身份，请重新登录')
+    return
+  }
 
   const memberIds = row.memberIds.filter((id): id is number => Number.isFinite(id) && (id as number) > 0)
   const uniqueSize = new Set(memberIds).size
@@ -219,6 +238,7 @@ async function saveTeamRow(row: TeamRowView) {
     await saveCourseTeam(selectedCourse.value.id, {
       team_id: row.teamId,
       member_ids: memberIds,
+      admin_identity_id: currentAdminIdentityId.value,
     })
     ElMessage.success(`队伍 #${row.teamId} 保存成功`)
     await loadRows()

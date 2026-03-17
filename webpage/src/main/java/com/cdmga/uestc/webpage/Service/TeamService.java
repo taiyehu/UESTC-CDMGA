@@ -19,6 +19,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -49,6 +50,23 @@ public class TeamService {
             throw new IllegalArgumentException("仅 bingo 课题支持队伍管理");
         }
         return course;
+    }
+
+    private boolean isAfterCourseStart(Course course) {
+        if (course == null || course.getStartTime() == null) {
+            return false;
+        }
+        return LocalDateTime.now().isAfter(course.getStartTime());
+    }
+
+    private void validateAdminIdentity(Integer adminIdentityId) {
+        if (adminIdentityId == null || adminIdentityId <= 0) {
+            throw new IllegalArgumentException("admin_identity_id 无效");
+        }
+        Identity identity = identityRepository.findById(adminIdentityId).orElse(null);
+        if (identity == null || Boolean.TRUE.equals(identity.getIsDeleted()) || !"admin".equalsIgnoreCase(identity.getRole())) {
+            throw new IllegalArgumentException("仅管理员可执行该操作");
+        }
     }
 
     public Map<String, Object> getCourseTeams(Integer courseId, int page, int size) {
@@ -402,9 +420,13 @@ public class TeamService {
 
     @Transactional
     public void leaveTeam(Integer courseId, Integer identityId) {
-        validateBingoCourse(courseId);
+        Course course = validateBingoCourse(courseId);
         if (identityId == null || identityId <= 0) {
             throw new IllegalArgumentException("identity_id 无效");
+        }
+
+        if (isAfterCourseStart(course)) {
+            throw new IllegalArgumentException("课题开始后不可自行退队，请联系管理员在队伍管理页面操作");
         }
 
         Team self = teamRepository.findByCourseIdAndIdentityId(courseId, identityId).orElse(null);
@@ -463,8 +485,9 @@ public class TeamService {
     }
 
     @Transactional
-    public void saveTeamMembers(Integer courseId, Integer teamId, List<Integer> memberIds) {
+    public void saveTeamMembers(Integer courseId, Integer teamId, List<Integer> memberIds, Integer adminIdentityId) {
         validateBingoCourse(courseId);
+        validateAdminIdentity(adminIdentityId);
 
         if (teamId == null || teamId <= 0) {
             throw new IllegalArgumentException("team_id 必须是正整数");

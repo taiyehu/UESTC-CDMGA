@@ -181,7 +181,7 @@ public class TeamController {
             @RequestBody TeamSaveRequest request
     ) {
         try {
-            teamService.saveTeamMembers(courseId, request.getTeam_id(), request.getMember_ids());
+            teamService.saveTeamMembers(courseId, request.getTeam_id(), request.getMember_ids(), request.getAdmin_identity_id());
             return ResponseEntity.ok(Result.success("保存成功"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(e.getMessage()));

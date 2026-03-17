@@ -47,7 +47,15 @@
             </div>
           </div>
           <div class="leave-wrap">
-            <button type="button" class="team-btn leave leave-mini" @click="leaveConfirmVisible = true">退出队伍</button>
+            <button
+              type="button"
+              class="team-btn leave leave-mini"
+              :class="{ 'btn-disabled-note': !canSelfLeaveTeam }"
+              :disabled="!canSelfLeaveTeam"
+              @click="onLeaveButtonClick"
+            >
+              {{ canSelfLeaveTeam ? '退出队伍' : '课题已开始，不可退出' }}
+            </button>
           </div>
         </template>
       </aside>
@@ -186,6 +194,14 @@ const memberSlots = computed(() => {
 
 const duration = computed(() => formatDuration(props.course.startTime, props.course.endTime))
 
+const canSelfLeaveTeam = computed(() => {
+  const start = props.course.startTime
+  if (!start) return true
+  const startAt = new Date(start)
+  if (Number.isNaN(startAt.getTime())) return true
+  return Date.now() <= startAt.getTime()
+})
+
 function toUrl(path?: string) {
   if (!path) return ''
   if (/^https?:\/\//.test(path)) return path
@@ -287,6 +303,11 @@ async function handleInviteMember() {
 
 async function confirmLeaveTeam() {
   if (!currentIdentityId.value) return
+  if (!canSelfLeaveTeam.value) {
+    leaveConfirmVisible.value = false
+    ElMessage.warning('课题开始后不可自行退队，请联系管理员在队伍管理页面操作')
+    return
+  }
   try {
     await leaveCourseTeam(props.course.id, currentIdentityId.value)
     ElMessage.success('已退出队伍')
@@ -295,6 +316,14 @@ async function confirmLeaveTeam() {
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.message || e?.message || '退出失败')
   }
+}
+
+function onLeaveButtonClick() {
+  if (!canSelfLeaveTeam.value) {
+    ElMessage.warning('课题开始后不可自行退队，请联系管理员在队伍管理页面操作')
+    return
+  }
+  leaveConfirmVisible.value = true
 }
 
 function goCell(cellId: number) {
@@ -444,6 +473,16 @@ watch(
   border-color: rgba(251, 191, 36, 0.75);
   color: #fef3c7;
   background: rgba(120, 53, 15, 0.55);
+}
+
+.team-btn.btn-disabled-note,
+.team-btn.btn-disabled-note:hover {
+  border-color: rgba(148, 163, 184, 0.7);
+  color: rgba(226, 232, 240, 0.9);
+  background: rgba(71, 85, 105, 0.55);
+  box-shadow: none;
+  filter: none;
+  transform: none;
 }
 
 .team-meta {
