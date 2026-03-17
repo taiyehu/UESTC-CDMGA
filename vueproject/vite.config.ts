@@ -14,6 +14,26 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '/api')
+      },
+      '/images': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      },
+      '/scores': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      },
+      '/avatars': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      },
+      '/files': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      },
+      '/banners': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
       }
     }, 
     hmr: {

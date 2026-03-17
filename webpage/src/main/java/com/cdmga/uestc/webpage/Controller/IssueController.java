@@ -80,7 +80,7 @@ public class IssueController {
             Path targetLocation = Paths.get(imageUploadDir, "course", String.valueOf(courseId), "issue", fileName);
             Files.createDirectories(targetLocation.getParent());
             Files.copy(image.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-            return Result.success("/image/course/" + courseId + "/issue/" + fileName);
+            return Result.success("/images/course/" + courseId + "/issue/" + fileName);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }

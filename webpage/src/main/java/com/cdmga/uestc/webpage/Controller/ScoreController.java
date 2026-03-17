@@ -109,7 +109,7 @@ public class ScoreController {
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
             // 假设你有一个基础 URL（例如：http://localhost:8081/scores/），可以返回相对路径
-            String fileUrl = "/scores-file/" + fileName;
+            String fileUrl = "/files/" + fileName;
 
             return Result.success(fileUrl);  // 返回文件的URL
         } catch (Exception e) {
