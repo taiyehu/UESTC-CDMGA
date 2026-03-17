@@ -98,11 +98,13 @@
       </tr>
     </NeonRankTable>
 
-    <div class="mt-4 flex items-center justify-end gap-2">
-      <NeonActionButton size="sm" :disabled="currentPage <= 1 || loading" @click="handlePageChange(currentPage - 1)">上一页</NeonActionButton>
-      <span class="text-cyan-100/85">{{ currentPage }} / {{ totalPages }}（共 {{ total }} 条）</span>
-      <NeonActionButton size="sm" :disabled="currentPage >= totalPages || loading" @click="handlePageChange(currentPage + 1)">下一页</NeonActionButton>
-    </div>
+    <AdminPagination
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      :disabled="loading"
+      :summary-text="`${currentPage} / ${totalPages}（共 ${total} 条）`"
+      @change="handlePageChange"
+    />
 
     <teleport to="body">
       <div v-if="previewVisible" class="preview-mask" @click.self="previewVisible = false">
@@ -122,6 +124,7 @@ import { fetchAdminScoreLogs } from '@/api/score'
 import NeonInput from '@/components/NeonInput.vue'
 import NeonRankTable from '@/components/NeonRankTable.vue'
 import NeonActionButton from '@/components/NeonActionButton.vue'
+import AdminPagination from '@/components/AdminPagination.vue'
 
 type ScoreRow = {
   id: number
@@ -341,6 +344,7 @@ onMounted(fetchRows)
   background: rgba(22, 163, 74, 0.22);
   border: 1px solid rgba(74, 222, 128, 0.5);
 }
+
 
 .status-pill.is-pending {
   color: #fde68a;

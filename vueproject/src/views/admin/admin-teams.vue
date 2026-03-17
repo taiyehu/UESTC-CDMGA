@@ -115,11 +115,7 @@
         </tr>
       </NeonRankTable>
 
-      <div class="mt-2 flex items-center justify-end gap-2">
-        <NeonActionButton size="sm" :disabled="currentPage <= 1" @click="changePage(currentPage - 1)">上一页</NeonActionButton>
-        <span class="text-cyan-100/85">{{ currentPage }} / {{ totalPages }}</span>
-        <NeonActionButton size="sm" :disabled="currentPage >= totalPages" @click="changePage(currentPage + 1)">下一页</NeonActionButton>
-      </div>
+      <AdminPagination :current-page="currentPage" :total-pages="totalPages" @change="changePage" />
     </div>
   </div>
 </template>
@@ -130,6 +126,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import NeonRankTable from '@/components/NeonRankTable.vue'
 import NeonActionButton from '@/components/NeonActionButton.vue'
+import AdminPagination from '@/components/AdminPagination.vue'
 import { fetchCourseByIdData, fetchCourseData } from '@/api/course'
 import { fetchCourseTeams, saveCourseTeam, searchTeamMemberOptions, type TeamMemberOption } from '@/api/team'
 
@@ -242,6 +239,11 @@ async function saveTeamRow(row: TeamRowView) {
     })
     ElMessage.success(`队伍 #${row.teamId} 保存成功`)
     await loadRows()
+    const lastRow = rows.value[rows.value.length - 1]
+    const lastOccupied = Boolean(lastRow && lastRow.memberIds.some((id) => Number.isFinite(id) && (id as number) > 0))
+    if (rows.value.length >= pageSize && lastOccupied && currentPage.value < totalPages.value) {
+      await changePage(currentPage.value + 1)
+    }
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.message || e?.message || '保存失败')
   } finally {
@@ -249,9 +251,9 @@ async function saveTeamRow(row: TeamRowView) {
   }
 }
 
-function changePage(page: number) {
+async function changePage(page: number) {
   currentPage.value = Math.min(totalPages.value, Math.max(1, page))
-  loadRows().catch((e: any) => {
+  await loadRows().catch((e: any) => {
     ElMessage.error(e?.message || '加载失败')
   })
 }

@@ -65,11 +65,7 @@
       </tr>
     </NeonRankTable>
 
-    <div class="mt-4 flex items-center justify-end gap-2">
-      <button type="button" class="neon-btn" :disabled="currentPage <= 1" @click="handlePageChange(currentPage - 1)">上一页</button>
-      <span class="text-cyan-100/85">{{ currentPage }} / {{ totalPages }}</span>
-      <button type="button" class="neon-btn" :disabled="currentPage >= totalPages" @click="handlePageChange(currentPage + 1)">下一页</button>
-    </div>
+    <AdminPagination :current-page="currentPage" :total-pages="totalPages" @change="handlePageChange" />
 
     <teleport to="body">
       <div v-if="previewVisible" class="preview-mask" @click.self="previewVisible = false">
@@ -87,6 +83,7 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { fetchUnScoredBingoScores, handleUpdateScore } from '@/api/score'
 import NeonRankTable from '@/components/NeonRankTable.vue'
+import AdminPagination from '@/components/AdminPagination.vue'
 
 type BingoRow = {
   id: number

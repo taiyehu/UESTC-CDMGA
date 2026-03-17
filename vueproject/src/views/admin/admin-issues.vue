@@ -77,11 +77,7 @@
       </tr>
     </NeonRankTable>
 
-    <div v-if="normalizedCategory === 'bingo'" class="mt-4 flex items-center justify-end gap-2">
-      <button type="button" class="neon-btn" :disabled="currentPage <= 1" @click="changePage(currentPage - 1)">上一页</button>
-      <span class="text-cyan-100/85">{{ currentPage }} / {{ totalPages }}</span>
-      <button type="button" class="neon-btn" :disabled="currentPage >= totalPages" @click="changePage(currentPage + 1)">下一页</button>
-    </div>
+    <AdminPagination v-if="normalizedCategory === 'bingo'" :current-page="currentPage" :total-pages="totalPages" @change="changePage" />
   </div>
 </template>
 
@@ -90,6 +86,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import NeonRankTable from '@/components/NeonRankTable.vue'
+import AdminPagination from '@/components/AdminPagination.vue'
 import { fetchCourseByIdData, fetchCourseData } from '@/api/course'
 import { fetchCourseIssues, upsertCourseIssue, uploadIssueFile, uploadIssueImage } from '@/api/issue'
 

@@ -65,9 +65,9 @@ jobs:
               sudo mv /opt/webserver/app/webpage-0.0.1-SNAPSHOT.jar "/opt/webserver/backup/webpage_${{ steps.backup-time.outputs.date }}.jar"
           fi
 
-          # 清理7天前的备份
-          find /opt/webserver/backup/ -name "webpage_*.jar" -mtime +7 -exec sudo rm -f {} \; || true
-          echo "Old backups cleaned."
+          # 按数量清理备份：仅保留最新6个，少于6个不清理
+          ls -1t /opt/webserver/backup/webpage_*.jar 2>/dev/null | tail -n +7 | xargs -r sudo rm -f
+          echo "Backup cleanup done: kept latest 6 files."
 
           # 移动新版本
           sudo mv /opt/webserver/upload/webpage-0.0.1-SNAPSHOT.jar /opt/webserver/app/

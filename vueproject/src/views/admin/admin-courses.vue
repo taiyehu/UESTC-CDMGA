@@ -75,11 +75,7 @@
       </tr>
     </NeonRankTable>
 
-    <div class="mt-4 flex items-center justify-end gap-2">
-      <NeonActionButton size="sm" :disabled="currentPage <= 1" @click="handlePageChange(currentPage - 1)">上一页</NeonActionButton>
-      <span class="text-cyan-100/85">{{ currentPage }} / {{ totalPages }}</span>
-      <NeonActionButton size="sm" :disabled="currentPage >= totalPages" @click="handlePageChange(currentPage + 1)">下一页</NeonActionButton>
-    </div>
+    <AdminPagination :current-page="currentPage" :total-pages="totalPages" @change="handlePageChange" />
 
     <teleport to="body">
       <div v-if="previewVisible" class="preview-mask" @click.self="previewVisible = false">
@@ -100,6 +96,7 @@ import { fetchAllCourseData, deleteCourseData, updateCourseData, uploadCourseIma
 import NeonRankTable from '@/components/NeonRankTable.vue'
 import NeonActionButton from '@/components/NeonActionButton.vue'
 import NeonDateTimePicker from '@/components/NeonDateTimePicker.vue'
+import AdminPagination from '@/components/AdminPagination.vue'
 
 type CourseRow = {
   id: number

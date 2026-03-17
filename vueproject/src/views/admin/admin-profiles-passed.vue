@@ -30,11 +30,7 @@
 
     <p v-if="!filteredProfiles.length" class="mt-3 text-cyan-100/75">暂无已通过资料</p>
 
-    <div class="mt-4 flex items-center justify-end gap-2">
-      <NeonActionButton size="sm" :disabled="currentPage <= 1" @click="handlePageChange(currentPage - 1)">上一页</NeonActionButton>
-      <span class="text-cyan-100/85">{{ currentPage }} / {{ totalPages }}</span>
-      <NeonActionButton size="sm" :disabled="currentPage >= totalPages" @click="handlePageChange(currentPage + 1)">下一页</NeonActionButton>
-    </div>
+    <AdminPagination :current-page="currentPage" :total-pages="totalPages" @change="handlePageChange" />
   </div>
 </template>
 
@@ -45,7 +41,7 @@ import { ElMessage } from 'element-plus'
 import defaultAvatar from '@/assets/default-avatar.png'
 import NeonRankTable from '@/components/NeonRankTable.vue'
 import NeonInput from '@/components/NeonInput.vue'
-import NeonActionButton from '@/components/NeonActionButton.vue'
+import AdminPagination from '@/components/AdminPagination.vue'
 
 const passedProfiles = ref<any[]>([])
 const keyword = ref('')

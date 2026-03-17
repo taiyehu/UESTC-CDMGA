@@ -22,11 +22,7 @@
       </tr>
     </NeonRankTable>
 
-    <div class="mt-4 flex items-center justify-end gap-2">
-      <NeonActionButton size="sm" :disabled="currentPage <= 1" @click="handlePageChange(currentPage - 1)">上一页</NeonActionButton>
-      <span class="text-cyan-100/85">{{ currentPage }} / {{ totalPages }}</span>
-      <NeonActionButton size="sm" :disabled="currentPage >= totalPages" @click="handlePageChange(currentPage + 1)">下一页</NeonActionButton>
-    </div>
+    <AdminPagination :current-page="currentPage" :total-pages="totalPages" @change="handlePageChange" />
   </div>
 </template>
 
@@ -36,6 +32,7 @@ import { ElMessage } from 'element-plus'
 import { fetchUsersData, deleteUserData } from '@/api/user'
 import NeonRankTable from '@/components/NeonRankTable.vue'
 import NeonActionButton from '@/components/NeonActionButton.vue'
+import AdminPagination from '@/components/AdminPagination.vue'
 
 const users = ref<any[]>([])
 const currentPage = ref(1)
