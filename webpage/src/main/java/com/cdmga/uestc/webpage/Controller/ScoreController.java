@@ -59,10 +59,8 @@ public class ScoreController {
         try {
             Score newScore = scoreService.postNewScore(
                     scoreRequest.getCourse_id(), scoreRequest.getIdentity_id(),
-                    scoreRequest.getIssue_id(),
-                    scoreRequest.getUpload_time(), scoreRequest.getImage(),
-                    0, false, scoreRequest.getRemark(),
-                    scoreRequest.getCreated_at(), scoreRequest.getUpdated_at());
+                    scoreRequest.getIssue_id(), scoreRequest.getImage(),
+                    0, false, scoreRequest.getRemark());
             return ResponseEntity.ok(Result.success(newScore));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(e.getMessage()));

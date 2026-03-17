@@ -71,12 +71,31 @@ public class IdentityService {
 
     // 创建新的用户
     public Identity createIdentity(Identity identity) {
+        identity.setCreatedAt(null);
+        identity.setUpdatedAt(null);
         return identityRepository.save(identity);
     }
 
     // 更新用户信息
     public Identity updateIdentity(Identity identity) {
-        return identityRepository.save(identity);
+        if (identity == null || identity.getId() == null) {
+            throw new RuntimeException("用户不存在");
+        }
+
+        Identity existing = identityRepository.findById(identity.getId()).orElse(null);
+        if (existing == null) {
+            throw new RuntimeException("用户不存在");
+        }
+
+        existing.setAccount(identity.getAccount());
+        existing.setRole(identity.getRole());
+        existing.setIsDeleted(identity.getIsDeleted());
+
+        if (identity.getPassword() != null && !identity.getPassword().isBlank()) {
+            existing.setPassword(passwordEncoder.encode(identity.getPassword()));
+        }
+
+        return identityRepository.save(existing);
     }
 
     // 删除用户

@@ -77,8 +77,7 @@ public class CourseController {
             Course newCourse = courseService.postNewCourse(
             courseRequest.getTitle(), courseRequest.getCategory(),
             courseRequest.getStartTime(), courseRequest.getEndTime(),
-            courseRequest.getDescription(), courseRequest.getImage(),
-            courseRequest.getCreateTime(), courseRequest.getUpdateTime());
+            courseRequest.getDescription(), courseRequest.getImage());
             return Result.success(newCourse);
         } catch (Exception e){
             return Result.error(e.getMessage());

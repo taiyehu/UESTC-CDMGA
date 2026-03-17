@@ -359,6 +359,16 @@ function openPreview(imgUrl: string): void {
   previewVisible.value = true
 }
 
+function formatLocalDateTime(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hour = String(date.getHours()).padStart(2, '0')
+  const minute = String(date.getMinutes()).padStart(2, '0')
+  const second = String(date.getSeconds()).padStart(2, '0')
+  return `${year}-${month}-${day}T${hour}:${minute}:${second}`
+}
+
 function buildBingoRemarkPrefix(): string {
   return props.bingoCell ? `[Bingo 子题 #${props.bingoCell}] ` : ''
 }
@@ -551,7 +561,7 @@ async function handleSubmit(): Promise<void> {
       submitForm.image = imageUrl
     }
 
-    submitForm.upload_time = new Date().toISOString()
+    submitForm.upload_time = formatLocalDateTime(new Date())
     const submitData = {
       course_id: submitForm.course_id,
       identity_id: identityId,
@@ -607,7 +617,7 @@ async function handleUpdate(): Promise<void> {
       updateForm.image = imageUrl
     }
 
-    updateForm.upload_time = new Date().toISOString()
+    updateForm.upload_time = formatLocalDateTime(new Date())
     const updateData = {
       upload_time: updateForm.upload_time,
       created_at: updateForm.create_at,

@@ -68,23 +68,21 @@ public class ScoreService {
     }
 
     public Score postNewScore(int course_id, int identity_id, Integer issue_id,
-        LocalDateTime upload_time, String image,
-        float point, Boolean is_scored, String remark,
-        LocalDateTime created_at, LocalDateTime updated_at
-        ){
+        String image, float point, Boolean is_scored, String remark) {
 
-            Score score = new Score(created_at);
+            LocalDateTime now = LocalDateTime.now();
+            Score score = new Score(now);
 
             score.setCourse(courseRepository.findById(course_id).orElse(null));
             score.setIdentity(identityRepository.findById(identity_id).orElse(null));
 
-            score.setUploadTime(upload_time);
+            score.setUploadTime(now);
             score.setImage(image);
             score.setScore(point);
             score.setIsScored(is_scored);
             score.setIssueId(issue_id);
             score.setRemark(remark);
-            score.setUpdatedAt(updated_at);
+            score.setUpdatedAt(now);
 
             return scoreRepository.save(score);
     }
@@ -101,7 +99,9 @@ public class ScoreService {
 
             float finalPoint = point;
             Integer effectiveIssueId = issue_id != null ? issue_id : score.getIssueId();
-            LocalDateTime effectiveUploadTime = upload_time != null ? upload_time : score.getUploadTime();
+                LocalDateTime effectiveUploadTime = Boolean.TRUE.equals(is_scored)
+                    ? score.getUploadTime()
+                    : LocalDateTime.now();
 
             // bingo 审核通过时，按同课题同子题上传时间排名给予阶梯分：1st=5, 2nd/3rd=3, others=2。
             if (Float.compare(point, 2f) == 0
@@ -169,7 +169,7 @@ public class ScoreService {
                 }
             }
 
-            score.setUploadTime(upload_time);
+            score.setUploadTime(effectiveUploadTime);
             score.setImage(image);
             score.setScore(finalPoint);
             score.setIsScored(is_scored);

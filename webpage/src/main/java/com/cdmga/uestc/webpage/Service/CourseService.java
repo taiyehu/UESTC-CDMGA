@@ -59,17 +59,17 @@ public class CourseService {
 
     public Course postNewCourse(String title, String category,
         LocalDateTime startTime, LocalDateTime endTime,
-        String description, String image,
-        LocalDateTime created_at, LocalDateTime updated_at
+        String description, String image
     ){
-        Course course = new Course(created_at);
+        LocalDateTime now = LocalDateTime.now();
+        Course course = new Course(now);
         course.setTitle(title);
         course.setCategory(category);
         course.setStartTime(startTime);
         course.setEndTime(endTime);
         course.setDescription(description);
         course.setImage(image);
-        course.setUpdatedAt(updated_at);
+        course.setUpdatedAt(now);
         return courseRepository.save(course);
     }
 
