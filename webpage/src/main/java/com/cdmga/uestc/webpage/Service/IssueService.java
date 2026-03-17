@@ -6,9 +6,13 @@ import com.cdmga.uestc.webpage.Repository.CourseRepository;
 import com.cdmga.uestc.webpage.Repository.IssueRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -21,7 +25,33 @@ public class IssueService {
     private CourseRepository courseRepository;
 
     public Page<Issue> getCourseIssues(Integer courseId, int page, int size) {
-        return issueRepository.findByCourseIdOrderByIssueIdAsc(courseId, PageRequest.of(page, size));
+        Page<Issue> issuePage = issueRepository.findByCourseIdOrderByIssueIdAsc(courseId, PageRequest.of(page, size));
+
+        Course course = courseRepository.findById(courseId).orElse(null);
+        if (course == null || Boolean.TRUE.equals(course.getIsDeleted())) {
+            return issuePage;
+        }
+
+        String category = course.getCategory() == null ? "" : course.getCategory().trim().toLowerCase();
+        boolean isBingo = "bingo".equals(category);
+        LocalDateTime now = LocalDateTime.now();
+
+        if (isBingo && course.getStartTime() != null && now.isBefore(course.getStartTime())) {
+            List<Issue> masked = new ArrayList<>();
+            for (Issue source : issuePage.getContent()) {
+                Issue item = new Issue();
+                item.setId(source.getId());
+                item.setIssueId(source.getIssueId());
+                item.setText("请等待课题开始");
+                item.setImage("");
+                item.setFile("");
+                item.setSongName(source.getSongName());
+                masked.add(item);
+            }
+            return new PageImpl<>(masked, issuePage.getPageable(), issuePage.getTotalElements());
+        }
+
+        return issuePage;
     }
 
     public Issue upsertIssue(Integer courseId, Integer issueId, String image, String text, String file, String songName) {

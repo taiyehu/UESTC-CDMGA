@@ -282,8 +282,29 @@ const mainButtonStateClass = computed(() => {
   return ''
 })
 
+const isWithinCourseTime = computed(() => {
+  const start = new Date(props.course.startTime).getTime()
+  const end = new Date(props.course.endTime).getTime()
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return true
+  return nowTimestamp.value >= start && nowTimestamp.value <= end
+})
+
+const isBeforeCourseStart = computed(() => {
+  const start = new Date(props.course.startTime).getTime()
+  if (!Number.isFinite(start)) return false
+  return nowTimestamp.value < start
+})
+
+const isAfterCourseEnd = computed(() => {
+  const end = new Date(props.course.endTime).getTime()
+  if (!Number.isFinite(end)) return false
+  return nowTimestamp.value > end
+})
+
 const mainButtonText = computed(() => {
   if (isBingoMode.value) {
+    if (isBeforeCourseStart.value) return '等待课题开始'
+    if (isAfterCourseEnd.value) return '课题已结束'
     if (bingoActionState.value === 'connecting') return '等待连接'
     if (bingoActionState.value === 'no-team') return '请先加入队伍'
     if (bingoActionState.value === 'pending') return '成绩审核中'
@@ -297,15 +318,9 @@ const mainButtonText = computed(() => {
   return props.bingoCell ? '提交该子题成绩' : '提交该课题成绩'
 })
 
-const isWithinCourseTime = computed(() => {
-  const start = new Date(props.course.startTime).getTime()
-  const end = new Date(props.course.endTime).getTime()
-  if (!Number.isFinite(start) || !Number.isFinite(end)) return true
-  return nowTimestamp.value >= start && nowTimestamp.value <= end
-})
-
 const isActionDisabled = computed(() => {
   if (isBingoMode.value) {
+    if (isBeforeCourseStart.value || isAfterCourseEnd.value) return true
     return bingoActionState.value !== 'ready'
   }
   return !isWithinCourseTime.value && !scored.value
@@ -370,7 +385,7 @@ function formatLocalDateTime(date: Date): string {
 }
 
 function buildBingoRemarkPrefix(): string {
-  return props.bingoCell ? `[Bingo 子题 #${props.bingoCell}] ` : ''
+  return props.bingoCell ? `[#${props.bingoCell}] ` : ''
 }
 
 function switchHistoryMode(): void {

@@ -71,9 +71,47 @@ public class ScoreService {
         String image, float point, Boolean is_scored, String remark) {
 
             LocalDateTime now = LocalDateTime.now();
+            Course course = courseRepository.findById(course_id).orElse(null);
+            if (course == null || Boolean.TRUE.equals(course.getIsDeleted())) {
+                throw new IllegalArgumentException("课题不存在");
+            }
+
+            if (course.getStartTime() != null && now.isBefore(course.getStartTime())) {
+                throw new IllegalArgumentException("请等待课题开始");
+            }
+            if (course.getEndTime() != null && now.isAfter(course.getEndTime())) {
+                throw new IllegalArgumentException("课题已结束，拒绝提交");
+            }
+
+            String category = course.getCategory() == null ? "" : course.getCategory().trim().toLowerCase();
+            if ("bingo".equals(category) && issue_id != null) {
+                Team self = teamRepository.findByCourseIdAndIdentityId(course_id, identity_id).orElse(null);
+                if (self != null && self.getTeamId() != null) {
+                    List<Team> members = teamRepository.findByCourseIdAndTeamId(course_id, self.getTeamId());
+                    Set<Integer> memberIds = new LinkedHashSet<>();
+                    for (Team row : members) {
+                        if (row.getIdentityId() != null) {
+                            memberIds.add(row.getIdentityId());
+                        }
+                    }
+
+                    if (!memberIds.isEmpty()) {
+                        List<Score> teamIssueSubmissions = scoreRepository
+                                .findByIdentityIdInAndCourseIdAndIssueIdAndIsDeletedFalseOrderByUploadTimeDescIdDesc(memberIds, course_id, issue_id);
+
+                        boolean hasPendingOrPassed = teamIssueSubmissions.stream().anyMatch(item ->
+                                !Boolean.TRUE.equals(item.getIsScored())
+                                        || (item.getScore() != null && item.getScore() > 0f));
+                        if (hasPendingOrPassed) {
+                            throw new IllegalArgumentException("队伍该子题已有待审核或已通过提交，不能重复提交");
+                        }
+                    }
+                }
+            }
+
             Score score = new Score(now);
 
-            score.setCourse(courseRepository.findById(course_id).orElse(null));
+            score.setCourse(course);
             score.setIdentity(identityRepository.findById(identity_id).orElse(null));
 
             score.setUploadTime(now);
@@ -95,6 +133,50 @@ public class ScoreService {
             // 负分记录视为已定性结果，后续不允许再修改。
             if (Boolean.TRUE.equals(score.getIsScored()) && score.getScore() != null && score.getScore() < 0f) {
                 return score;
+            }
+
+            if (!Boolean.TRUE.equals(is_scored)) {
+                Course course = score.getCourse();
+                if (course == null || Boolean.TRUE.equals(course.getIsDeleted())) {
+                    throw new IllegalArgumentException("课题不存在");
+                }
+
+                LocalDateTime now = LocalDateTime.now();
+                if (course.getStartTime() != null && now.isBefore(course.getStartTime())) {
+                    throw new IllegalArgumentException("请等待课题开始");
+                }
+                if (course.getEndTime() != null && now.isAfter(course.getEndTime())) {
+                    throw new IllegalArgumentException("课题已结束，拒绝提交");
+                }
+
+                String category = course.getCategory() == null ? "" : course.getCategory().trim().toLowerCase();
+                Integer effectiveIssueIdForCheck = issue_id != null ? issue_id : score.getIssueId();
+                if ("bingo".equals(category) && effectiveIssueIdForCheck != null && score.getIdentity() != null && score.getIdentity().getId() != null) {
+                    Integer currentIdentityId = score.getIdentity().getId();
+                    Team self = teamRepository.findByCourseIdAndIdentityId(course.getId(), currentIdentityId).orElse(null);
+                    if (self != null && self.getTeamId() != null) {
+                        List<Team> members = teamRepository.findByCourseIdAndTeamId(course.getId(), self.getTeamId());
+                        Set<Integer> memberIds = new LinkedHashSet<>();
+                        for (Team row : members) {
+                            if (row.getIdentityId() != null) {
+                                memberIds.add(row.getIdentityId());
+                            }
+                        }
+
+                        if (!memberIds.isEmpty()) {
+                            List<Score> teamIssueSubmissions = scoreRepository
+                                    .findByIdentityIdInAndCourseIdAndIssueIdAndIsDeletedFalseOrderByUploadTimeDescIdDesc(
+                                            memberIds, course.getId(), effectiveIssueIdForCheck);
+                            boolean hasPendingOrPassed = teamIssueSubmissions.stream()
+                                    .filter(item -> !item.getId().equals(scoreId))
+                                    .anyMatch(item -> !Boolean.TRUE.equals(item.getIsScored())
+                                            || (item.getScore() != null && item.getScore() > 0f));
+                            if (hasPendingOrPassed) {
+                                throw new IllegalArgumentException("队伍该子题已有待审核或已通过提交，不能重复提交");
+                            }
+                        }
+                    }
+                }
             }
 
             float finalPoint = point;
