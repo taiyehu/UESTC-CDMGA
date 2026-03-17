@@ -26,7 +26,7 @@ jobs:
     needs: update_env
     uses: ./.github/workflows/pnpm_update.yml
     with:
-      channel: dev
+      channel: stable
     secrets:
       SSH_HOST: ${{ secrets.SSH_HOST }}
       SSH_SUDO: ${{ secrets.SSH_SUDO }}

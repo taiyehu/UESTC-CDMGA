@@ -2,33 +2,33 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { ElMessage } from 'element-plus'
 
-// 页面组件
-import Login from '@/views/auth/Login.vue'
-import Register from '@/views/auth/Register.vue'
-import Home from '@/views/pages/home.vue'
-import Profile from '@/views/profile/profile.vue'
-import ProfileSetting from '@/views/profile/profile_setting.vue'
-import adminUsers from '@/views/admin/admin-users.vue'
-import adminCourses from '@/views/admin/admin-courses.vue'
-import adminScores from '@/views/admin/admin-scores.vue'
-import adminScoreLogs from '@/views/admin/admin-score-logs.vue'
-import adminBingoSubmissions from '@/views/admin/admin-bingo-submissions.vue'
-import adminIssues from '@/views/admin/admin-issues.vue'
-import adminTeams from '@/views/admin/admin-teams.vue'
-import adminProfiles from '@/views/admin/admin-profiles.vue'
-import adminProfilesPassed from '@/views/admin/admin-profiles-passed.vue'
-import AdminLayout from '@/views/admin/AdminLayout.vue'
-import adminContentPublish from '@/views/admin/admin-content-publish.vue'
-import ranking from '@/views/pages/ranking.vue'
-import task from '@/views/pages/task.vue'
-import TaskDetailPage from '@/views/task/TaskDetailPage.vue'
-import TaskBingoDetail from '@/views/task/TaskBingoDetail.vue'
-import links from '@/views/pages/links.vue'
-import activity from '@/views/activity/activity.vue'
-import ActivityDetailPage from '@/views/activity/ActivityDetailPage.vue'
-import adminActivities from '@/views/admin/admin-activities.vue'
-import contestRanking from '@/views/pages/contest-ranking.vue'
-import NotFoundPage from '@/views/pages/not-found.vue'
+// 页面组件（懒加载，降低首包体积）
+const Login = () => import('@/views/auth/Login.vue')
+const Register = () => import('@/views/auth/Register.vue')
+const Home = () => import('@/views/pages/home.vue')
+const Profile = () => import('@/views/profile/profile.vue')
+const ProfileSetting = () => import('@/views/profile/profile_setting.vue')
+const AdminUsers = () => import('@/views/admin/admin-users.vue')
+const AdminCourses = () => import('@/views/admin/admin-courses.vue')
+const AdminScores = () => import('@/views/admin/admin-scores.vue')
+const AdminScoreLogs = () => import('@/views/admin/admin-score-logs.vue')
+const AdminBingoSubmissions = () => import('@/views/admin/admin-bingo-submissions.vue')
+const AdminIssues = () => import('@/views/admin/admin-issues.vue')
+const AdminTeams = () => import('@/views/admin/admin-teams.vue')
+const AdminProfiles = () => import('@/views/admin/admin-profiles.vue')
+const AdminProfilesPassed = () => import('@/views/admin/admin-profiles-passed.vue')
+const AdminLayout = () => import('@/views/admin/AdminLayout.vue')
+const AdminContentPublish = () => import('@/views/admin/admin-content-publish.vue')
+const Ranking = () => import('@/views/pages/ranking.vue')
+const Task = () => import('@/views/pages/task.vue')
+const TaskDetailPage = () => import('@/views/task/TaskDetailPage.vue')
+const TaskBingoDetail = () => import('@/views/task/TaskBingoDetail.vue')
+const Links = () => import('@/views/pages/links.vue')
+const Activity = () => import('@/views/activity/activity.vue')
+const ActivityDetailPage = () => import('@/views/activity/ActivityDetailPage.vue')
+const AdminActivities = () => import('@/views/admin/admin-activities.vue')
+const ContestRanking = () => import('@/views/pages/contest-ranking.vue')
+const NotFoundPage = () => import('@/views/pages/not-found.vue')
 
 // 路由表
 const routes = [
@@ -68,27 +68,27 @@ const routes = [
       },
       {
         path: 'users',
-        component: adminUsers,
+        component: AdminUsers,
       },
       {
         path: 'courses',
-        component: adminCourses,
+        component: AdminCourses,
       },
       {
         path: 'content-publish',
-        component: adminContentPublish,
+        component: AdminContentPublish,
       },
       {
         path: 'profiles',
-        component: adminProfiles,
+        component: AdminProfiles,
       },
       {
         path: 'profiles-passed',
-        component: adminProfilesPassed,
+        component: AdminProfilesPassed,
       },
       {
         path: 'activities',
-        component: adminActivities,
+        component: AdminActivities,
       },
       {
         path: 'courses-publish',
@@ -100,33 +100,33 @@ const routes = [
       },
       {
         path: 'scores',
-        component: adminScores,
+        component: AdminScores,
       },
       {
         path: 'score-logs',
-        component: adminScoreLogs,
+        component: AdminScoreLogs,
       },
       {
         path: 'bingo-submissions',
-        component: adminBingoSubmissions,
+        component: AdminBingoSubmissions,
       },
       {
         path: 'issues/:courseId?',
-        component: adminIssues,
+        component: AdminIssues,
       },
       {
         path: 'teams/:courseId?',
-        component: adminTeams,
+        component: AdminTeams,
       },
     ],
   },
   {
     path: '/ranking',
-    component: ranking,
+    component: Ranking,
   },
   {
     path: '/task',
-    component: task,
+    component: Task,
   },
   {
     path: '/task/:id',
@@ -138,11 +138,11 @@ const routes = [
   },
   {
     path: '/links',
-    component: links,
+    component: Links,
   },
   {
     path: '/activity',
-    component: activity,
+    component: Activity,
   },
   {
     path: '/activity/:id',
@@ -150,7 +150,7 @@ const routes = [
   },
   {
     path: '/contest-ranking',
-    component: contestRanking,
+    component: ContestRanking,
   },
   {
     path: '/:pathMatch(.*)*',
