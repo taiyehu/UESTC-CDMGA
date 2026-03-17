@@ -38,10 +38,11 @@ public class IssueController {
     public ResponseEntity<Object> getCourseIssues(
             @PathVariable Integer courseId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "false") boolean unmasked
     ) {
         try {
-            Page<Issue> issues = issueService.getCourseIssues(courseId, page, size);
+            Page<Issue> issues = issueService.getCourseIssues(courseId, page, size, unmasked);
             Map<String, Object> result = new HashMap<>();
             result.put("list", issues.getContent());
             result.put("total", issues.getTotalElements());

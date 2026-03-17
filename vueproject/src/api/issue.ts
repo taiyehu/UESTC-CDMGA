@@ -9,13 +9,19 @@ export interface IssuePayload {
   song_name?: string
 }
 
-export const fetchCourseIssues = (courseId: number | string, page: number, size: number) => {
+export const fetchCourseIssues = (
+  courseId: number | string,
+  page: number,
+  size: number,
+  options?: { unmasked?: boolean }
+) => {
   return request({
     url: `/issue/course/${courseId}`,
     method: 'get',
     params: {
       page: page - 1,
       size,
+      ...(options?.unmasked ? { unmasked: true } : {}),
     },
   })
 }

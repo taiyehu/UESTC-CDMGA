@@ -24,11 +24,15 @@ public class IssueService {
     @Autowired
     private CourseRepository courseRepository;
 
-    public Page<Issue> getCourseIssues(Integer courseId, int page, int size) {
+    public Page<Issue> getCourseIssues(Integer courseId, int page, int size, boolean unmasked) {
         Page<Issue> issuePage = issueRepository.findByCourseIdOrderByIssueIdAsc(courseId, PageRequest.of(page, size));
 
         Course course = courseRepository.findById(courseId).orElse(null);
         if (course == null || Boolean.TRUE.equals(course.getIsDeleted())) {
+            return issuePage;
+        }
+
+        if (unmasked) {
             return issuePage;
         }
 
@@ -72,6 +76,7 @@ public class IssueService {
         }
 
         String normalizedSongName = songName == null ? null : songName.trim();
+        Optional<Issue> existing = issueRepository.findByCourseIdAndIssueId(courseId, issueId);
 
         if ("typical".equals(category)) {
             if (normalizedSongName == null || normalizedSongName.isEmpty()) {
@@ -80,17 +85,17 @@ public class IssueService {
             songName = normalizedSongName;
         } else if ("bingo".equals(category)) {
             if (normalizedSongName == null || normalizedSongName.isEmpty()) {
-                throw new IllegalArgumentException("bingo 课题必须填写单个标记字符");
+                songName = null;
+            } else {
+                if (normalizedSongName.codePointCount(0, normalizedSongName.length()) != 1) {
+                    throw new IllegalArgumentException("bingo 课题 song_name 必须是单个字符");
+                }
+                songName = normalizedSongName;
             }
-            if (normalizedSongName.codePointCount(0, normalizedSongName.length()) != 1) {
-                throw new IllegalArgumentException("bingo 课题 song_name 必须是单个字符");
-            }
-            songName = normalizedSongName;
         } else {
             songName = null;
         }
 
-        Optional<Issue> existing = issueRepository.findByCourseIdAndIssueId(courseId, issueId);
         Issue issue = existing.orElseGet(Issue::new);
 
         issue.setCourse(course);

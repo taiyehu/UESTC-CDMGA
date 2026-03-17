@@ -613,6 +613,8 @@ function scoreTagText(row: Record<string, any>): string {
 function scoreTagClass(row: Record<string, any>): string {
   if (!row?.isScored) return 'is-pending'
   const value = Number(row?.score)
+  if (value === 15) return 'is-center-15'
+  if (value === 10) return 'is-center-10'
   if (value === 5) return 'is-gold'
   if (value === 3) return 'is-pink'
   if (value === 2) return 'is-green'
@@ -873,5 +875,19 @@ onUnmounted(() => {
   border-color: rgba(74, 222, 128, 0.75);
   color: #dcfce7;
   background: rgba(20, 83, 45, 0.55);
+}
+
+.score-tag.is-center-10 {
+  border-color: transparent;
+  color: #e5e7eb;
+  background:
+    linear-gradient(120deg, rgba(34, 211, 238, 0.64), rgba(147, 51, 234, 0.58), rgba(244, 114, 182, 0.64));
+}
+
+.score-tag.is-center-15 {
+  border-color: transparent;
+  color: #fbbf24;
+  background:
+    linear-gradient(120deg, rgba(59, 246, 221, 0.9), rgba(34, 211, 238, 0.86), rgba(251, 191, 36, 0.9));
 }
 </style>

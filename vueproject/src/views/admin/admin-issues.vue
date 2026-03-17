@@ -140,7 +140,7 @@ async function loadRows() {
     return
   }
 
-  const res = await fetchCourseIssues(selectedCourse.value.id, currentPage.value, pageSize.value)
+  const res = await fetchCourseIssues(selectedCourse.value.id, currentPage.value, pageSize.value, { unmasked: true })
   const list = Array.isArray(res.data?.list) ? res.data.list : []
   const map = new Map<number, any>()
   for (const item of list) {
@@ -208,15 +208,9 @@ async function saveRow(row: IssueRow) {
     return
   }
 
-  if (normalizedCategory.value === 'bingo') {
-    if (!normalizedSongName) {
-      ElMessage.warning(`Bingo 课题的 issue #${row.issueId} 需要填写单个标记字符`)
-      return
-    }
-    if ([...normalizedSongName].length !== 1) {
+  if (normalizedCategory.value === 'bingo' && normalizedSongName && [...normalizedSongName].length !== 1) {
       ElMessage.warning(`Bingo 课题的 issue #${row.issueId} 标记只能是单个字符`)
       return
-    }
   }
 
   savingMap[row.issueId] = true
@@ -226,7 +220,7 @@ async function saveRow(row: IssueRow) {
       image: row.image,
       text: row.text,
       file: row.file,
-      song_name: normalizedSongName || undefined,
+      song_name: normalizedCategory.value === 'bingo' ? (normalizedSongName || undefined) : normalizedSongName || undefined,
     })
     ElMessage.success(`Issue #${row.issueId} 保存成功`)
   } catch (e: any) {
