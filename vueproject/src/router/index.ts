@@ -13,6 +13,7 @@ const AdminCourses = () => import('@/views/admin/admin-courses.vue')
 const AdminScores = () => import('@/views/admin/admin-scores.vue')
 const AdminScoreLogs = () => import('@/views/admin/admin-score-logs.vue')
 const AdminBingoSubmissions = () => import('@/views/admin/admin-bingo-submissions.vue')
+const AdminBingoTips = () => import('@/views/admin/admin-bingo-tips.vue')
 const AdminIssues = () => import('@/views/admin/admin-issues.vue')
 const AdminTeams = () => import('@/views/admin/admin-teams.vue')
 const AdminProfiles = () => import('@/views/admin/admin-profiles.vue')
@@ -109,6 +110,10 @@ const routes = [
       {
         path: 'bingo-submissions',
         component: AdminBingoSubmissions,
+      },
+      {
+        path: 'bingo-tips/:courseId?',
+        component: AdminBingoTips,
       },
       {
         path: 'issues/:courseId?',

@@ -8,13 +8,25 @@
         <div class="top-main">
           <div class="mission-head">
             <p class="mission-label">bingo mission</p>
-            <NeonActionButton size="sm" @click="goBingo">返回 Bingo 面板</NeonActionButton>
           </div>
           <h1 class="text-2xl font-semibold text-cyan-100 md:text-3xl">{{ detailHeading }}</h1>
           <p class="mt-2 text-sm text-cyan-100/75">所属课题：{{ course.title }}</p>
           <p class="mt-1 text-sm text-cyan-100/75">持续时间：{{ duration }}</p>
           <div class="desc-card mt-4 rounded-xl border border-cyan-300/25 bg-slate-900/45 p-4 text-cyan-50/85">
             <p class="bingo-desc">{{ selectedItem.description }}</p>
+          </div>
+          <div class="tip-card mt-3 rounded-xl border border-cyan-300/25 bg-slate-900/45 p-4 text-cyan-50/85">
+            <p class="tip-label">当前提示</p>
+            <p v-if="currentTips.length === 0" class="tip-content">暂无提示</p>
+            <div v-else class="tip-list">
+              <div v-for="item in currentTips" :key="item.id" class="tip-item">
+                <p class="tip-meta">
+                  <span class="legend-dot team-dot" :class="teamMarkerClass(item.teamId, item.teamName)">{{ formatTeamMarker(item.teamId, item.teamName) }}</span>
+                  <span> · {{ formatDateTime(item.createdAt) }}</span>
+                </p>
+                <p class="tip-content">{{ item.tip }}</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -58,7 +70,8 @@
       </div>
     </article>
 
-    <div class="mt-6 flex justify-end">
+    <div class="mt-6 flex justify-end gap-3">
+      <NeonActionButton variant="blue" @click="goBingo">返回 Bingo 面板</NeonActionButton>
       <NeonActionButton variant="yellow" @click="goList">返回课题列表</NeonActionButton>
     </div>
   </section>
@@ -77,6 +90,7 @@ import NeonActionButton from '@/components/NeonActionButton.vue'
 import PentagonPuzzleStar from '@/components/PentagonPuzzleStar.vue'
 import { fetchCourseIssues } from '@/api/issue'
 import { fetchMyTeamPanel, fetchMyTeamScore } from '@/api/team'
+import { fetchCourseIssueBingoTips } from '@/api/bingoTip'
 
 const route = useRoute()
 const router = useRouter()
@@ -89,6 +103,7 @@ const myTeamId = ref<number | null>(null)
 const myTeamScore = ref(0)
 const isPentagonPuzzle = ref(false)
 const pentagonPuzzleDataUrl = ref('')
+const currentTips = ref<Array<{ id: number; tip: string; teamId: number; teamName?: string; createdAt?: string }>>([])
 
 const courseId = computed(() => Number(route.params.id))
 const cellId = computed(() => {
@@ -221,6 +236,52 @@ async function loadTeamSummary() {
   }
 }
 
+async function loadCurrentTip() {
+  currentTips.value = []
+  if (!Number.isFinite(courseId.value) || courseId.value <= 0 || !Number.isFinite(cellId.value) || cellId.value <= 0) {
+    return
+  }
+
+  try {
+    const tips = await fetchCourseIssueBingoTips(courseId.value, cellId.value)
+    currentTips.value = tips
+      .map((item: any) => ({
+        id: Number(item?.id),
+        tip: String(item?.tip || '').trim(),
+        teamId: Number(item?.teamId || 0),
+        teamName: String(item?.teamName || ''),
+        createdAt: item?.createdAt,
+      }))
+      .filter((item: { id: number; tip: string }) => Number.isFinite(item.id) && item.id > 0 && item.tip)
+  } catch {
+    currentTips.value = []
+  }
+}
+
+function formatDateTime(value?: string): string {
+  if (!value) return '-'
+  return new Date(value).toLocaleString('zh-CN')
+}
+
+function formatTeamMarker(teamId?: number, teamName?: string): string {
+  if (Number.isFinite(Number(teamId)) && Number(teamId) > 0) {
+    return `Team #${Number(teamId)}`
+  }
+  const text = String(teamName || '').trim()
+  const matched = text.match(/(\d+)/)
+  return matched ? `Team #${matched[1]}` : '-'
+}
+
+function teamMarkerClass(teamId?: number, teamName?: string): 'team-a' | 'team-b' | 'team-c' {
+  const marker = formatTeamMarker(teamId, teamName)
+  const num = Number((marker.match(/(\d+)/) || [])[1])
+  if (!Number.isFinite(num) || num <= 0) return 'team-a'
+  const mod = num % 3
+  if (mod === 1) return 'team-a'
+  if (mod === 2) return 'team-b'
+  return 'team-c'
+}
+
 async function loadData() {
   loading.value = true
   error.value = null
@@ -241,6 +302,7 @@ async function loadData() {
     }
     await loadIssues()
     await loadTeamSummary()
+    await loadCurrentTip()
   } catch (err: any) {
     error.value = err?.message || String(err)
   } finally {
@@ -275,6 +337,13 @@ watch(
     loadData()
   },
   { immediate: true }
+)
+
+watch(
+  () => route.params.cellId,
+  () => {
+    loadCurrentTip()
+  }
 )
 
 watch(
@@ -353,6 +422,80 @@ watch(
 .bingo-desc {
   font-size: 18px;
   line-height: 1.75;
+}
+
+.tip-label {
+  margin: 0 0 6px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: rgba(34, 211, 238, 0.92);
+  text-transform: uppercase;
+}
+
+.tip-content {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.tip-list {
+  display: grid;
+  gap: 10px;
+}
+
+.tip-item {
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  border-radius: 8px;
+  padding: 8px;
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.tip-meta {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: rgba(207, 250, 254, 0.72);
+}
+
+.legend-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.legend-dot.team-a {
+  color: #f8fafc;
+  background: linear-gradient(145deg, rgba(30, 64, 175, 0.85), rgba(37, 99, 235, 0.78));
+  border: 1px solid rgba(96, 165, 250, 0.85);
+}
+
+.legend-dot.team-b {
+  color: #ecfeff;
+  background: linear-gradient(145deg, rgba(13, 148, 136, 0.85), rgba(20, 184, 166, 0.78));
+  border: 1px solid rgba(45, 212, 191, 0.85);
+}
+
+.legend-dot.team-c {
+  color: #fff7ed;
+  background: linear-gradient(145deg, rgba(180, 83, 9, 0.85), rgba(234, 88, 12, 0.78));
+  border: 1px solid rgba(251, 146, 60, 0.85);
+}
+
+.team-dot {
+  width: auto;
+  height: auto;
+  min-width: 32px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  vertical-align: middle;
+  white-space: nowrap;
+  word-break: keep-all;
 }
 
 .bingo-image {

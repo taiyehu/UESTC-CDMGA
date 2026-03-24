@@ -72,6 +72,25 @@
       </div>
     </section>
 
+    <section class="task-panel text-left">
+      <div class="tips-head">
+        <h3 class="tips-title">当前课题提示</h3>
+        <span class="tips-sub">共 {{ tips.length }} 条</span>
+      </div>
+      <p v-if="tipsLoading" class="team-empty">提示加载中...</p>
+      <p v-else-if="tips.length === 0" class="team-empty">暂无提示</p>
+      <div v-else class="tips-grid">
+        <div v-for="item in tips" :key="item.id" class="tip-card">
+          <p class="tip-id">
+            ISSUE {{ item.issueId }} ·
+            <span class="legend-dot team-dot" :class="teamMarkerClass(item.teamId, item.teamName)">{{ formatTeamMarker(item.teamId, item.teamName) }}</span>
+          </p>
+          <p class="tip-text">{{ item.tip }}</p>
+          <p class="tip-time">{{ formatDateTime(item.createdAt) }}</p>
+        </div>
+      </div>
+    </section>
+
     <el-dialog v-model="joinDialogVisible" title="加入队伍" width="520px" class="team-dialog" modal-class="team-dialog-mask">
       <div class="space-y-3">
         <el-input v-model="joinKeyword" placeholder="搜索队伍ID或队员名称" class="team-input" />
@@ -150,6 +169,7 @@ import {
   type TeamMemberOption,
   type TeamPanel,
 } from '@/api/team'
+import { fetchCourseBingoTips } from '@/api/bingoTip'
 import { ElMessage } from 'element-plus'
 
 const props = defineProps<{ course: Course }>()
@@ -165,6 +185,8 @@ const inviteOptions = ref<TeamMemberOption[]>([])
 const inviteTargetId = ref<number | null>(null)
 const inviteLoading = ref(false)
 const leaveConfirmVisible = ref(false)
+const tips = ref<Array<{ id: number; issueId: number; tip: string; teamId: number; teamName?: string; createdAt?: string }>>([])
+const tipsLoading = ref(false)
 
 function parseSessionValue(raw: string | null): any {
   if (!raw) return null
@@ -228,6 +250,52 @@ async function loadMyTeamPanel() {
   } finally {
     gridRefreshToken.value += 1
   }
+}
+
+async function loadTips() {
+  tipsLoading.value = true
+  try {
+    const res = await fetchCourseBingoTips(props.course.id, 1, 25)
+    const list = Array.isArray(res?.data?.list) ? res.data.list : []
+    tips.value = list
+      .map((item: any) => ({
+        id: Number(item?.id),
+        issueId: Number(item?.issueId),
+        tip: String(item?.tip || '').trim(),
+        teamId: Number(item?.teamId || 0),
+        teamName: String(item?.teamName || ''),
+        createdAt: item?.createdAt,
+      }))
+      .filter((item: { id: number; issueId: number; tip: string }) => Number.isFinite(item.id) && item.id > 0 && Number.isFinite(item.issueId) && item.issueId > 0 && item.tip)
+  } catch {
+    tips.value = []
+  } finally {
+    tipsLoading.value = false
+  }
+}
+
+function formatDateTime(value?: string): string {
+  if (!value) return '-'
+  return new Date(value).toLocaleString('zh-CN')
+}
+
+function formatTeamMarker(teamId?: number, teamName?: string): string {
+  if (Number.isFinite(Number(teamId)) && Number(teamId) > 0) {
+    return `#${Number(teamId)}`
+  }
+  const text = String(teamName || '').trim()
+  const matched = text.match(/(\d+)/)
+  return matched ? `#${matched[1]}` : '-'
+}
+
+function teamMarkerClass(teamId?: number, teamName?: string): 'team-a' | 'team-b' | 'team-c' {
+  const marker = formatTeamMarker(teamId, teamName)
+  const num = Number((marker.match(/(\d+)/) || [])[1])
+  if (!Number.isFinite(num) || num <= 0) return 'team-a'
+  const mod = num % 3
+  if (mod === 1) return 'team-a'
+  if (mod === 2) return 'team-b'
+  return 'team-c'
 }
 
 async function handleCreateTeam() {
@@ -334,6 +402,7 @@ watch(
   () => props.course.id,
   () => {
     loadMyTeamPanel()
+    loadTips()
   },
   { immediate: true }
 )
@@ -368,6 +437,96 @@ watch(
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+
+.tips-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.tips-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #dbeafe;
+}
+
+.tips-sub {
+  color: rgba(207, 250, 254, 0.72);
+  font-size: 13px;
+}
+
+.tips-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.tip-card {
+  border: 1px solid rgba(34, 211, 238, 0.22);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.42);
+  padding: 10px;
+}
+
+.tip-id {
+  margin: 0 0 4px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: rgba(34, 211, 238, 0.9);
+}
+
+.team-dot {
+  width: auto;
+  height: auto;
+  min-width: 32px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-left: 4px;
+  font-size: 11px;
+  vertical-align: middle;
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
+.team-dot.team-a {
+  color: #f8fafc;
+  background: linear-gradient(145deg, rgba(30, 64, 175, 0.85), rgba(37, 99, 235, 0.78));
+  border: 1px solid rgba(96, 165, 250, 0.85);
+}
+
+.team-dot.team-b {
+  color: #ecfeff;
+  background: linear-gradient(145deg, rgba(13, 148, 136, 0.85), rgba(20, 184, 166, 0.78));
+  border: 1px solid rgba(45, 212, 191, 0.85);
+}
+
+.team-dot.team-c {
+  color: #fff7ed;
+  background: linear-gradient(145deg, rgba(180, 83, 9, 0.85), rgba(234, 88, 12, 0.78));
+  border: 1px solid rgba(251, 146, 60, 0.85);
+}
+
+.tip-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(226, 232, 240, 0.96);
+}
+
+.tip-time {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: rgba(207, 250, 254, 0.62);
+}
+
+@media (max-width: 760px) {
+  .tips-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .legend-dot {

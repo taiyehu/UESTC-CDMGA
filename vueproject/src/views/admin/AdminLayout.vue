@@ -17,6 +17,7 @@
           <el-menu-item index="/admin/scores">成绩管理</el-menu-item>
           <el-menu-item index="/admin/score-logs">成绩日志</el-menu-item>
           <el-menu-item index="/admin/bingo-submissions">Bingo提交管理</el-menu-item>
+          <el-menu-item index="/admin/bingo-tips">Bingo提示管理</el-menu-item>
           <el-menu-item index="/admin/issues">Issue管理</el-menu-item>
           <el-menu-item index="/admin/teams">队伍管理</el-menu-item>
           <el-menu-item index="/admin/profiles">资料审核</el-menu-item>
@@ -43,6 +44,7 @@ const activePath = computed(() => {
   if (route.path.startsWith('/admin/activities-publish')) return '/admin/content-publish'
   if (route.path.startsWith('/admin/issues')) return '/admin/issues'
   if (route.path.startsWith('/admin/teams')) return '/admin/teams'
+  if (route.path.startsWith('/admin/bingo-tips')) return '/admin/bingo-tips'
   return route.path
 })
 </script>
