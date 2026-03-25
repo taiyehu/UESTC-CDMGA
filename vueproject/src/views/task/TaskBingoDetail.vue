@@ -48,7 +48,13 @@
       <PentagonPuzzleStar v-if="isPentagonPuzzle" :data-url="pentagonPuzzleDataUrl" />
 
       <div v-if="!isPentagonPuzzle && selectedItem.image" class="mt-4 bingo-image-wrap overflow-hidden rounded-xl border border-cyan-300/25 bg-slate-900/45">
-        <img :src="toUrl(selectedItem.image)" alt="bingo题目图片" class="bingo-image" />
+        <el-image
+          :src="toUrl(selectedItem.image)"
+          :preview-src-list="[toUrl(selectedItem.image)]"
+          fit="cover"
+          preview-teleported
+          class="bingo-image"
+        />
       </div>
 
       <div v-if="!isPentagonPuzzle && selectedItem.file" class="mt-4 rounded-xl border border-cyan-300/25 bg-slate-900/45 p-4 text-cyan-50/85">

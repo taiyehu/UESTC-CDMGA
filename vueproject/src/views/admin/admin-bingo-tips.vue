@@ -103,7 +103,7 @@
       v-if="selectedCourse"
       :current-page="currentPage"
       :total-pages="totalPages"
-      :summary-text="`${currentPage} / ${totalPages}（issue ${rangeText}）`"
+      :summary-text="`${currentPage} / ${totalPages}（共 ${totalCount} 条）`"
       @change="changePage"
     />
   </div>
@@ -136,6 +136,7 @@ const bingoCourses = ref<any[]>([])
 const selectedCourse = ref<any | null>(null)
 const rows = ref<TipRow[]>([])
 const currentPage = ref(1)
+const totalCount = ref(0)
 const savingMap = reactive<Record<number, boolean>>({})
 const creating = ref(false)
 const issueOptions = ref<number[]>([])
@@ -147,15 +148,8 @@ const createForm = reactive({
 })
 
 const pageSize = 5
-const totalIssues = 25
-const totalPages = computed(() => Math.max(1, Math.ceil(totalIssues / pageSize)))
+const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / pageSize)))
 const normalizedCategory = computed(() => String(selectedCourse.value?.category || '').trim().toLowerCase())
-
-const rangeText = computed(() => {
-  const start = (currentPage.value - 1) * pageSize + 1
-  const end = Math.min(totalIssues, start + pageSize - 1)
-  return `${start}-${end}`
-})
 
 async function loadBingoCourses() {
   const res = await fetchCourseData()
@@ -184,17 +178,13 @@ function buildPageRows(tips: any[]) {
 async function loadRows() {
   if (!selectedCourse.value) {
     rows.value = []
+    totalCount.value = 0
     return
   }
 
-  const startIssue = (currentPage.value - 1) * pageSize + 1
-  const endIssue = Math.min(totalIssues, startIssue + pageSize - 1)
-  const list: any[] = []
-  for (let issueId = startIssue; issueId <= endIssue; issueId += 1) {
-    const res = await fetchCourseBingoTips(selectedCourse.value.id, 1, 100, issueId)
-    const current = Array.isArray(res?.data?.list) ? res.data.list : []
-    list.push(...current)
-  }
+  const res = await fetchCourseBingoTips(selectedCourse.value.id, currentPage.value, pageSize)
+  const list = Array.isArray(res?.data?.list) ? res.data.list : []
+  totalCount.value = Number(res?.data?.total || 0)
   buildPageRows(list)
 }
 
