@@ -85,18 +85,30 @@ jobs:
 
           echo "等待应用启动..."
           success=0
-          for i in {1..10}; do
-            if sudo lsof -t -i:8080 > /dev/null 2>&1; then
+          # 冷启动可能超过 50 秒，这里最多等待 3 分钟
+          for i in {1..36}; do
+            if ! sudo systemctl is-active --quiet webserver.service; then
+              echo "第 $i 次检测，systemd 服务未处于 active，5秒后重试..."
+              sleep 5
+              continue
+            fi
+
+            # 优先用 ss 检查端口监听，lsof 作为兜底
+            if sudo ss -lnt "sport = :8080" | grep -q ":8080"; then
+              echo "应用启动成功!"
+              success=1
+              break
+            elif command -v lsof >/dev/null 2>&1 && sudo lsof -t -i:8080 > /dev/null 2>&1; then
               echo "应用启动成功!"
               success=1
               break
             else
-              echo "第 $i 次检测，服务未启动，5秒后重试..."
+              echo "第 $i 次检测，服务进程已运行但端口未就绪，5秒后重试..."
               sleep 5
             fi
           done
           if [ "$success" -ne 1 ]; then
-            echo "警告: 应用连续10次检测未正常启动，请检查日志"
+            echo "警告: 应用在 3 分钟内未就绪，请检查日志"
             sudo journalctl -u webserver.service -n 50 --no-pager
             exit 1
           fi
