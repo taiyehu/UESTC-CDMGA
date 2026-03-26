@@ -50,6 +50,13 @@
         </button>
 
         <button
+            type="button"
+            class="hud-tile group p-6 text-left"
+            @click="openurl('https://thenobody996.github.io/gachagacha/')"
+          ><h2 class="mb-3 text-xl font-semibold text-cyan-50">bingo活动抽曲</h2>
+          <p class="text-sm leading-6 text-cyan-50/85">bingo活动用抽曲界面</p></button>
+
+        <button
           type="button"
           class="hud-tile group p-6 text-left"
           @click="go('docs/SCREEN.html')"
@@ -66,6 +73,9 @@
 <script lang="ts" setup>
 function go(path: string) {
   window.open(`https://qglint.github.io/cdmga_links/${path}`, '_blank')
+}
+function openurl(path: string) {
+  window.open(path, '_blank')
 }
 </script>
 
