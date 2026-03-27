@@ -53,8 +53,9 @@
             type="button"
             class="hud-tile group p-6 text-left"
             @click="openurl('https://thenobody996.github.io/gachagacha/')"
-          ><h2 class="mb-3 text-xl font-semibold text-cyan-50">bingo活动抽曲</h2>
-          <p class="text-sm leading-6 text-cyan-50/85">bingo活动用抽曲界面</p></button>
+          ><h2 class="mb-3 text-xl font-semibold text-cyan-50"></h2>
+          <p class="text-sm leading-6 text-cyan-50/85"></p>
+        </button>
 
         <button
           type="button"
