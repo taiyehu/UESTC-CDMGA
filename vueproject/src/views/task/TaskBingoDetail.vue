@@ -428,6 +428,8 @@ watch(
 .bingo-desc {
   font-size: 18px;
   line-height: 1.75;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .tip-label {
