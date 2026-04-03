@@ -266,6 +266,10 @@ const modalTitle = computed(() => {
 
 const isBingoMode = computed(() => currentIssueId.value !== undefined)
 
+const isRankingCategory = computed(() => {
+  return String(props.course.category || '').trim().toLowerCase() === 'ranking'
+})
+
 const isGlobalHistoryMode = computed(() => historyMode.value === 'global')
 
 const historyLoaded = computed(() => (isGlobalHistoryMode.value ? globalHistoryLoaded.value : teamHistoryLoaded.value))
@@ -313,7 +317,7 @@ const mainButtonText = computed(() => {
     return teamHistoryRows.value.length > 0 ? `重新提交${issueText}` : `提交${issueText}`
   }
   if (!isWithinCourseTime.value && !scored.value) return '不在课题时间'
-  if (scored.value) return '查看已评分成绩'
+  if (scored.value && !isRankingCategory.value) return '查看已评分成绩'
   if (submitted.value) return '更新成绩'
   return props.bingoCell ? '提交该子题成绩' : '提交该课题成绩'
 })
@@ -506,7 +510,7 @@ async function handleMainAction(): Promise<void> {
       return
     }
 
-    if (scored.value) {
+    if (scored.value && !isRankingCategory.value) {
       activeModal.value = 'view'
       return
     }
