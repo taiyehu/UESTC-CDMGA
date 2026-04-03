@@ -45,27 +45,27 @@
                   </button>
                 </td>
                 <td class="px-4 py-3 text-center">{{ row.account }}</td>
-                <td class="px-4 py-3 text-center font-semibold text-cyan-100">{{ row.totalScore }}</td>
+                <td class="px-4 py-3 text-center font-semibold text-cyan-100">{{ row.totalScoreText || row.totalScore }}</td>
               </tr>
 
               <tr v-if="isExpanded(row.identityId)" class="border-t border-white/12 bg-slate-900/35">
                 <td colspan="5" class="px-4 py-4">
                   <div
-                    v-if="row.contestScores && row.contestScores.length"
+                    v-if="row.submissions && row.submissions.length"
                     class="flex flex-wrap justify-center gap-5"
                   >
                     <div
-                      v-for="(score, idx) in row.contestScores"
-                      :key="idx"
+                      v-for="(submission, idx) in row.submissions"
+                      :key="submission.scoreId || idx"
                       class="score-chip rounded-xl bg-slate-900/45 px-4 py-3 text-center backdrop-blur-lg"
                     >
-                      <p class="text-xs font-semibold tracking-wide text-cyan-50">第{{ Number(idx) + 1 }}首分数</p>
-                      <p class="my-2 text-sm font-semibold text-fuchsia-100">{{ score.score + 10000000 }}</p>
+                      <p class="text-xs font-semibold tracking-wide text-cyan-50">{{ submission.courseTitle || `第${Number(idx) + 1}项` }}</p>
+                      <p class="my-2 text-sm font-semibold text-fuchsia-100">{{ submission.displayScoreText || submission.displayScore }}</p>
                       <img
-                        :src="getImageUrl(score.image)"
+                        :src="getImageUrl(submission.image)"
                         alt="课题图片"
                         class="h-15 w-15 cursor-pointer rounded-md border border-white/50 object-cover transition hover:scale-105"
-                        @click="handleImageClick(getImageUrl(score.image))"
+                        @click="handleImageClick(getImageUrl(submission.image))"
                       />
                     </div>
                   </div>
@@ -185,28 +185,10 @@ function goToProfile(id: string | number): void {
 
 async function fetchRankData(): Promise<void> {
   try {
-    const res = await axios.get('/api/score/contest-scores')
-    let data = res.data.data || []
-    // 保留原有 totalScore 计算
-    const promises = data.map(async (item: any) => {
-      const resp = await axios.get('/api/score/contest-score-count', {
-        params: { identityId: item.identityId },
-      })
-      const count = resp.data.data || 0
-      item.totalScore += count * 10000000
-      item.contestCount = count
-      // 新增：获取该用户所有 contest 课题成绩和图片
-      console.log('请求contest成绩 identityId:', item.identityId)
-      const contestResp = await axios.get(
-        '/api/score/contest/contest-scores-by-user',
-        {
-          params: { identityId: item.identityId },
-        }
-      )
-      item.contestScores = contestResp.data.data || []
-      return item
+    const res = await axios.get('/api/rank/board', {
+      params: { category: 'contest' },
     })
-    data = await Promise.all(promises)
+    let data = res.data.data || []
     data.sort((a: any, b: any) => b.totalScore - a.totalScore)
     rankAllData.value = data
     rankSortedData.value = data

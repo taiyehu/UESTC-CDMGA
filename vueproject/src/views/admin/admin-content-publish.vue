@@ -22,6 +22,8 @@
           <el-option label="typical" value="typical" />
           <el-option label="bingo" value="bingo" />
           <el-option label="legacy" value="legacy" />
+          <el-option label="contest" value="contest" />
+          <el-option label="ranking" value="ranking" />
         </el-select>
       </div>
 

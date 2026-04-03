@@ -74,12 +74,14 @@
       </div>
     </div>
 
-    <NeonActionButton
-      class="fixed bottom-5 right-5"
-      @click="router.push('/contest-ranking')"
-    >
-      查看比赛排行榜
-    </NeonActionButton>
+    <div class="fixed bottom-5 right-5 flex flex-col gap-2">
+      <NeonActionButton @click="router.push('/contest-ranking')">
+        查看比赛排行榜
+      </NeonActionButton>
+      <NeonActionButton @click="router.push('/ranking-new')">
+        查看统一排行榜
+      </NeonActionButton>
+    </div>
   </section>
 </template>
 

@@ -62,6 +62,9 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     @Query("SELECT s FROM Score s WHERE s.isScored = true AND s.isDeleted = false AND s.course.category <> 'contest' AND s.course.category <> 'bingo'")
     List<Score> findScoredNotDeletedAndCategoryNotContestOrBingo();
 
+    @Query("SELECT s FROM Score s WHERE s.isScored = true AND s.isDeleted = false AND LOWER(TRIM(COALESCE(s.course.category, ''))) NOT IN ('contest', 'ranking', 'bingo')")
+    List<Score> findScoredNotDeletedAndCategoryNotContestRankingOrBingo();
+
     List<Score> findByIdentity_IdAndIsScoredTrueAndIsDeletedFalse(int identityId);
 
     @Query("SELECT s FROM Score s WHERE s.isScored = true AND s.isDeleted = false AND s.identity.id = :identityId AND s.course.category = 'contest'")
@@ -69,6 +72,12 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
 
     @Query("SELECT s FROM Score s WHERE s.isScored = true AND s.isDeleted = false AND s.identity.id = :identityId AND s.course.category <> 'contest' AND s.course.category <> 'bingo'")
     List<Score> findByIdentity_IdAndIsScoredTrueAndIsDeletedFalseAndCategoryNotContest(int identityId);
+
+    @Query("SELECT s FROM Score s WHERE s.isScored = true AND s.isDeleted = false AND s.course.category = :category")
+    List<Score> findScoredNotDeletedByCategory(@Param("category") String category);
+
+    @Query("SELECT s FROM Score s WHERE s.isScored = true AND s.isDeleted = false AND s.course.category = :category AND s.course.id IN :courseIds")
+    List<Score> findScoredNotDeletedByCategoryAndCourseIds(@Param("category") String category, @Param("courseIds") Set<Integer> courseIds);
 
     boolean existsByIdentityIdAndCourseIdAndIsDeletedFalse(int identityId, int courseId);
 

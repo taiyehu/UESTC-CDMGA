@@ -566,7 +566,7 @@ public class ScoreService {
     }
 
     public List<UserScoreDto> calculateTotalScoreForAllUsers() {
-        List<Score> scores = scoreRepository.findScoredNotDeletedAndCategoryNotContestOrBingo();
+        List<Score> scores = scoreRepository.findScoredNotDeletedAndCategoryNotContestRankingOrBingo();
         return calculateScoresForAllUsers(scores);
     }
 

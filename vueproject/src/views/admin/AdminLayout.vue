@@ -15,6 +15,7 @@
           <el-menu-item index="/admin/courses">课题管理</el-menu-item>
           <el-menu-item index="/admin/content-publish">发布内容</el-menu-item>
           <el-menu-item index="/admin/scores">成绩管理</el-menu-item>
+          <el-menu-item index="/admin/rank-configs">排行榜配置</el-menu-item>
           <el-menu-item index="/admin/score-logs">成绩日志</el-menu-item>
           <el-menu-item index="/admin/bingo-submissions">Bingo提交管理</el-menu-item>
           <el-menu-item index="/admin/bingo-tips">Bingo提示管理</el-menu-item>

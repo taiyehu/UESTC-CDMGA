@@ -62,4 +62,10 @@ public interface CourseRepository extends JpaRepository<Course, Integer> {
     Page<Course> findAvailableCourseNotContainingCategory(@Param("currentDateTime") LocalDateTime currentDateTime,
                                                           @Param("contain") String contain,
                                                           Pageable pageable);
+
+    @Query("SELECT c FROM Course c WHERE c.isDeleted = false AND LOWER(c.category) = LOWER(:category) ORDER BY c.startTime DESC")
+    List<Course> findAllByCategory(@Param("category") String category);
+
+    @Query("SELECT c FROM Course c WHERE c.isDeleted = false AND LOWER(c.category) = LOWER(:category) AND c.startTime <= :now AND c.endTime >= :now ORDER BY c.startTime DESC")
+    List<Course> findActiveByCategory(@Param("category") String category, @Param("now") LocalDateTime now);
 }

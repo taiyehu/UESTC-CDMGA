@@ -11,6 +11,7 @@ const ProfileSetting = () => import('@/views/profile/profile_setting.vue')
 const AdminUsers = () => import('@/views/admin/admin-users.vue')
 const AdminCourses = () => import('@/views/admin/admin-courses.vue')
 const AdminScores = () => import('@/views/admin/admin-scores.vue')
+const AdminRankConfigs = () => import('@/views/admin/admin-rank-configs.vue')
 const AdminScoreLogs = () => import('@/views/admin/admin-score-logs.vue')
 const AdminBingoSubmissions = () => import('@/views/admin/admin-bingo-submissions.vue')
 const AdminBingoTips = () => import('@/views/admin/admin-bingo-tips.vue')
@@ -21,6 +22,7 @@ const AdminProfilesPassed = () => import('@/views/admin/admin-profiles-passed.vu
 const AdminLayout = () => import('@/views/admin/AdminLayout.vue')
 const AdminContentPublish = () => import('@/views/admin/admin-content-publish.vue')
 const Ranking = () => import('@/views/pages/ranking.vue')
+const RankingNew = () => import('@/views/pages/ranking-new.vue')
 const Task = () => import('@/views/pages/task.vue')
 const TaskDetailPage = () => import('@/views/task/TaskDetailPage.vue')
 const TaskBingoDetail = () => import('@/views/task/TaskBingoDetail.vue')
@@ -104,6 +106,10 @@ const routes = [
         component: AdminScores,
       },
       {
+        path: 'rank-configs',
+        component: AdminRankConfigs,
+      },
+      {
         path: 'score-logs',
         component: AdminScoreLogs,
       },
@@ -128,6 +134,10 @@ const routes = [
   {
     path: '/ranking',
     component: Ranking,
+  },
+  {
+    path: '/ranking-new',
+    component: RankingNew,
   },
   {
     path: '/task',
