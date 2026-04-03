@@ -7,7 +7,7 @@
     </header>
 
     <div class="hud-card p-4 md:p-6">
-      <h2 class="mb-5 text-center text-xl font-semibold text-cyan-100 md:text-2xl">统一排行榜</h2>
+      <h2 class="mb-5 text-center text-xl font-semibold text-cyan-100 md:text-2xl">一⭐起⭐打⭐榜</h2>
 
       <div class="mb-6 rounded-xl border border-cyan-300/30 bg-slate-900/35 p-4">
         <div class="mb-3 flex flex-wrap gap-2">
@@ -16,8 +16,8 @@
         </div>
 
         <div class="mb-3 flex flex-wrap gap-2">
-          <NeonActionButton :class="category === 'ranking' ? 'is-active' : ''" @click="switchCategory('ranking')">ranking 类别</NeonActionButton>
-          <NeonActionButton :class="category === 'contest' ? 'is-active' : ''" @click="switchCategory('contest')">contest 类别</NeonActionButton>
+          <NeonActionButton :class="category === 'ranking' ? 'is-active' : ''" @click="switchCategory('ranking')">打榜排行</NeonActionButton>
+          <NeonActionButton :class="category === 'contest' ? 'is-active' : ''" @click="switchCategory('contest')">比赛成绩记录</NeonActionButton>
         </div>
 
         <div v-if="mode === 'history'" class="flex flex-wrap items-center gap-2">
@@ -31,8 +31,31 @@
         </div>
 
         <p class="mt-3 text-sm text-cyan-50/85">
-          {{ mode === 'active' ? '当前仅统计现在处于 startTime 到 endTime 区间的课题成绩。' : '历史模式可查看该类别全部课题，并支持按课题筛选。' }}
+          {{ mode === 'active' ? '当前排行榜仅统计在进行中的的课题成绩。' : '历史模式可查看该类别全部课题，并支持按课题筛选。' }}
         </p>
+      </div>
+
+      <div v-if="showActiveRankingCourses" class="mb-6 rounded-xl border border-cyan-300/30 bg-slate-900/35 p-4">
+        <h3 class="mb-3 text-lg font-semibold text-cyan-100">进行中的 ranking 课题</h3>
+        <div v-if="activeRankingCourses.length" class="active-course-wrap">
+          <article
+            v-for="course in activeRankingCourses"
+            :key="course.id"
+            class="course-card"
+          >
+            <img
+              v-if="course.image"
+              :src="getImageUrl(course.image)"
+              :alt="course.title"
+              class="course-image"
+            />
+            <div class="course-body">
+              <h4 class="course-title">{{ course.title }}</h4>
+              <p class="course-desc">{{ course.description || '暂无描述' }}</p>
+            </div>
+          </article>
+        </div>
+        <p v-else class="text-sm text-cyan-50/85">当前没有进行中的 ranking 课题。</p>
       </div>
 
       <NeonRankTable min-width-class="min-w-180" text-size-class="text-lg">
@@ -45,7 +68,7 @@
             <th class="px-4 py-3 text-center">总分</th>
           </tr>
         </template>
-        <template v-for="(row, index) in pagedRankData" :key="row.identityId">
+        <template v-for="row in pagedRankData" :key="row.identityId">
           <tr class="border-t border-white/12 transition hover:bg-cyan-300/8">
             <td class="px-4 py-3 text-center">
               <NeonActionButton size="sm" @click="toggleExpanded(row.identityId)">
@@ -53,7 +76,7 @@
               </NeonActionButton>
             </td>
             <td class="px-4 py-3 text-center font-semibold text-fuchsia-100">
-              {{ (rankCurrentPage - 1) * rankPageSize + index + 1 }}
+              {{ getDisplayRank(row) }}
             </td>
             <td class="px-4 py-3">
               <button type="button" class="mx-auto block" @click="goToProfile(row.identityId)">
@@ -151,6 +174,8 @@ interface CourseOption {
   category: string
   startTime?: string
   endTime?: string
+  description?: string
+  image?: string
 }
 
 const rankAllData = ref<any[]>([])
@@ -163,7 +188,12 @@ const expandedKeys = ref<string[]>([])
 const mode = ref<'active' | 'history'>('active')
 const category = ref<'ranking' | 'contest'>('ranking')
 const historyCourses = ref<CourseOption[]>([])
+const activeRankingCourses = ref<CourseOption[]>([])
 const selectedCourseId = ref<number>(0)
+
+const showActiveRankingCourses = computed(() => {
+  return mode.value === 'active' && category.value === 'ranking'
+})
 
 const totalPages = computed<number>(() => Math.max(1, Math.ceil(rankSortedData.value.length / rankPageSize.value)))
 
@@ -185,6 +215,23 @@ const visiblePages = computed<number[]>(() => {
 const pagedRankData = computed<any[]>(() => {
   const start = (rankCurrentPage.value - 1) * rankPageSize.value
   return rankSortedData.value.slice(start, start + rankPageSize.value)
+})
+
+const rankByIdentityId = computed<Record<string, number>>(() => {
+  const rankMap: Record<string, number> = {}
+  let lastScore: number | null = null
+  let currentRank = 0
+
+  rankSortedData.value.forEach((row: any, index: number) => {
+    const score = Number(row?.totalScore ?? 0)
+    if (lastScore === null || Math.abs(score - lastScore) > 1e-9) {
+      currentRank = index + 1
+      lastScore = score
+    }
+    rankMap[String(row?.identityId)] = currentRank
+  })
+
+  return rankMap
 })
 
 const router = useRouter()
@@ -232,9 +279,30 @@ async function fetchRankData(): Promise<void> {
   }
 }
 
+async function fetchActiveRankingCourses(): Promise<void> {
+  if (!showActiveRankingCourses.value) {
+    activeRankingCourses.value = []
+    return
+  }
+
+  try {
+    const res = await axios.get('/api/course/availablecourse-containing', {
+      params: {
+        excludePrefix: 'ranking',
+        page: 0,
+        size: 100,
+      },
+    })
+    activeRankingCourses.value = res.data?.list || []
+  } catch (e) {
+    ElMessage({ message: '获取进行中 ranking 课题失败', type: 'error' })
+  }
+}
+
 async function switchMode(nextMode: 'active' | 'history'): Promise<void> {
   mode.value = nextMode
   await fetchHistoryCourses()
+  await fetchActiveRankingCourses()
   await fetchRankData()
 }
 
@@ -242,6 +310,7 @@ async function switchCategory(nextCategory: 'ranking' | 'contest'): Promise<void
   category.value = nextCategory
   selectedCourseId.value = 0
   await fetchHistoryCourses()
+  await fetchActiveRankingCourses()
   await fetchRankData()
 }
 
@@ -282,8 +351,13 @@ function formatTime(time?: string): string {
   return dayjs(time).format('MM-DD HH:mm')
 }
 
+function getDisplayRank(row: any): number {
+  return rankByIdentityId.value[String(row?.identityId)] || 0
+}
+
 onMounted(async () => {
   await fetchHistoryCourses()
+  await fetchActiveRankingCourses()
   await fetchRankData()
 })
 </script>
@@ -375,6 +449,47 @@ onMounted(async () => {
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
+}
+
+.course-card {
+  width: min(760px, 100%);
+  overflow: hidden;
+  border: 1px solid rgba(34, 211, 238, 0.28);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.active-course-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.course-image {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  display: block;
+}
+
+.course-body {
+  padding: 12px;
+  text-align: center;
+}
+
+.course-title {
+  color: #cffafe;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.course-desc {
+  color: rgba(224, 242, 254, 0.9);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 auto;
+  max-width: 640px;
 }
 
 .select-input {

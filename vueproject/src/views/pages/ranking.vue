@@ -18,12 +18,12 @@
             </tr>
           </template>
             <tr
-              v-for="(row, index) in pagedRankData"
+              v-for="row in pagedRankData"
               :key="row.identityId"
               class="border-t border-white/12 transition hover:bg-cyan-300/8"
             >
               <td class="px-4 py-3 text-center font-semibold text-fuchsia-100">
-                {{ (rankCurrentPage - 1) * rankPageSize + index + 1 }}
+                {{ getDisplayRank(row) }}
               </td>
               <td class="px-4 py-3">
                 <button
@@ -79,7 +79,7 @@
         查看比赛排行榜
       </NeonActionButton>
       <NeonActionButton @click="router.push('/ranking-new')">
-        查看统一排行榜
+        查看打榜排行榜
       </NeonActionButton>
     </div>
   </section>
@@ -122,6 +122,23 @@ const pagedRankData = computed<any[]>(() => {
   return rankSortedData.value.slice(start, start + rankPageSize.value)
 })
 
+const rankByIdentityId = computed<Record<string, number>>(() => {
+  const rankMap: Record<string, number> = {}
+  let lastScore: number | null = null
+  let currentRank = 0
+
+  rankSortedData.value.forEach((row: any, index: number) => {
+    const score = Number(row?.totalScore ?? 0)
+    if (lastScore === null || Math.abs(score - lastScore) > 1e-9) {
+      currentRank = index + 1
+      lastScore = score
+    }
+    rankMap[String(row?.identityId)] = currentRank
+  })
+
+  return rankMap
+})
+
 const router = useRouter()
 
 function goToProfile(id: string | number): void {
@@ -155,6 +172,10 @@ function getImageUrl(imagePath?: string): string {
     return imagePath
   }
   return imagePath.startsWith('/') ? imagePath : '/' + imagePath
+}
+
+function getDisplayRank(row: any): number {
+  return rankByIdentityId.value[String(row?.identityId)] || 0
 }
 
 onMounted(() => {

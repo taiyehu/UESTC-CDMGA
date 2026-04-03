@@ -18,7 +18,7 @@
               <th class="w-36 px-4 py-3 text-center">总分</th>
             </tr>
           </template>
-            <template v-for="(row, index) in pagedRankData" :key="row.identityId">
+            <template v-for="row in pagedRankData" :key="row.identityId">
               <tr class="border-t border-white/12 transition hover:bg-white/10">
                 <td class="px-4 py-3 text-center">
                   <NeonActionButton
@@ -29,7 +29,7 @@
                   </NeonActionButton>
                 </td>
                 <td class="px-4 py-3 text-center font-semibold text-fuchsia-100">
-                  {{ (rankCurrentPage - 1) * rankPageSize + index + 1 }}
+                  {{ getDisplayRank(row) }}
                 </td>
                 <td class="px-4 py-3">
                   <button
@@ -177,6 +177,23 @@ const pagedRankData = computed<any[]>(() => {
   return rankSortedData.value.slice(start, start + rankPageSize.value)
 })
 
+const rankByIdentityId = computed<Record<string, number>>(() => {
+  const rankMap: Record<string, number> = {}
+  let lastScore: number | null = null
+  let currentRank = 0
+
+  rankSortedData.value.forEach((row: any, index: number) => {
+    const score = Number(row?.totalScore ?? 0)
+    if (lastScore === null || Math.abs(score - lastScore) > 1e-9) {
+      currentRank = index + 1
+      lastScore = score
+    }
+    rankMap[String(row?.identityId)] = currentRank
+  })
+
+  return rankMap
+})
+
 const router = useRouter()
 
 function goToProfile(id: string | number): void {
@@ -234,6 +251,10 @@ function getImageUrl(imagePath?: string): string {
 function handleImageClick(imgUrl: string): void {
   previewImage.value = imgUrl
   previewVisible.value = true
+}
+
+function getDisplayRank(row: any): number {
+  return rankByIdentityId.value[String(row?.identityId)] || 0
 }
 
 onMounted(() => {
