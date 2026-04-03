@@ -186,7 +186,7 @@ function goToProfile(id: string | number): void {
 async function fetchRankData(): Promise<void> {
   try {
     const res = await axios.get('/api/rank/board', {
-      params: { category: 'contest' },
+      params: { category: 'contest', mode: 'history' },
     })
     let data = res.data.data || []
     data.sort((a: any, b: any) => b.totalScore - a.totalScore)
