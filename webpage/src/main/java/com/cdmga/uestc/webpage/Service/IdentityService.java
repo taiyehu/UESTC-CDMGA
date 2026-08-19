@@ -68,6 +68,10 @@ public class IdentityService {
     public Identity getIdentityByAccount(String account) {
         return identityRepository.findByAccount(account);
     }
+    // 根据用户 ID 查找用户信息
+    public Identity getIdentityById(Integer id) {
+        return identityRepository.findById(id).orElse(null);
+    }
 
     // 创建新的用户
     public Identity createIdentity(Identity identity) {

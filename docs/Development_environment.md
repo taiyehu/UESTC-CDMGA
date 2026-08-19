@@ -14,7 +14,7 @@ parent: 开发
 
 ```Bash
 sudo apt update -y #更新软件源
-sudo apt install openjdk-17-jdk -y #安装java17
+sudo apt install openjdk-25-jdk -y #安装java25
 sudo apt install maven -y #安装maven
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - # 添加 NodeSource 仓库
 sudo apt install nodejs -y #安装node和npm
