@@ -25,7 +25,9 @@
 
         <div class="flex flex-1 flex-col items-center pt-4">
           <div class="mb-4">
-            <h2 class="profile-name">{{ profile.account || user.account }}</h2>
+            <h2 class="profile-name">
+              {{ profile.account || (isSelf ? user.account : '未知用户') }}
+            </h2>
           </div>
 
           <div class="profile-signature" :title="getStatusText()">

@@ -2,7 +2,9 @@ package com.cdmga.uestc.webpage.Controller;
 
 import com.cdmga.uestc.webpage.common.Result;
 import com.cdmga.uestc.webpage.Dto.ProfileDto;
+import com.cdmga.uestc.webpage.Entity.Identity;
 import com.cdmga.uestc.webpage.Entity.Profile;
+import com.cdmga.uestc.webpage.Service.IdentityService;
 import com.cdmga.uestc.webpage.Service.ProfileService;
 
 import java.nio.file.Files;
@@ -24,6 +26,9 @@ import org.springframework.web.multipart.MultipartFile;
 public class ProfileController {
     @Autowired
     private ProfileService profileService;
+
+    @Autowired
+    private IdentityService identityService;
 
     @Value("${avatar.upload.directory}")
     private String uploadDir;
@@ -72,15 +77,40 @@ public class ProfileController {
     @GetMapping("/identity/{identityId}")
     public ProfileDto getProfileByIdentity(@PathVariable Integer identityId) {
         Profile p = profileService.getProfileByIdentityId(identityId);
-        if (p == null) return null;
+
         ProfileDto dto = new ProfileDto();
+
+        // 用户存在，但还没有创建个人资料
+        if (p == null) {
+            Identity identity = identityService.getIdentityById(identityId);
+
+            // identity 本身也不存在
+            if (identity == null) {
+                return null;
+            }
+
+            dto.setIdentityId(identity.getId());
+            dto.setAccount(identity.getAccount());
+            dto.setAvatar(null);
+            dto.setDescription(null);
+            dto.setTitle(null);
+            dto.setStatus(-1);
+
+            return dto;
+        }
+
         dto.setId(p.getId());
-        dto.setIdentityId(p.getIdentity() != null ? p.getIdentity().getId() : null);
-        dto.setAccount(p.getIdentity() != null ? p.getIdentity().getAccount() : null);
+        dto.setIdentityId(
+            p.getIdentity() != null ? p.getIdentity().getId() : identityId
+        );
+        dto.setAccount(
+            p.getIdentity() != null ? p.getIdentity().getAccount() : null
+        );
         dto.setAvatar(p.getAvatar());
         dto.setDescription(p.getDescription());
         dto.setTitle(p.getTitle());
         dto.setStatus(p.getStatus());
+
         return dto;
     }
 
