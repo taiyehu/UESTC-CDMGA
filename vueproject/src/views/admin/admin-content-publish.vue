@@ -13,7 +13,12 @@
 
       <div>
         <p class="label">{{ publishType === 'course' ? '课题名称' : '活动名称' }}</p>
-        <NeonInput v-model="form.title" :placeholder="publishType === 'course' ? '请输入课题名称' : '请输入活动名称'" />
+        <el-select v-if="publishType === 'course' && form.category === 'award'" v-model="form.title" class="full-width neon-select" popper-class="neon-select-popper" placeholder="请选择奖品等级">
+          <el-option label="一等奖（40 分）" value="一等奖" />
+          <el-option label="二等奖（20 分）" value="二等奖" />
+          <el-option label="三等奖（10 分）" value="三等奖" />
+        </el-select>
+        <NeonInput v-else v-model="form.title" :placeholder="publishType === 'course' ? '请输入课题名称' : '请输入活动名称'" />
       </div>
 
       <div v-if="publishType === 'course'">
@@ -24,6 +29,7 @@
           <el-option label="legacy" value="legacy" />
           <el-option label="contest" value="contest" />
           <el-option label="ranking" value="ranking" />
+          <el-option label="award" value="award" />
         </el-select>
       </div>
 
@@ -105,6 +111,13 @@ watch(
   () => publishType.value,
   () => {
     resetForm()
+  }
+)
+
+watch(
+  () => form.category,
+  () => {
+    if (publishType.value === 'course') form.title = ''
   }
 )
 

@@ -62,8 +62,24 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     @Query("SELECT s FROM Score s WHERE s.isScored = true AND s.isDeleted = false AND s.course.category <> 'contest' AND s.course.category <> 'bingo'")
     List<Score> findScoredNotDeletedAndCategoryNotContestOrBingo();
 
-    @Query("SELECT s FROM Score s WHERE s.isScored = true AND s.isDeleted = false AND LOWER(TRIM(COALESCE(s.course.category, ''))) NOT IN ('contest', 'ranking', 'bingo')")
-    List<Score> findScoredNotDeletedAndCategoryNotContestRankingOrBingo();
+    @Query("SELECT s FROM Score s WHERE s.isScored = true AND s.isDeleted = false AND LOWER(TRIM(COALESCE(s.course.category, ''))) NOT IN ('contest', 'ranking', 'bingo', 'award')")
+    List<Score> findScoredRegularScores();
+
+    @Query("SELECT COALESCE(SUM(s.score), 0) FROM Score s WHERE s.identity.id = :identityId AND s.isScored = true AND s.isDeleted = false AND LOWER(TRIM(COALESCE(s.course.category, ''))) NOT IN ('contest', 'ranking', 'bingo', 'award')")
+    Double sumRegularScoreByIdentityId(@Param("identityId") Integer identityId);
+
+    @Query("SELECT COALESCE(SUM(s.score), 0) FROM Score s WHERE s.identity.id = :identityId AND s.isScored = true AND s.isDeleted = false AND LOWER(TRIM(COALESCE(s.course.category, ''))) = 'award'")
+    Double sumAwardScoreByIdentityId(@Param("identityId") Integer identityId);
+
+    @Query("SELECT COUNT(s) > 0 FROM Score s WHERE s.identity.id = :identityId AND s.isDeleted = false AND LOWER(TRIM(COALESCE(s.course.category, ''))) = 'award' AND TRIM(s.course.title) = :title")
+    boolean existsAwardByIdentityIdAndTitle(@Param("identityId") Integer identityId, @Param("title") String title);
+
+    @Query("SELECT COUNT(s) > 0 FROM Score s WHERE s.identity.id = :identityId AND s.isDeleted = false AND s.id <> :scoreId AND LOWER(TRIM(COALESCE(s.course.category, ''))) = 'award' AND TRIM(s.course.title) = :title")
+    boolean existsOtherAwardByIdentityIdAndTitle(@Param("identityId") Integer identityId, @Param("scoreId") Long scoreId, @Param("title") String title);
+
+    boolean existsByCourseIdAndIsDeletedFalse(Integer courseId);
+
+    boolean existsByCourseIdAndIsDeletedFalseAndIsScoredTrue(Integer courseId);
 
     List<Score> findByIdentity_IdAndIsScoredTrueAndIsDeletedFalse(int identityId);
 

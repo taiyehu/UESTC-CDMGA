@@ -61,6 +61,7 @@ public class CourseService {
         LocalDateTime startTime, LocalDateTime endTime,
         String description, String image
     ){
+        validateAwardTitle(title, category);
         LocalDateTime now = LocalDateTime.now();
         Course course = new Course(now);
         course.setTitle(title);
@@ -87,6 +88,14 @@ public class CourseService {
             return null;
         }
 
+        validateAwardTitle(title, category);
+        boolean wasAward = "award".equalsIgnoreCase(course.getCategory().trim());
+        boolean isAward = "award".equalsIgnoreCase(category.trim());
+        if ((wasAward || isAward) && scoreRepository.existsByCourseIdAndIsDeletedFalse(courseId)
+                && (!course.getTitle().equals(title) || !course.getCategory().equals(category))) {
+            throw new IllegalArgumentException("已有提交记录的奖品课题不能修改名称或类别");
+        }
+
         course.setTitle(title);
         course.setCategory(category);
         course.setStartTime(startTime);
@@ -101,6 +110,10 @@ public class CourseService {
     public Course deleteCourse(Integer courseId) {
         Course course = courseRepository.findById(courseId).orElse(null);
         if (course != null) {
+            if ("award".equalsIgnoreCase(course.getCategory().trim())
+                    && scoreRepository.existsByCourseIdAndIsDeletedFalseAndIsScoredTrue(courseId)) {
+                throw new IllegalArgumentException("已有兑换记录的奖品课题不允许删除");
+            }
             List<Score> scores = scoreRepository.findByCourse_Id(courseId);
             for (Score score : scores) {
                 score.setIsDeleted(true);
@@ -109,6 +122,14 @@ public class CourseService {
             return courseRepository.save(course); // 保存更新后的课程对象
         }
         return null; // 如果课程不存在，返回null
+    }
+
+    private void validateAwardTitle(String title, String category) {
+        if (category != null && "award".equalsIgnoreCase(category.trim())
+                && (title == null || (!"一等奖".equals(title.trim())
+                && !"二等奖".equals(title.trim()) && !"三等奖".equals(title.trim())))) {
+            throw new IllegalArgumentException("奖品课题只能命名为一等奖、二等奖或三等奖");
+        }
     }
 
     public List<Course> getAllCourseByPage(int page, int size) {

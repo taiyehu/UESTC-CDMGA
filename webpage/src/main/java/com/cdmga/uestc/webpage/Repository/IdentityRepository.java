@@ -2,6 +2,7 @@ package com.cdmga.uestc.webpage.Repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -9,9 +10,15 @@ import org.springframework.stereotype.Repository;
 import com.cdmga.uestc.webpage.Entity.Identity;
 
 import java.util.List;
+import java.util.Optional;
+import jakarta.persistence.LockModeType;
 
 @Repository
 public interface IdentityRepository extends JpaRepository<Identity, Integer> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT i FROM Identity i WHERE i.id = :identityId")
+    Optional<Identity> findByIdForUpdate(@Param("identityId") Integer identityId);
 
     // 统计所有生效用户
     long countByIsDeletedFalse();

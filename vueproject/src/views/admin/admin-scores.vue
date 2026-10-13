@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2 class="page-title">常规课题成绩管理</h2>
+    <h2 class="page-title">课题成绩与奖品审核</h2>
 
     <NeonRankTable min-width-class="min-w-260" text-size-class="text-base">
       <template #head>
@@ -36,7 +36,8 @@
         </td>
         <td class="px-3 py-3 text-center">
           <div class="mx-auto max-w-24">
-            <NeonInput :model-value="String(scoreDraft[score.id] ?? score.score ?? '')" placeholder="分数" @update:model-value="(val) => setDraft(score.id, val)" />
+            <span v-if="score.course?.category === 'award'">{{ awardPoint(score.course?.title) }} 分</span>
+            <NeonInput v-else :model-value="String(scoreDraft[score.id] ?? score.score ?? '')" placeholder="分数" @update:model-value="(val) => setDraft(score.id, val)" />
           </div>
         </td>
         <td class="px-3 py-3 text-center">
@@ -95,6 +96,13 @@ function setDraft(scoreId: number, value: string): void {
   scoreDraft.value[scoreId] = value
 }
 
+function awardPoint(title?: string): number {
+  if (title?.trim() === '一等奖') return -40
+  if (title?.trim() === '二等奖') return -20
+  if (title?.trim() === '三等奖') return -10
+  return 0
+}
+
 function getImageUrl(imagePath?: string): string {
   if (!imagePath) return ''
   if (/^https?:\/\//.test(imagePath)) return imagePath
@@ -131,7 +139,7 @@ function handlePageChange(page: number): void {
 async function updateScore(score: any): Promise<void> {
   try {
     const raw = scoreDraft.value[score.id]
-    let point = Number(raw)
+    let point = score.course?.category === 'award' ? awardPoint(score.course?.title) : Number(raw)
     if (!Number.isFinite(point)) {
       ElMessage({ message: '请输入有效分数', type: 'error' })
       return

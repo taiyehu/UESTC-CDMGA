@@ -118,6 +118,7 @@
 
           <template v-else>
             <div class="space-y-4">
+              <p v-if="isAwardCategory" class="text-sm text-cyan-100/85">消耗 {{ awardCost }} 积分，审核通过后不可撤销。</p>
               <div>
                 <p class="mb-1 text-sm text-cyan-100/85">课题名称</p>
                 <NeonInput :model-value="formCourseTitle" disabled />
@@ -155,7 +156,7 @@
                 />
               </div>
 
-              <div>
+              <div v-if="!isAwardCategory">
                 <p class="mb-1 text-sm text-cyan-100/85">上传图片</p>
                 <ScoreImageUploader
                   v-if="activeModal === 'submit'"
@@ -177,7 +178,7 @@
             <div class="mt-6 flex items-center justify-end gap-3">
               <button type="button" class="modal-close" @click="closeActiveModal">取消</button>
               <button type="button" class="submit-button" @click="activeModal === 'submit' ? handleSubmit() : handleUpdate()">
-                {{ activeModal === 'submit' ? '确认提交' : '确认更新' }}
+                {{ isAwardCategory ? (activeModal === 'submit' ? '申请兑换' : '更新申请') : (activeModal === 'submit' ? '确认提交' : '确认更新') }}
               </button>
             </div>
           </template>
@@ -270,6 +271,17 @@ const isRankingCategory = computed(() => {
   return String(props.course.category || '').trim().toLowerCase() === 'ranking'
 })
 
+const isAwardCategory = computed(() => {
+  return String(props.course.category || '').trim().toLowerCase() === 'award'
+})
+
+const awardCost = computed(() => {
+  if (props.course.title?.trim() === '一等奖') return 40
+  if (props.course.title?.trim() === '二等奖') return 20
+  if (props.course.title?.trim() === '三等奖') return 10
+  return 0
+})
+
 const isGlobalHistoryMode = computed(() => historyMode.value === 'global')
 
 const historyLoaded = computed(() => (isGlobalHistoryMode.value ? globalHistoryLoaded.value : teamHistoryLoaded.value))
@@ -317,8 +329,10 @@ const mainButtonText = computed(() => {
     return teamHistoryRows.value.length > 0 ? `重新提交${issueText}` : `提交${issueText}`
   }
   if (!isWithinCourseTime.value && !scored.value) return '不在课题时间'
+  if (scored.value && isAwardCategory.value) return '查看兑换记录'
   if (scored.value && !isRankingCategory.value) return '查看已评分成绩'
-  if (submitted.value) return '更新成绩'
+  if (submitted.value) return isAwardCategory.value ? '更新兑换申请' : '更新成绩'
+  if (isAwardCategory.value) return '申请兑换'
   return props.bingoCell ? '提交该子题成绩' : '提交该课题成绩'
 })
 
@@ -575,7 +589,7 @@ async function handleSubmit(): Promise<void> {
       return
     }
 
-    const imageUrl = await submitUploaderRef.value?.uploadNow()
+    const imageUrl = isAwardCategory.value ? props.course.image : await submitUploaderRef.value?.uploadNow()
     if (imageUrl) {
       submitForm.image = imageUrl
     }
@@ -591,7 +605,7 @@ async function handleSubmit(): Promise<void> {
     }
 
     await handleSubmitScore(submitData)
-    setFeedback('ok', '成绩提交成功')
+    setFeedback('ok', isAwardCategory.value ? '兑换申请已提交' : '成绩提交成功')
     closeActiveModal()
     await refreshStatus()
   } catch (error: any) {
@@ -633,7 +647,7 @@ async function handleUpdate(): Promise<void> {
       return
     }
 
-    const imageUrl = await updateUploaderRef.value?.uploadNow()
+    const imageUrl = isAwardCategory.value ? props.course.image : await updateUploaderRef.value?.uploadNow()
     if (imageUrl) {
       updateForm.image = imageUrl
     }

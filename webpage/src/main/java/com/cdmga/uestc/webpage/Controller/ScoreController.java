@@ -62,6 +62,8 @@ public class ScoreController {
                     scoreRequest.getIssue_id(), scoreRequest.getImage(),
                     0, false, scoreRequest.getRemark());
             return ResponseEntity.ok(Result.success(newScore));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(e.getMessage()));
         }
@@ -265,6 +267,8 @@ public class ScoreController {
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Result.error("Score not found"));
             }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(e.getMessage()));
         }
@@ -322,9 +326,13 @@ public class ScoreController {
     }
 
     @DeleteMapping("/delete/{id}")
-    public Result deleteScore(@PathVariable Long id) {
-        scoreService.deleteScore(id);
-        return Result.success("删除成功");
+    public ResponseEntity<Result> deleteScore(@PathVariable Long id) {
+        try {
+            scoreService.deleteScore(id);
+            return ResponseEntity.ok(Result.success("删除成功"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(e.getMessage()));
+        }
     }
 
     @GetMapping("/user-total-scores")

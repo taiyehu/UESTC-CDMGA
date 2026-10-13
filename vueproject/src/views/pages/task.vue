@@ -96,6 +96,7 @@ function normalizeCategory(category?: string) {
   const value = (category || '').toLowerCase()
   if (value === 'typical') return 'typical'
   if (value === 'bingo') return 'bingo'
+  if (value === 'award') return 'award'
   return 'legacy'
 }
 

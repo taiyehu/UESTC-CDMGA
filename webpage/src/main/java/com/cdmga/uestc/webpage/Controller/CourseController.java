@@ -100,6 +100,8 @@ public class CourseController {
                 return ResponseEntity.ok(Result.success(updatedCourse));
             }
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Result.error("Course not found"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(e.getMessage()));
         }
@@ -237,6 +239,8 @@ public class CourseController {
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Result.error("Course not found"));
             }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(e.getMessage()));
         }

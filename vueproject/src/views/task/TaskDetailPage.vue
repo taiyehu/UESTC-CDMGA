@@ -3,7 +3,7 @@
     <div v-if="loading" class="hud-shell p-8 text-cyan-100/80">课题加载中...</div>
     <div v-else-if="error" class="hud-shell p-8 text-rose-300">{{ error }}</div>
 
-    <component v-else-if="course" :is="renderComponent" :course="course" />
+    <component v-else-if="course" :is="renderComponent" :course="course" :category-label="String(course.category || '').trim().toLowerCase() === 'award' ? 'award' : undefined" />
 
     <article v-else class="hud-shell p-8 text-left text-cyan-100/75">
       课题不存在或已被删除。

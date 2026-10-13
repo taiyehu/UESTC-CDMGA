@@ -10,6 +10,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.cdmga.uestc.webpage.Dto.BingoSubmissionDto;
 import com.cdmga.uestc.webpage.Dto.UserScoreDto;
@@ -67,6 +69,7 @@ public class ScoreService {
         return scoreRepository.countByIsScoredFalseAndIsDeletedFalse();
     }
 
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public Score postNewScore(int course_id, int identity_id, Integer issue_id,
         String image, float point, Boolean is_scored, String remark) {
 
@@ -84,6 +87,17 @@ public class ScoreService {
             }
 
             String category = course.getCategory() == null ? "" : course.getCategory().trim().toLowerCase();
+            if ("award".equals(category)) {
+                awardCost(course);
+                if (issue_id != null) {
+                    throw new IllegalArgumentException("奖品兑换不支持子题编号");
+                }
+                identityRepository.findByIdForUpdate(identity_id)
+                        .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
+                if (scoreRepository.existsAwardByIdentityIdAndTitle(identity_id, course.getTitle().trim())) {
+                    throw new IllegalArgumentException("该奖品已申请或兑换，每人仅可兑换一次");
+                }
+            }
             if ("bingo".equals(category) && issue_id != null) {
                 Team self = teamRepository.findByCourseIdAndIdentityId(course_id, identity_id).orElse(null);
                 if (self != null && self.getTeamId() != null) {
@@ -115,7 +129,7 @@ public class ScoreService {
             score.setIdentity(identityRepository.findById(identity_id).orElse(null));
 
             score.setUploadTime(now);
-            score.setImage(image);
+            score.setImage("award".equals(category) ? (course.getImage() == null ? "" : course.getImage()) : image);
             score.setScore(point);
             score.setIsScored(is_scored);
             score.setIssueId(issue_id);
@@ -125,14 +139,35 @@ public class ScoreService {
             return scoreRepository.save(score);
     }
 
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public Score updateScore(Long scoreId, LocalDateTime upload_time, String image,
                              float point, Boolean is_scored, String remark, Integer issue_id) {
         // 查找Score
         Score score = scoreRepository.findById(scoreId).orElse(null);
-        if (score != null) {
+        if (score != null && !Boolean.TRUE.equals(score.getIsDeleted())) {
             // 负分记录视为已定性结果，后续不允许再修改。
             if (Boolean.TRUE.equals(score.getIsScored()) && score.getScore() != null && score.getScore() < 0f) {
                 return score;
+            }
+
+            Course scoreCourse = score.getCourse();
+            boolean award = scoreCourse != null && "award".equalsIgnoreCase(scoreCourse.getCategory().trim());
+            if (award && Boolean.TRUE.equals(is_scored)) {
+                if (Boolean.TRUE.equals(scoreCourse.getIsDeleted())) {
+                    throw new IllegalArgumentException("奖品课题已删除，不能审核兑换");
+                }
+                int cost = awardCost(scoreCourse);
+                Integer identityId = score.getIdentity().getId();
+                identityRepository.findByIdForUpdate(identityId)
+                        .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
+                if (scoreRepository.existsOtherAwardByIdentityIdAndTitle(identityId, scoreId, scoreCourse.getTitle().trim())) {
+                    throw new IllegalArgumentException("该奖品已申请或兑换，每人仅可兑换一次");
+                }
+                double available = scoreRepository.sumRegularScoreByIdentityId(identityId)
+                        + scoreRepository.sumAwardScoreByIdentityId(identityId);
+                if (available - cost <= 0) {
+                    throw new IllegalArgumentException("可用积分不足，兑换后积分必须大于 0");
+                }
             }
 
             if (!Boolean.TRUE.equals(is_scored)) {
@@ -179,7 +214,7 @@ public class ScoreService {
                 }
             }
 
-            float finalPoint = point;
+            float finalPoint = award ? (Boolean.TRUE.equals(is_scored) ? -awardCost(scoreCourse) : 0f) : point;
             Integer effectiveIssueId = issue_id != null ? issue_id : score.getIssueId();
                 LocalDateTime effectiveUploadTime = Boolean.TRUE.equals(is_scored)
                     ? score.getUploadTime()
@@ -257,7 +292,7 @@ public class ScoreService {
             score.setImage(image);
             score.setScore(finalPoint);
             score.setIsScored(is_scored);
-            score.setIssueId(issue_id);
+            score.setIssueId(award ? null : issue_id);
             score.setRemark(remark);
             score.setUpdatedAt(LocalDateTime.now()); // 更新时间
             return scoreRepository.save(score); // 保存更新后的Score
@@ -281,11 +316,27 @@ public class ScoreService {
     public Score deleteScore(Long scoreId){
         Score score = scoreRepository.findById(scoreId).orElse(null);
         if(score != null){
+            if (score.getCourse() != null && "award".equalsIgnoreCase(score.getCourse().getCategory().trim())
+                    && Boolean.TRUE.equals(score.getIsScored())) {
+                throw new IllegalArgumentException("已兑换的奖品不允许撤销");
+            }
             score.setIsDeleted(true);
             score.setUpdatedAt(LocalDateTime.now());
             return scoreRepository.save(score);
         }
         return null;
+    }
+
+    private int awardCost(Course course) {
+        if (course == null || course.getTitle() == null) {
+            throw new IllegalArgumentException("奖品名称无效");
+        }
+        return switch (course.getTitle().trim()) {
+            case "一等奖" -> 40;
+            case "二等奖" -> 20;
+            case "三等奖" -> 10;
+            default -> throw new IllegalArgumentException("奖品课题只能命名为一等奖、二等奖或三等奖");
+        };
     }
 
     public List<Score> getUnscoredScores(int page, int size) {
@@ -566,7 +617,7 @@ public class ScoreService {
     }
 
     public List<UserScoreDto> calculateTotalScoreForAllUsers() {
-        List<Score> scores = scoreRepository.findScoredNotDeletedAndCategoryNotContestRankingOrBingo();
+        List<Score> scores = scoreRepository.findScoredRegularScores();
         return calculateScoresForAllUsers(scores);
     }
 
