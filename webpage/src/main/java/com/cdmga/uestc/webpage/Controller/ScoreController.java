@@ -336,9 +336,9 @@ public class ScoreController {
     }
 
     @GetMapping("/user-total-scores")
-    public Result getUserTotalScores() {
+    public Result getUserTotalScores(@RequestParam(value = "startYear", required = false) Integer startYear) {
         try {
-            List<UserScoreDto> userScores = scoreService.calculateTotalScoreForAllUsers();
+            List<UserScoreDto> userScores = scoreService.calculateTotalScoreForAllUsers(startYear);
             return Result.success(userScores);
         } catch (Exception e) {
             return Result.error(e.getMessage());
@@ -388,6 +388,15 @@ public class ScoreController {
         try {
             List<Score> scoredScores = scoreService.getScoredCourseScoresByIdentityId(identityId);
             return Result.success(scoredScores);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @GetMapping("/user-award-redemptions")
+    public Result getUserAwardRedemptions(@RequestParam("identityId") int identityId) {
+        try {
+            return Result.success(scoreService.getAwardRedemptionsByIdentityId(identityId));
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }

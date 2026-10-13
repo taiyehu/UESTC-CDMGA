@@ -72,6 +72,15 @@
           下一页
         </NeonActionButton>
       </div>
+
+      <div class="mt-5 flex items-center justify-center gap-3">
+        <label for="ranking-season" class="text-sm text-cyan-100/85">排行榜时段</label>
+        <select id="ranking-season" v-model.number="selectedStartYear" class="season-select" @change="handleSeasonChange">
+          <option v-for="season in seasonOptions" :key="season.startYear" :value="season.startYear">
+            {{ season.label }}
+          </option>
+        </select>
+      </div>
     </div>
 
     <div class="fixed bottom-5 right-5 flex flex-col gap-2">
@@ -97,6 +106,23 @@ const rankAllData = ref<any[]>([])
 const rankSortedData = ref<any[]>([])
 const rankPageSize = ref<number>(10)
 const rankCurrentPage = ref<number>(1)
+
+function currentSeasonStartYear(): number {
+  const now = new Date()
+  return now.getMonth() + 1 >= 10 ? now.getFullYear() : now.getFullYear() - 1
+}
+
+const selectedStartYear = ref(currentSeasonStartYear())
+const seasonOptions = computed(() => {
+  const latest = Math.max(2025, currentSeasonStartYear())
+  return Array.from({ length: latest - 2025 + 1 }, (_, index) => {
+    const startYear = latest - index
+    return {
+      startYear,
+      label: `${startYear}.10 - ${startYear + 1}.9`,
+    }
+  })
+})
 
 const totalPages = computed<number>(() => {
   return Math.max(1, Math.ceil(rankSortedData.value.length / rankPageSize.value))
@@ -147,7 +173,9 @@ function goToProfile(id: string | number): void {
 
 async function fetchRankData(): Promise<void> {
   try {
-    const res = await axios.get('/api/score/user-total-scores')
+    const res = await axios.get('/api/score/user-total-scores', {
+      params: { startYear: selectedStartYear.value },
+    })
     let data = res.data.data || []
     data.sort((a: any, b: any) => b.totalScore - a.totalScore)
     rankAllData.value = data
@@ -155,6 +183,11 @@ async function fetchRankData(): Promise<void> {
   } catch (e) {
     ElMessage({ message: '获取排行榜失败', type: 'error' })
   }
+}
+
+function handleSeasonChange(): void {
+  rankCurrentPage.value = 1
+  fetchRankData()
 }
 
 function handleRankPageChange(page: number): void {
@@ -287,5 +320,20 @@ onMounted(() => {
 .is-active {
   background: rgba(34, 211, 238, 0.24);
   border-color: rgba(165, 243, 252, 0.75);
+}
+
+.season-select {
+  min-width: 190px;
+  border: 1px solid rgba(34, 211, 238, 0.55);
+  border-radius: 9px;
+  padding: 8px 12px;
+  color: #cffafe;
+  background: rgba(8, 47, 73, 0.72);
+  outline: none;
+}
+
+.season-select:focus {
+  border-color: rgba(165, 243, 252, 0.85);
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.22);
 }
 </style>

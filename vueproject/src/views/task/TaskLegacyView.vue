@@ -4,6 +4,9 @@
       <p class="task-category">{{ categoryLabel }}</p>
       <h1 class="task-title">{{ course.title }}</h1>
       <p class="task-time">持续时间：{{ duration }}</p>
+      <p v-if="isAward" class="award-cost">
+        兑换所需积分：{{ course.award?.cost ?? '-' }} · {{ Number(course.award?.remainingStock || 0) > 0 ? '可兑换' : '已售罄' }}
+      </p>
       <p class="task-content">{{ course.description || '暂无课题内容。' }}</p>
       <div v-if="showScoreAction" class="mt-4">
         <TaskScoreAction :course="course" />
@@ -52,6 +55,7 @@ const duration = computed(() => formatDuration(props.course.startTime, props.cou
 const imageUrl = computed(() => toImageUrl(props.course.image))
 const categoryLabel = computed(() => props.categoryLabel)
 const showScoreAction = computed(() => props.showScoreAction)
+const isAward = computed(() => String(props.course.category || '').trim().toLowerCase() === 'award')
 </script>
 
 <style scoped>
@@ -87,6 +91,12 @@ const showScoreAction = computed(() => props.showScoreAction)
   margin-top: 12px;
   line-height: 1.72;
   color: rgba(236, 254, 255, 0.9);
+}
+
+.award-cost {
+  margin-top: 10px;
+  color: rgba(253, 230, 138, 0.95);
+  font-weight: 600;
 }
 
 .legacy-image-wrap {

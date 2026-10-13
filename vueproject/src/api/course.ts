@@ -61,6 +61,7 @@ export interface UpdateCoursePayload {
   endTime: string
   description: string
   image: string
+  awardCost: number | null
 }
 
 export const updateCourseData = (courseId: number | string, payload: UpdateCoursePayload) => {

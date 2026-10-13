@@ -81,6 +81,9 @@ public class Course {
     @OneToMany(mappedBy = "course", fetch = FetchType.LAZY)
     private List<Score> scores;
 
+    @OneToOne(mappedBy = "course", fetch = FetchType.EAGER)
+    private Award award;
+
     public Course(){
         isDeleted = false;
     }
@@ -172,5 +175,13 @@ public class Course {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Award getAward() {
+        return award;
+    }
+
+    public void setAward(Award award) {
+        this.award = award;
     }
 }

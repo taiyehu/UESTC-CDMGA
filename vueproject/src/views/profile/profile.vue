@@ -121,6 +121,48 @@
       </div>
     </NeonCard>
 
+    <NeonCard v-if="viewUserId" class="box-card mt-5">
+      <h3 class="section-title mb-3">兑换记录</h3>
+
+      <NeonRankTable v-if="awardRedemptions.length > 0" min-width-class="min-w-180" text-size-class="text-base">
+        <template #head>
+          <tr>
+            <th class="px-4 py-3 text-center">奖品名称</th>
+            <th class="w-30 px-3 py-3 text-center">奖品图片</th>
+            <th class="w-28 px-3 py-3 text-center">消耗积分</th>
+            <th class="w-44 px-4 py-3 text-center">申请时间</th>
+            <th class="w-44 px-4 py-3 text-center">兑换时间</th>
+            <th class="px-4 py-3 text-center">备注</th>
+          </tr>
+        </template>
+        <tr v-for="row in pagedAwardRedemptions" :key="row.id" class="border-t border-white/12">
+          <td class="px-3 py-3">{{ row.course?.title || '-' }}</td>
+          <td class="px-3 py-3 text-center">
+            <img
+              v-if="row.course?.image"
+              :src="getImageUrl(row.course.image)"
+              alt="奖品图片"
+              class="thumb mx-auto"
+              @click="previewImage(row.course.image)"
+            />
+            <span v-else>-</span>
+          </td>
+          <td class="px-3 py-3 text-center">{{ Math.abs(Number(row.score || 0)) }}</td>
+          <td class="px-3 py-3 text-center">{{ formatUploadTime(row.uploadTime) }}</td>
+          <td class="px-3 py-3 text-center">{{ formatUploadTime(row.updatedAt) }}</td>
+          <td class="px-3 py-3">{{ row.remark || '-' }}</td>
+        </tr>
+      </NeonRankTable>
+
+      <div v-else class="py-3 text-center text-cyan-100/75">暂无兑换记录</div>
+
+      <div v-if="awardRedemptions.length > tablePageSize" class="mt-4 flex items-center justify-center gap-2">
+        <NeonActionButton variant="profile-outline" :disabled="awardPage <= 1" @click="goAwardPage(awardPage - 1)">上一页</NeonActionButton>
+        <span class="text-cyan-100/85">{{ awardPage }} / {{ awardTotalPages }}</span>
+        <NeonActionButton variant="profile-outline" :disabled="awardPage >= awardTotalPages" @click="goAwardPage(awardPage + 1)">下一页</NeonActionButton>
+      </div>
+    </NeonCard>
+
     <NeonCard v-if="RatedActivities.length > 0" class="box-card mt-5" padding-class="p-4">
       <h3 class="section-title mb-3">已参与的活动与分数详情</h3>
 
@@ -258,6 +300,7 @@ const profile = reactive<any>({ avatar: '', description: '', status: -1, account
 const profileStatus = ref<number>(-1)
 const defaultAvatarRef = defaultAvatar
 const scoredScores = ref<any[]>([])
+const awardRedemptions = ref<any[]>([])
 const RatedActivities = ref<any[]>([])
 const viewUserId = ref<number | null>(null)
 const isSelf = ref(false)
@@ -273,6 +316,7 @@ const expandedActivityId = ref<string | null>(null)
 
 const tablePageSize = 5
 const scoredPage = ref(1)
+const awardPage = ref(1)
 
 const imagePreviewVisible = ref(false)
 const imagePreviewUrl = ref('')
@@ -284,6 +328,15 @@ const scoredTotalPages = computed(() => {
 const pagedScoredScores = computed(() => {
   const start = (scoredPage.value - 1) * tablePageSize
   return scoredScores.value.slice(start, start + tablePageSize)
+})
+
+const awardTotalPages = computed(() => {
+  return Math.max(1, Math.ceil(awardRedemptions.value.length / tablePageSize))
+})
+
+const pagedAwardRedemptions = computed(() => {
+  const start = (awardPage.value - 1) * tablePageSize
+  return awardRedemptions.value.slice(start, start + tablePageSize)
 })
 
 // 方法实现
@@ -328,6 +381,7 @@ function loadProfile() {
   if (viewUserId.value) {
     fetchProfile()
     fetchScoredScores()
+    fetchAwardRedemptions()
     fetchRatedActivity()
   }
 }
@@ -383,6 +437,10 @@ function goScoredPage(page: number) {
   scoredPage.value = Math.min(scoredTotalPages.value, Math.max(1, page))
 }
 
+function goAwardPage(page: number) {
+  awardPage.value = Math.min(awardTotalPages.value, Math.max(1, page))
+}
+
 function toggleActivity(activityId: number | string) {
   const key = String(activityId)
   expandedActivityId.value = expandedActivityId.value === key ? null : key
@@ -425,6 +483,16 @@ function fetchScoredScores() {
     if (res.data && res.data.code === 0) {
       scoredScores.value = res.data.data || []
       scoredPage.value = 1
+    }
+  })
+}
+
+function fetchAwardRedemptions() {
+  if (!viewUserId.value) return
+  axios.get(`/api/score/user-award-redemptions?identityId=${viewUserId.value}`).then((res) => {
+    if (res.data && res.data.code === 0) {
+      awardRedemptions.value = res.data.data || []
+      awardPage.value = 1
     }
   })
 }

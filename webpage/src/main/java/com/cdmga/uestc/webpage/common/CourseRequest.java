@@ -15,6 +15,7 @@ public class CourseRequest {
     private LocalDateTime endTime;
     private String description;
     private String image;
+    private Integer awardCost;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 
@@ -78,6 +79,15 @@ public class CourseRequest {
 
     public void setImage(String image) {
         this.image = image;
+        update();
+    }
+
+    public Integer getAwardCost() {
+        return awardCost;
+    }
+
+    public void setAwardCost(Integer awardCost) {
+        this.awardCost = awardCost;
         update();
     }
 

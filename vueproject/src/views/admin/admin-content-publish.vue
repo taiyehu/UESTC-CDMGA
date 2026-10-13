@@ -13,12 +13,7 @@
 
       <div>
         <p class="label">{{ publishType === 'course' ? '课题名称' : '活动名称' }}</p>
-        <el-select v-if="publishType === 'course' && form.category === 'award'" v-model="form.title" class="full-width neon-select" popper-class="neon-select-popper" placeholder="请选择奖品等级">
-          <el-option label="一等奖（40 分）" value="一等奖" />
-          <el-option label="二等奖（20 分）" value="二等奖" />
-          <el-option label="三等奖（10 分）" value="三等奖" />
-        </el-select>
-        <NeonInput v-else v-model="form.title" :placeholder="publishType === 'course' ? '请输入课题名称' : '请输入活动名称'" />
+        <NeonInput v-model="form.title" :placeholder="publishType === 'course' && form.category === 'award' ? '请输入具体奖品名称' : publishType === 'course' ? '请输入课题名称' : '请输入活动名称'" />
       </div>
 
       <div v-if="publishType === 'course'">
@@ -31,6 +26,11 @@
           <el-option label="ranking" value="ranking" />
           <el-option label="award" value="award" />
         </el-select>
+      </div>
+
+      <div v-if="publishType === 'course' && form.category === 'award'">
+        <p class="label">兑换所需积分</p>
+        <NeonInput v-model="form.awardCost" placeholder="请输入大于 0 的整数" />
       </div>
 
       <div>
@@ -102,6 +102,7 @@ const form = reactive({
   description: '',
   image: '',
   activityFile: '',
+  awardCost: '',
 })
 
 const imageUploaderRef = ref<ScoreImageUploaderExpose | null>(null)
@@ -117,7 +118,10 @@ watch(
 watch(
   () => form.category,
   () => {
-    if (publishType.value === 'course') form.title = ''
+    if (publishType.value === 'course') {
+      form.title = ''
+      form.awardCost = ''
+    }
   }
 )
 
@@ -129,6 +133,7 @@ function resetForm(): void {
   form.description = ''
   form.image = ''
   form.activityFile = ''
+  form.awardCost = ''
   activityFileList.value = []
   imageUploaderRef.value?.clearSelection()
 }
@@ -163,6 +168,11 @@ async function submitContent(): Promise<void> {
       ElMessage({ message: '请选择课题类别', type: 'error' })
       return
     }
+    const awardCost = Number(form.awardCost)
+    if (form.category === 'award' && (!Number.isInteger(awardCost) || awardCost <= 0)) {
+      ElMessage({ message: '奖品兑换积分必须是大于 0 的整数', type: 'error' })
+      return
+    }
     try {
       const response = await axios.post('/api/course/post', {
         title: form.title,
@@ -171,6 +181,7 @@ async function submitContent(): Promise<void> {
         endTime: dayjs(form.endTime).format('YYYY-MM-DDTHH:mm:ss'),
         description: form.description,
         image: form.image,
+        awardCost: form.category === 'award' ? awardCost : null,
         createTime: dayjs().format('YYYY-MM-DDTHH:mm:ss'),
         updateTime: dayjs().format('YYYY-MM-DDTHH:mm:ss'),
       })

@@ -35,6 +35,10 @@
             {{ formatDate(course.startTime) }} - {{ formatDate(course.endTime) }}
           </p>
 
+          <p v-if="normalizeCategory(course.category) === 'award'" class="mb-2 text-sm font-semibold text-amber-200">
+            兑换所需积分：{{ course.award?.cost ?? '-' }} · {{ Number(course.award?.remainingStock || 0) > 0 ? '可兑换' : '已售罄' }}
+          </p>
+
           <p class="line-clamp-3 min-h-16 text-sm text-cyan-50/80">
             {{ course.description || '暂无课题描述' }}
           </p>
