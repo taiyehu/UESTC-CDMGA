@@ -6,12 +6,14 @@ import java.util.List;
 
 import com.cdmga.uestc.webpage.Entity.*;
 import com.cdmga.uestc.webpage.Repository.ActivityRepository;
+import com.cdmga.uestc.webpage.Repository.AwardRepository;
 import com.cdmga.uestc.webpage.Repository.ScoreRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.cdmga.uestc.webpage.Repository.CourseRepository;
 
@@ -20,6 +22,9 @@ public class CourseService {
 
     @Autowired
     private CourseRepository courseRepository;
+
+    @Autowired
+    private AwardRepository awardRepository;
 
     @Autowired
     private ScoreRepository scoreRepository;
@@ -57,11 +62,12 @@ public class CourseService {
         return courseRepository.countByIsDeletedFalse();
     }
 
+    @Transactional
     public Course postNewCourse(String title, String category,
         LocalDateTime startTime, LocalDateTime endTime,
-        String description, String image
+        String description, String image, Integer awardCost
     ){
-        validateAwardTitle(title, category);
+        validateAwardCost(category, awardCost);
         LocalDateTime now = LocalDateTime.now();
         Course course = new Course(now);
         course.setTitle(title);
@@ -71,9 +77,22 @@ public class CourseService {
         course.setDescription(description);
         course.setImage(image);
         course.setUpdatedAt(now);
-        return courseRepository.save(course);
+        Course savedCourse = courseRepository.save(course);
+        if (isAwardCategory(category)) {
+            Award award = new Award();
+            award.setCourse(savedCourse);
+            award.setCost(awardCost);
+            award.setTotalStock(1);
+            award.setRemainingStock(1);
+            award.setCreatedAt(now);
+            award.setUpdatedAt(now);
+            awardRepository.save(award);
+            savedCourse.setAward(award);
+        }
+        return savedCourse;
     }
 
+    @Transactional
     public Course updateCourse(
         Integer courseId,
         String title,
@@ -81,19 +100,22 @@ public class CourseService {
         LocalDateTime startTime,
         LocalDateTime endTime,
         String description,
-        String image
+        String image,
+        Integer awardCost
     ) {
         Course course = courseRepository.findById(courseId).orElse(null);
         if (course == null || Boolean.TRUE.equals(course.getIsDeleted())) {
             return null;
         }
 
-        validateAwardTitle(title, category);
-        boolean wasAward = "award".equalsIgnoreCase(course.getCategory().trim());
-        boolean isAward = "award".equalsIgnoreCase(category.trim());
+        validateAwardCost(category, awardCost);
+        boolean wasAward = isAwardCategory(course.getCategory());
+        boolean isAward = isAwardCategory(category);
+        Award existingAward = awardRepository.findById(courseId).orElse(null);
+        boolean priceChanged = isAward && existingAward != null && !existingAward.getCost().equals(awardCost);
         if ((wasAward || isAward) && scoreRepository.existsByCourseIdAndIsDeletedFalse(courseId)
-                && (!course.getTitle().equals(title) || !course.getCategory().equals(category))) {
-            throw new IllegalArgumentException("已有提交记录的奖品课题不能修改名称或类别");
+                && (!course.getTitle().equals(title) || !course.getCategory().equals(category) || priceChanged)) {
+            throw new IllegalArgumentException("已有提交记录的奖品课题不能修改名称、类别或兑换积分");
         }
 
         course.setTitle(title);
@@ -103,7 +125,27 @@ public class CourseService {
         course.setDescription(description);
         course.setImage(image);
         course.setUpdatedAt(LocalDateTime.now());
-        return courseRepository.save(course);
+        Course savedCourse = courseRepository.save(course);
+
+        if (isAward) {
+            LocalDateTime now = LocalDateTime.now();
+            Award award = existingAward == null ? new Award() : existingAward;
+            if (existingAward == null) {
+                award.setCourse(savedCourse);
+                award.setTotalStock(1);
+                award.setRemainingStock(1);
+                award.setCreatedAt(now);
+            }
+            award.setCost(awardCost);
+            award.setUpdatedAt(now);
+            awardRepository.save(award);
+            savedCourse.setAward(award);
+        } else if (existingAward != null) {
+            awardRepository.delete(existingAward);
+            savedCourse.setAward(null);
+        }
+
+        return savedCourse;
     }
 
     // 设置课程为删除状态
@@ -124,12 +166,14 @@ public class CourseService {
         return null; // 如果课程不存在，返回null
     }
 
-    private void validateAwardTitle(String title, String category) {
-        if (category != null && "award".equalsIgnoreCase(category.trim())
-                && (title == null || (!"一等奖".equals(title.trim())
-                && !"二等奖".equals(title.trim()) && !"三等奖".equals(title.trim())))) {
-            throw new IllegalArgumentException("奖品课题只能命名为一等奖、二等奖或三等奖");
+    private void validateAwardCost(String category, Integer awardCost) {
+        if (isAwardCategory(category) && (awardCost == null || awardCost <= 0)) {
+            throw new IllegalArgumentException("奖品必须设置大于 0 的兑换积分");
         }
+    }
+
+    private boolean isAwardCategory(String category) {
+        return category != null && "award".equalsIgnoreCase(category.trim());
     }
 
     public List<Course> getAllCourseByPage(int page, int size) {

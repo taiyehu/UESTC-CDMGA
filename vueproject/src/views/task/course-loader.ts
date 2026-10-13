@@ -13,6 +13,17 @@ function toCourseShape(raw: Record<string, any>): Course {
     isDeleted: Boolean(raw.isDeleted ?? raw.is_deleted ?? false),
     createdAt: String(raw.createdAt ?? raw.created_at ?? ''),
     updatedAt: String(raw.updatedAt ?? raw.updated_at ?? ''),
+    award: raw.award
+      ? {
+          courseId: Number(raw.award.courseId ?? raw.award.course_id ?? raw.id),
+          cost: Number(raw.award.cost ?? 0),
+          totalStock: Number(raw.award.totalStock ?? raw.award.total_stock ?? 1),
+          remainingStock: Number(raw.award.remainingStock ?? raw.award.remaining_stock ?? 0),
+          soldOutAt: raw.award.soldOutAt ?? raw.award.sold_out_at ?? null,
+          createdAt: String(raw.award.createdAt ?? raw.award.created_at ?? ''),
+          updatedAt: String(raw.award.updatedAt ?? raw.award.updated_at ?? ''),
+        }
+      : null,
   }
 }
 

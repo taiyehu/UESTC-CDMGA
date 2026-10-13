@@ -9,6 +9,17 @@ export interface Course {
   isDeleted: boolean
   createdAt: string
   updatedAt: string
+  award?: Award | null
+}
+
+export interface Award {
+  courseId: number
+  cost: number
+  totalStock: number
+  remainingStock: number
+  soldOutAt: string | null
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Identity {

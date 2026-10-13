@@ -276,10 +276,11 @@ const isAwardCategory = computed(() => {
 })
 
 const awardCost = computed(() => {
-  if (props.course.title?.trim() === '一等奖') return 40
-  if (props.course.title?.trim() === '二等奖') return 20
-  if (props.course.title?.trim() === '三等奖') return 10
-  return 0
+  return Number(props.course.award?.cost || 0)
+})
+
+const isAwardSoldOut = computed(() => {
+  return isAwardCategory.value && Number(props.course.award?.remainingStock || 0) <= 0
 })
 
 const isGlobalHistoryMode = computed(() => historyMode.value === 'global')
@@ -328,6 +329,7 @@ const mainButtonText = computed(() => {
     const issueText = `第${props.bingoCell}题`
     return teamHistoryRows.value.length > 0 ? `重新提交${issueText}` : `提交${issueText}`
   }
+  if (isAwardSoldOut.value && !scored.value) return '已售罄'
   if (!isWithinCourseTime.value && !scored.value) return '不在课题时间'
   if (scored.value && isAwardCategory.value) return '查看兑换记录'
   if (scored.value && !isRankingCategory.value) return '查看已评分成绩'
@@ -341,6 +343,7 @@ const isActionDisabled = computed(() => {
     if (isBeforeCourseStart.value || isAfterCourseEnd.value) return true
     return bingoActionState.value !== 'ready'
   }
+  if (isAwardSoldOut.value && !scored.value) return true
   return !isWithinCourseTime.value && !scored.value
 })
 

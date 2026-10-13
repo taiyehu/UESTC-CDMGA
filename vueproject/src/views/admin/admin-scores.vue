@@ -36,7 +36,7 @@
         </td>
         <td class="px-3 py-3 text-center">
           <div class="mx-auto max-w-24">
-            <span v-if="score.course?.category === 'award'">{{ awardPoint(score.course?.title) }} 分</span>
+            <span v-if="score.course?.category === 'award'">消耗 {{ awardCost(score) }} 分</span>
             <NeonInput v-else :model-value="String(scoreDraft[score.id] ?? score.score ?? '')" placeholder="分数" @update:model-value="(val) => setDraft(score.id, val)" />
           </div>
         </td>
@@ -96,11 +96,8 @@ function setDraft(scoreId: number, value: string): void {
   scoreDraft.value[scoreId] = value
 }
 
-function awardPoint(title?: string): number {
-  if (title?.trim() === '一等奖') return -40
-  if (title?.trim() === '二等奖') return -20
-  if (title?.trim() === '三等奖') return -10
-  return 0
+function awardCost(score: any): number {
+  return Number(score?.course?.award?.cost || 0)
 }
 
 function getImageUrl(imagePath?: string): string {
@@ -139,7 +136,7 @@ function handlePageChange(page: number): void {
 async function updateScore(score: any): Promise<void> {
   try {
     const raw = scoreDraft.value[score.id]
-    let point = score.course?.category === 'award' ? awardPoint(score.course?.title) : Number(raw)
+    let point = score.course?.category === 'award' ? -awardCost(score) : Number(raw)
     if (!Number.isFinite(point)) {
       ElMessage({ message: '请输入有效分数', type: 'error' })
       return

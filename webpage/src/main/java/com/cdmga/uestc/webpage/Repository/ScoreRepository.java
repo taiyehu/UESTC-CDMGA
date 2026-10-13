@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -65,17 +66,29 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     @Query("SELECT s FROM Score s WHERE s.isScored = true AND s.isDeleted = false AND LOWER(TRIM(COALESCE(s.course.category, ''))) NOT IN ('contest', 'ranking', 'bingo', 'award')")
     List<Score> findScoredRegularScores();
 
-    @Query("SELECT COALESCE(SUM(s.score), 0) FROM Score s WHERE s.identity.id = :identityId AND s.isScored = true AND s.isDeleted = false AND LOWER(TRIM(COALESCE(s.course.category, ''))) NOT IN ('contest', 'ranking', 'bingo', 'award')")
-    Double sumRegularScoreByIdentityId(@Param("identityId") Integer identityId);
+    @Query("SELECT COALESCE(SUM(s.score), 0) FROM Score s WHERE s.identity.id = :identityId AND s.isScored = true AND s.isDeleted = false AND s.uploadTime >= :cutoff AND LOWER(TRIM(COALESCE(s.course.category, ''))) NOT IN ('contest', 'ranking', 'bingo', 'award')")
+    Double sumRegularScoreByIdentityIdSince(@Param("identityId") Integer identityId,
+                                            @Param("cutoff") java.time.LocalDateTime cutoff);
 
-    @Query("SELECT COALESCE(SUM(s.score), 0) FROM Score s WHERE s.identity.id = :identityId AND s.isScored = true AND s.isDeleted = false AND LOWER(TRIM(COALESCE(s.course.category, ''))) = 'award'")
-    Double sumAwardScoreByIdentityId(@Param("identityId") Integer identityId);
+    @Query("SELECT COALESCE(SUM(s.score), 0) FROM Score s WHERE s.identity.id = :identityId AND s.isScored = true AND s.isDeleted = false AND s.updatedAt >= :cutoff AND LOWER(TRIM(COALESCE(s.course.category, ''))) = 'award'")
+    Double sumAwardScoreByIdentityIdSince(@Param("identityId") Integer identityId,
+                                          @Param("cutoff") java.time.LocalDateTime cutoff);
 
-    @Query("SELECT COUNT(s) > 0 FROM Score s WHERE s.identity.id = :identityId AND s.isDeleted = false AND LOWER(TRIM(COALESCE(s.course.category, ''))) = 'award' AND TRIM(s.course.title) = :title")
-    boolean existsAwardByIdentityIdAndTitle(@Param("identityId") Integer identityId, @Param("title") String title);
+    @Query("SELECT COUNT(s) > 0 FROM Score s WHERE s.identity.id = :identityId AND s.course.id = :courseId AND s.isDeleted = false AND LOWER(TRIM(COALESCE(s.course.category, ''))) = 'award'")
+    boolean existsAwardByIdentityIdAndCourseId(@Param("identityId") Integer identityId,
+                                               @Param("courseId") Integer courseId);
 
-    @Query("SELECT COUNT(s) > 0 FROM Score s WHERE s.identity.id = :identityId AND s.isDeleted = false AND s.id <> :scoreId AND LOWER(TRIM(COALESCE(s.course.category, ''))) = 'award' AND TRIM(s.course.title) = :title")
-    boolean existsOtherAwardByIdentityIdAndTitle(@Param("identityId") Integer identityId, @Param("scoreId") Long scoreId, @Param("title") String title);
+    @Query("SELECT COUNT(s) > 0 FROM Score s WHERE s.identity.id = :identityId AND s.course.id = :courseId AND s.isDeleted = false AND s.id <> :scoreId AND LOWER(TRIM(COALESCE(s.course.category, ''))) = 'award'")
+    boolean existsOtherAwardByIdentityIdAndCourseId(@Param("identityId") Integer identityId,
+                                                    @Param("scoreId") Long scoreId,
+                                                    @Param("courseId") Integer courseId);
+
+    @Modifying
+    @Query("UPDATE Score s SET s.isScored = true, s.score = 0, s.remark = :remark, s.updatedAt = :updatedAt WHERE s.course.id = :courseId AND s.id <> :approvedScoreId AND s.isScored = false AND s.isDeleted = false")
+    int rejectOtherPendingAwardScores(@Param("courseId") Integer courseId,
+                                      @Param("approvedScoreId") Long approvedScoreId,
+                                      @Param("remark") String remark,
+                                      @Param("updatedAt") java.time.LocalDateTime updatedAt);
 
     boolean existsByCourseIdAndIsDeletedFalse(Integer courseId);
 
@@ -86,8 +99,15 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     @Query("SELECT s FROM Score s WHERE s.isScored = true AND s.isDeleted = false AND s.identity.id = :identityId AND s.course.category = 'contest'")
     List<Score> findByIdentity_IdAndIsScoredTrueAndIsDeletedFalseAndCategoryContest(int identityId);
 
-    @Query("SELECT s FROM Score s WHERE s.isScored = true AND s.isDeleted = false AND s.identity.id = :identityId AND s.course.category <> 'contest' AND s.course.category <> 'bingo'")
+    @Query("SELECT s FROM Score s WHERE s.isScored = true AND s.isDeleted = false AND s.identity.id = :identityId AND LOWER(TRIM(COALESCE(s.course.category, ''))) NOT IN ('contest', 'ranking', 'bingo', 'award')")
     List<Score> findByIdentity_IdAndIsScoredTrueAndIsDeletedFalseAndCategoryNotContest(int identityId);
+
+    @Query("SELECT s FROM Score s WHERE s.isScored = true AND s.isDeleted = false AND s.score < 0 AND s.identity.id = :identityId AND LOWER(TRIM(COALESCE(s.course.category, ''))) = 'award' ORDER BY s.updatedAt DESC")
+    List<Score> findAwardRedemptionsByIdentityId(@Param("identityId") int identityId);
+
+    @Query("SELECT s FROM Score s WHERE s.isScored = true AND s.isDeleted = false AND s.uploadTime >= :startTime AND s.uploadTime < :endTime AND LOWER(TRIM(COALESCE(s.course.category, ''))) NOT IN ('contest', 'ranking', 'bingo', 'award')")
+    List<Score> findScoredRegularScoresBetween(@Param("startTime") java.time.LocalDateTime startTime,
+                                               @Param("endTime") java.time.LocalDateTime endTime);
 
     @Query("SELECT s FROM Score s WHERE s.isScored = true AND s.isDeleted = false AND s.course.category = :category")
     List<Score> findScoredNotDeletedByCategory(@Param("category") String category);

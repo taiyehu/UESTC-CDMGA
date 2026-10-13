@@ -8,6 +8,7 @@
           <th class="w-14 px-2 py-3 text-center">ID</th>
           <th class="w-32 px-2 py-3 text-center">课题名称</th>
           <th class="w-24 px-2 py-3 text-center">类别</th>
+          <th class="w-24 px-2 py-3 text-center">兑换积分</th>
           <th class="w-32 px-2 py-3 text-center">开始时间</th>
           <th class="w-32 px-2 py-3 text-center">结束时间</th>
           <th class="px-2 py-3 text-center" style="width: 36rem">描述</th>
@@ -20,6 +21,10 @@
         <td class="px-2 py-3 text-center">{{ course.id }}</td>
         <td class="px-2 py-3">
           <input v-model="course.title" class="inline-input" placeholder="课题名称" />
+        </td>
+        <td class="px-2 py-3 text-center">
+          <input v-if="course.category === 'award'" v-model.number="course.awardCost" type="number" min="1" step="1" class="inline-input" placeholder="积分" />
+          <span v-else>-</span>
         </td>
         <td class="px-2 py-3">
           <select v-model="course.category" class="inline-select">
@@ -107,6 +112,7 @@ type CourseRow = {
   endTime: string | null
   description: string
   image: string
+  awardCost: number | null
 }
 
 const courses = ref<CourseRow[]>([])
@@ -152,6 +158,7 @@ function toCourseRow(course: any): CourseRow {
     endTime: normalizeDateTime(course?.end_time || course?.endTime),
     description: String(course?.description || ''),
     image: String(course?.image || ''),
+    awardCost: course?.award?.cost == null ? null : Number(course.award.cost),
   }
 }
 
@@ -222,10 +229,15 @@ async function saveCourse(course: CourseRow): Promise<void> {
     endTime: course.endTime,
     description: course.description.trim(),
     image: course.image.trim(),
+    awardCost: course.category.trim() === 'award' ? Number(course.awardCost) : null,
   }
 
   if (!payload.id || !payload.title || !payload.category || !payload.startTime || !payload.endTime || !payload.description || !payload.image) {
     ElMessage({ message: '请填写所有必填项', type: 'error' })
+    return
+  }
+  if (payload.category === 'award' && (!Number.isInteger(payload.awardCost) || Number(payload.awardCost) <= 0)) {
+    ElMessage({ message: '奖品兑换积分必须是大于 0 的整数', type: 'error' })
     return
   }
 
@@ -238,6 +250,7 @@ async function saveCourse(course: CourseRow): Promise<void> {
       endTime: payload.endTime,
       description: payload.description,
       image: payload.image,
+      awardCost: payload.awardCost,
     })
 
     if (response.data?.code === 0) {

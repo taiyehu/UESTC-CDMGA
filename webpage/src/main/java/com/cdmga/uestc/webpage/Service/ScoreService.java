@@ -2,6 +2,7 @@ package com.cdmga.uestc.webpage.Service;
 
 import com.cdmga.uestc.webpage.Entity.Activity;
 import com.cdmga.uestc.webpage.Entity.ActivityCourseAssoc;
+import com.cdmga.uestc.webpage.Entity.Award;
 import com.cdmga.uestc.webpage.Entity.Course;
 import com.cdmga.uestc.webpage.Entity.Team;
 import com.cdmga.uestc.webpage.Repository.*;
@@ -18,7 +19,9 @@ import com.cdmga.uestc.webpage.Dto.UserScoreDto;
 import com.cdmga.uestc.webpage.Entity.Profile;
 import com.cdmga.uestc.webpage.Entity.Score;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -29,8 +32,14 @@ import java.util.Set;
 @Service
 public class ScoreService {
 
+    private static final LocalDateTime REDEMPTION_CUTOFF =
+            LocalDateTime.of(2026, Month.OCTOBER, 1, 0, 0);
+
     @Autowired
     private ScoreRepository scoreRepository;
+
+    @Autowired
+    private AwardRepository awardRepository;
 
     @Autowired
     private CourseRepository courseRepository;
@@ -88,13 +97,18 @@ public class ScoreService {
 
             String category = course.getCategory() == null ? "" : course.getCategory().trim().toLowerCase();
             if ("award".equals(category)) {
-                awardCost(course);
+                Award lockedAward = awardRepository.findByCourseIdForUpdate(course.getId())
+                        .orElseThrow(() -> new IllegalArgumentException("奖品配置不存在"));
+                awardCost(lockedAward);
+                if (lockedAward.getRemainingStock() == null || lockedAward.getRemainingStock() <= 0) {
+                    throw new IllegalArgumentException("奖品已售罄");
+                }
                 if (issue_id != null) {
                     throw new IllegalArgumentException("奖品兑换不支持子题编号");
                 }
                 identityRepository.findByIdForUpdate(identity_id)
                         .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
-                if (scoreRepository.existsAwardByIdentityIdAndTitle(identity_id, course.getTitle().trim())) {
+                if (scoreRepository.existsAwardByIdentityIdAndCourseId(identity_id, course.getId())) {
                     throw new IllegalArgumentException("该奖品已申请或兑换，每人仅可兑换一次");
                 }
             }
@@ -145,28 +159,43 @@ public class ScoreService {
         // 查找Score
         Score score = scoreRepository.findById(scoreId).orElse(null);
         if (score != null && !Boolean.TRUE.equals(score.getIsDeleted())) {
+            Course scoreCourse = score.getCourse();
+            boolean award = scoreCourse != null && scoreCourse.getCategory() != null
+                    && "award".equalsIgnoreCase(scoreCourse.getCategory().trim());
+            // 已经完成审核的奖品申请是最终结果，后续不允许再次修改。
+            if (award && Boolean.TRUE.equals(score.getIsScored())) {
+                return score;
+            }
             // 负分记录视为已定性结果，后续不允许再修改。
             if (Boolean.TRUE.equals(score.getIsScored()) && score.getScore() != null && score.getScore() < 0f) {
                 return score;
             }
 
-            Course scoreCourse = score.getCourse();
-            boolean award = scoreCourse != null && "award".equalsIgnoreCase(scoreCourse.getCategory().trim());
+            Award lockedAward = null;
             if (award && Boolean.TRUE.equals(is_scored)) {
                 if (Boolean.TRUE.equals(scoreCourse.getIsDeleted())) {
                     throw new IllegalArgumentException("奖品课题已删除，不能审核兑换");
                 }
-                int cost = awardCost(scoreCourse);
+                lockedAward = awardRepository.findByCourseIdForUpdate(scoreCourse.getId())
+                        .orElseThrow(() -> new IllegalArgumentException("奖品配置不存在"));
+                if (lockedAward.getRemainingStock() == null || lockedAward.getRemainingStock() <= 0) {
+                    throw new IllegalArgumentException("奖品已售罄");
+                }
+                LocalDateTime now = LocalDateTime.now();
+                if (scoreCourse.getEndTime() != null && now.isAfter(scoreCourse.getEndTime())) {
+                    throw new IllegalArgumentException("奖品已下架或售罄");
+                }
+                int cost = awardCost(lockedAward);
                 Integer identityId = score.getIdentity().getId();
                 identityRepository.findByIdForUpdate(identityId)
                         .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
-                if (scoreRepository.existsOtherAwardByIdentityIdAndTitle(identityId, scoreId, scoreCourse.getTitle().trim())) {
+                if (scoreRepository.existsOtherAwardByIdentityIdAndCourseId(identityId, scoreId, scoreCourse.getId())) {
                     throw new IllegalArgumentException("该奖品已申请或兑换，每人仅可兑换一次");
                 }
-                double available = scoreRepository.sumRegularScoreByIdentityId(identityId)
-                        + scoreRepository.sumAwardScoreByIdentityId(identityId);
-                if (available - cost <= 0) {
-                    throw new IllegalArgumentException("可用积分不足，兑换后积分必须大于 0");
+                double available = scoreRepository.sumRegularScoreByIdentityIdSince(identityId, REDEMPTION_CUTOFF)
+                        + scoreRepository.sumAwardScoreByIdentityIdSince(identityId, REDEMPTION_CUTOFF);
+                if (available < cost) {
+                    throw new IllegalArgumentException("可用积分不足");
                 }
             }
 
@@ -214,7 +243,9 @@ public class ScoreService {
                 }
             }
 
-            float finalPoint = award ? (Boolean.TRUE.equals(is_scored) ? -awardCost(scoreCourse) : 0f) : point;
+            float finalPoint = award
+                    ? (Boolean.TRUE.equals(is_scored) ? -awardCost(lockedAward) : 0f)
+                    : point;
             Integer effectiveIssueId = issue_id != null ? issue_id : score.getIssueId();
                 LocalDateTime effectiveUploadTime = Boolean.TRUE.equals(is_scored)
                     ? score.getUploadTime()
@@ -294,8 +325,25 @@ public class ScoreService {
             score.setIsScored(is_scored);
             score.setIssueId(award ? null : issue_id);
             score.setRemark(remark);
-            score.setUpdatedAt(LocalDateTime.now()); // 更新时间
-            return scoreRepository.save(score); // 保存更新后的Score
+            LocalDateTime updatedAt = LocalDateTime.now();
+            score.setUpdatedAt(updatedAt);
+            Score savedScore = scoreRepository.save(score);
+
+            if (award && Boolean.TRUE.equals(is_scored)) {
+                lockedAward.setRemainingStock(0);
+                lockedAward.setSoldOutAt(updatedAt);
+                lockedAward.setUpdatedAt(updatedAt);
+                awardRepository.save(lockedAward);
+
+                scoreCourse.setEndTime(updatedAt);
+                scoreCourse.setUpdatedAt(updatedAt);
+                courseRepository.save(scoreCourse);
+
+                scoreRepository.rejectOtherPendingAwardScores(
+                        scoreCourse.getId(), scoreId, "奖品已售罄", updatedAt);
+            }
+
+            return savedScore;
         }
         return null; // 如果没有找到Score，返回null
     }
@@ -327,16 +375,11 @@ public class ScoreService {
         return null;
     }
 
-    private int awardCost(Course course) {
-        if (course == null || course.getTitle() == null) {
-            throw new IllegalArgumentException("奖品名称无效");
+    private int awardCost(Award award) {
+        if (award == null || award.getCost() == null || award.getCost() <= 0) {
+            throw new IllegalArgumentException("奖品兑换积分配置无效");
         }
-        return switch (course.getTitle().trim()) {
-            case "一等奖" -> 40;
-            case "二等奖" -> 20;
-            case "三等奖" -> 10;
-            default -> throw new IllegalArgumentException("奖品课题只能命名为一等奖、二等奖或三等奖");
-        };
+        return award.getCost();
     }
 
     public List<Score> getUnscoredScores(int page, int size) {
@@ -616,9 +659,20 @@ public class ScoreService {
         return result;
     }
 
-    public List<UserScoreDto> calculateTotalScoreForAllUsers() {
-        List<Score> scores = scoreRepository.findScoredRegularScores();
+    public List<UserScoreDto> calculateTotalScoreForAllUsers(Integer startYear) {
+        int effectiveStartYear = startYear == null ? currentRankingStartYear() : startYear;
+        if (effectiveStartYear < 2025 || effectiveStartYear > 9998) {
+            throw new IllegalArgumentException("排行榜年份无效");
+        }
+        LocalDateTime startTime = LocalDateTime.of(effectiveStartYear, Month.OCTOBER, 1, 0, 0);
+        LocalDateTime endTime = startTime.plusYears(1);
+        List<Score> scores = scoreRepository.findScoredRegularScoresBetween(startTime, endTime);
         return calculateScoresForAllUsers(scores);
+    }
+
+    private int currentRankingStartYear() {
+        LocalDate today = LocalDate.now();
+        return today.getMonthValue() >= Month.OCTOBER.getValue() ? today.getYear() : today.getYear() - 1;
     }
 
 
@@ -632,6 +686,10 @@ public class ScoreService {
 
     public List<Score> getScoredCourseScoresByIdentityId(int identityId) {
         return scoreRepository.findByIdentity_IdAndIsScoredTrueAndIsDeletedFalseAndCategoryNotContest(identityId);
+    }
+
+    public List<Score> getAwardRedemptionsByIdentityId(int identityId) {
+        return scoreRepository.findAwardRedemptionsByIdentityId(identityId);
     }
 
     public List<UserScoreDto> calculateTotalScoresForContest(){
