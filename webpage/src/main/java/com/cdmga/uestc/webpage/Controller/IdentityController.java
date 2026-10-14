@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 
 import com.cdmga.uestc.webpage.common.LoginRequest;
@@ -70,7 +71,7 @@ public class IdentityController {
     // 接收 JSON 请求体
     @CrossOrigin(origins = "http://localhost:8081")
     @PostMapping("/login")
-    public Result login(@RequestBody LoginRequest loginRequest, HttpSession session) {
+    public Result login(@RequestBody LoginRequest loginRequest, HttpServletRequest request, HttpSession session) {
         session.removeAttribute("identityId");
         try {
             // 调用服务层验证登录
@@ -78,7 +79,7 @@ public class IdentityController {
                     loginRequest.getAccount(),
                     loginRequest.getPassword());
 
-            session.changeSessionId();
+            request.changeSessionId();
             session.setAttribute("identityId", user.getId());
 
             // 验证成功，返回包含用户信息的成功响应
