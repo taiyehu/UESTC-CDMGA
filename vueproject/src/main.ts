@@ -3,9 +3,12 @@ import App from './App.vue'
 import router from './router'
 import axios from 'axios'
 import '@/styles/index.css'
+import { isMobileLite } from '@/utils/visualMode'
 // import MotionPlugin from 'motion-v'
 
 
+
+document.documentElement.classList.toggle('mobile-lite', isMobileLite)
 
 const app = createApp(App)
 

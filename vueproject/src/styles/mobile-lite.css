@@ -1,0 +1,11 @@
+/* 移动端性能实验：保留布局与底色，暂停非必要视觉绘制。 */
+html.mobile-lite *,
+html.mobile-lite *::before,
+html.mobile-lite *::after {
+  animation: none !important;
+  transition: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}

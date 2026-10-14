@@ -15,9 +15,9 @@
         v-for="item in items"
         :key="item.id"
         class="subtask-card"
-        :initial="{ opacity: 0, y: 14 }"
-        :animate="{ opacity: 1, y: 0 }"
-        :transition="{ duration: 0.3, delay: item.id * 0.04 }"
+        :initial="isMobileLite ? false : { opacity: 0, y: 14 }"
+        :animate="isMobileLite ? undefined : { opacity: 1, y: 0 }"
+        :transition="isMobileLite ? undefined : { duration: 0.3, delay: item.id * 0.04 }"
       >
         <div class="subtask-cover" :style="getCoverStyle(item.image)" />
         <div class="p-4 text-left">
@@ -41,6 +41,7 @@ import type { Course } from '@/api/types'
 import { formatDuration, parseTypicalItems, toImageUrl } from './task-utils'
 import TaskScoreAction from '@/components/TaskScoreAction.vue'
 import { fetchCourseIssues } from '@/api/issue'
+import { isMobileLite } from '@/utils/visualMode'
 
 const props = defineProps<{ course: Course }>()
 

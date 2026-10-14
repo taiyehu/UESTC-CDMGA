@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import { Motion } from 'motion-v'  // 引入 motion-v
+import { isMobileLite } from '@/utils/visualMode'
 
 const props = defineProps({
   size: { type: Number, default: 420 },
@@ -41,6 +42,7 @@ const keyGradients = computed(() =>
 
 <template>
   <Motion
+    v-if="!isMobileLite"
     class="relative pointer-events-none"
     :style="{
       width: size + 'px',

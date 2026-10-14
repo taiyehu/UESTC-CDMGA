@@ -184,6 +184,7 @@ import { fetchCourseData } from '@/api/course'
 import NeonCard from '@/components/NeonCard.vue'
 import { MaimaiRing } from '@/components/effects'
 import defaultAvatar from '@/assets/default-avatar.png'
+import { isMobileLite } from '@/utils/visualMode'
 
 type CourseLike = {
   id: number
@@ -335,6 +336,7 @@ function stopCourseTimer(): void {
 
 function startCourseTimer(): void {
   stopCourseTimer()
+  if (isMobileLite) return
   if (displayCourses.value.length > 1) {
     courseTimer = window.setInterval(() => {
       nextCourse()

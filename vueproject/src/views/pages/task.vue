@@ -13,9 +13,9 @@
       <Motion
         v-for="(course, index) in courses"
         :key="course.id"
-        :initial="{ opacity: 0, y: 18 }"
-        :animate="{ opacity: 1, y: 0 }"
-        :transition="{ duration: 0.35, delay: index * 0.06 }"
+        :initial="isMobileLite ? false : { opacity: 0, y: 18 }"
+        :animate="isMobileLite ? undefined : { opacity: 1, y: 0 }"
+        :transition="isMobileLite ? undefined : { duration: 0.35, delay: index * 0.06 }"
         class="hud-card group overflow-hidden"
       >
         <div
@@ -59,6 +59,7 @@ import { Motion } from 'motion-v'
 import { fetchCourseData } from '@/api/course'
 import type { Course } from '@/api/types'
 import NeonActionButton from '@/components/NeonActionButton.vue'
+import { isMobileLite } from '@/utils/visualMode'
 
 const router = useRouter()
 

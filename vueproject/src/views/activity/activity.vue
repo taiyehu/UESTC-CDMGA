@@ -13,9 +13,9 @@
       <Motion
         v-for="(activity, index) in activities"
         :key="activity.id"
-        :initial="{ opacity: 0, y: 18 }"
-        :animate="{ opacity: 1, y: 0 }"
-        :transition="{ duration: 0.35, delay: index * 0.06 }"
+        :initial="isMobileLite ? false : { opacity: 0, y: 18 }"
+        :animate="isMobileLite ? undefined : { opacity: 1, y: 0 }"
+        :transition="isMobileLite ? undefined : { duration: 0.35, delay: index * 0.06 }"
         class="hud-card group overflow-hidden"
       >
         <div
@@ -54,6 +54,7 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { Motion } from 'motion-v'
 import NeonActionButton from '@/components/NeonActionButton.vue'
+import { isMobileLite } from '@/utils/visualMode'
 
 const activities = ref<any[]>([])
 const loading = ref<boolean>(true)

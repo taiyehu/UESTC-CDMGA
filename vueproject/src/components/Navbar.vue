@@ -36,11 +36,13 @@
               class="absolute -bottom-1 left-2 right-2 h-0.75 overflow-hidden rounded-full"
             >
               <motion.div
+                v-if="!isMobileLite"
                 class="absolute inset-0 bg-linear-to-r from-transparent via-cyan-300 to-transparent opacity-95 mix-blend-screen"
                 :animate="{ x: ['-100%', '200%'] }"
                 :transition="{ duration: 5, repeat: Infinity, ease: 'linear' }"
               />
               <motion.div
+                v-if="!isMobileLite"
                 class="absolute inset-0 bg-linear-to-r from-transparent via-fuchsia-400 to-transparent opacity-95 mix-blend-screen"
                 :animate="{ x: ['200%', '-100%'] }"
                 :transition="{ duration: 6, repeat: Infinity, ease: 'linear' }"
@@ -133,11 +135,13 @@
       aria-hidden="true"
     >
       <motion.div
+        v-if="!isMobileLite"
         class="absolute inset-0 bg-linear-to-r from-transparent via-cyan-300 to-transparent opacity-95 mix-blend-screen"
         :animate="{ x: ['-100%', '200%'] }"
         :transition="{ duration: 5, repeat: Infinity, ease: 'linear' }"
       />
       <motion.div
+        v-if="!isMobileLite"
         class="absolute inset-0 bg-linear-to-r from-transparent via-fuchsia-400 to-transparent opacity-95 mix-blend-screen"
         :animate="{ x: ['200%', '-100%'] }"
         :transition="{ duration: 6, repeat: Infinity, ease: 'linear' }"
@@ -156,6 +160,7 @@ import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import avatarDefault from '@/assets/default-avatar.png'
 import NeonActionButton from '@/components/NeonActionButton.vue'
+import { isMobileLite } from '@/utils/visualMode'
 
 const router = useRouter()
 const route = useRoute()

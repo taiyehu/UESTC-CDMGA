@@ -16,6 +16,7 @@
 
     <!-- ② 左上角冷紫光晕（局部，不脏） -->
     <Motion
+      v-if="!isMobileLite"
       class="absolute w-225 h-225 rounded-full"
       style="
         top:-350px;
@@ -33,6 +34,7 @@
 
     <!-- ③ 右下角冷青光晕 -->
     <Motion
+      v-if="!isMobileLite"
       class="absolute w-250 h-250 rounded-full"
       style="
         bottom:-400px;
@@ -49,17 +51,18 @@
     />
 
     <!-- ④ 右上角大 MaimaiRing（不旋转；呼吸由按键光晕提供） -->
-    <div class="fixed top-40 right-40 pointer-events-none">
+    <div v-if="!isMobileLite" class="fixed top-40 right-40 pointer-events-none">
       <MaimaiRing :size="500" />
     </div>
 
-    <div class="fixed bottom-10 left-40 pointer-events-none">
+    <div v-if="!isMobileLite" class="fixed bottom-10 left-40 pointer-events-none">
       <MaimaiRing :size="450" />
     </div>
 
 
     <!-- ⑥ 轻微暗角（聚焦中间） -->
     <div
+      v-if="!isMobileLite"
       class="absolute inset-0 pointer-events-none"
       style="
         background: radial-gradient(
@@ -79,4 +82,5 @@
 <script lang="ts" setup>
 import { MaimaiRing } from '@/components/effects'
 import { Motion } from 'motion-v'
+import { isMobileLite } from '@/utils/visualMode'
 </script>

@@ -15,9 +15,9 @@
 
     <Motion
       class="task-panel overflow-hidden"
-      :initial="{ opacity: 0, y: 14 }"
-      :animate="{ opacity: 1, y: 0 }"
-      :transition="{ duration: 0.4 }"
+      :initial="isMobileLite ? false : { opacity: 0, y: 14 }"
+      :animate="isMobileLite ? undefined : { opacity: 1, y: 0 }"
+      :transition="isMobileLite ? undefined : { duration: 0.4 }"
     >
       <div class="legacy-image-wrap">
         <img
@@ -38,6 +38,7 @@ import { Motion } from 'motion-v'
 import type { Course } from '@/api/types'
 import { formatDuration, toImageUrl } from './task-utils'
 import TaskScoreAction from '@/components/TaskScoreAction.vue'
+import { isMobileLite } from '@/utils/visualMode'
 
 const props = withDefaults(
   defineProps<{
