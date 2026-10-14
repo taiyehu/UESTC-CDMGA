@@ -1,4 +1,4 @@
-/* 移动端性能实验：保留布局与底色，暂停非必要视觉绘制。 */
+/* 轻量视觉模式：保留布局与底色，暂停非必要视觉绘制。 */
 html.mobile-lite *,
 html.mobile-lite *::before,
 html.mobile-lite *::after {

@@ -177,7 +177,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { fetchCourseData } from '@/api/course'
@@ -336,7 +336,7 @@ function stopCourseTimer(): void {
 
 function startCourseTimer(): void {
   stopCourseTimer()
-  if (isMobileLite) return
+  if (isMobileLite.value) return
   if (displayCourses.value.length > 1) {
     courseTimer = window.setInterval(() => {
       nextCourse()
@@ -414,6 +414,11 @@ onMounted(() => {
     nowTick.value = new Date()
     if (shanghaiDay() !== displayedMemberDay) fetchDailyMember()
   }, 1000)
+})
+
+watch(isMobileLite, (lite) => {
+  if (lite) stopCourseTimer()
+  else startCourseTimer()
 })
 
 onBeforeUnmount(() => {

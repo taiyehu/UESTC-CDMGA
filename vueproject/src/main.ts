@@ -1,4 +1,4 @@
-import { createApp } from 'vue'
+import { createApp, watch } from 'vue'
 import App from './App.vue'
 import router from './router'
 import axios from 'axios'
@@ -8,7 +8,9 @@ import { isMobileLite } from '@/utils/visualMode'
 
 
 
-document.documentElement.classList.toggle('mobile-lite', isMobileLite)
+watch(isMobileLite, (lite) => {
+  document.documentElement.classList.toggle('mobile-lite', lite)
+}, { immediate: true })
 
 const app = createApp(App)
 

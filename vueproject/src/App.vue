@@ -2,6 +2,7 @@
   <div id="app">
     <DefaultLayout>
     <Navbar v-if="showNavbar" />
+    <VisualEffectsToggle v-else class="fixed right-4 top-4 z-50" />
     <router-view />
     </DefaultLayout>
   </div>
@@ -12,6 +13,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import Navbar from '@/components/Navbar.vue'
 import DefaultLayout from '@/components/DefaultLayout.vue'
+import VisualEffectsToggle from '@/components/VisualEffectsToggle.vue'
 
 const route = useRoute()
 

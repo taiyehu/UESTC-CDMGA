@@ -56,6 +56,7 @@
       </div>
 
       <div class="hidden items-center gap-4 lg:flex">
+        <VisualEffectsToggle />
         <NeonActionButton
           v-if="isAdmin"
           variant="violet"
@@ -126,6 +127,7 @@
         {{ link.label }}
       </router-link>
       <button v-if="isAdmin" type="button" class="flex min-h-11 w-full items-center rounded-lg px-3 text-left text-base text-cyan-50" @click="goAdmin">管理</button>
+      <VisualEffectsToggle class="w-full justify-start" />
       <button type="button" class="flex min-h-11 w-full items-center rounded-lg px-3 text-left text-base text-cyan-50" @click="logout">登出</button>
     </div>
 
@@ -160,6 +162,7 @@ import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import avatarDefault from '@/assets/default-avatar.png'
 import NeonActionButton from '@/components/NeonActionButton.vue'
+import VisualEffectsToggle from '@/components/VisualEffectsToggle.vue'
 import { isMobileLite } from '@/utils/visualMode'
 
 const router = useRouter()
