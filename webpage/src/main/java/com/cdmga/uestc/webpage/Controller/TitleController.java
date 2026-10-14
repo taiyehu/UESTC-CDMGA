@@ -12,9 +12,10 @@ public class TitleController {
     @Autowired
     private TitleService titleService;
 
-    public record TitleRequest(String name, String tier, Integer identityId) {}
-    public record GrantRequest(Integer titleId, Integer identityId) {}
-    public record ReviewRequest(Boolean approved, String tier, String note) {}
+    public record TitleRequest(String name, String tier, Integer identityId, String acquisitionMethod, String grantReason) {}
+    public record GrantRequest(Integer titleId, Integer identityId, String grantReason) {}
+    public record ReviewRequest(Boolean approved, String tier, String note, String acquisitionMethod, String grantReason) {}
+    public record DetailsRequest(String acquisitionMethod, String grantReason) {}
 
     private Integer currentUser(HttpSession session) {
         Object identityId = session.getAttribute("identityId");
@@ -45,7 +46,7 @@ public class TitleController {
     @PostMapping("/apply")
     public Result apply(@RequestBody TitleRequest request, HttpSession session) {
         try {
-            return Result.success(titleService.apply(currentUser(session), request.name()));
+            return Result.success(titleService.apply(currentUser(session), request.name(), request.acquisitionMethod()));
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
@@ -80,6 +81,26 @@ public class TitleController {
         }
     }
 
+    @GetMapping("/admin/users")
+    public Result searchUsers(@RequestParam("keyword") String keyword, HttpSession session) {
+        try {
+            return Result.success(titleService.searchUsers(currentUser(session), keyword));
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @GetMapping("/admin/awards")
+    public Result listAll(@RequestParam(value = "identityId", required = false) Integer identityId,
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size,
+            HttpSession session) {
+        try {
+            return Result.success(titleService.listAll(currentUser(session), identityId, page, size));
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
     @GetMapping("/admin/definitions")
     public Result listDefinitions(HttpSession session) {
         try {
@@ -92,7 +113,8 @@ public class TitleController {
     @PostMapping("/admin/create")
     public Result createAndGrant(@RequestBody TitleRequest request, HttpSession session) {
         try {
-            return Result.success(titleService.createAndGrant(currentUser(session), request.identityId(), request.name(), request.tier()));
+            return Result.success(titleService.createAndGrant(currentUser(session), request.identityId(), request.name(), request.tier(),
+                    request.acquisitionMethod(), request.grantReason()));
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
@@ -101,7 +123,7 @@ public class TitleController {
     @PostMapping("/admin/grant")
     public Result grant(@RequestBody GrantRequest request, HttpSession session) {
         try {
-            return Result.success(titleService.grant(currentUser(session), request.identityId(), request.titleId()));
+            return Result.success(titleService.grant(currentUser(session), request.identityId(), request.titleId(), request.grantReason()));
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
@@ -110,7 +132,27 @@ public class TitleController {
     @PostMapping("/admin/review/{awardId}")
     public Result review(@PathVariable Integer awardId, @RequestBody ReviewRequest request, HttpSession session) {
         try {
-            return Result.success(titleService.review(currentUser(session), awardId, Boolean.TRUE.equals(request.approved()), request.tier(), request.note()));
+            return Result.success(titleService.review(currentUser(session), awardId, Boolean.TRUE.equals(request.approved()), request.tier(),
+                    request.note(), request.acquisitionMethod(), request.grantReason()));
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @PostMapping("/admin/details/{awardId}")
+    public Result updateDetails(@PathVariable Integer awardId, @RequestBody DetailsRequest request, HttpSession session) {
+        try {
+            return Result.success(titleService.updateDetails(currentUser(session), awardId,
+                    request.acquisitionMethod(), request.grantReason()));
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @PostMapping("/admin/revoke/{awardId}")
+    public Result revoke(@PathVariable Integer awardId, HttpSession session) {
+        try {
+            return Result.success(titleService.revoke(currentUser(session), awardId));
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }

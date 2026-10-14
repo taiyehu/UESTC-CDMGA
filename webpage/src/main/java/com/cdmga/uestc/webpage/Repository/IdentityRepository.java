@@ -30,6 +30,9 @@ public interface IdentityRepository extends JpaRepository<Identity, Integer> {
 
     List<Identity> findByAccountContaining(String keyword);
 
+    @Query("select i from Identity i where i.isDeleted = false and lower(i.account) like lower(concat('%', :keyword, '%')) order by i.account asc")
+    List<Identity> searchActiveByAccount(@Param("keyword") String keyword, Pageable pageable);
+
     @Query("select c from Identity c")
     List<Identity> findAllAccount();
 

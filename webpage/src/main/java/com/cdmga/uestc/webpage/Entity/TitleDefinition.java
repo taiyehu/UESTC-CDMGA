@@ -19,6 +19,9 @@ public class TitleDefinition {
     @Column(name = "source", nullable = false, length = 24)
     private String source;
 
+    @Column(name = "acquisition_method")
+    private String acquisitionMethod;
+
     @Column(name = "identity_id", nullable = false)
     private Integer identityId;
 
@@ -33,6 +36,8 @@ public class TitleDefinition {
     public void setTier(String tier) { this.tier = tier; }
     public String getSource() { return source; }
     public void setSource(String source) { this.source = source; }
+    public String getAcquisitionMethod() { return acquisitionMethod; }
+    public void setAcquisitionMethod(String acquisitionMethod) { this.acquisitionMethod = acquisitionMethod; }
     public Integer getIdentityId() { return identityId; }
     public void setIdentityId(Integer identityId) { this.identityId = identityId; }
     public LocalDateTime getCreatedAt() { return createdAt; }

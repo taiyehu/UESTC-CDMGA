@@ -29,7 +29,7 @@
               {{ profile.account || (isSelf ? user.account : '未知用户') }}
             </h2>
             <div v-if="equippedTitle" class="mt-2 text-center">
-              <TitleBadge :name="equippedTitle.name" :tier="equippedTitle.tier" />
+              <TitleBadge :name="equippedTitle.name" :tier="equippedTitle.tier" :acquisition-method="equippedTitle.acquisitionMethod" />
             </div>
           </div>
 
@@ -54,16 +54,10 @@
 
     <NeonCard v-if="isSelf" class="box-card mt-5">
       <h3 class="section-title mb-3">我的称号</h3>
-      <div class="flex flex-wrap items-end gap-3">
-        <div class="min-w-55 flex-1">
-          <label for="title-application" class="mb-2 block text-sm text-cyan-100/80">申请新称号（审核通过后可佩戴）</label>
-          <input id="title-application" v-model="newTitleName" maxlength="32" class="title-input" placeholder="输入称号文字，最多32字" />
-        </div>
-        <NeonActionButton variant="green" @click="applyTitle">提交申请</NeonActionButton>
-      </div>
+      <NeonActionButton variant="profile-outline" @click="goToSettings('titles')">申请称号</NeonActionButton>
       <div v-if="myTitles.length" class="mt-5 flex flex-wrap gap-3">
         <div v-for="item in myTitles" :key="item.id" class="title-item">
-          <TitleBadge :name="item.name" :tier="item.tier" />
+          <TitleBadge :name="item.name" :tier="item.tier" :acquisition-method="item.acquisitionMethod" />
           <span class="text-xs text-cyan-100/75">{{ titleStatusText(item.status) }}</span>
           <NeonActionButton v-if="item.status === 'approved' && !item.isEquipped" size="sm" @click="equipTitle(item.id)">佩戴</NeonActionButton>
           <NeonActionButton v-if="item.isEquipped" size="sm" variant="gray" @click="unequipTitle">取消佩戴</NeonActionButton>
@@ -76,14 +70,7 @@
     <NeonCard v-else-if="publicTitles.length" class="box-card mt-5">
       <h3 class="section-title mb-3">获得的称号</h3>
       <div class="flex flex-wrap gap-2">
-        <TitleBadge v-for="item in publicTitles" :key="item.id" :name="item.name" :tier="item.tier" />
-      </div>
-    </NeonCard>
-
-    <NeonCard v-else class="box-card">
-      <h2>加载用户信息失败</h2>
-      <div class="mt-3">
-        <NeonActionButton variant="profile-outline" @click="redirectToLogin">重新登录</NeonActionButton>
+        <TitleBadge v-for="item in publicTitles" :key="item.id" :name="item.name" :tier="item.tier" :acquisition-method="item.acquisitionMethod" />
       </div>
     </NeonCard>
 
@@ -330,10 +317,9 @@ const router = useRouter()
 const user = reactive<{ account: string; id: number | null; role: string }>({ account: '', id: null, role: '' })
 const profile = reactive<any>({ avatar: '', description: '', status: -1, account: '' })
 const profileStatus = ref<number>(-1)
-type TitleRecord = { id: number; name: string; tier: string; status: string; isEquipped: boolean; reviewNote?: string }
+type TitleRecord = { id: number; name: string; tier: string; status: string; isEquipped: boolean; acquisitionMethod?: string; reviewNote?: string }
 const myTitles = ref<TitleRecord[]>([])
 const publicTitles = ref<TitleRecord[]>([])
-const newTitleName = ref('')
 const equippedTitle = computed(() => (isSelf.value ? myTitles.value : publicTitles.value).find((item) => item.isEquipped))
 const defaultAvatarRef = defaultAvatar
 const scoredScores = ref<any[]>([])
@@ -427,6 +413,7 @@ function loadProfile() {
 function titleStatusText(status: string): string {
   if (status === 'pending') return '审核中'
   if (status === 'approved') return '已通过'
+  if (status === 'revoked') return '已撤销'
   return '已驳回'
 }
 
@@ -442,22 +429,6 @@ async function fetchTitles(): Promise<void> {
   } catch {
     myTitles.value = []
     publicTitles.value = []
-  }
-}
-
-async function applyTitle(): Promise<void> {
-  if (!newTitleName.value.trim()) {
-    ElMessage.warning('请输入称号文字')
-    return
-  }
-  try {
-    const response = await axios.post('/api/title/apply', { name: newTitleName.value.trim() })
-    if (response.data?.code !== 0) throw new Error(response.data?.message)
-    newTitleName.value = ''
-    ElMessage.success('称号申请已提交')
-    await fetchTitles()
-  } catch (error: any) {
-    ElMessage.error(error.message || '申请失败')
   }
 }
 
@@ -505,10 +476,6 @@ function previewAvatar() {
 }
 
 
-
-function redirectToLogin() {
-  router.push('/login')
-}
 
 function fetchProfile() {
   if (!viewUserId.value) return
@@ -651,15 +618,6 @@ watch(() => route.params.id, () => {
 </script>
 
 <style scoped>
-.title-input {
-  width: 100%;
-  padding: 9px 12px;
-  border: 1px solid rgba(103, 232, 249, 0.35);
-  border-radius: 10px;
-  background: rgba(15, 23, 42, 0.6);
-  color: #e0f2fe;
-}
-
 .title-item {
   display: flex;
   align-items: center;

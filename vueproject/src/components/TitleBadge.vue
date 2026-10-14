@@ -1,9 +1,9 @@
 <template>
-  <span class="title-badge" :class="`title-${tier}`">{{ name }}</span>
+  <span class="title-badge" :class="`title-${tier}`" :title="acquisitionMethod || '暂无获得方式'" tabindex="0">{{ name }}</span>
 </template>
 
 <script lang="ts" setup>
-defineProps<{ name: string; tier: string }>()
+defineProps<{ name: string; tier: string; acquisitionMethod?: string | null }>()
 </script>
 
 <style scoped>

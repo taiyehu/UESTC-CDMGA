@@ -8,6 +8,8 @@ import com.cdmga.uestc.webpage.Repository.IdentityRepository;
 import com.cdmga.uestc.webpage.Repository.TitleAwardRepository;
 import com.cdmga.uestc.webpage.Repository.TitleDefinitionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,6 +62,14 @@ public class TitleService {
         return tier;
     }
 
+    private String optionalText(String value, String field) {
+        String trimmed = value == null ? "" : value.trim();
+        if (trimmed.length() > 255) {
+            throw new IllegalArgumentException(field + "不能超过255字");
+        }
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
     private Identity requireRecipient(Integer identityId) {
         if (identityId == null || identityId <= 0) {
             throw new IllegalArgumentException("用户ID无效");
@@ -68,12 +78,13 @@ public class TitleService {
     }
 
     @Transactional
-    public TitleAwardDto apply(Integer identityId, String name) {
+    public TitleAwardDto apply(Integer identityId, String name, String acquisitionMethod) {
         Identity user = requireUser(identityId);
         TitleDefinition title = new TitleDefinition();
         title.setName(validName(name));
         title.setTier("normal");
         title.setSource("user_application");
+        title.setAcquisitionMethod(optionalText(acquisitionMethod, "获得方式"));
         title.setIdentityId(user.getId());
         title = titleDefinitionRepository.save(title);
         TitleAward award = new TitleAward();
@@ -86,20 +97,22 @@ public class TitleService {
     }
 
     @Transactional
-    public TitleAwardDto createAndGrant(Integer adminId, Integer recipientId, String name, String tier) {
+    public TitleAwardDto createAndGrant(Integer adminId, Integer recipientId, String name, String tier,
+            String acquisitionMethod, String grantReason) {
         Identity admin = requireAdmin(adminId);
         Identity recipient = requireRecipient(recipientId);
         TitleDefinition title = new TitleDefinition();
         title.setName(validName(name));
         title.setTier(validTier(tier));
         title.setSource("admin_created");
+        title.setAcquisitionMethod(optionalText(acquisitionMethod, "获得方式"));
         title.setIdentityId(admin.getId());
         title = titleDefinitionRepository.save(title);
-        return grantSavedTitle(admin, recipient, title);
+        return grantSavedTitle(admin, recipient, title, grantReason);
     }
 
     @Transactional
-    public TitleAwardDto grant(Integer adminId, Integer recipientId, Integer titleId) {
+    public TitleAwardDto grant(Integer adminId, Integer recipientId, Integer titleId, String grantReason) {
         Identity admin = requireAdmin(adminId);
         Identity recipient = requireRecipient(recipientId);
         TitleDefinition title = titleDefinitionRepository.findById(titleId)
@@ -107,10 +120,10 @@ public class TitleService {
         if ("user_application".equals(title.getSource())) {
             throw new IllegalArgumentException("用户申请的称号不能发放给其他用户");
         }
-        return grantSavedTitle(admin, recipient, title);
+        return grantSavedTitle(admin, recipient, title, grantReason);
     }
 
-    private TitleAwardDto grantSavedTitle(Identity admin, Identity recipient, TitleDefinition title) {
+    private TitleAwardDto grantSavedTitle(Identity admin, Identity recipient, TitleDefinition title, String grantReason) {
         if (titleAwardRepository.findByIdentityIdAndTitleId(recipient.getId(), title.getId()).isPresent()) {
             throw new IllegalArgumentException("该用户已拥有此称号");
         }
@@ -121,12 +134,15 @@ public class TitleService {
         award.setIsEquipped(false);
         award.setReviewerId(admin.getId());
         award.setReviewedAt(LocalDateTime.now());
+        award.setGrantedAt(award.getReviewedAt());
+        award.setGrantReason(optionalText(grantReason, "发放原因"));
         award = titleAwardRepository.save(award);
         return toDto(award, title, recipient);
     }
 
     @Transactional
-    public TitleAwardDto review(Integer adminId, Integer awardId, boolean approved, String tier, String note) {
+    public TitleAwardDto review(Integer adminId, Integer awardId, boolean approved, String tier, String note,
+            String acquisitionMethod, String grantReason) {
         Identity admin = requireAdmin(adminId);
         TitleAward award = titleAwardRepository.findById(awardId)
                 .orElseThrow(() -> new IllegalArgumentException("申请不存在"));
@@ -137,12 +153,17 @@ public class TitleService {
                 .orElseThrow(() -> new IllegalArgumentException("称号不存在"));
         if (approved) {
             title.setTier(validTier(tier));
+            title.setAcquisitionMethod(optionalText(acquisitionMethod, "获得方式"));
             titleDefinitionRepository.save(title);
         }
         award.setStatus(approved ? "approved" : "rejected");
         award.setReviewerId(admin.getId());
         award.setReviewedAt(LocalDateTime.now());
-        award.setReviewNote(note == null ? null : note.trim().substring(0, Math.min(note.trim().length(), 255)));
+        award.setReviewNote(optionalText(note, "审核备注"));
+        if (approved) {
+            award.setGrantedAt(award.getReviewedAt());
+            award.setGrantReason(optionalText(grantReason, "发放原因"));
+        }
         award = titleAwardRepository.save(award);
         return toDto(award, title, requireUser(award.getIdentityId()));
     }
@@ -219,9 +240,73 @@ public class TitleService {
             row.put("id", title.getId());
             row.put("name", title.getName());
             row.put("tier", title.getTier());
+            row.put("acquisitionMethod", title.getAcquisitionMethod());
             result.add(row);
         }
         return result;
+    }
+
+    public List<Map<String, Object>> searchUsers(Integer adminId, String keyword) {
+        requireAdmin(adminId);
+        String query = keyword == null ? "" : keyword.trim();
+        if (query.isEmpty()) return new ArrayList<>();
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Identity user : identityRepository.searchActiveByAccount(query, PageRequest.of(0, 20))) {
+            Map<String, Object> row = new HashMap<>();
+            row.put("id", user.getId());
+            row.put("account", user.getAccount());
+            result.add(row);
+        }
+        return result;
+    }
+
+    public Map<String, Object> listAll(Integer adminId, Integer identityId, int page, int size) {
+        requireAdmin(adminId);
+        if (page < 0 || size < 1 || size > 100) throw new IllegalArgumentException("分页参数无效");
+        Page<TitleAward> awards = identityId == null
+                ? titleAwardRepository.findAllByOrderByIdDesc(PageRequest.of(page, size))
+                : titleAwardRepository.findByIdentityIdOrderByIdDesc(identityId, PageRequest.of(page, size));
+        List<TitleAwardDto> rows = new ArrayList<>();
+        for (TitleAward award : awards.getContent()) {
+            TitleDefinition title = titleDefinitionRepository.findById(award.getTitleId()).orElse(null);
+            Identity user = identityRepository.findById(award.getIdentityId()).orElse(null);
+            if (title != null && user != null) rows.add(toDto(award, title, user));
+        }
+        Map<String, Object> result = new HashMap<>();
+        result.put("list", rows);
+        result.put("total", awards.getTotalElements());
+        return result;
+    }
+
+    @Transactional
+    public TitleAwardDto updateDetails(Integer adminId, Integer awardId, String acquisitionMethod, String grantReason) {
+        requireAdmin(adminId);
+        TitleAward award = titleAwardRepository.findById(awardId)
+                .orElseThrow(() -> new IllegalArgumentException("称号记录不存在"));
+        TitleDefinition title = titleDefinitionRepository.findById(award.getTitleId())
+                .orElseThrow(() -> new IllegalArgumentException("称号不存在"));
+        title.setAcquisitionMethod(optionalText(acquisitionMethod, "获得方式"));
+        award.setGrantReason(optionalText(grantReason, "发放原因"));
+        titleDefinitionRepository.save(title);
+        titleAwardRepository.save(award);
+        return toDto(award, title, requireUser(award.getIdentityId()));
+    }
+
+    @Transactional
+    public TitleAwardDto revoke(Integer adminId, Integer awardId) {
+        Identity admin = requireAdmin(adminId);
+        TitleAward award = titleAwardRepository.findById(awardId)
+                .orElseThrow(() -> new IllegalArgumentException("称号记录不存在"));
+        if (!"approved".equals(award.getStatus())) {
+            throw new IllegalArgumentException("只能撤销已发放的称号");
+        }
+        award.setStatus("revoked");
+        award.setIsEquipped(false);
+        award.setRevokedBy(admin.getId());
+        award.setRevokedAt(LocalDateTime.now());
+        award = titleAwardRepository.save(award);
+        TitleDefinition title = titleDefinitionRepository.findById(award.getTitleId()).orElseThrow();
+        return toDto(award, title, requireUser(award.getIdentityId()));
     }
 
     private TitleAwardDto toDto(TitleAward award, TitleDefinition title, Identity user) {
@@ -231,12 +316,17 @@ public class TitleService {
         dto.setName(title.getName());
         dto.setTier(title.getTier());
         dto.setSource(title.getSource());
+        dto.setAcquisitionMethod(title.getAcquisitionMethod());
         dto.setIdentityId(user.getId());
         dto.setAccount(user.getAccount());
         dto.setStatus(award.getStatus());
         dto.setIsEquipped(award.getIsEquipped());
         dto.setReviewerId(award.getReviewerId());
         dto.setReviewNote(award.getReviewNote());
+        dto.setGrantReason(award.getGrantReason());
+        dto.setGrantedAt(award.getGrantedAt());
+        dto.setRevokedBy(award.getRevokedBy());
+        dto.setRevokedAt(award.getRevokedAt());
         dto.setCreatedAt(award.getCreatedAt());
         dto.setReviewedAt(award.getReviewedAt());
         return dto;

@@ -31,6 +31,18 @@ public class TitleAward {
     @Column(name = "review_note")
     private String reviewNote;
 
+    @Column(name = "grant_reason")
+    private String grantReason;
+
+    @Column(name = "granted_at")
+    private LocalDateTime grantedAt;
+
+    @Column(name = "revoked_by")
+    private Integer revokedBy;
+
+    @Column(name = "revoked_at")
+    private LocalDateTime revokedAt;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -50,5 +62,13 @@ public class TitleAward {
     public void setReviewedAt(LocalDateTime reviewedAt) { this.reviewedAt = reviewedAt; }
     public String getReviewNote() { return reviewNote; }
     public void setReviewNote(String reviewNote) { this.reviewNote = reviewNote; }
+    public String getGrantReason() { return grantReason; }
+    public void setGrantReason(String grantReason) { this.grantReason = grantReason; }
+    public LocalDateTime getGrantedAt() { return grantedAt; }
+    public void setGrantedAt(LocalDateTime grantedAt) { this.grantedAt = grantedAt; }
+    public Integer getRevokedBy() { return revokedBy; }
+    public void setRevokedBy(Integer revokedBy) { this.revokedBy = revokedBy; }
+    public LocalDateTime getRevokedAt() { return revokedAt; }
+    public void setRevokedAt(LocalDateTime revokedAt) { this.revokedAt = revokedAt; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

@@ -13,6 +13,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     AdminInnerNav: typeof import('./src/components/AdminInnerNav.vue')['default']
     AdminPagination: typeof import('./src/components/AdminPagination.vue')['default']
+    AdminUserPicker: typeof import('./src/components/AdminUserPicker.vue')['default']
     AvatarCropper: typeof import('./src/components/AvatarCropper.vue')['default']
     BingoIssueGrid: typeof import('./src/components/BingoIssueGrid.vue')['default']
     DefaultLayout: typeof import('./src/components/DefaultLayout.vue')['default']

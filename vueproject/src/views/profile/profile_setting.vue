@@ -25,6 +25,9 @@
             >
               我的头像
             </button>
+            <button type="button" class="tab-item mt-2 w-full rounded-xl px-3 py-2 text-left" :class="activeTab === 'titles' ? 'is-active' : ''" @click="activeTab = 'titles'">
+              申请称号
+            </button>
           </div>
         </aside>
 
@@ -68,6 +71,17 @@
                     @change="onFileChange"
                 />
               </div>
+            </div>
+          </div>
+          <div v-else-if="activeTab === 'titles'" class="edit-card gradient-shell rounded-2xl bg-slate-900/50 p-4 backdrop-blur-xl md:p-5">
+            <h3 class="text-xl font-semibold text-cyan-50">申请称号</h3>
+            <p class="mt-2 text-sm text-cyan-100/75">管理员审核通过后，可在个人界面佩戴。</p>
+            <p class="mt-4 text-cyan-100/85">称号文字</p>
+            <NeonInput v-model="newTitleName" class="mt-2" :maxlength="32" :show-count="true" placeholder="输入称号文字（32字以内）" />
+            <p class="mt-4 text-cyan-100/85">获得方式（选填）</p>
+            <NeonInput v-model="acquisitionMethod" class="mt-2" :textarea="true" :maxlength="255" :show-count="true" placeholder="描述这项称号的获得方式" />
+            <div class="mt-4">
+              <NeonActionButton variant="green" @click="applyTitle">提交申请</NeonActionButton>
             </div>
           </div>
         </section>
@@ -125,20 +139,22 @@ const editProfile = reactive<{ avatar: string; description: string }>({
   avatar: '',
   description: '',
 })
+const newTitleName = ref('')
+const acquisitionMethod = ref('')
 
 const route = useRoute()
 const activeTab = ref('info')
 
 // set default tab based on query
-if (route.query.tab === 'avatar') {
-  activeTab.value = 'avatar'
+if (route.query.tab === 'avatar' || route.query.tab === 'titles') {
+  activeTab.value = String(route.query.tab)
 }
 
 // respond to query changes (in case user navigates back)
 watch(
   () => route.query.tab,
   (newTab) => {
-    if (newTab === 'avatar' || newTab === 'info') {
+    if (newTab === 'avatar' || newTab === 'info' || newTab === 'titles') {
       activeTab.value = String(newTab)
     }
   }
@@ -218,6 +234,24 @@ function submitEditProfile() {
       ElMessage({ message: '资料已提交审核，请等待管理员处理', type: 'success' })
       fetchProfile()
     })
+}
+
+async function applyTitle(): Promise<void> {
+  if (!newTitleName.value.trim()) {
+    ElMessage.warning('请输入称号文字')
+    return
+  }
+  try {
+    const response = await axios.post('/api/title/apply', {
+      name: newTitleName.value.trim(), acquisitionMethod: acquisitionMethod.value.trim() || null,
+    })
+    if (response.data?.code !== 0) throw new Error(response.data?.message)
+    newTitleName.value = ''
+    acquisitionMethod.value = ''
+    ElMessage.success('称号申请已提交')
+  } catch (error: any) {
+    ElMessage.error(error.message || '申请失败')
+  }
 }
 
 function fetchProfile() {

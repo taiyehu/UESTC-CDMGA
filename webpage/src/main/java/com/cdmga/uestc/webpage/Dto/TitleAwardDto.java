@@ -8,12 +8,17 @@ public class TitleAwardDto {
     private String name;
     private String tier;
     private String source;
+    private String acquisitionMethod;
     private Integer identityId;
     private String account;
     private String status;
     private Boolean isEquipped;
     private Integer reviewerId;
     private String reviewNote;
+    private String grantReason;
+    private LocalDateTime grantedAt;
+    private Integer revokedBy;
+    private LocalDateTime revokedAt;
     private LocalDateTime createdAt;
     private LocalDateTime reviewedAt;
 
@@ -27,6 +32,8 @@ public class TitleAwardDto {
     public void setTier(String tier) { this.tier = tier; }
     public String getSource() { return source; }
     public void setSource(String source) { this.source = source; }
+    public String getAcquisitionMethod() { return acquisitionMethod; }
+    public void setAcquisitionMethod(String acquisitionMethod) { this.acquisitionMethod = acquisitionMethod; }
     public Integer getIdentityId() { return identityId; }
     public void setIdentityId(Integer identityId) { this.identityId = identityId; }
     public String getAccount() { return account; }
@@ -39,6 +46,14 @@ public class TitleAwardDto {
     public void setReviewerId(Integer reviewerId) { this.reviewerId = reviewerId; }
     public String getReviewNote() { return reviewNote; }
     public void setReviewNote(String reviewNote) { this.reviewNote = reviewNote; }
+    public String getGrantReason() { return grantReason; }
+    public void setGrantReason(String grantReason) { this.grantReason = grantReason; }
+    public LocalDateTime getGrantedAt() { return grantedAt; }
+    public void setGrantedAt(LocalDateTime grantedAt) { this.grantedAt = grantedAt; }
+    public Integer getRevokedBy() { return revokedBy; }
+    public void setRevokedBy(Integer revokedBy) { this.revokedBy = revokedBy; }
+    public LocalDateTime getRevokedAt() { return revokedAt; }
+    public void setRevokedAt(LocalDateTime revokedAt) { this.revokedAt = revokedAt; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getReviewedAt() { return reviewedAt; }
