@@ -70,9 +70,10 @@
 
         <button
           type="button"
-          class="group inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-full ring-2 ring-white/40 transition hover:ring-white/70"
+          class="group inline-flex h-12 w-12 cursor-pointer items-center justify-center overflow-hidden rounded-full ring-2 ring-white/40 transition hover:ring-white/70"
           @click="goProfile"
-          aria-label="前往个人主页"
+          aria-label="进入个人界面"
+          title="进入个人界面"
         >
           <img
             class="h-full w-full object-cover"

@@ -5,6 +5,10 @@
         RANK
       </h1>
     </header>
+    <div class="mb-5 flex flex-wrap justify-center gap-3">
+      <NeonActionButton @click="router.push('/contest-ranking')">比赛排行榜</NeonActionButton>
+      <NeonActionButton @click="router.push('/ranking-new')">打榜排行榜</NeonActionButton>
+    </div>
     <div class="hud-card p-4 md:p-6">
       <h2 class="mb-5 text-center text-xl font-semibold text-cyan-100 md:text-2xl">用户总分排行榜</h2>
 
@@ -28,7 +32,9 @@
               <td class="px-4 py-3">
                 <button
                   type="button"
-                  class="mx-auto block"
+                  class="mx-auto block cursor-pointer"
+                  :title="row.description || '暂无个性签名 · 点击查看玩家信息'"
+                  :aria-label="`查看${row.account}的玩家信息`"
                   @click="goToProfile(row.identityId)"
                 >
                   <img
@@ -83,14 +89,6 @@
       </div>
     </div>
 
-    <div class="fixed bottom-5 right-5 flex flex-col gap-2">
-      <NeonActionButton @click="router.push('/contest-ranking')">
-        查看比赛排行榜
-      </NeonActionButton>
-      <NeonActionButton @click="router.push('/ranking-new')">
-        查看打榜排行榜
-      </NeonActionButton>
-    </div>
   </section>
 </template>
 

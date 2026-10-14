@@ -6,7 +6,10 @@ import com.cdmga.uestc.webpage.Entity.Identity;
 import com.cdmga.uestc.webpage.Entity.Profile;
 import com.cdmga.uestc.webpage.Service.IdentityService;
 import com.cdmga.uestc.webpage.Service.ProfileService;
+import com.cdmga.uestc.webpage.Repository.IdentityRepository;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,8 +33,31 @@ public class ProfileController {
     @Autowired
     private IdentityService identityService;
 
+    @Autowired
+    private IdentityRepository identityRepository;
+
     @Value("${avatar.upload.directory}")
     private String uploadDir;
+
+    @GetMapping("/daily")
+    public ProfileDto getDailyMember() {
+        List<Identity> members = identityRepository.findByIsDeletedFalseOrderByIdAsc();
+        if (members.isEmpty()) {
+            return null;
+        }
+
+        long day = LocalDate.now(ZoneId.of("Asia/Shanghai")).toEpochDay();
+        Identity member = members.get((int) Math.floorMod(day, members.size()));
+        Profile profile = profileService.getProfileByIdentityId(member.getId());
+        ProfileDto dto = new ProfileDto();
+        dto.setIdentityId(member.getId());
+        dto.setAccount(member.getAccount());
+        if (profile != null && Integer.valueOf(1).equals(profile.getStatus())) {
+            dto.setAvatar(profile.getAvatar());
+            dto.setDescription(profile.getDescription());
+        }
+        return dto;
+    }
 
     @GetMapping("/{id}")
     public Profile getProfile(@PathVariable Integer id) {

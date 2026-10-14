@@ -75,6 +75,7 @@ public class RankService {
 
                 Profile profile = profileRepository.findPassedProfileByIdentityId(identityId);
                 dto.setAvatar(profile != null ? profile.getAvatar() : null);
+                dto.setDescription(profile != null ? profile.getDescription() : null);
                 return dto;
             });
 

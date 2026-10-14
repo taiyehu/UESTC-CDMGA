@@ -9,6 +9,7 @@ public class RankUserDto {
     private Float totalScore;
     private String totalScoreText;
     private String avatar;
+    private String description;
     private String account;
     private List<RankSubmissionDto> submissions;
 
@@ -47,6 +48,14 @@ public class RankUserDto {
 
     public void setAvatar(String avatar) {
         this.avatar = avatar;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public String getAccount() {

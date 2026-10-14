@@ -23,6 +23,8 @@ public interface IdentityRepository extends JpaRepository<Identity, Integer> {
     // 统计所有生效用户
     long countByIsDeletedFalse();
 
+    List<Identity> findByIsDeletedFalseOrderByIdAsc();
+
     // 可以定义一些自定义查询方法
     Identity findByAccount(String account);
 

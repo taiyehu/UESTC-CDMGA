@@ -4,6 +4,7 @@ public class UserScoreDto {
     private Integer identityId;
     private Float totalScore;
     private String avatar;
+    private String description;
     private String account;
 
     public UserScoreDto(Integer identityId, Float totalScore, String avatar, String account) {
@@ -36,6 +37,14 @@ public class UserScoreDto {
 
     public void setAvatar(String avatar) {
         this.avatar = avatar;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public String getAccount() {

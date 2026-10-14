@@ -8,6 +8,25 @@
       <p class="text-sm text-cyan-100/80">当前时间：{{ formatDateTime(nowTick) }}</p>
     </div>
 
+    <NeonCard class="mb-5 rounded-3xl p-5 md:p-6">
+      <div class="flex flex-wrap items-center gap-5">
+        <div class="min-w-0 flex-1">
+          <p class="text-xs uppercase tracking-[0.22em] text-cyan-100/65">每日群友</p>
+          <h2 class="mt-1 text-xl font-semibold text-cyan-50">每天认识一名群友</h2>
+          <p v-if="dailyMemberLoading" class="mt-3 text-sm text-cyan-100/75">正在寻找今天的群友...</p>
+          <p v-else-if="!dailyMember" class="mt-3 text-sm text-cyan-100/75">今天暂时没有可介绍的群友</p>
+          <div v-else class="mt-4 flex items-center gap-4">
+            <img :src="getImageUrl(dailyMember.avatar) || defaultAvatar" alt="今日群友头像" class="h-16 w-16 rounded-full border border-cyan-300/50 object-cover" />
+            <div class="min-w-0">
+              <p class="text-lg font-semibold text-cyan-50">{{ dailyMember.account }}</p>
+              <p class="mt-1 break-words text-sm text-cyan-100/80">{{ dailyMember.description || '这位群友还没有填写个性签名' }}</p>
+            </div>
+          </div>
+        </div>
+        <button v-if="dailyMember" class="home-btn" @click="router.push(`/profile/${dailyMember.identityId}`)">认识 TA</button>
+      </div>
+    </NeonCard>
+
     <div class="grid grid-cols-[1.65fr_1fr] gap-5 max-lg:grid-cols-1">
       <NeonCard
         class="group relative rounded-3xl p-6 md:p-8"
@@ -164,6 +183,7 @@ import axios from 'axios'
 import { fetchCourseData } from '@/api/course'
 import NeonCard from '@/components/NeonCard.vue'
 import { MaimaiRing } from '@/components/effects'
+import defaultAvatar from '@/assets/default-avatar.png'
 
 type CourseLike = {
   id: number
@@ -184,6 +204,13 @@ type ActivityLike = {
   activityBanner?: string
 }
 
+type DailyMember = {
+  identityId: number
+  account: string
+  avatar?: string
+  description?: string
+}
+
 const router = useRouter()
 
 const loading = ref(true)
@@ -191,10 +218,20 @@ const error = ref<string | null>(null)
 const nowTick = ref(new Date())
 const courses = ref<CourseLike[]>([])
 const activities = ref<ActivityLike[]>([])
+const dailyMember = ref<DailyMember | null>(null)
+const dailyMemberLoading = ref(true)
 const currentCourseIndex = ref(0)
 
 let clockTimer: number | null = null
 let courseTimer: number | null = null
+let displayedMemberDay = ''
+
+function shanghaiDay(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date())
+}
 
 const nowMs = computed(() => nowTick.value.getTime())
 
@@ -322,6 +359,19 @@ function goActivityDetail(id: number): void {
   router.push(`/activity/${id}`)
 }
 
+async function fetchDailyMember(): Promise<void> {
+  displayedMemberDay = shanghaiDay()
+  dailyMemberLoading.value = true
+  try {
+    const response = await axios.get<DailyMember | null>('/api/profile/daily')
+    dailyMember.value = response.data?.identityId ? response.data : null
+  } catch {
+    dailyMember.value = null
+  } finally {
+    dailyMemberLoading.value = false
+  }
+}
+
 async function fetchHomeData(): Promise<void> {
   loading.value = true
   error.value = null
@@ -357,8 +407,10 @@ async function fetchHomeData(): Promise<void> {
 
 onMounted(() => {
   fetchHomeData()
+  fetchDailyMember()
   clockTimer = window.setInterval(() => {
     nowTick.value = new Date()
+    if (shanghaiDay() !== displayedMemberDay) fetchDailyMember()
   }, 1000)
 })
 

@@ -631,6 +631,7 @@ public class ScoreService {
     public List<UserScoreDto> calculateScoresForAllUsers(List<Score> scores) {
         Map<Integer, Float> userScoreMap = new HashMap<>();
         Map<Integer, String> userAvatarMap = new HashMap<>();
+        Map<Integer, String> userDescriptionMap = new HashMap<>();
         Map<Integer, String> userAccountMap = new HashMap<>();
 
         for (Score score : scores) {
@@ -643,6 +644,7 @@ public class ScoreService {
                 // 通过 profileRepository 查询 status=1 的有效头像
                 Profile profile = profileRepository.findPassedProfileByIdentityId(identityId);
                 userAvatarMap.put(identityId, profile != null ? profile.getAvatar() : null);
+                userDescriptionMap.put(identityId, profile != null ? profile.getDescription() : null);
             }
             if (!userAccountMap.containsKey(identityId)) {
                 userAccountMap.put(identityId, score.getIdentity().getAccount());
@@ -654,7 +656,9 @@ public class ScoreService {
             Float totalScore = entry.getValue();
             String avatar = userAvatarMap.get(identityId);
             String account = userAccountMap.get(identityId);
-            result.add(new UserScoreDto(identityId, totalScore, avatar, account));
+            UserScoreDto dto = new UserScoreDto(identityId, totalScore, avatar, account);
+            dto.setDescription(userDescriptionMap.get(identityId));
+            result.add(dto);
         }
         return result;
     }

@@ -79,7 +79,7 @@
               {{ getDisplayRank(row) }}
             </td>
             <td class="px-4 py-3">
-              <button type="button" class="mx-auto block" @click="goToProfile(row.identityId)">
+              <button type="button" class="mx-auto block cursor-pointer" :title="row.description || '暂无个性签名 · 点击查看玩家信息'" :aria-label="`查看${row.account}的玩家信息`" @click="goToProfile(row.identityId)">
                 <img
                   :src="getImageUrl(row.avatar)"
                   alt="头像"
