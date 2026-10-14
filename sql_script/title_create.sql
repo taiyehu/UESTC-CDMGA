@@ -2,13 +2,13 @@ CREATE TABLE `title_definition` (
     `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '称号定义主键',
     `name` VARCHAR(32) NOT NULL COMMENT '称号文字',
     `tier` VARCHAR(16) NOT NULL DEFAULT 'normal' COMMENT '等级：color、gold、silver、normal',
-    `source` VARCHAR(24) NOT NULL COMMENT '来源：user_application、admin_created',
+    `source` VARCHAR(24) NOT NULL COMMENT '来源：user_application、admin_created、registration',
     `acquisition_method` VARCHAR(255) NULL COMMENT '获得方式，悬停称号时展示',
     `identity_id` INT NOT NULL COMMENT '申请人或创建管理员',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     CONSTRAINT `fk_title_definition_identity` FOREIGN KEY (`identity_id`) REFERENCES `identity`(`id`),
     CONSTRAINT `ck_title_definition_tier` CHECK (`tier` IN ('color', 'gold', 'silver', 'normal')),
-    CONSTRAINT `ck_title_definition_source` CHECK (`source` IN ('user_application', 'admin_created')),
+    CONSTRAINT `ck_title_definition_source` CHECK (`source` IN ('user_application', 'admin_created', 'registration')),
     INDEX `idx_title_definition_identity` (`identity_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='称号定义表';
 

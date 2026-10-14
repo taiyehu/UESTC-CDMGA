@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.cdmga.uestc.webpage.Entity.Identity;
 import com.cdmga.uestc.webpage.Repository.IdentityRepository;
@@ -16,9 +17,13 @@ public class IdentityService {
     @Autowired
     private IdentityRepository identityRepository;
 
+    @Autowired
+    private TitleService titleService;
+
     private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     //注册用户
+    @Transactional(rollbackFor = Exception.class)
     public Identity register(String account, String password) throws Exception {
         // 检查账号是否已存在
         Identity existingIdentity = identityRepository.findByAccount(account);
@@ -30,7 +35,9 @@ public class IdentityService {
         newIdentity.setAccount(account);
         newIdentity.setPassword(passwordEncoder.encode(password)); // 密码加密
         // 保存用户并返回完整的 Identity 对象（包含 ID 等信息）
-        return identityRepository.save(newIdentity);
+        Identity savedIdentity = identityRepository.save(newIdentity);
+        titleService.grantRegistrationTitle(savedIdentity.getId());
+        return savedIdentity;
     }
 
     public Identity resetPassword(String account, String password) throws Exception{

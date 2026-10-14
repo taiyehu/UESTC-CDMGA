@@ -78,6 +78,30 @@ public class TitleService {
     }
 
     @Transactional
+    public void grantRegistrationTitle(Integer identityId) {
+        Identity user = requireUser(identityId);
+        if (titleDefinitionRepository.findByIdentityIdAndSource(user.getId(), "registration").isPresent()) {
+            return;
+        }
+
+        TitleDefinition title = new TitleDefinition();
+        title.setName("新人出道");
+        title.setTier("normal");
+        title.setSource("registration");
+        title.setAcquisitionMethod("注册获得");
+        title.setIdentityId(user.getId());
+        title = titleDefinitionRepository.save(title);
+
+        TitleAward award = new TitleAward();
+        award.setTitleId(title.getId());
+        award.setIdentityId(user.getId());
+        award.setStatus("approved");
+        award.setIsEquipped(true);
+        award.setGrantedAt(LocalDateTime.now());
+        titleAwardRepository.save(award);
+    }
+
+    @Transactional
     public TitleAwardDto apply(Integer identityId, String name, String acquisitionMethod) {
         Identity user = requireUser(identityId);
         TitleDefinition title = new TitleDefinition();
@@ -117,8 +141,8 @@ public class TitleService {
         Identity recipient = requireRecipient(recipientId);
         TitleDefinition title = titleDefinitionRepository.findById(titleId)
                 .orElseThrow(() -> new IllegalArgumentException("称号不存在"));
-        if ("user_application".equals(title.getSource())) {
-            throw new IllegalArgumentException("用户申请的称号不能发放给其他用户");
+        if (!"admin_created".equals(title.getSource())) {
+            throw new IllegalArgumentException("只有管理员创建的称号可以再次发放");
         }
         return grantSavedTitle(admin, recipient, title, grantReason);
     }

@@ -17,8 +17,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import org.mockito.ArgumentCaptor;
 
 public class TitleServiceTests {
     private TitleService service;
@@ -95,5 +97,32 @@ public class TitleServiceTests {
 
         assertEquals("revoked", award.getStatus());
         assertFalse(award.getIsEquipped());
+    }
+
+    @Test
+    void registrationGrantsEquippedInitialTitle() {
+        Identity user = new Identity();
+        user.setId(7);
+        user.setAccount("新群友");
+        when(identityRepository.findById(7)).thenReturn(Optional.of(user));
+        when(titleDefinitionRepository.findByIdentityIdAndSource(7, "registration")).thenReturn(Optional.empty());
+        when(titleDefinitionRepository.save(org.mockito.ArgumentMatchers.any(TitleDefinition.class)))
+                .thenAnswer(invocation -> {
+                    TitleDefinition title = invocation.getArgument(0);
+                    title.setId(20);
+                    return title;
+                });
+
+        service.grantRegistrationTitle(7);
+
+        ArgumentCaptor<TitleDefinition> titleCaptor = ArgumentCaptor.forClass(TitleDefinition.class);
+        ArgumentCaptor<TitleAward> awardCaptor = ArgumentCaptor.forClass(TitleAward.class);
+        verify(titleDefinitionRepository).save(titleCaptor.capture());
+        verify(titleAwardRepository).save(awardCaptor.capture());
+        assertEquals("新人出道", titleCaptor.getValue().getName());
+        assertEquals("normal", titleCaptor.getValue().getTier());
+        assertEquals("注册获得", titleCaptor.getValue().getAcquisitionMethod());
+        assertEquals("approved", awardCaptor.getValue().getStatus());
+        assertEquals(true, awardCaptor.getValue().getIsEquipped());
     }
 }

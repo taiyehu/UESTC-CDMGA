@@ -55,8 +55,8 @@
     <NeonCard v-if="isSelf" class="box-card mt-5">
       <h3 class="section-title mb-3">我的称号</h3>
       <NeonActionButton variant="profile-outline" @click="goToSettings('titles')">申请称号</NeonActionButton>
-      <div v-if="myTitles.length" class="mt-5 flex flex-wrap gap-3">
-        <div v-for="item in myTitles" :key="item.id" class="title-item">
+      <div v-if="visibleMyTitles.length" class="mt-5 flex flex-wrap gap-3">
+        <div v-for="item in visibleMyTitles" :key="item.id" class="title-item">
           <TitleBadge :name="item.name" :tier="item.tier" :acquisition-method="item.acquisitionMethod" />
           <span class="text-xs text-cyan-100/75">{{ titleStatusText(item.status) }}</span>
           <NeonActionButton v-if="item.status === 'approved' && !item.isEquipped" size="sm" @click="equipTitle(item.id)">佩戴</NeonActionButton>
@@ -319,8 +319,9 @@ const profile = reactive<any>({ avatar: '', description: '', status: -1, account
 const profileStatus = ref<number>(-1)
 type TitleRecord = { id: number; name: string; tier: string; status: string; isEquipped: boolean; acquisitionMethod?: string; reviewNote?: string }
 const myTitles = ref<TitleRecord[]>([])
+const visibleMyTitles = computed(() => myTitles.value.filter((item) => item.status !== 'revoked'))
 const publicTitles = ref<TitleRecord[]>([])
-const equippedTitle = computed(() => (isSelf.value ? myTitles.value : publicTitles.value).find((item) => item.isEquipped))
+const equippedTitle = computed(() => (isSelf.value ? visibleMyTitles.value : publicTitles.value).find((item) => item.isEquipped))
 const defaultAvatarRef = defaultAvatar
 const scoredScores = ref<any[]>([])
 const awardRedemptions = ref<any[]>([])
