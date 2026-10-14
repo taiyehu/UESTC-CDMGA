@@ -91,7 +91,7 @@
       </div>
     </section>
 
-    <el-dialog v-model="joinDialogVisible" title="加入队伍" width="520px" class="team-dialog" modal-class="team-dialog-mask">
+    <el-dialog v-model="joinDialogVisible" title="加入队伍" width="min(520px, calc(100vw - 32px))" class="team-dialog" modal-class="team-dialog-mask">
       <div class="space-y-3">
         <el-input v-model="joinKeyword" placeholder="搜索队伍ID或队员名称" class="team-input" />
         <div class="flex gap-2">
@@ -113,7 +113,7 @@
       </div>
     </el-dialog>
 
-    <el-dialog v-model="inviteDialogVisible" title="邀请队员" width="460px" class="team-dialog" modal-class="team-dialog-mask">
+    <el-dialog v-model="inviteDialogVisible" title="邀请队员" width="min(460px, calc(100vw - 32px))" class="team-dialog" modal-class="team-dialog-mask">
       <el-select
         v-model="inviteTargetId"
         clearable
@@ -138,7 +138,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="leaveConfirmVisible" title="确认退出队伍" width="420px" class="team-dialog" modal-class="team-dialog-mask">
+    <el-dialog v-model="leaveConfirmVisible" title="确认退出队伍" width="min(420px, calc(100vw - 32px))" class="team-dialog" modal-class="team-dialog-mask">
       <p class="team-empty">确认要退出当前队伍吗？</p>
       <template #footer>
         <div class="flex gap-2 justify-end">
@@ -932,6 +932,20 @@ watch(
   box-shadow:
     0 0 24px rgba(34, 211, 238, 0.2),
     0 0 36px rgba(217, 70, 239, 0.12);
+}
+
+@media (max-width: 767px) {
+  :global(.team-dialog.el-dialog) {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100dvh - 32px);
+    margin-top: 16px;
+  }
+
+  :global(.team-dialog .el-dialog__body) {
+    min-height: 0;
+    overflow-y: auto;
+  }
 }
 
 :global(.team-dialog .el-dialog__header) {

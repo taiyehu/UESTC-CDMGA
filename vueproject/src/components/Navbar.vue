@@ -1,6 +1,7 @@
 <template>
   <nav
     class="fixed inset-x-0 top-0 z-50 h-(--navbar-height) isolate bg-transparent"
+    @keydown.esc="mobileMenuOpen = false"
   >
     <!-- 毛玻璃底（保持整体透明） -->
     <div
@@ -13,8 +14,8 @@
       aria-hidden="true"
     />
 
-    <div class="relative z-10 flex h-full items-center justify-between px-6 md:px-10 lg:px-14">
-      <div class="flex items-center gap-2">
+    <div class="relative z-10 flex h-full items-center justify-between px-4 lg:px-14">
+      <div class="hidden items-center gap-2 lg:flex">
         <router-link
           v-for="link in navLinks"
           :key="link.to"
@@ -52,7 +53,7 @@
         </router-link>
       </div>
 
-      <div class="flex items-center gap-4">
+      <div class="hidden items-center gap-4 lg:flex">
         <NeonActionButton
           v-if="isAdmin"
           variant="violet"
@@ -83,6 +84,47 @@
           />
         </button>
       </div>
+
+      <div class="flex w-full items-center justify-between lg:hidden">
+        <button
+          type="button"
+          class="inline-flex h-11 items-center gap-2 rounded-lg px-3 text-base text-cyan-50 focus-visible:outline-2 focus-visible:outline-cyan-300"
+          :aria-expanded="mobileMenuOpen"
+          aria-controls="mobile-nav-menu"
+          :aria-label="mobileMenuOpen ? '关闭导航菜单' : '打开导航菜单'"
+          @click="mobileMenuOpen = !mobileMenuOpen"
+        >
+          <span aria-hidden="true" class="text-xl leading-none">{{ mobileMenuOpen ? '×' : '☰' }}</span>
+          <span>菜单</span>
+        </button>
+        <button
+          type="button"
+          class="inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full ring-2 ring-white/40 focus-visible:outline-2 focus-visible:outline-cyan-300"
+          @click="goProfile"
+          aria-label="进入个人界面"
+        >
+          <img class="h-full w-full object-cover" :src="avatarUrl" alt="头像" referrerpolicy="no-referrer" />
+        </button>
+      </div>
+    </div>
+
+    <div
+      v-if="mobileMenuOpen"
+      id="mobile-nav-menu"
+      class="absolute inset-x-0 top-full z-20 max-h-[calc(100dvh-var(--navbar-height))] overflow-y-auto border-b border-cyan-200/30 bg-slate-950/98 px-4 py-3 shadow-xl lg:hidden"
+    >
+      <router-link
+        v-for="link in navLinks"
+        :key="link.to"
+        :to="link.to"
+        class="flex min-h-11 items-center rounded-lg px-3 text-left text-base text-cyan-50"
+        :class="route.path === link.to || route.path.startsWith(`${link.to}/`) ? 'bg-cyan-300/15 font-semibold' : ''"
+        @click="mobileMenuOpen = false"
+      >
+        {{ link.label }}
+      </router-link>
+      <button v-if="isAdmin" type="button" class="flex min-h-11 w-full items-center rounded-lg px-3 text-left text-base text-cyan-50" @click="goAdmin">管理</button>
+      <button type="button" class="flex min-h-11 w-full items-center rounded-lg px-3 text-left text-base text-cyan-50" @click="logout">登出</button>
     </div>
 
     <!-- 判定线动画：整个区域最下面 -->
@@ -108,17 +150,19 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { motion } from 'motion-v'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import avatarDefault from '@/assets/default-avatar.png'
 import NeonActionButton from '@/components/NeonActionButton.vue'
 
 const router = useRouter()
+const route = useRoute()
 
 const avatarUrl = ref(avatarDefault)
 const isAdmin = ref(false)
+const mobileMenuOpen = ref(false)
 
 const navLinks = [
   { label: '主页', to: '/home' },
@@ -129,14 +173,17 @@ const navLinks = [
 ]
 
 function goProfile() {
+  mobileMenuOpen.value = false
   router.push('/profile')
 }
 
 function goAdmin() {
+  mobileMenuOpen.value = false
   router.push('/admin/users')
 }
 
 function logout() {
+  mobileMenuOpen.value = false
   axios.post('/api/identity/logout').catch(() => {})
   sessionStorage.removeItem('userInfo')
   sessionStorage.removeItem('role')
@@ -201,10 +248,20 @@ async function fetchProfileFromServer(identityId: string | number) {
 onMounted(() => {
   loadProfile()
 })
+
+watch(() => route.path, () => {
+  mobileMenuOpen.value = false
+})
 </script>
 
 <style>
 :root {
   --navbar-height: 80px;
+}
+
+@media (max-width: 1023px) {
+  :root {
+    --navbar-height: 60px;
+  }
 }
 </style>
