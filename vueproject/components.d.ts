@@ -44,5 +44,6 @@ declare module 'vue' {
     RouterView: typeof import('vue-router')['RouterView']
     ScoreImageUploader: typeof import('./src/components/ScoreImageUploader.vue')['default']
     TaskScoreAction: typeof import('./src/components/TaskScoreAction.vue')['default']
+    TitleBadge: typeof import('./src/components/TitleBadge.vue')['default']
   }
 }

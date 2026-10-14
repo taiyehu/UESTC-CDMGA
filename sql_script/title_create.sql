@@ -1,0 +1,34 @@
+CREATE TABLE `title_definition` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '称号定义主键',
+    `name` VARCHAR(32) NOT NULL COMMENT '称号文字',
+    `tier` VARCHAR(16) NOT NULL DEFAULT 'normal' COMMENT '等级：color、gold、silver、normal',
+    `source` VARCHAR(24) NOT NULL COMMENT '来源：user_application、admin_created',
+    `identity_id` INT NOT NULL COMMENT '申请人或创建管理员',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    CONSTRAINT `fk_title_definition_identity` FOREIGN KEY (`identity_id`) REFERENCES `identity`(`id`),
+    CONSTRAINT `ck_title_definition_tier` CHECK (`tier` IN ('color', 'gold', 'silver', 'normal')),
+    CONSTRAINT `ck_title_definition_source` CHECK (`source` IN ('user_application', 'admin_created')),
+    INDEX `idx_title_definition_identity` (`identity_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='称号定义表';
+
+CREATE TABLE `title_award` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '称号获得记录主键',
+    `title_id` INT NOT NULL COMMENT '称号定义ID',
+    `identity_id` INT NOT NULL COMMENT '获得者用户ID',
+    `status` VARCHAR(16) NOT NULL DEFAULT 'pending' COMMENT '申请审核状态：pending、approved、rejected',
+    `is_equipped` BOOLEAN NOT NULL DEFAULT FALSE COMMENT '是否佩戴',
+    `reviewer_id` INT NULL COMMENT '审核管理员ID',
+    `reviewed_at` DATETIME NULL COMMENT '审核时间',
+    `review_note` VARCHAR(255) NULL COMMENT '审核备注',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '申请或发放时间',
+    `equipped_identity_id` INT GENERATED ALWAYS AS (CASE WHEN `status` = 'approved' AND `is_equipped` = 1 THEN `identity_id` ELSE NULL END) STORED,
+    CONSTRAINT `fk_title_award_title` FOREIGN KEY (`title_id`) REFERENCES `title_definition`(`id`),
+    CONSTRAINT `fk_title_award_identity` FOREIGN KEY (`identity_id`) REFERENCES `identity`(`id`),
+    CONSTRAINT `fk_title_award_reviewer` FOREIGN KEY (`reviewer_id`) REFERENCES `identity`(`id`),
+    CONSTRAINT `uk_title_award_identity_title` UNIQUE (`identity_id`, `title_id`),
+    CONSTRAINT `uk_title_award_equipped_identity` UNIQUE (`equipped_identity_id`),
+    CONSTRAINT `ck_title_award_status` CHECK (`status` IN ('pending', 'approved', 'rejected')),
+    CONSTRAINT `ck_title_award_equipped` CHECK (`is_equipped` = 0 OR `status` = 'approved'),
+    INDEX `idx_title_award_status` (`status`),
+    INDEX `idx_title_award_identity` (`identity_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='称号申请、审核与佩戴记录表';

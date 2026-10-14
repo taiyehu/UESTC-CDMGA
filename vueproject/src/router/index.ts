@@ -19,6 +19,7 @@ const AdminIssues = () => import('@/views/admin/admin-issues.vue')
 const AdminTeams = () => import('@/views/admin/admin-teams.vue')
 const AdminProfiles = () => import('@/views/admin/admin-profiles.vue')
 const AdminProfilesPassed = () => import('@/views/admin/admin-profiles-passed.vue')
+const AdminTitles = () => import('@/views/admin/admin-titles.vue')
 const AdminLayout = () => import('@/views/admin/AdminLayout.vue')
 const AdminContentPublish = () => import('@/views/admin/admin-content-publish.vue')
 const Ranking = () => import('@/views/pages/ranking.vue')
@@ -88,6 +89,10 @@ const routes = [
       {
         path: 'profiles-passed',
         component: AdminProfilesPassed,
+      },
+      {
+        path: 'titles',
+        component: AdminTitles,
       },
       {
         path: 'activities',

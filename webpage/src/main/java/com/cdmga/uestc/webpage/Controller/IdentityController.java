@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.servlet.http.HttpSession;
 
 import com.cdmga.uestc.webpage.common.LoginRequest;
 import com.cdmga.uestc.webpage.common.RegisterRequest;
@@ -69,12 +70,16 @@ public class IdentityController {
     // 接收 JSON 请求体
     @CrossOrigin(origins = "http://localhost:8081")
     @PostMapping("/login")
-    public Result login(@RequestBody LoginRequest loginRequest) {
+    public Result login(@RequestBody LoginRequest loginRequest, HttpSession session) {
+        session.removeAttribute("identityId");
         try {
             // 调用服务层验证登录
             Identity user = identityService.validateLogin(
                     loginRequest.getAccount(),
                     loginRequest.getPassword());
+
+            session.changeSessionId();
+            session.setAttribute("identityId", user.getId());
 
             // 验证成功，返回包含用户信息的成功响应
             return Result.success(user);
@@ -83,6 +88,12 @@ public class IdentityController {
             // 验证失败，返回错误响应
             return Result.error(e.getMessage());
         }
+    }
+
+    @PostMapping("/logout")
+    public Result logout(HttpSession session) {
+        session.invalidate();
+        return Result.success("已登出");
     }
 
     @GetMapping("/allaccount")

@@ -137,7 +137,9 @@ function goAdmin() {
 }
 
 function logout() {
+  axios.post('/api/identity/logout').catch(() => {})
   sessionStorage.removeItem('userInfo')
+  sessionStorage.removeItem('role')
   router.push('/login')
 }
 
