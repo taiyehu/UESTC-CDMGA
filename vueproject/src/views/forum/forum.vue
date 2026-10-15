@@ -72,6 +72,10 @@ const submitting = ref(false)
 const formError = ref('')
 
 function formatTime(value: string): string { return value ? new Date(value).toLocaleString('zh-CN') : '' }
+function uploadError(error: any): string {
+  if (error?.response?.status === 413) return '请求过大（HTTP 413），请检查 Nginx 上传上限'
+  return error?.response?.data?.message || error?.message || '未知错误'
+}
 function switchList(value: boolean): void { mine.value = value; page.value = 0; void load() }
 
 async function load(): Promise<void> {
@@ -95,16 +99,17 @@ async function publish(): Promise<void> {
   submitting.value = true
   try {
     const id = await forumApi.createPost(title.value, content.value)
-    let uploadFailed = false
+    const uploadErrors: string[] = []
     for (const file of images) {
       try { await forumApi.upload('post', id, file) }
-      catch { uploadFailed = true }
+      catch (e: any) { uploadErrors.push(`图片 ${file.name}：${uploadError(e)}`) }
     }
     for (const file of files) {
       try { await forumApi.uploadFile(id, file) }
-      catch { uploadFailed = true }
+      catch (e: any) { uploadErrors.push(`文件 ${file.name}：${uploadError(e)}`) }
     }
-    ElMessage[uploadFailed ? 'warning' : 'success'](uploadFailed ? '帖子已发布，部分附件上传失败' : '帖子已发布')
+    if (uploadErrors.length) ElMessage.warning({ message: `帖子已发布，但附件上传失败：${uploadErrors.join('；')}`, duration: 10000, showClose: true })
+    else ElMessage.success('帖子已发布')
     await router.push(`/forum/${id}`)
   } catch (e: any) { formError.value = e?.message || '发布失败' }
   finally { submitting.value = false }
