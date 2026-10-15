@@ -11,7 +11,7 @@
             <div class="flex min-w-0 flex-1 flex-col items-start gap-1"><div class="flex flex-wrap items-center gap-2"><router-link :to="`/profile/${post.authorId}`" class="font-semibold text-sky-300 hover:text-sky-200">{{ post.authorName }}</router-link><span v-if="post.status !== 'visible'" class="status-tag">{{ statusText(post.status) }}</span></div><TitleBadge v-if="post.titleName && post.titleTier" compact :name="post.titleName" :tier="post.titleTier" :acquisition-method="post.titleAcquisitionMethod" /></div>
           </div>
           <h1 class="mt-5 break-words text-center text-2xl font-bold leading-tight">{{ post.title }}</h1>
-          <div class="mt-4 text-left">
+          <div class="post-body mt-4 text-left">
             <template v-if="editingPost">
               <input v-model="editTitle" maxlength="120" class="forum-input" placeholder="标题" />
               <textarea v-model="editContent" maxlength="10000" rows="6" class="forum-input mt-3" placeholder="正文" />
@@ -263,6 +263,7 @@ watch(postId, () => { post.value = null; void load() })
 .forum-layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; align-items: start; gap: 20px; }
 .surface-panel { border: 1px solid rgba(148, 163, 184, .2); border-radius: 16px; background: rgba(15, 23, 42, .92); box-shadow: 0 12px 32px rgba(2, 6, 23, .16); }
 .avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #334155; }
+.post-body { margin-left: 60px; }
 .status-tag { border-radius: 999px; padding: 2px 8px; color: #fde68a; background: rgba(251, 191, 36, .15); font-size: 11px; }
 .post-image { width: 100%; height: 180px; border-radius: 10px; object-fit: cover; background: #1e293b; }
 .file-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 520px; border: 1px solid rgba(148,163,184,.18); border-radius: 10px; background: rgba(30,41,59,.6); padding: 9px 12px; font-size: 13px; }
@@ -286,5 +287,5 @@ watch(postId, () => { post.value = null; void load() })
 :global(.forum-delete-dialog .el-dialog__title) { color: #f8fafc; font-weight: 700; }
 :global(.forum-delete-dialog .el-dialog__headerbtn .el-dialog__close) { color: #94a3b8; }
 @media (max-width: 900px) { .forum-layout { grid-template-columns: minmax(0, 1fr); } .forum-layout aside { display: none; } }
-@media (max-width: 640px) { .avatar { width: 42px; height: 42px; } .post-image { height: 120px; } }
+@media (max-width: 640px) { .avatar { width: 42px; height: 42px; } .post-image { height: 120px; } .post-body { margin-left: 54px; } }
 </style>

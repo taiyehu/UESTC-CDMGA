@@ -42,8 +42,8 @@
             </div>
             <router-link v-if="post.status !== 'deleted'" :to="`/forum/${post.id}`" class="mt-5 block text-center text-xl font-semibold leading-snug hover:text-sky-300">{{ post.title }}</router-link>
             <h2 v-else class="mt-5 text-center text-xl font-semibold text-slate-400">{{ post.title }}</h2>
-            <p class="mt-2 line-clamp-3 whitespace-pre-wrap break-words text-left text-sm leading-6 text-slate-200">{{ post.content }}</p>
-            <router-link v-if="post.status === 'visible' && post.images?.length" :to="`/forum/${post.id}`" class="mt-4 grid max-w-xl grid-cols-3 gap-2">
+            <p class="post-body mt-2 line-clamp-3 whitespace-pre-wrap break-words text-left text-sm leading-6 text-slate-200">{{ post.content }}</p>
+            <router-link v-if="post.status === 'visible' && post.images?.length" :to="`/forum/${post.id}`" class="post-body mt-4 grid max-w-xl grid-cols-3 gap-2">
               <img v-for="image in post.images.slice(0, 3)" :key="image.id" :src="image.url" alt="帖子图片" class="feed-image" />
             </router-link>
             <div class="feed-actions mt-5 flex flex-wrap items-center gap-5 border-t border-white/10 pt-4 text-sm text-slate-400">
@@ -182,6 +182,7 @@ onMounted(() => { void load(); void loadMyAvatar() })
 .feed-card { transition: border-color .2s, transform .2s; }
 .feed-card:hover { border-color: rgba(56, 189, 248, .42); transform: translateY(-1px); }
 .avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #334155; }
+.post-body { margin-left: 60px; }
 .feed-image { width: 100%; height: 154px; border-radius: 10px; object-fit: cover; background: #1e293b; }
 .feed-tab { padding: 10px 16px; border-radius: 10px; color: #94a3b8; font-size: 14px; font-weight: 600; }
 .feed-tab.active { color: #7dd3fc; background: rgba(14, 165, 233, .16); }
@@ -204,5 +205,5 @@ onMounted(() => { void load(); void loadMyAvatar() })
 .secondary-button:hover:not(:disabled) { background: rgba(56,189,248,.12); }
 .primary-button:disabled, .secondary-button:disabled { opacity: .5; cursor: not-allowed; }
 @media (max-width: 900px) { .forum-layout { grid-template-columns: minmax(0, 1fr); } .forum-layout aside { display: none; } }
-@media (max-width: 640px) { .feed-image { height: 100px; } .avatar { width: 42px; height: 42px; } }
+@media (max-width: 640px) { .feed-image { height: 100px; } .avatar { width: 42px; height: 42px; } .post-body { margin-left: 54px; } }
 </style>
