@@ -31,6 +31,8 @@ sudo install -d -o webserver -g webserver -m 0750 /var/webserver/forum
 sudo -u webserver test -w /var/webserver/forum && echo 'forum directory writable'
 ```
 
+`webserver.service` 启用了 `ProtectSystem=strict`。目录权限测试只能验证 Linux 用户权限，还必须确保服务的 `ReadWritePaths` 包含 `/var/webserver/forum`。仓库中的 `script/webserver.service` 已配置此项；部署该 service 文件后运行 `sudo systemctl daemon-reload && sudo systemctl restart webserver.service`。可用 `systemctl show webserver.service -p ReadWritePaths` 核对生效配置。
+
 默认上传路径由 `forum.upload.directory=/var/webserver/forum/` 指定。论坛图片和附件分别通过后端 `/api/forum/media/{文件名}`、`/api/forum/file/{文件名}` 读取，现有 Nginx 的 `/api` 反向代理即可使用，无须新增静态目录映射。后端只接受 PNG、JPEG、GIF 图片，单张最多 5 MB；帖子最多 6 张图片、3 个文件，回复最多 1 张图片。文件支持 PDF、TXT、ZIP 和 Office 格式，单个最多 10 MB。
 
 仓库中的 `script/cdmga_nginx.conf` 已把主站和开发站的 `client_max_body_size` 提至 12 MB，Spring 的单次请求限制也为 12 MB。发布时需一并应用 Nginx 配置（现有 `Environment update` Action 会检测并部署此文件）；若手动部署，更新配置后执行：
