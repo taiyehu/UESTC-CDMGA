@@ -1,87 +1,77 @@
 <template>
-  <section class="mx-auto max-w-5xl px-4 pb-12 pt-5 text-cyan-50 md:px-8">
-    <router-link to="/forum" class="text-sm text-cyan-200 hover:underline">← 返回论坛</router-link>
-    <p v-if="loading" class="py-8">正在加载帖子...</p>
-    <p v-else-if="error" class="py-8 text-rose-200">{{ error }}</p>
-    <template v-else-if="post">
-      <NeonCard class="mt-4 rounded-2xl p-6">
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 class="text-2xl font-bold">{{ post.title }}</h1>
-            <p class="mt-2 text-sm text-cyan-100/65">{{ post.authorName }} · {{ formatTime(post.createdAt) }} <span v-if="post.status !== 'visible'">· {{ statusText(post.status) }}</span></p>
+  <section class="forum-page mx-auto max-w-7xl px-4 pb-14 pt-6 text-cyan-50 md:px-8">
+    <router-link to="/forum" class="mb-5 inline-flex items-center gap-2 text-sm text-slate-300 hover:text-sky-300">← 返回论坛</router-link>
+    <p v-if="loading" class="surface-panel py-12 text-center text-slate-400">正在加载帖子...</p>
+    <p v-else-if="error" class="surface-panel py-12 text-center text-rose-300">{{ error }}</p>
+    <div v-else-if="post" class="forum-layout">
+      <main class="min-w-0 space-y-4">
+        <article class="surface-panel p-5 md:p-7">
+          <div class="flex items-start gap-3">
+            <router-link :to="`/profile/${post.authorId}`" class="shrink-0"><img :src="avatarUrl(post.avatar)" :alt="`${post.authorName}的头像`" class="avatar" /></router-link>
+            <div class="min-w-0 flex-1"><router-link :to="`/profile/${post.authorId}`" class="font-semibold text-sky-300 hover:text-sky-200">{{ post.authorName }}</router-link><p class="mt-1 text-xs text-slate-400">{{ formatTime(post.createdAt) }} <span v-if="post.status !== 'visible'">· {{ statusText(post.status) }}</span></p></div>
           </div>
-          <div class="flex gap-2">
-            <button v-if="post.status === 'visible'" class="forum-button" @click="like('post', post.id)">{{ post.liked ? '♥ 已赞' : '♡ 点赞' }} {{ post.likeCount }}</button>
-            <button v-if="post.authorId !== me && post.status === 'visible'" class="forum-button" @click="report('post', post.id)">举报</button>
-            <button v-if="post.authorId === me && post.status === 'visible'" class="forum-button" @click="startPostEdit">修改</button>
-            <button v-if="post.authorId === me && post.status !== 'deleted'" class="forum-button" @click="deleteContent('post', post.id)">删除</button>
+          <div class="mt-5 md:ml-[60px]">
+            <h1 class="break-words text-2xl font-bold leading-tight">{{ post.title }}</h1>
+            <template v-if="editingPost">
+              <input v-model="editTitle" maxlength="120" class="forum-input mt-5" placeholder="标题" />
+              <textarea v-model="editContent" maxlength="10000" rows="6" class="forum-input mt-3" placeholder="正文" />
+              <p class="mt-4 text-sm text-slate-400">移除现有附件会立即生效；新附件将在保存后上传。</p>
+              <ForumAttachmentPicker ref="editAttachments" class="mt-3" :max-images="6" :max-files="3" :existing-image-count="post.images.length" :existing-file-count="post.files.length" :disabled="submitting" />
+              <div class="mt-4 flex gap-2"><button class="primary-button" :disabled="submitting" @click="savePostEdit">保存修改</button><button class="secondary-button" @click="editingPost = false">取消</button></div>
+            </template>
+            <p v-else class="mt-5 whitespace-pre-wrap break-words leading-8 text-slate-200">{{ post.content }}</p>
+            <div v-if="post.images?.length" class="mt-5 grid max-w-2xl grid-cols-2 gap-2 sm:grid-cols-3">
+              <div v-for="image in post.images" :key="image.id"><button type="button" class="w-full" @click="previewUrl = image.url"><img :src="image.url" alt="帖子图片" class="post-image" /></button><button v-if="editingPost" class="text-button mt-1" @click="removeImage(image.id)">移除图片</button></div>
+            </div>
+            <div v-if="post.files?.length" class="mt-5 space-y-2"><div v-for="file in post.files" :key="file.id" class="file-row"><a :href="file.url" class="min-w-0 truncate text-sky-300 hover:underline">▧ {{ file.name }}</a><button v-if="editingPost" class="text-button" @click="removeFile(file.id)">移除</button></div></div>
           </div>
-        </div>
-        <template v-if="editingPost">
-          <input v-model="editTitle" maxlength="120" class="forum-input mt-5" placeholder="标题" />
-          <textarea v-model="editContent" maxlength="10000" rows="6" class="forum-input mt-3" placeholder="正文" />
-          <p class="mt-4 text-sm text-cyan-100/70">移除现有附件会立即生效；新附件将在保存后上传。</p>
-          <ForumAttachmentPicker ref="editAttachments" class="mt-3" :max-images="6" :max-files="3" :existing-image-count="post.images.length" :existing-file-count="post.files.length" :disabled="submitting" />
-          <div class="mt-4 flex gap-2"><button class="forum-button" :disabled="submitting" @click="savePostEdit">保存修改</button><button class="forum-button" @click="editingPost = false">取消</button></div>
-        </template>
-        <p v-else class="mt-5 whitespace-pre-wrap break-words leading-7 text-cyan-50/90">{{ post.content }}</p>
-        <div v-if="post.images?.length" class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <div v-for="image in post.images" :key="image.id"><button type="button" @click="previewUrl = image.url"><img :src="image.url" alt="帖子图片" class="max-h-72 w-full rounded-xl object-contain" /></button><button v-if="editingPost" class="forum-button mt-1" @click="removeImage(image.id)">移除图片</button></div>
-        </div>
-        <div v-if="post.files?.length" class="mt-4 space-y-2">
-          <div v-for="file in post.files" :key="file.id" class="flex flex-wrap items-center gap-3 text-sm">
-            <a :href="file.url" class="text-cyan-200 underline">{{ file.name }}</a>
-            <button v-if="editingPost" class="forum-button" @click="removeFile(file.id)">移除文件</button>
+          <div class="action-row mt-6 flex flex-wrap items-center gap-5 border-t border-white/10 pt-4 text-sm text-slate-400 md:pl-[60px]">
+            <button v-if="post.status === 'visible'" class="text-button" @click="like('post', post.id)">{{ post.liked ? '♥' : '♡' }} {{ post.likeCount }} 点赞</button>
+            <span>↩ {{ post.replies?.length || 0 }} 评论</span>
+            <button v-if="post.authorId !== me && post.status === 'visible'" class="text-button ml-auto" @click="report('post', post.id)">举报</button>
+            <button v-if="post.authorId === me && post.status === 'visible'" class="text-button" @click="startPostEdit">编辑</button>
+            <button v-if="post.authorId === me && post.status !== 'deleted'" class="text-button danger" @click="requestDelete('post', post.id)">删除帖子</button>
           </div>
-        </div>
-      </NeonCard>
+        </article>
 
-      <h2 class="mb-3 mt-8 text-xl font-semibold">回复（{{ post.replies?.length || 0 }}）</h2>
-      <div class="space-y-3">
-        <NeonCard v-for="reply in post.replies || []" :key="reply.id" class="rounded-2xl p-5">
-          <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
-            <span>{{ reply.authorName }} <span v-if="reply.parentReplyId" class="text-cyan-100/60">回复 #{{ reply.parentReplyId }}</span> · {{ formatTime(reply.createdAt) }}</span>
-            <span v-if="reply.status !== 'visible'" class="text-amber-200">{{ statusText(reply.status) }}</span>
+        <section class="surface-panel p-5 md:p-7">
+          <h2 class="border-b border-white/10 pb-4 text-lg font-bold">评论 <span class="ml-1 text-sm font-normal text-slate-400">{{ post.replies?.length || 0 }}</span></h2>
+          <div v-if="post.status === 'visible'" ref="replyEditor" class="border-b border-white/10 py-5">
+            <div class="flex gap-3"><img :src="myAvatar" alt="我的头像" class="avatar" /><div class="min-w-0 flex-1"><p class="mb-2 text-sm font-semibold">{{ parentReplyId ? `回复 #${parentReplyId}` : '发表你的评论' }}</p><button v-if="parentReplyId" class="text-button mb-2" @click="parentReplyId = null">取消指定回复</button><textarea v-model="replyContent" maxlength="3000" rows="3" class="forum-input" placeholder="发一条友善的评论吧..." /><ForumAttachmentPicker ref="replyAttachments" class="mt-3" :max-images="1" :disabled="submitting" /><div class="mt-3 flex flex-wrap items-center justify-end gap-3"><span v-if="formError" class="mr-auto text-sm text-rose-300">{{ formError }}</span><button class="primary-button" :disabled="submitting" @click="submitReply">{{ submitting ? '发送中...' : '发布评论' }}</button></div></div></div>
           </div>
-          <template v-if="editingReplyId === reply.id">
-            <textarea v-model="editReplyContent" maxlength="3000" rows="4" class="forum-input mt-3" />
-            <ForumAttachmentPicker ref="editReplyAttachments" class="mt-3" :max-images="1" :existing-image-count="reply.images.length" :disabled="submitting" />
-            <div class="mt-3 flex gap-2"><button class="forum-button" :disabled="submitting" @click="saveReplyEdit(reply.id)">保存</button><button class="forum-button" @click="editingReplyId = null">取消</button></div>
-          </template>
-          <p v-else class="mt-3 whitespace-pre-wrap break-words">{{ reply.content }}</p>
-          <div v-for="image in reply.images" :key="image.id" class="mt-3"><button type="button" @click="previewUrl = image.url"><img :src="image.url" alt="回复图片" class="max-h-72 max-w-full rounded-lg object-contain" /></button><button v-if="editingReplyId === reply.id" class="forum-button ml-2" @click="removeImage(image.id)">移除图片</button></div>
-          <div class="mt-4 flex flex-wrap gap-2">
-            <button v-if="reply.status === 'visible'" class="forum-button" @click="like('reply', reply.id)">{{ reply.liked ? '♥ 已赞' : '♡ 点赞' }} {{ reply.likeCount }}</button>
-            <button v-if="reply.status === 'visible'" class="forum-button" @click="parentReplyId = reply.id">回复</button>
-            <button v-if="reply.authorId !== me && reply.status === 'visible'" class="forum-button" @click="report('reply', reply.id)">举报</button>
-            <button v-if="reply.authorId === me && reply.status === 'visible'" class="forum-button" @click="startReplyEdit(reply.id, reply.content)">修改</button>
-            <button v-if="(reply.authorId === me || post.authorId === me) && reply.status !== 'deleted'" class="forum-button" @click="deleteContent('reply', reply.id)">删除评论</button>
+          <p v-if="!post.replies?.length" class="py-10 text-center text-sm text-slate-400">还没有评论，来聊聊吧。</p>
+          <div v-for="reply in post.replies || []" :key="reply.id" class="comment-row flex gap-3 border-b border-white/10 py-5 last:border-b-0">
+            <router-link :to="`/profile/${reply.authorId}`" class="shrink-0"><img :src="avatarUrl(reply.avatar)" :alt="`${reply.authorName}的头像`" class="avatar" /></router-link>
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2"><router-link :to="`/profile/${reply.authorId}`" class="font-semibold text-sky-300 hover:text-sky-200">{{ reply.authorName }}</router-link><span v-if="reply.authorId === post.authorId" class="owner-tag">楼主</span><span v-if="reply.status !== 'visible'" class="status-tag">{{ statusText(reply.status) }}</span></div>
+              <p v-if="reply.parentReplyId" class="mt-1 text-xs text-slate-400">回复 #{{ reply.parentReplyId }}</p>
+              <template v-if="editingReplyId === reply.id"><textarea v-model="editReplyContent" maxlength="3000" rows="4" class="forum-input mt-3" /><ForumAttachmentPicker ref="editReplyAttachments" class="mt-3" :max-images="1" :existing-image-count="reply.images.length" :disabled="submitting" /><div class="mt-3 flex gap-2"><button class="primary-button" :disabled="submitting" @click="saveReplyEdit(reply.id)">保存</button><button class="secondary-button" @click="editingReplyId = null">取消</button></div></template>
+              <p v-else class="mt-3 whitespace-pre-wrap break-words text-sm leading-7 text-slate-200">{{ reply.content }}</p>
+              <div v-for="image in reply.images" :key="image.id" class="mt-3"><button type="button" @click="previewUrl = image.url"><img :src="image.url" alt="回复图片" class="reply-image" /></button><button v-if="editingReplyId === reply.id" class="text-button ml-2" @click="removeImage(image.id)">移除图片</button></div>
+              <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-400"><span>{{ formatTime(reply.createdAt) }}</span><button v-if="reply.status === 'visible'" class="text-button" @click="like('reply', reply.id)">{{ reply.liked ? '♥' : '♡' }} {{ reply.likeCount }}</button><button v-if="reply.status === 'visible'" class="text-button" @click="chooseReply(reply.id)">回复</button><button v-if="reply.authorId !== me && reply.status === 'visible'" class="text-button" @click="report('reply', reply.id)">举报</button><button v-if="reply.authorId === me && reply.status === 'visible'" class="text-button" @click="startReplyEdit(reply.id, reply.content)">编辑</button><button v-if="(reply.authorId === me || post.authorId === me) && reply.status !== 'deleted'" class="text-button danger" @click="requestDelete('reply', reply.id, reply.authorName)">删除</button></div>
+            </div>
           </div>
-        </NeonCard>
-      </div>
+        </section>
+      </main>
 
-      <NeonCard v-if="post.status === 'visible'" class="mt-6 rounded-2xl p-5">
-        <h3 class="mb-3 font-semibold">{{ parentReplyId ? `回复 #${parentReplyId}` : '发表回复' }}</h3>
-        <button v-if="parentReplyId" class="mb-2 text-xs text-cyan-200" @click="parentReplyId = null">取消指定回复</button>
-        <textarea v-model="replyContent" maxlength="3000" rows="4" class="forum-input" placeholder="写下你的回复..." />
-        <ForumAttachmentPicker ref="replyAttachments" class="mt-3" :max-images="1" :disabled="submitting" />
-        <div class="mt-4 flex items-center gap-3">
-          <button class="forum-button" :disabled="submitting" @click="submitReply">{{ submitting ? '发送中...' : '发送回复' }}</button>
-          <span v-if="formError" class="text-sm text-rose-200">{{ formError }}</span>
-        </div>
-      </NeonCard>
-      <el-dialog v-model="previewOpen" title="图片预览" width="min(90vw, 800px)"><img :src="previewUrl" alt="图片预览" class="max-h-[70vh] w-full object-contain" /></el-dialog>
-    </template>
+      <aside class="space-y-4"><div class="surface-panel p-5"><p class="mb-4 text-sm font-semibold">关于作者</p><router-link :to="`/profile/${post.authorId}`" class="flex items-center gap-3"><img :src="avatarUrl(post.avatar)" :alt="`${post.authorName}的头像`" class="avatar" /><span class="font-semibold text-sky-300">{{ post.authorName }}</span></router-link><p class="mt-4 text-xs text-slate-400">发布于 {{ formatTime(post.createdAt) }}</p></div><div class="surface-panel p-5"><p class="text-sm font-semibold">参与讨论</p><p class="mt-2 text-sm leading-6 text-slate-400">喜欢这篇帖子可以点赞，也欢迎在评论区继续交流。</p><router-link to="/forum" class="mt-4 inline-block text-sm text-sky-300 hover:underline">浏览更多帖子 →</router-link></div></aside>
+    </div>
+    <el-dialog v-model="previewOpen" title="图片预览" width="min(90vw, 800px)"><img :src="previewUrl" alt="图片预览" class="max-h-[70vh] w-full object-contain" /></el-dialog>
+    <el-dialog v-model="deleteDialogVisible" class="forum-delete-dialog" title="确认删除" width="min(90vw, 440px)" :close-on-click-modal="!deleting" :show-close="!deleting" @closed="deleteTarget = null">
+      <p class="text-base font-semibold text-slate-100">{{ deletePrompt }}</p>
+      <p class="mt-3 text-sm leading-6 text-slate-400">删除后内容将不再公开显示，此操作无法由用户撤销。</p>
+      <template #footer><div class="flex justify-end gap-3"><button class="secondary-button" :disabled="deleting" @click="deleteDialogVisible = false">取消</button><button class="danger-button" :disabled="deleting" @click="confirmDelete">{{ deleting ? '删除中...' : '确认删除' }}</button></div></template>
+    </el-dialog>
   </section>
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import NeonCard from '@/components/NeonCard.vue'
 import ForumAttachmentPicker from '@/components/ForumAttachmentPicker.vue'
 import { forumApi, type ForumPost } from '@/api/forum'
+import defaultAvatar from '@/assets/default-avatar.png'
 
 type AttachmentPickerExpose = { getImages: () => File[]; getFiles: () => File[]; clear: () => void; isPreparing: () => boolean; hasError: () => boolean }
 
@@ -93,6 +83,7 @@ const error = ref('')
 const replyContent = ref('')
 const parentReplyId = ref<number | null>(null)
 const replyAttachments = ref<AttachmentPickerExpose | null>(null)
+const replyEditor = ref<HTMLElement | null>(null)
 const editAttachments = ref<AttachmentPickerExpose | null>(null)
 const editReplyAttachments = ref<AttachmentPickerExpose | null>(null)
 const editingPost = ref(false)
@@ -106,9 +97,19 @@ const submitting = ref(false)
 const formError = ref('')
 const userInfo = JSON.parse(sessionStorage.getItem('userInfo') || '{}')
 const me = Number(userInfo.id || userInfo.identityId || 0)
+const myAvatar = avatarUrl(userInfo.avatar || userInfo.avatarUrl || userInfo.profile?.avatar)
+const deleteDialogVisible = ref(false)
+const deleting = ref(false)
+const deleteTarget = ref<{ type: 'post' | 'reply'; id: number; authorName?: string } | null>(null)
+const deletePrompt = computed(() => {
+  if (deleteTarget.value?.type === 'post') return '确定删除这篇帖子吗？'
+  if (deleteTarget.value?.authorName) return `确定删除 ${deleteTarget.value.authorName} 的评论吗？`
+  return '确定删除这条评论吗？'
+})
 const postId = computed(() => Number(route.params.id))
 function formatTime(value: string): string { return value ? new Date(value).toLocaleString('zh-CN') : '' }
 function statusText(value: string): string { return value === 'hidden' ? '举报后隐藏' : '已删除' }
+function avatarUrl(value?: string): string { return value ? (/^https?:\/\//.test(value) || value.startsWith('/') ? value : `/${value}`) : defaultAvatar }
 
 function startPostEdit(): void {
   if (!post.value) return
@@ -120,6 +121,11 @@ function startPostEdit(): void {
 function startReplyEdit(id: number, content: string): void {
   editingReplyId.value = id
   editReplyContent.value = content
+}
+
+function chooseReply(id: number): void {
+  parentReplyId.value = id
+  void nextTick(() => replyEditor.value?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
 }
 
 async function load(): Promise<void> {
@@ -183,14 +189,23 @@ async function saveReplyEdit(id: number): Promise<void> {
   finally { submitting.value = false }
 }
 
-async function deleteContent(type: 'post' | 'reply', id: number): Promise<void> {
+function requestDelete(type: 'post' | 'reply', id: number, authorName?: string): void {
+  deleteTarget.value = { type, id, authorName: type === 'reply' && post.value?.authorId === me ? authorName : undefined }
+  deleteDialogVisible.value = true
+}
+
+async function confirmDelete(): Promise<void> {
+  const target = deleteTarget.value
+  if (!target || deleting.value) return
+  deleting.value = true
   try {
-    await ElMessageBox.confirm(type === 'post' ? '确定删除自己的帖子吗？' : '确定删除这条评论吗？', '确认删除', { type: 'warning' })
-    await forumApi.deleteContent(type, id)
+    await forumApi.deleteContent(target.type, target.id)
+    deleteDialogVisible.value = false
     ElMessage.success('已删除')
-    if (type === 'post') await router.push('/forum')
+    if (target.type === 'post') await router.push('/forum')
     else await load()
-  } catch (e: any) { if (e !== 'cancel' && e !== 'close') ElMessage.error(e?.message || '删除失败') }
+  } catch (e: any) { ElMessage.error(e?.message || '删除失败') }
+  finally { deleting.value = false }
 }
 
 async function removeImage(id: number): Promise<void> {
@@ -234,9 +249,31 @@ watch(postId, load)
 </script>
 
 <style scoped>
-.forum-input { width: 100%; border: 1px solid rgba(125,220,255,.35); border-radius: 10px; background: rgba(15,23,42,.65); padding: 10px 12px; color: #ecfeff; outline: none; }
-.forum-input:focus { border-color: #67e8f9; }
-.forum-button { border: 1px solid rgba(125,220,255,.58); border-radius: 10px; padding: 7px 13px; color: #ecfeff; background: rgba(8,47,73,.6); cursor: pointer; font-size: 13px; }
-.forum-button:hover:not(:disabled) { background: rgba(8,145,178,.45); }
-.forum-button:disabled { opacity: .45; cursor: not-allowed; }
+.forum-layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; align-items: start; gap: 20px; }
+.surface-panel { border: 1px solid rgba(148, 163, 184, .2); border-radius: 16px; background: rgba(15, 23, 42, .92); box-shadow: 0 12px 32px rgba(2, 6, 23, .16); }
+.avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #334155; }
+.owner-tag, .status-tag { border-radius: 999px; padding: 2px 8px; font-size: 11px; }
+.owner-tag { color: #7dd3fc; background: rgba(14, 165, 233, .18); }
+.status-tag { color: #fde68a; background: rgba(251, 191, 36, .15); }
+.post-image { width: 100%; height: 180px; border-radius: 10px; object-fit: cover; background: #1e293b; }
+.reply-image { max-width: 260px; max-height: 230px; border-radius: 10px; object-fit: contain; }
+.file-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 520px; border: 1px solid rgba(148,163,184,.18); border-radius: 10px; background: rgba(30,41,59,.6); padding: 9px 12px; font-size: 13px; }
+.forum-input { width: 100%; border: 1px solid rgba(148,163,184,.3); border-radius: 10px; background: rgba(30,41,59,.75); padding: 11px 13px; color: #f8fafc; outline: none; }
+.forum-input:focus { border-color: #38bdf8; }
+.primary-button, .secondary-button, .danger-button { border-radius: 10px; padding: 8px 16px; font-size: 13px; font-weight: 600; transition: background .2s; }
+.primary-button { background: #00a1d6; color: white; }
+.primary-button:hover:not(:disabled) { background: #22b8e9; }
+.secondary-button { border: 1px solid rgba(148,163,184,.35); color: #e2e8f0; }
+.secondary-button:hover:not(:disabled) { background: rgba(56,189,248,.12); }
+.danger-button { background: #e05260; color: white; }
+.danger-button:hover:not(:disabled) { background: #ef6b78; }
+.text-button { color: inherit; font-size: inherit; }
+.text-button:hover { color: #7dd3fc; }
+.text-button.danger:hover { color: #fda4af; }
+.primary-button:disabled, .secondary-button:disabled, .danger-button:disabled { opacity: .5; cursor: not-allowed; }
+:global(.forum-delete-dialog.el-dialog) { border: 1px solid rgba(148,163,184,.3); border-radius: 16px; background: #0f172a; box-shadow: 0 20px 60px rgba(2,6,23,.5); }
+:global(.forum-delete-dialog .el-dialog__title) { color: #f8fafc; font-weight: 700; }
+:global(.forum-delete-dialog .el-dialog__headerbtn .el-dialog__close) { color: #94a3b8; }
+@media (max-width: 900px) { .forum-layout { grid-template-columns: minmax(0, 1fr); } .forum-layout aside { display: none; } }
+@media (max-width: 640px) { .avatar { width: 42px; height: 42px; } .post-image { height: 120px; } }
 </style>
