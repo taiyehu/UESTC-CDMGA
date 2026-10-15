@@ -156,7 +156,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { motion } from 'motion-v'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
@@ -171,12 +171,14 @@ const route = useRoute()
 const avatarUrl = ref(avatarDefault)
 const isAdmin = ref(false)
 const mobileMenuOpen = ref(false)
+let heartbeatTimer: number | null = null
 
 const navLinks = [
   { label: '主页', to: '/home' },
   { label: '课题', to: '/task' },
   { label: '活动', to: '/activity' },
   { label: '排行榜', to: '/ranking' },
+  { label: '论坛', to: '/forum' },
   { label: '网站功能', to: '/links' },
 ]
 
@@ -255,6 +257,14 @@ async function fetchProfileFromServer(identityId: string | number) {
 
 onMounted(() => {
   loadProfile()
+  axios.post('/api/identity/heartbeat').catch(() => {})
+  heartbeatTimer = window.setInterval(() => {
+    axios.post('/api/identity/heartbeat').catch(() => {})
+  }, 60000)
+})
+
+onBeforeUnmount(() => {
+  if (heartbeatTimer !== null) window.clearInterval(heartbeatTimer)
 })
 
 watch(() => route.path, () => {

@@ -27,6 +27,24 @@
       </div>
     </NeonCard>
 
+    <NeonCard class="mb-5 rounded-3xl p-5 md:p-6">
+      <div class="flex flex-wrap items-center justify-between gap-5">
+        <div>
+          <p class="text-xs uppercase tracking-[0.22em] text-cyan-100/65">每日签到 · {{ checkin?.date || shanghaiDay() }}</p>
+          <h2 class="mt-1 text-xl font-semibold text-cyan-50">{{ checkin?.checkedIn ? '今天已签到' : '抽取今日运势' }}</h2>
+          <p v-if="checkin?.fortune" class="mt-3 text-lg font-bold text-amber-200">{{ checkin.fortune.fortuneLevel }} · {{ checkin.fortune.fortuneText }}</p>
+          <div v-if="checkinFortuneDetail" class="mt-2 flex flex-wrap gap-4 text-sm text-cyan-100/85">
+            <span>宜：{{ checkinFortuneDetail.good }}</span>
+            <span>忌：{{ checkinFortuneDetail.avoid }}</span>
+          </div>
+          <p v-if="checkinError" class="mt-2 text-sm text-rose-200">{{ checkinError }}</p>
+        </div>
+        <button class="home-btn" :disabled="checkinLoading || !!checkin?.checkedIn" @click="checkinToday">
+          {{ checkinLoading ? '加载中...' : checkin?.checkedIn ? '明天再来' : '立即签到' }}
+        </button>
+      </div>
+    </NeonCard>
+
     <div class="grid grid-cols-[1.65fr_1fr] gap-5 max-lg:grid-cols-1">
       <NeonCard
         class="group relative rounded-3xl p-6 md:p-8"
@@ -185,6 +203,7 @@ import NeonCard from '@/components/NeonCard.vue'
 import { MaimaiRing } from '@/components/effects'
 import defaultAvatar from '@/assets/default-avatar.png'
 import { isMobileLite } from '@/utils/visualMode'
+import { getTodayCheckin, submitCheckin, type CheckinToday } from '@/api/checkin'
 
 type CourseLike = {
   id: number
@@ -221,6 +240,14 @@ const courses = ref<CourseLike[]>([])
 const activities = ref<ActivityLike[]>([])
 const dailyMember = ref<DailyMember | null>(null)
 const dailyMemberLoading = ref(true)
+const checkin = ref<CheckinToday | null>(null)
+const checkinLoading = ref(false)
+const checkinError = ref('')
+const checkinFortuneDetail = computed<{ good: string; avoid: string } | null>(() => {
+  if (!checkin.value?.fortune?.fortunePayload) return null
+  try { return JSON.parse(checkin.value.fortune.fortunePayload) }
+  catch { return null }
+})
 const currentCourseIndex = ref(0)
 
 let clockTimer: number | null = null
@@ -374,6 +401,31 @@ async function fetchDailyMember(): Promise<void> {
   }
 }
 
+async function fetchCheckin(): Promise<void> {
+  checkinLoading.value = true
+  try {
+    checkin.value = await getTodayCheckin()
+    checkinError.value = ''
+  } catch (e: any) {
+    checkinError.value = e?.message || '签到状态加载失败'
+  } finally {
+    checkinLoading.value = false
+  }
+}
+
+async function checkinToday(): Promise<void> {
+  if (checkinLoading.value || checkin.value?.checkedIn) return
+  checkinLoading.value = true
+  try {
+    checkin.value = await submitCheckin()
+    checkinError.value = ''
+  } catch (e: any) {
+    checkinError.value = e?.message || '签到失败'
+  } finally {
+    checkinLoading.value = false
+  }
+}
+
 async function fetchHomeData(): Promise<void> {
   loading.value = true
   error.value = null
@@ -410,9 +462,13 @@ async function fetchHomeData(): Promise<void> {
 onMounted(() => {
   fetchHomeData()
   fetchDailyMember()
+  fetchCheckin()
   clockTimer = window.setInterval(() => {
     nowTick.value = new Date()
-    if (shanghaiDay() !== displayedMemberDay) fetchDailyMember()
+    if (shanghaiDay() !== displayedMemberDay) {
+      fetchDailyMember()
+      fetchCheckin()
+    }
   }, 1000)
 })
 
@@ -441,9 +497,14 @@ onBeforeUnmount(() => {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.home-btn:hover {
+.home-btn:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 0 24px rgba(56, 189, 248, 0.3);
+}
+
+.home-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .course-fade-enter-active,

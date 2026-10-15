@@ -26,6 +26,7 @@ import com.cdmga.uestc.webpage.common.RegisterRequest;
 import com.cdmga.uestc.webpage.common.Result;
 import com.cdmga.uestc.webpage.Entity.Identity;
 import com.cdmga.uestc.webpage.Service.IdentityService;
+import com.cdmga.uestc.webpage.Service.IdentitySessionService;
 
 @CrossOrigin(origins = "http://localhost:8081")
 @RestController
@@ -34,6 +35,9 @@ public class IdentityController {
 
     @Autowired
     private IdentityService identityService;
+
+    @Autowired
+    private IdentitySessionService identitySessionService;
 
 
     // 注册接口
@@ -72,6 +76,7 @@ public class IdentityController {
     @CrossOrigin(origins = "http://localhost:8081")
     @PostMapping("/login")
     public Result login(@RequestBody LoginRequest loginRequest, HttpServletRequest request, HttpSession session) {
+        if (session.getAttribute("identityId") instanceof Integer) identitySessionService.logout(session);
         session.removeAttribute("identityId");
         try {
             // 调用服务层验证登录
@@ -81,20 +86,39 @@ public class IdentityController {
 
             request.changeSessionId();
             session.setAttribute("identityId", user.getId());
+            identitySessionService.login(user.getId(), session);
 
             // 验证成功，返回包含用户信息的成功响应
             return Result.success(user);
 
         } catch (Exception e) {
             // 验证失败，返回错误响应
+            session.removeAttribute("identityId");
             return Result.error(e.getMessage());
         }
     }
 
     @PostMapping("/logout")
     public Result logout(HttpSession session) {
-        session.invalidate();
+        try {
+            identitySessionService.logout(session);
+        } finally {
+            session.invalidate();
+        }
         return Result.success("已登出");
+    }
+
+    @PostMapping("/heartbeat")
+    public Result heartbeat(HttpSession session) {
+        Object identityId = session.getAttribute("identityId");
+        if (!(identityId instanceof Integer)) return Result.error("请重新登录");
+        identitySessionService.heartbeat(session);
+        return Result.success("在线");
+    }
+
+    @GetMapping("/online/{id}")
+    public Result online(@PathVariable Integer id) {
+        return Result.success(identitySessionService.online(id));
     }
 
     @GetMapping("/allaccount")

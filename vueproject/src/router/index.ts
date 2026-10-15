@@ -33,6 +33,9 @@ const ActivityDetailPage = () => import('@/views/activity/ActivityDetailPage.vue
 const AdminActivities = () => import('@/views/admin/admin-activities.vue')
 const ContestRanking = () => import('@/views/pages/contest-ranking.vue')
 const NotFoundPage = () => import('@/views/pages/not-found.vue')
+const Forum = () => import('@/views/forum/forum.vue')
+const ForumPost = () => import('@/views/forum/forum-post.vue')
+const AdminForum = () => import('@/views/admin/admin-forum.vue')
 
 // 路由表
 const routes = [
@@ -93,6 +96,10 @@ const routes = [
       {
         path: 'titles',
         component: AdminTitles,
+      },
+      {
+        path: 'forum',
+        component: AdminForum,
       },
       {
         path: 'activities',
@@ -159,6 +166,14 @@ const routes = [
   {
     path: '/links',
     component: Links,
+  },
+  {
+    path: '/forum',
+    component: Forum,
+  },
+  {
+    path: '/forum/:id',
+    component: ForumPost,
   },
   {
     path: '/activity',

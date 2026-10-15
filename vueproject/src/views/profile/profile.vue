@@ -28,6 +28,9 @@
             <h2 class="profile-name">
               {{ profile.account || (isSelf ? user.account : '未知用户') }}
             </h2>
+            <p v-if="onlineStatus !== null" class="mt-1 text-center text-xs" :class="onlineStatus ? 'text-emerald-300' : 'text-cyan-100/60'">
+              {{ onlineStatus ? '● 在线' : '● 离线' }}
+            </p>
             <div v-if="equippedTitle" class="mt-2 text-center">
               <TitleBadge :name="equippedTitle.name" :tier="equippedTitle.tier" :acquisition-method="equippedTitle.acquisitionMethod" />
             </div>
@@ -328,6 +331,7 @@ const awardRedemptions = ref<any[]>([])
 const RatedActivities = ref<any[]>([])
 const viewUserId = ref<number | null>(null)
 const isSelf = ref(false)
+const onlineStatus = ref<boolean | null>(null)
 const avatarPreviewVisible = ref(false)
 const avatarPreviewUrl = ref('')
 
@@ -403,6 +407,10 @@ function loadProfile() {
   }
 
   if (viewUserId.value) {
+    onlineStatus.value = null
+    axios.get(`/api/identity/online/${viewUserId.value}`).then((response) => {
+      if (response.data?.code === 0) onlineStatus.value = Boolean(response.data.data)
+    }).catch(() => {})
     fetchProfile()
     fetchTitles()
     fetchScoredScores()

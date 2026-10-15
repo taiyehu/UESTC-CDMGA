@@ -24,6 +24,7 @@
           <el-menu-item index="/admin/profiles">资料审核</el-menu-item>
           <el-menu-item index="/admin/profiles-passed">已通过资料</el-menu-item>
           <el-menu-item index="/admin/titles">称号管理</el-menu-item>
+          <el-menu-item index="/admin/forum">论坛管理</el-menu-item>
           <el-menu-item index="/admin/activities">活动管理</el-menu-item>
         </el-menu>
       </el-aside>
