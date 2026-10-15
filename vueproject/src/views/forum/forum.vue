@@ -67,12 +67,12 @@
         <div class="surface-panel p-5"><p class="text-sm font-semibold">社区动态</p><p class="mt-3 text-2xl font-bold text-sky-300">{{ total }}</p><p class="text-xs text-slate-400">{{ mine ? '我的帖子' : '当前可见帖子' }}</p><p class="mt-4 border-t border-white/10 pt-4 text-xs leading-5 text-slate-400">请友善交流。发现不合适的内容，可在帖子右上角举报。</p></div>
       </aside>
     </div>
-    <ForumReportDialog v-model="reportOpen" :target="reportTarget" @reported="load" />
+    <ForumReportDialog v-model="reportOpen" :target="reportTarget" @reported="() => load()" />
   </section>
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref } from 'vue'
+import { nextTick, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { forumApi, type ForumPost, type ForumSort } from '@/api/forum'
@@ -88,6 +88,7 @@ const posts = ref<ForumPost[]>([])
 const total = ref(0)
 const page = ref(0)
 const loading = ref(false)
+const hasLoaded = ref(false)
 const error = ref('')
 const showEditor = ref(false)
 const title = ref('')
@@ -111,7 +112,7 @@ function uploadError(error: any): string {
   return error?.response?.data?.message || error?.message || '未知错误'
 }
 function switchList(value: boolean): void { mine.value = value; page.value = 0; void load() }
-function switchSort(value: ForumSort): void { sort.value = value; page.value = 0; void load() }
+function switchSort(value: ForumSort): void { if (sort.value === value) return; sort.value = value; page.value = 0; void load(true) }
 
 async function loadMyAvatar(): Promise<void> {
   if (!me) return
@@ -119,15 +120,17 @@ async function loadMyAvatar(): Promise<void> {
   catch { /* 保留登录信息中的头像 */ }
 }
 
-async function load(): Promise<void> {
-  loading.value = true
+async function load(preserveScroll = false): Promise<void> {
+  const initial = !hasLoaded.value
+  const scrollY = preserveScroll ? window.scrollY : 0
+  if (initial) loading.value = true
   try {
     const response = await forumApi.posts(page.value, mine.value, sort.value)
     posts.value = response.list
     total.value = response.total
     error.value = ''
-  } catch (e: any) { error.value = e?.message || '帖子加载失败' }
-  finally { loading.value = false }
+  } catch (e: any) { if (initial) error.value = e?.message || '帖子加载失败'; else ElMessage.error(e?.message || '帖子刷新失败') }
+  finally { if (initial) { loading.value = false; hasLoaded.value = true }; if (preserveScroll) { await nextTick(); window.scrollTo(0, scrollY) } }
 }
 
 function changePage(next: number): void { page.value = next; void load() }
@@ -139,7 +142,7 @@ async function likePost(post: ForumPost): Promise<void> {
     const liked = await forumApi.like('post', post.id)
     post.liked = liked
     post.likeCount += liked ? 1 : -1
-    if (sort.value === 'likes') await load()
+    if (sort.value === 'likes') await load(true)
   } catch (e: any) { ElMessage.error(e?.message || '点赞失败') }
   finally { likingPostId.value = null }
 }

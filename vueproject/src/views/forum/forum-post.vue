@@ -32,21 +32,16 @@
           </div>
         </article>
 
-        <section class="surface-panel p-5 md:p-7">
+        <section class="surface-panel p-5 text-left md:p-7">
           <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4"><h2 class="text-lg font-bold">评论 <span class="ml-1 text-sm font-normal text-slate-400">{{ post.replies?.length || 0 }}</span></h2><div class="flex items-center gap-1" role="group" aria-label="评论排序"><button class="sort-button" :class="{ active: replySort === 'latest' }" @click="switchReplySort('latest')">时间顺序</button><button class="sort-button" :class="{ active: replySort === 'likes' }" @click="switchReplySort('likes')">最多点赞</button></div></div>
           <div v-if="post.status === 'visible'" ref="replyEditor" class="border-b border-white/10 py-5">
-            <div class="flex gap-3"><img :src="myAvatar" alt="我的头像" class="avatar" /><div class="min-w-0 flex-1"><p class="mb-2 text-sm font-semibold">{{ parentReplyId ? `回复 #${parentReplyId}` : '发表你的评论' }}</p><button v-if="parentReplyId" class="text-button mb-2" @click="parentReplyId = null">取消指定回复</button><textarea v-model="replyContent" maxlength="3000" rows="3" class="forum-input" placeholder="发一条友善的评论吧..." /><ForumAttachmentPicker ref="replyAttachments" class="mt-3" :max-images="1" :disabled="submitting" /><div class="mt-3 flex flex-wrap items-center justify-end gap-3"><span v-if="formError" class="mr-auto text-sm text-rose-300">{{ formError }}</span><button class="primary-button" :disabled="submitting" @click="submitReply">{{ submitting ? '发送中...' : '发布评论' }}</button></div></div></div>
+            <div class="flex items-start gap-3"><img :src="myAvatar" alt="我的头像" class="avatar" /><div class="min-w-0 flex-1 text-left"><p class="mb-2 text-sm font-semibold">{{ parentReplyId ? `回复 @${replyTargetName}` : '发表你的评论' }}</p><button v-if="parentReplyId" class="text-button mb-2" @click="cancelReplyTarget">取消指定回复</button><textarea v-model="replyContent" maxlength="3000" rows="3" class="forum-input" placeholder="发一条友善的评论吧..." /><ForumAttachmentPicker ref="replyAttachments" class="mt-3" :max-images="1" :disabled="submitting" /><div class="mt-3 flex flex-wrap items-center justify-end gap-3"><span v-if="formError" class="mr-auto text-sm text-rose-300">{{ formError }}</span><button class="primary-button" :disabled="submitting" @click="submitReply">{{ submitting ? '发送中...' : '发布评论' }}</button></div></div></div>
           </div>
           <p v-if="!post.replies?.length" class="py-10 text-center text-sm text-slate-400">还没有评论，来聊聊吧。</p>
-          <div v-for="reply in post.replies || []" :key="reply.id" class="comment-row flex gap-3 border-b border-white/10 py-5 last:border-b-0">
-            <router-link :to="`/profile/${reply.authorId}`" class="shrink-0"><img :src="avatarUrl(reply.avatar)" :alt="`${reply.authorName}的头像`" class="avatar" /></router-link>
-            <div class="min-w-0 flex-1">
-              <div class="flex flex-col items-start gap-1"><div class="flex flex-wrap items-center gap-2"><router-link :to="`/profile/${reply.authorId}`" class="font-semibold text-sky-300 hover:text-sky-200">{{ reply.authorName }}</router-link><span v-if="reply.authorId === post.authorId" class="owner-tag">楼主</span><span v-if="reply.status !== 'visible'" class="status-tag">{{ statusText(reply.status) }}</span></div><TitleBadge v-if="reply.titleName && reply.titleTier" compact :name="reply.titleName" :tier="reply.titleTier" :acquisition-method="reply.titleAcquisitionMethod" /></div>
-              <p v-if="reply.parentReplyId" class="mt-1 text-xs text-slate-400">回复 #{{ reply.parentReplyId }}</p>
-              <template v-if="editingReplyId === reply.id"><textarea v-model="editReplyContent" maxlength="3000" rows="4" class="forum-input mt-3" /><ForumAttachmentPicker ref="editReplyAttachments" class="mt-3" :max-images="1" :existing-image-count="reply.images.length" :disabled="submitting" /><div class="mt-3 flex gap-2"><button class="primary-button" :disabled="submitting" @click="saveReplyEdit(reply.id)">保存</button><button class="secondary-button" @click="editingReplyId = null">取消</button></div></template>
-              <p v-else class="mt-3 whitespace-pre-wrap break-words text-sm leading-7 text-slate-200">{{ reply.content }}</p>
-              <div v-for="image in reply.images" :key="image.id" class="mt-3"><button type="button" @click="previewUrl = image.url"><img :src="image.url" alt="回复图片" class="reply-image" /></button><button v-if="editingReplyId === reply.id" class="text-button ml-2" @click="removeImage(image.id)">移除图片</button></div>
-              <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-400"><span>{{ formatTime(reply.createdAt) }}</span><button v-if="reply.status === 'visible'" class="text-button" @click="like('reply', reply.id)">{{ reply.liked ? '♥' : '♡' }} {{ reply.likeCount }}</button><button v-if="reply.status === 'visible'" class="text-button" @click="chooseReply(reply.id)">回复</button><button v-if="reply.authorId !== me && reply.status === 'visible'" class="text-button" @click="openReport('reply', reply.id)">举报</button><button v-if="reply.authorId === me && reply.status === 'visible'" class="text-button" @click="startReplyEdit(reply.id, reply.content)">编辑</button><button v-if="(reply.authorId === me || post.authorId === me) && reply.status !== 'deleted'" class="text-button danger" @click="requestDelete('reply', reply.id, reply.authorName)">删除</button></div>
+          <div v-for="group in replyGroups" :key="group.root.id" class="comment-thread border-b border-white/10 py-5 text-left last:border-b-0">
+            <ForumReplyItem :reply="group.root" :post-author-id="post.authorId" :me="me" @like="like('reply', $event)" @reply="chooseReply" @report="openReport('reply', $event)" @delete="requestDelete('reply', $event.id, $event.authorName)" @preview="previewUrl = $event" />
+            <div v-if="group.children.length" class="ml-10 mt-4 space-y-2 sm:ml-[60px]">
+              <ForumReplyItem v-for="child in group.children" :key="child.id" :reply="child" :post-author-id="post.authorId" :me="me" nested @like="like('reply', $event)" @reply="chooseReply" @report="openReport('reply', $event)" @delete="requestDelete('reply', $event.id, $event.authorName)" @preview="previewUrl = $event" />
             </div>
           </div>
         </section>
@@ -70,7 +65,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import ForumAttachmentPicker from '@/components/ForumAttachmentPicker.vue'
 import ForumReportDialog from '@/components/ForumReportDialog.vue'
-import { forumApi, type ForumPost, type ForumSort } from '@/api/forum'
+import { forumApi, type ForumPost, type ForumReply, type ForumSort } from '@/api/forum'
+import ForumReplyItem from '@/components/ForumReplyItem.vue'
 import TitleBadge from '@/components/TitleBadge.vue'
 import defaultAvatar from '@/assets/default-avatar.png'
 
@@ -84,15 +80,13 @@ const loading = ref(false)
 const error = ref('')
 const replyContent = ref('')
 const parentReplyId = ref<number | null>(null)
+const replyTargetName = ref('')
 const replyAttachments = ref<AttachmentPickerExpose | null>(null)
 const replyEditor = ref<HTMLElement | null>(null)
 const editAttachments = ref<AttachmentPickerExpose | null>(null)
-const editReplyAttachments = ref<AttachmentPickerExpose | null>(null)
 const editingPost = ref(false)
 const editTitle = ref('')
 const editContent = ref('')
-const editingReplyId = ref<number | null>(null)
-const editReplyContent = ref('')
 const previewUrl = ref('')
 const previewOpen = computed({ get: () => !!previewUrl.value, set: (open) => { if (!open) previewUrl.value = '' } })
 const reportOpen = ref(false)
@@ -111,6 +105,23 @@ const deletePrompt = computed(() => {
   return '确定删除这条评论吗？'
 })
 const postId = computed(() => Number(route.params.id))
+const replyGroups = computed(() => {
+  const groups = new Map<number, { root: ForumReply; children: ForumReply[] }>()
+  const replies = post.value?.replies || []
+  for (const reply of replies) if (!reply.parentReplyId) groups.set(reply.id, { root: reply, children: [] })
+  for (const reply of replies) {
+    if (!reply.parentReplyId) continue
+    const rootId = reply.rootReplyId || reply.parentReplyId
+    const group = groups.get(rootId)
+    if (group) group.children.push(reply)
+    else groups.set(rootId, { root: reply, children: [] })
+  }
+  const result = [...groups.values()]
+  for (const group of result) group.children.sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id - b.id)
+  if (replySort.value === 'likes') result.sort((a, b) => b.root.likeCount - a.root.likeCount || b.root.createdAt.localeCompare(a.root.createdAt) || b.root.id - a.root.id)
+  else result.sort((a, b) => a.root.createdAt.localeCompare(b.root.createdAt) || a.root.id - b.root.id)
+  return result
+})
 function formatTime(value: string): string { return value ? new Date(value).toLocaleString('zh-CN') : '' }
 function statusText(value: string): string { return value === 'hidden' ? '举报后隐藏' : '已删除' }
 function avatarUrl(value?: string): string { return value ? (/^https?:\/\//.test(value) || value.startsWith('/') ? value : `/${value}`) : defaultAvatar }
@@ -121,7 +132,12 @@ async function loadMyAvatar(): Promise<void> {
   catch { /* 保留登录信息中的头像 */ }
 }
 
-function switchReplySort(value: ForumSort): void { replySort.value = value; void load() }
+function switchReplySort(value: ForumSort): void {
+  if (replySort.value === value) return
+  const scrollY = window.scrollY
+  replySort.value = value
+  void nextTick(() => window.scrollTo(0, scrollY))
+}
 
 function startPostEdit(): void {
   if (!post.value) return
@@ -130,21 +146,20 @@ function startPostEdit(): void {
   editingPost.value = true
 }
 
-function startReplyEdit(id: number, content: string): void {
-  editingReplyId.value = id
-  editReplyContent.value = content
-}
+function cancelReplyTarget(): void { parentReplyId.value = null; replyTargetName.value = '' }
 
-function chooseReply(id: number): void {
-  parentReplyId.value = id
+function chooseReply(reply: ForumReply): void {
+  parentReplyId.value = reply.id
+  replyTargetName.value = reply.authorName
   void nextTick(() => replyEditor.value?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
 }
 
 async function load(): Promise<void> {
-  loading.value = true
+  const initial = !post.value
+  if (initial) loading.value = true
   try { post.value = await forumApi.post(postId.value, replySort.value); error.value = '' }
-  catch (e: any) { post.value = null; error.value = e?.message || '帖子加载失败' }
-  finally { loading.value = false }
+  catch (e: any) { if (initial) { post.value = null; error.value = e?.message || '帖子加载失败' } else ElMessage.error(e?.message || '帖子刷新失败') }
+  finally { if (initial) loading.value = false }
 }
 
 async function submitReply(): Promise<void> {
@@ -159,7 +174,7 @@ async function submitReply(): Promise<void> {
       try { await forumApi.upload('reply', id, image) }
       catch { uploadFailed = true }
     }
-    replyContent.value = ''; replyAttachments.value?.clear(); parentReplyId.value = null; formError.value = ''
+    replyContent.value = ''; replyAttachments.value?.clear(); cancelReplyTarget(); formError.value = ''
     await load()
     ElMessage[uploadFailed ? 'warning' : 'success'](uploadFailed ? '回复已发布，图片上传失败' : '回复已发布')
   } catch (e: any) { formError.value = e?.message || '回复失败' }
@@ -181,22 +196,6 @@ async function savePostEdit(): Promise<void> {
     editingPost.value = false
     await load()
     ElMessage[failed ? 'warning' : 'success'](failed ? '文字已保存，部分附件上传失败' : '修改已保存')
-  } catch (e: any) { ElMessage.error(e?.message || '修改失败') }
-  finally { submitting.value = false }
-}
-
-async function saveReplyEdit(id: number): Promise<void> {
-  if (!editReplyContent.value.trim()) { ElMessage.warning('回复不能为空'); return }
-  if (editReplyAttachments.value?.isPreparing() || editReplyAttachments.value?.hasError()) { ElMessage.warning('请先处理图片选择错误'); return }
-  submitting.value = true
-  try {
-    const image = editReplyAttachments.value?.getImages()[0]
-    await forumApi.editReply(id, editReplyContent.value)
-    let failed = false
-    if (image) { try { await forumApi.upload('reply', id, image) } catch { failed = true } }
-    editingReplyId.value = null
-    await load()
-    ElMessage[failed ? 'warning' : 'success'](failed ? '文字已保存，图片上传失败' : '回复已修改')
   } catch (e: any) { ElMessage.error(e?.message || '修改失败') }
   finally { submitting.value = false }
 }
@@ -225,7 +224,6 @@ async function removeImage(id: number): Promise<void> {
     await forumApi.removeImage(id)
     if (post.value) {
       post.value.images = post.value.images.filter(image => image.id !== id)
-      for (const reply of post.value.replies || []) reply.images = reply.images.filter(image => image.id !== id)
     }
     ElMessage.success('图片已移除')
   }
@@ -242,7 +240,12 @@ async function removeFile(id: number): Promise<void> {
 }
 
 async function like(type: 'post' | 'reply', id: number): Promise<void> {
-  try { await forumApi.like(type, id); await load() }
+  try {
+    const scrollY = window.scrollY
+    const liked = await forumApi.like(type, id)
+    const target = type === 'post' ? post.value : post.value?.replies?.find(reply => reply.id === id)
+    if (target) { target.liked = liked; target.likeCount += liked ? 1 : -1; await nextTick(); window.scrollTo(0, scrollY) }
+  }
   catch (e: any) { ElMessage.error(e?.message || '操作失败') }
 }
 
@@ -253,18 +256,15 @@ async function handleReported(target: { type: 'post' | 'reply'; id: number }): P
 }
 
 onMounted(() => { void load(); void loadMyAvatar() })
-watch(postId, load)
+watch(postId, () => { post.value = null; void load() })
 </script>
 
 <style scoped>
 .forum-layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; align-items: start; gap: 20px; }
 .surface-panel { border: 1px solid rgba(148, 163, 184, .2); border-radius: 16px; background: rgba(15, 23, 42, .92); box-shadow: 0 12px 32px rgba(2, 6, 23, .16); }
 .avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #334155; }
-.owner-tag, .status-tag { border-radius: 999px; padding: 2px 8px; font-size: 11px; }
-.owner-tag { color: #7dd3fc; background: rgba(14, 165, 233, .18); }
-.status-tag { color: #fde68a; background: rgba(251, 191, 36, .15); }
+.status-tag { border-radius: 999px; padding: 2px 8px; color: #fde68a; background: rgba(251, 191, 36, .15); font-size: 11px; }
 .post-image { width: 100%; height: 180px; border-radius: 10px; object-fit: cover; background: #1e293b; }
-.reply-image { max-width: 260px; max-height: 230px; border-radius: 10px; object-fit: contain; }
 .file-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 520px; border: 1px solid rgba(148,163,184,.18); border-radius: 10px; background: rgba(30,41,59,.6); padding: 9px 12px; font-size: 13px; }
 .forum-input { width: 100%; border: 1px solid rgba(148,163,184,.3); border-radius: 10px; background: rgba(30,41,59,.75); padding: 11px 13px; color: #f8fafc; outline: none; }
 .forum-input:focus { border-color: #38bdf8; }

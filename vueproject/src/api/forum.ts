@@ -8,6 +8,9 @@ export type ForumReply = ForumTitle & {
   id: number
   postId: number
   parentReplyId: number | null
+  rootReplyId: number
+  floorNumber: number | null
+  parentAuthorName: string | null
   authorId: number
   authorName: string
   avatar?: string
@@ -75,9 +78,6 @@ export const forumApi = {
   },
   async editPost(id: number, title: string, content: string): Promise<void> {
     data(await request.patch(`/forum/posts/${id}`, { title, content }, { withCredentials: true }))
-  },
-  async editReply(id: number, content: string): Promise<void> {
-    data(await request.patch(`/forum/replies/${id}`, { content }, { withCredentials: true }))
   },
   async deleteContent(type: 'post' | 'reply', id: number): Promise<void> {
     data(await request.delete(`/forum/${type}/${id}`, { withCredentials: true }))

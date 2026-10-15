@@ -1,5 +1,6 @@
 package com.cdmga.uestc.webpage.Service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -84,7 +85,29 @@ public class ForumService {
         List<Map<String, Object>> replies = admin
             ? jdbc.queryForList("SELECT " + REPLY_FIELDS + ", EXISTS(SELECT 1 FROM forum_reply_like l WHERE l.reply_id = r.id AND l.identity_id = ?) AS liked FROM forum_reply r JOIN identity i ON i.id = r.author_id" + TITLE_JOIN + " WHERE r.post_id = ? ORDER BY " + replyOrder(replySort), viewer, postId)
             : jdbc.queryForList("SELECT " + REPLY_FIELDS + ", EXISTS(SELECT 1 FROM forum_reply_like l WHERE l.reply_id = r.id AND l.identity_id = ?) AS liked FROM forum_reply r JOIN identity i ON i.id = r.author_id" + TITLE_JOIN + " WHERE r.post_id = ?" + replyFilter + " ORDER BY " + replyOrder(replySort), viewer, postId, viewer, viewer);
-        replies.forEach(reply -> reply.put("images", images("reply", ((Number) reply.get("id")).longValue())));
+        List<Map<String, Object>> replyReferences = jdbc.queryForList("SELECT r.id, r.parent_reply_id AS parentReplyId, i.account AS authorName FROM forum_reply r JOIN identity i ON i.id = r.author_id WHERE r.post_id = ? ORDER BY r.created_at, r.id", postId);
+        Map<Long, Long> parents = new HashMap<>();
+        Map<Long, String> authors = new HashMap<>();
+        Map<Long, Integer> floors = new HashMap<>();
+        int floor = 0;
+        for (Map<String, Object> reference : replyReferences) {
+            long id = ((Number) reference.get("id")).longValue();
+            Long parentId = reference.get("parentReplyId") == null ? null : ((Number) reference.get("parentReplyId")).longValue();
+            parents.put(id, parentId);
+            authors.put(id, (String) reference.get("authorName"));
+            if (parentId == null) floors.put(id, ++floor);
+        }
+        replies.forEach(reply -> {
+            long id = ((Number) reply.get("id")).longValue();
+            Long parentId = parents.get(id);
+            long rootId = id;
+            int depth = 0;
+            while (parents.get(rootId) != null && depth++ < parents.size()) rootId = parents.get(rootId);
+            reply.put("rootReplyId", rootId);
+            reply.put("floorNumber", floors.get(rootId));
+            reply.put("parentAuthorName", parentId == null ? null : authors.get(parentId));
+            reply.put("images", images("reply", id));
+        });
         post.put("replies", replies);
         return post;
     }
@@ -200,16 +223,6 @@ public class ForumService {
         if (((Number) old.get("authorId")).intValue() != userId || !"visible".equals(old.get("status"))) throw new IllegalArgumentException("只能修改自己的可见帖子");
         jdbc.update("INSERT INTO forum_edit_history (post_id, editor_id, old_title, new_title, old_content, new_content) VALUES (?, ?, ?, ?, ?, ?)", postId, userId, old.get("title"), cleanTitle, old.get("content"), cleanContent);
         jdbc.update("UPDATE forum_post SET title = ?, content = ? WHERE id = ?", cleanTitle, cleanContent, postId);
-    }
-
-    @Transactional
-    public void editReply(Integer userId, long replyId, String content) {
-        String cleanContent = content == null ? "" : content.trim();
-        if (cleanContent.isEmpty() || cleanContent.length() > 3000) throw new IllegalArgumentException("回复需为1至3000字");
-        Map<String, Object> old = one("SELECT r.author_id AS authorId, r.content, r.status, p.status AS postStatus FROM forum_reply r JOIN forum_post p ON p.id = r.post_id WHERE r.id = ? FOR UPDATE", replyId);
-        if (((Number) old.get("authorId")).intValue() != userId || !"visible".equals(old.get("status")) || !"visible".equals(old.get("postStatus"))) throw new IllegalArgumentException("只能修改自己的可见回复");
-        jdbc.update("INSERT INTO forum_edit_history (reply_id, editor_id, old_content, new_content) VALUES (?, ?, ?, ?)", replyId, userId, old.get("content"), cleanContent);
-        jdbc.update("UPDATE forum_reply SET content = ? WHERE id = ?", cleanContent, replyId);
     }
 
     @Transactional

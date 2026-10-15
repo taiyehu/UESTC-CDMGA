@@ -88,12 +88,6 @@ public class ForumController {
         catch (Exception e) { return Result.error(e.getMessage()); }
     }
 
-    @PatchMapping("/replies/{id}")
-    public Result editReply(@PathVariable long id, @RequestBody ReplyRequest body, HttpServletRequest request) {
-        try { service.editReply(currentUser(request), id, body.content()); return Result.success("修改完成"); }
-        catch (Exception e) { return Result.error(e.getMessage()); }
-    }
-
     @DeleteMapping("/{type}/{id}")
     public Result deleteContent(@PathVariable String type, @PathVariable long id, HttpServletRequest request) {
         try { service.deleteOwnContent(currentUser(request), type, id); return Result.success("已删除"); }
