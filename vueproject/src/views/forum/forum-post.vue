@@ -9,7 +9,7 @@
           <h1 class="break-words text-2xl font-bold leading-tight">{{ post.title }}</h1>
           <div class="mt-5 flex items-start gap-3">
             <router-link :to="`/profile/${post.authorId}`" class="shrink-0"><img :src="avatarUrl(post.avatar)" :alt="`${post.authorName}的头像`" class="avatar" /></router-link>
-            <div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-2"><router-link :to="`/profile/${post.authorId}`" class="font-semibold text-sky-300 hover:text-sky-200">{{ post.authorName }}</router-link><TitleBadge v-if="post.titleName && post.titleTier" :name="post.titleName" :tier="post.titleTier" :acquisition-method="post.titleAcquisitionMethod" /></div><p class="mt-1 text-xs text-slate-400">{{ formatTime(post.createdAt) }} <span v-if="post.status !== 'visible'">· {{ statusText(post.status) }}</span></p></div>
+            <div class="min-w-0 flex-1"><router-link :to="`/profile/${post.authorId}`" class="font-semibold text-sky-300 hover:text-sky-200">{{ post.authorName }}</router-link><div v-if="post.titleName && post.titleTier" class="mt-1"><TitleBadge compact :name="post.titleName" :tier="post.titleTier" :acquisition-method="post.titleAcquisitionMethod" /></div><p class="mt-1 text-xs text-slate-400">{{ formatTime(post.createdAt) }} <span v-if="post.status !== 'visible'">· {{ statusText(post.status) }}</span></p></div>
           </div>
           <div class="mt-5">
             <template v-if="editingPost">
@@ -28,7 +28,7 @@
           <div class="action-row mt-6 flex flex-wrap items-center gap-5 border-t border-white/10 pt-4 text-sm text-slate-400">
             <button v-if="post.status === 'visible'" class="text-button" @click="like('post', post.id)">{{ post.liked ? '♥' : '♡' }} {{ post.likeCount }} 点赞</button>
             <span>↩ {{ post.replies?.length || 0 }} 评论</span>
-            <button v-if="post.authorId !== me && post.status === 'visible'" class="text-button ml-auto" @click="report('post', post.id)">举报</button>
+            <button v-if="post.authorId !== me && post.status === 'visible'" class="text-button ml-auto" @click="openReport('post', post.id)">举报</button>
             <button v-if="post.authorId === me && post.status === 'visible'" class="text-button" @click="startPostEdit">编辑</button>
             <button v-if="post.authorId === me && post.status !== 'deleted'" class="text-button danger" @click="requestDelete('post', post.id)">删除帖子</button>
           </div>
@@ -43,20 +43,21 @@
           <div v-for="reply in post.replies || []" :key="reply.id" class="comment-row flex gap-3 border-b border-white/10 py-5 last:border-b-0">
             <router-link :to="`/profile/${reply.authorId}`" class="shrink-0"><img :src="avatarUrl(reply.avatar)" :alt="`${reply.authorName}的头像`" class="avatar" /></router-link>
             <div class="min-w-0 flex-1">
-              <div class="flex flex-wrap items-center gap-2"><router-link :to="`/profile/${reply.authorId}`" class="font-semibold text-sky-300 hover:text-sky-200">{{ reply.authorName }}</router-link><TitleBadge v-if="reply.titleName && reply.titleTier" :name="reply.titleName" :tier="reply.titleTier" :acquisition-method="reply.titleAcquisitionMethod" /><span v-if="reply.authorId === post.authorId" class="owner-tag">楼主</span><span v-if="reply.status !== 'visible'" class="status-tag">{{ statusText(reply.status) }}</span></div>
+              <div class="flex flex-wrap items-center gap-2"><router-link :to="`/profile/${reply.authorId}`" class="font-semibold text-sky-300 hover:text-sky-200">{{ reply.authorName }}</router-link><span v-if="reply.authorId === post.authorId" class="owner-tag">楼主</span><span v-if="reply.status !== 'visible'" class="status-tag">{{ statusText(reply.status) }}</span></div><div v-if="reply.titleName && reply.titleTier" class="mt-1"><TitleBadge compact :name="reply.titleName" :tier="reply.titleTier" :acquisition-method="reply.titleAcquisitionMethod" /></div>
               <p v-if="reply.parentReplyId" class="mt-1 text-xs text-slate-400">回复 #{{ reply.parentReplyId }}</p>
               <template v-if="editingReplyId === reply.id"><textarea v-model="editReplyContent" maxlength="3000" rows="4" class="forum-input mt-3" /><ForumAttachmentPicker ref="editReplyAttachments" class="mt-3" :max-images="1" :existing-image-count="reply.images.length" :disabled="submitting" /><div class="mt-3 flex gap-2"><button class="primary-button" :disabled="submitting" @click="saveReplyEdit(reply.id)">保存</button><button class="secondary-button" @click="editingReplyId = null">取消</button></div></template>
               <p v-else class="mt-3 whitespace-pre-wrap break-words text-sm leading-7 text-slate-200">{{ reply.content }}</p>
               <div v-for="image in reply.images" :key="image.id" class="mt-3"><button type="button" @click="previewUrl = image.url"><img :src="image.url" alt="回复图片" class="reply-image" /></button><button v-if="editingReplyId === reply.id" class="text-button ml-2" @click="removeImage(image.id)">移除图片</button></div>
-              <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-400"><span>{{ formatTime(reply.createdAt) }}</span><button v-if="reply.status === 'visible'" class="text-button" @click="like('reply', reply.id)">{{ reply.liked ? '♥' : '♡' }} {{ reply.likeCount }}</button><button v-if="reply.status === 'visible'" class="text-button" @click="chooseReply(reply.id)">回复</button><button v-if="reply.authorId !== me && reply.status === 'visible'" class="text-button" @click="report('reply', reply.id)">举报</button><button v-if="reply.authorId === me && reply.status === 'visible'" class="text-button" @click="startReplyEdit(reply.id, reply.content)">编辑</button><button v-if="(reply.authorId === me || post.authorId === me) && reply.status !== 'deleted'" class="text-button danger" @click="requestDelete('reply', reply.id, reply.authorName)">删除</button></div>
+              <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-400"><span>{{ formatTime(reply.createdAt) }}</span><button v-if="reply.status === 'visible'" class="text-button" @click="like('reply', reply.id)">{{ reply.liked ? '♥' : '♡' }} {{ reply.likeCount }}</button><button v-if="reply.status === 'visible'" class="text-button" @click="chooseReply(reply.id)">回复</button><button v-if="reply.authorId !== me && reply.status === 'visible'" class="text-button" @click="openReport('reply', reply.id)">举报</button><button v-if="reply.authorId === me && reply.status === 'visible'" class="text-button" @click="startReplyEdit(reply.id, reply.content)">编辑</button><button v-if="(reply.authorId === me || post.authorId === me) && reply.status !== 'deleted'" class="text-button danger" @click="requestDelete('reply', reply.id, reply.authorName)">删除</button></div>
             </div>
           </div>
         </section>
       </main>
 
-      <aside class="space-y-4"><div class="surface-panel p-5"><p class="mb-4 text-sm font-semibold">关于作者</p><div class="flex items-center gap-3"><router-link :to="`/profile/${post.authorId}`"><img :src="avatarUrl(post.avatar)" :alt="`${post.authorName}的头像`" class="avatar" /></router-link><div class="min-w-0"><router-link :to="`/profile/${post.authorId}`" class="font-semibold text-sky-300">{{ post.authorName }}</router-link><TitleBadge v-if="post.titleName && post.titleTier" class="mt-1" :name="post.titleName" :tier="post.titleTier" :acquisition-method="post.titleAcquisitionMethod" /></div></div><p class="mt-4 text-xs text-slate-400">发布于 {{ formatTime(post.createdAt) }}</p></div><div class="surface-panel p-5"><p class="text-sm font-semibold">参与讨论</p><p class="mt-2 text-sm leading-6 text-slate-400">喜欢这篇帖子可以点赞，也欢迎在评论区继续交流。</p><router-link to="/forum" class="mt-4 inline-block text-sm text-sky-300 hover:underline">浏览更多帖子 →</router-link></div></aside>
+      <aside class="space-y-4"><div class="surface-panel p-5"><p class="mb-4 text-sm font-semibold">关于作者</p><div class="flex items-center gap-3"><router-link :to="`/profile/${post.authorId}`"><img :src="avatarUrl(post.avatar)" :alt="`${post.authorName}的头像`" class="avatar" /></router-link><div class="min-w-0"><router-link :to="`/profile/${post.authorId}`" class="font-semibold text-sky-300">{{ post.authorName }}</router-link><div v-if="post.titleName && post.titleTier" class="mt-1"><TitleBadge compact :name="post.titleName" :tier="post.titleTier" :acquisition-method="post.titleAcquisitionMethod" /></div></div></div><p class="mt-4 text-xs text-slate-400">发布于 {{ formatTime(post.createdAt) }}</p></div><div class="surface-panel p-5"><p class="text-sm font-semibold">参与讨论</p><p class="mt-2 text-sm leading-6 text-slate-400">喜欢这篇帖子可以点赞，也欢迎在评论区继续交流。</p><router-link to="/forum" class="mt-4 inline-block text-sm text-sky-300 hover:underline">浏览更多帖子 →</router-link></div></aside>
     </div>
     <el-dialog v-model="previewOpen" title="图片预览" width="min(90vw, 800px)"><img :src="previewUrl" alt="图片预览" class="max-h-[70vh] w-full object-contain" /></el-dialog>
+    <ForumReportDialog v-model="reportOpen" :target="reportTarget" @reported="handleReported" />
     <el-dialog v-model="deleteDialogVisible" class="forum-delete-dialog" title="确认删除" width="min(90vw, 440px)" :close-on-click-modal="!deleting" :show-close="!deleting" @closed="deleteTarget = null">
       <p class="text-base font-semibold text-slate-100">{{ deletePrompt }}</p>
       <p class="mt-3 text-sm leading-6 text-slate-400">删除后内容将不再公开显示，此操作无法由用户撤销。</p>
@@ -68,8 +69,9 @@
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import ForumAttachmentPicker from '@/components/ForumAttachmentPicker.vue'
+import ForumReportDialog from '@/components/ForumReportDialog.vue'
 import { forumApi, type ForumPost, type ForumSort } from '@/api/forum'
 import TitleBadge from '@/components/TitleBadge.vue'
 import defaultAvatar from '@/assets/default-avatar.png'
@@ -95,6 +97,8 @@ const editingReplyId = ref<number | null>(null)
 const editReplyContent = ref('')
 const previewUrl = ref('')
 const previewOpen = computed({ get: () => !!previewUrl.value, set: (open) => { if (!open) previewUrl.value = '' } })
+const reportOpen = ref(false)
+const reportTarget = ref<{ type: 'post' | 'reply'; id: number } | null>(null)
 const submitting = ref(false)
 const formError = ref('')
 const userInfo = JSON.parse(sessionStorage.getItem('userInfo') || '{}')
@@ -244,14 +248,10 @@ async function like(type: 'post' | 'reply', id: number): Promise<void> {
   catch (e: any) { ElMessage.error(e?.message || '操作失败') }
 }
 
-async function report(type: 'post' | 'reply', id: number): Promise<void> {
-  try {
-    const result = await ElMessageBox.prompt('请填写举报原因', '举报内容', { inputPattern: /^.{1,100}$/, inputErrorMessage: '请输入1至100字' })
-    await forumApi.report(type, id, result.value)
-    ElMessage.success('举报已提交，内容已隐藏')
-    if (type === 'post') await router.push('/forum')
-    else await load()
-  } catch (e: any) { if (e !== 'cancel' && e !== 'close') ElMessage.error(e?.message || '举报失败') }
+function openReport(type: 'post' | 'reply', id: number): void { reportTarget.value = { type, id }; reportOpen.value = true }
+async function handleReported(target: { type: 'post' | 'reply'; id: number }): Promise<void> {
+  if (target.type === 'post') await router.push('/forum')
+  else await load()
 }
 
 onMounted(() => { void load(); void loadMyAvatar() })

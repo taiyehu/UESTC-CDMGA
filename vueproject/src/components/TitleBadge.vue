@@ -1,9 +1,9 @@
 <template>
-  <span class="title-badge" :class="`title-${tier}`" :title="acquisitionMethod || '暂无获得方式'" tabindex="0">{{ name }}</span>
+  <span class="title-badge" :class="[`title-${tier}`, { 'title-compact': compact }]" :title="acquisitionMethod || '暂无获得方式'" tabindex="0">{{ name }}</span>
 </template>
 
 <script lang="ts" setup>
-defineProps<{ name: string; tier: string; acquisitionMethod?: string | null }>()
+defineProps<{ name: string; tier: string; acquisitionMethod?: string | null; compact?: boolean }>()
 </script>
 
 <style scoped>
@@ -22,6 +22,7 @@ defineProps<{ name: string; tier: string; acquisitionMethod?: string | null }>()
   background: linear-gradient(120deg, rgba(8, 47, 73, 0.9), rgba(14, 116, 144, 0.55));
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.2), 0 0 14px rgba(34, 211, 238, 0.2);
 }
+.title-compact { zoom: .5; }
 
 .title-silver {
   color: #f8fafc;

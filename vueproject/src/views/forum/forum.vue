@@ -32,11 +32,12 @@
         <div v-else-if="!posts.length" class="surface-panel py-14 text-center"><p class="text-lg font-semibold">这里还没有帖子</p><p class="mt-2 text-sm text-slate-400">发布第一篇，开启讨论吧。</p></div>
         <div v-else class="space-y-4">
           <article v-for="post in posts" :key="post.id" class="surface-panel feed-card relative p-5 md:p-6">
-            <button v-if="post.authorId !== me && post.status === 'visible'" class="report-button" :disabled="reportingPostId === post.id" @click="reportPost(post.id)">举报</button>
+            <button v-if="post.authorId !== me && post.status === 'visible'" class="report-button" @click="openReport(post.id)">举报</button>
             <div class="flex gap-3 pr-10">
               <router-link :to="`/profile/${post.authorId}`" class="shrink-0"><img :src="avatarUrl(post.avatar)" :alt="`${post.authorName}的头像`" class="avatar" /></router-link>
               <div class="min-w-0 flex-1">
-                <div class="flex flex-wrap items-center gap-x-2 gap-y-1"><router-link :to="`/profile/${post.authorId}`" class="font-semibold text-sky-300 hover:text-sky-200">{{ post.authorName }}</router-link><TitleBadge v-if="post.titleName && post.titleTier" :name="post.titleName" :tier="post.titleTier" :acquisition-method="post.titleAcquisitionMethod" /><span v-if="post.status !== 'visible'" class="status-tag">{{ post.status === 'hidden' ? '已隐藏' : '已删除' }}</span></div>
+                <div class="flex flex-wrap items-center gap-x-2 gap-y-1"><router-link :to="`/profile/${post.authorId}`" class="font-semibold text-sky-300 hover:text-sky-200">{{ post.authorName }}</router-link><span v-if="post.status !== 'visible'" class="status-tag">{{ post.status === 'hidden' ? '已隐藏' : '已删除' }}</span></div>
+                <div v-if="post.titleName && post.titleTier" class="mt-1"><TitleBadge compact :name="post.titleName" :tier="post.titleTier" :acquisition-method="post.titleAcquisitionMethod" /></div>
                 <p class="mt-1 text-xs text-slate-400">{{ formatTime(post.createdAt) }}</p>
                 <router-link v-if="post.status !== 'deleted'" :to="`/forum/${post.id}`" class="mt-4 block text-xl font-semibold leading-snug hover:text-sky-300">{{ post.title }}</router-link>
                 <h2 v-else class="mt-4 text-xl font-semibold text-slate-400">{{ post.title }}</h2>
@@ -66,15 +67,17 @@
         <div class="surface-panel p-5"><p class="text-sm font-semibold">社区动态</p><p class="mt-3 text-2xl font-bold text-sky-300">{{ total }}</p><p class="text-xs text-slate-400">{{ mine ? '我的帖子' : '当前可见帖子' }}</p><p class="mt-4 border-t border-white/10 pt-4 text-xs leading-5 text-slate-400">请友善交流。发现不合适的内容，可在帖子右上角举报。</p></div>
       </aside>
     </div>
+    <ForumReportDialog v-model="reportOpen" :target="reportTarget" @reported="load" />
   </section>
 </template>
 
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { forumApi, type ForumPost, type ForumSort } from '@/api/forum'
 import ForumAttachmentPicker from '@/components/ForumAttachmentPicker.vue'
+import ForumReportDialog from '@/components/ForumReportDialog.vue'
 import TitleBadge from '@/components/TitleBadge.vue'
 import defaultAvatar from '@/assets/default-avatar.png'
 
@@ -94,7 +97,8 @@ const mine = ref(false)
 const sort = ref<ForumSort>('latest')
 const submitting = ref(false)
 const likingPostId = ref<number | null>(null)
-const reportingPostId = ref<number | null>(null)
+const reportOpen = ref(false)
+const reportTarget = ref<{ type: 'post'; id: number } | null>(null)
 const formError = ref('')
 const userInfo = JSON.parse(sessionStorage.getItem('userInfo') || '{}')
 const me = Number(userInfo.id || userInfo.identityId || 0)
@@ -140,17 +144,7 @@ async function likePost(post: ForumPost): Promise<void> {
   finally { likingPostId.value = null }
 }
 
-async function reportPost(id: number): Promise<void> {
-  if (reportingPostId.value !== null) return
-  try {
-    const result = await ElMessageBox.prompt('请填写举报原因', '举报帖子', { inputPattern: /^.{1,100}$/, inputErrorMessage: '请输入1至100字' })
-    reportingPostId.value = id
-    await forumApi.report('post', id, result.value)
-    ElMessage.success('举报已提交，帖子已隐藏')
-    await load()
-  } catch (e: any) { if (e !== 'cancel' && e !== 'close') ElMessage.error(e?.message || '举报失败') }
-  finally { reportingPostId.value = null }
-}
+function openReport(id: number): void { reportTarget.value = { type: 'post', id }; reportOpen.value = true }
 
 async function publish(): Promise<void> {
   if (!title.value.trim() || !content.value.trim()) { formError.value = '请填写标题和正文'; return }

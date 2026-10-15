@@ -33,6 +33,7 @@ declare module 'vue' {
     ElSelect: typeof import('element-plus/es')['ElSelect']
     ElUpload: typeof import('element-plus/es')['ElUpload']
     ForumAttachmentPicker: typeof import('./src/components/ForumAttachmentPicker.vue')['default']
+    ForumReportDialog: typeof import('./src/components/ForumReportDialog.vue')['default']
     GlobalBackground: typeof import('./src/components/GlobalBackground.vue')['default']
     MaimaiRing: typeof import('./src/components/effects/MaimaiRing.vue')['default']
     Navbar: typeof import('./src/components/Navbar.vue')['default']
