@@ -83,7 +83,7 @@ public class ForumService {
         post.put("files", files(postId));
         String replyFilter = admin ? "" : " AND (r.status = 'visible' OR (r.status = 'hidden' AND (r.author_id = ? OR ? = (SELECT author_id FROM forum_post WHERE id = r.post_id))))";
         List<Map<String, Object>> replies = admin
-            ? jdbc.queryForList("SELECT " + REPLY_FIELDS + ", EXISTS(SELECT 1 FROM forum_reply_like l WHERE l.reply_id = r.id AND l.identity_id = ?) AS liked FROM forum_reply r JOIN identity i ON i.id = r.author_id" + TITLE_JOIN + " WHERE r.post_id = ? ORDER BY " + replyOrder(replySort), viewer, postId)
+            ? jdbc.queryForList("SELECT " + REPLY_FIELDS + ", EXISTS(SELECT 1 FROM forum_reply_like l WHERE l.reply_id = r.id AND l.identity_id = ?) AS liked FROM forum_reply r JOIN identity i ON i.id = r.author_id" + TITLE_JOIN + " WHERE r.post_id = ? AND r.status <> 'deleted' ORDER BY " + replyOrder(replySort), viewer, postId)
             : jdbc.queryForList("SELECT " + REPLY_FIELDS + ", EXISTS(SELECT 1 FROM forum_reply_like l WHERE l.reply_id = r.id AND l.identity_id = ?) AS liked FROM forum_reply r JOIN identity i ON i.id = r.author_id" + TITLE_JOIN + " WHERE r.post_id = ?" + replyFilter + " ORDER BY " + replyOrder(replySort), viewer, postId, viewer, viewer);
         List<Map<String, Object>> replyReferences = jdbc.queryForList("SELECT r.id, r.parent_reply_id AS parentReplyId, i.account AS authorName FROM forum_reply r JOIN identity i ON i.id = r.author_id WHERE r.post_id = ? ORDER BY r.created_at, r.id", postId);
         Map<Long, Long> parents = new HashMap<>();

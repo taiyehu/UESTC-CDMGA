@@ -1,17 +1,17 @@
 <template>
-  <section class="forum-page mx-auto max-w-7xl px-4 pb-14 pt-6 text-cyan-50 md:px-8">
-    <router-link to="/forum" class="mb-5 inline-flex items-center gap-2 text-sm text-slate-300 hover:text-sky-300">← 返回论坛</router-link>
+  <section class="forum-page mx-auto max-w-7xl px-4 pb-14 pt-6 text-left text-cyan-50 md:px-8">
+    <router-link to="/forum" class="mb-5 flex w-fit items-center gap-2 rounded-full border border-white/20 bg-slate-800/80 px-4 py-2 text-sm text-slate-200 transition-colors hover:border-sky-400/60 hover:bg-slate-700 hover:text-sky-300">← 返回论坛</router-link>
     <p v-if="loading" class="surface-panel py-12 text-center text-slate-400">正在加载帖子...</p>
     <p v-else-if="error" class="surface-panel py-12 text-center text-rose-300">{{ error }}</p>
     <div v-else-if="post" class="forum-layout">
       <main class="min-w-0 space-y-4">
-        <article class="surface-panel p-5 md:p-7">
+        <article class="surface-panel p-5 text-left md:p-7">
           <div class="flex items-start gap-3">
             <router-link :to="`/profile/${post.authorId}`" class="shrink-0"><img :src="avatarUrl(post.avatar)" :alt="`${post.authorName}的头像`" class="avatar" /></router-link>
             <div class="flex min-w-0 flex-1 flex-col items-start gap-1"><div class="flex flex-wrap items-center gap-2"><router-link :to="`/profile/${post.authorId}`" class="font-semibold text-sky-300 hover:text-sky-200">{{ post.authorName }}</router-link><span v-if="post.status !== 'visible'" class="status-tag">{{ statusText(post.status) }}</span></div><TitleBadge v-if="post.titleName && post.titleTier" compact :name="post.titleName" :tier="post.titleTier" :acquisition-method="post.titleAcquisitionMethod" /></div>
           </div>
-          <h1 class="mt-5 break-words text-2xl font-bold leading-tight">{{ post.title }}</h1>
-          <div class="mt-4">
+          <h1 class="mt-5 break-words text-left text-2xl font-bold leading-tight">{{ post.title }}</h1>
+          <div class="mt-4 text-left">
             <template v-if="editingPost">
               <input v-model="editTitle" maxlength="120" class="forum-input" placeholder="标题" />
               <textarea v-model="editContent" maxlength="10000" rows="6" class="forum-input mt-3" placeholder="正文" />
@@ -19,7 +19,7 @@
               <ForumAttachmentPicker ref="editAttachments" class="mt-3" :max-images="6" :max-files="3" :existing-image-count="post.images.length" :existing-file-count="post.files.length" :disabled="submitting" />
               <div class="mt-4 flex gap-2"><button class="primary-button" :disabled="submitting" @click="savePostEdit">保存修改</button><button class="secondary-button" @click="editingPost = false">取消</button></div>
             </template>
-            <p v-else class="whitespace-pre-wrap break-words leading-8 text-slate-200">{{ post.content }}</p>
+            <p v-else class="whitespace-pre-wrap break-words text-left leading-8 text-slate-200">{{ post.content }}</p>
             <div v-if="post.images?.length" class="mt-5 grid max-w-2xl grid-cols-2 gap-2 sm:grid-cols-3">
               <div v-for="image in post.images" :key="image.id"><button type="button" class="w-full" @click="previewUrl = image.url"><img :src="image.url" alt="帖子图片" class="post-image" /></button><button v-if="editingPost" class="text-button mt-1" @click="removeImage(image.id)">移除图片</button></div>
             </div>
