@@ -20,6 +20,7 @@
           <div class="mt-3 flex flex-wrap gap-2">
             <router-link :to="`/forum/${item.postId || item.replyPostId}`" class="forum-button">查看内容</router-link>
             <button class="forum-button" @click="showActions(item.postId ? 'post' : 'reply', item.postId || item.replyId)">操作记录</button>
+            <button class="forum-button" @click="showEdits(item.postId ? 'post' : 'reply', item.postId || item.replyId)">修改历史</button>
             <template v-if="item.status === 'pending'">
               <button class="forum-button" @click="moderate(item.postId ? 'post' : 'reply', item.postId || item.replyId, 'retain')">保留</button>
               <button class="forum-button" @click="moderate(item.postId ? 'post' : 'reply', item.postId || item.replyId, 'delete')">删除</button>
@@ -34,6 +35,7 @@
           <p class="mt-2 text-sm text-cyan-100/70">{{ item.authorName }} · {{ formatTime(item.createdAt) }} · {{ item.replyCount }} 条可见回复</p>
           <div class="mt-3 flex flex-wrap gap-2">
             <button class="forum-button" @click="showActions('post', item.id)">操作记录</button>
+            <button class="forum-button" @click="showEdits('post', item.id)">修改历史</button>
             <template v-if="item.status !== 'deleted'">
               <button class="forum-button" @click="moderate('post', item.id, 'retain')">保留</button>
               <button class="forum-button" @click="moderate('post', item.id, 'delete')">删除</button>
@@ -55,6 +57,15 @@
         <p v-if="action.reason" class="mt-1 text-cyan-100/70">{{ action.reason }}</p>
       </div>
     </el-dialog>
+    <el-dialog v-model="editsVisible" title="修改历史" width="min(90vw, 750px)">
+      <div v-if="!edits.length" class="text-cyan-100/70">暂无修改记录</div>
+      <div v-for="edit in edits" :key="edit.id" class="border-b border-cyan-200/20 py-3 text-sm text-cyan-50">
+        <p>{{ formatTime(edit.createdAt) }} · {{ edit.editorName }}</p>
+        <p v-if="edit.oldTitle !== null" class="mt-2 break-words text-cyan-100/70">标题：{{ edit.oldTitle }} → {{ edit.newTitle }}</p>
+        <p class="mt-2 whitespace-pre-wrap break-words text-cyan-100/70">原内容：{{ edit.oldContent }}</p>
+        <p class="mt-1 whitespace-pre-wrap break-words">修改后：{{ edit.newContent }}</p>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -71,6 +82,8 @@ const loading = ref(false)
 const error = ref('')
 const actionsVisible = ref(false)
 const actions = ref<any[]>([])
+const editsVisible = ref(false)
+const edits = ref<any[]>([])
 function formatTime(value: string): string { return value ? new Date(value).toLocaleString('zh-CN') : '' }
 function statusText(status: string): string { return ({ pending: '待处理', retained: '已保留', deleted: '已删除', visible: '可见', hidden: '已隐藏' } as Record<string, string>)[status] || status }
 function changePage(value: number): void { page.value = value; void load() }
@@ -88,6 +101,11 @@ async function load(): Promise<void> {
 
 async function showActions(type: 'post' | 'reply', id: number): Promise<void> {
   try { actions.value = await forumApi.actions(type, id); actionsVisible.value = true }
+  catch (e: any) { ElMessage.error(e?.message || '加载失败') }
+}
+
+async function showEdits(type: 'post' | 'reply', id: number): Promise<void> {
+  try { edits.value = await forumApi.edits(type, id); editsVisible.value = true }
   catch (e: any) { ElMessage.error(e?.message || '加载失败') }
 }
 

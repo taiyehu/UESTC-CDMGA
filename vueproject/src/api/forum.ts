@@ -1,6 +1,7 @@
 import request from '@/utils/request'
 
 export type ForumImage = { id: number; url: string }
+export type ForumFile = { id: number; url: string; name: string }
 export type ForumReply = {
   id: number
   postId: number
@@ -28,6 +29,7 @@ export type ForumPost = {
   replyCount: number
   liked: boolean | number
   images: ForumImage[]
+  files: ForumFile[]
   replies?: ForumReply[]
 }
 export type Page<T> = { list: T[]; total: number }
@@ -50,8 +52,8 @@ function data<T>(response: any): T {
 }
 
 export const forumApi = {
-  async posts(page = 0): Promise<Page<ForumPost>> {
-    return data(await request.get('/forum/posts', { params: { page, size: 10 }, withCredentials: true }))
+  async posts(page = 0, mine = false): Promise<Page<ForumPost>> {
+    return data(await request.get('/forum/posts', { params: { page, size: 10, mine }, withCredentials: true }))
   },
   async post(id: number): Promise<ForumPost> {
     return data(await request.get(`/forum/posts/${id}`, { withCredentials: true }))
@@ -64,10 +66,30 @@ export const forumApi = {
     const response = data<{ id: number }>(await request.post(`/forum/posts/${postId}/replies`, { content, parentReplyId }, { withCredentials: true }))
     return response.id
   },
+  async editPost(id: number, title: string, content: string): Promise<void> {
+    data(await request.patch(`/forum/posts/${id}`, { title, content }, { withCredentials: true }))
+  },
+  async editReply(id: number, content: string): Promise<void> {
+    data(await request.patch(`/forum/replies/${id}`, { content }, { withCredentials: true }))
+  },
+  async deleteContent(type: 'post' | 'reply', id: number): Promise<void> {
+    data(await request.delete(`/forum/${type}/${id}`, { withCredentials: true }))
+  },
   async upload(type: 'post' | 'reply', id: number, file: File): Promise<void> {
     const form = new FormData()
     form.append('image', file)
     data(await request.post(`/forum/${type}/${id}/images`, form, { withCredentials: true, timeout: 30000 }))
+  },
+  async uploadFile(postId: number, file: File): Promise<void> {
+    const form = new FormData()
+    form.append('file', file)
+    data(await request.post(`/forum/posts/${postId}/files`, form, { withCredentials: true, timeout: 30000 }))
+  },
+  async removeImage(id: number): Promise<void> {
+    data(await request.delete(`/forum/images/${id}`, { withCredentials: true }))
+  },
+  async removeFile(id: number): Promise<void> {
+    data(await request.delete(`/forum/files/${id}`, { withCredentials: true }))
   },
   async like(type: 'post' | 'reply', id: number): Promise<boolean> {
     return data<{ liked: boolean }>(await request.post(`/forum/${type}/${id}/like`, null, { withCredentials: true })).liked
@@ -83,6 +105,9 @@ export const forumApi = {
   },
   async actions(type: 'post' | 'reply', id: number): Promise<any[]> {
     return data(await request.get(`/forum/admin/${type}/${id}/actions`, { withCredentials: true }))
+  },
+  async edits(type: 'post' | 'reply', id: number): Promise<any[]> {
+    return data(await request.get(`/forum/admin/${type}/${id}/edits`, { withCredentials: true }))
   },
   async moderate(type: 'post' | 'reply', id: number, decision: 'retain' | 'delete', reason: string): Promise<void> {
     data(await request.post(`/forum/admin/${type}/${id}/moderate`, { decision, reason }, { withCredentials: true }))

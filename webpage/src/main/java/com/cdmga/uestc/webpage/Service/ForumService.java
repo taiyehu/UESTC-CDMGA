@@ -54,20 +54,33 @@ public class ForumService {
         if (!isAdmin(id)) throw new IllegalArgumentException("需要管理员权限");
     }
 
-    public Map<String, Object> listPosts(int page, int size, Integer viewer) {
+    public Map<String, Object> listPosts(int page, int size, Integer viewer, boolean mine) {
         int limit = size(size);
-        List<Map<String, Object>> posts = jdbc.queryForList("SELECT " + POST_FIELDS + ", EXISTS(SELECT 1 FROM forum_post_like l WHERE l.post_id = p.id AND l.identity_id = ?) AS liked FROM forum_post p JOIN identity i ON i.id = p.author_id WHERE p.status = 'visible' ORDER BY p.created_at DESC, p.id DESC LIMIT ? OFFSET ?", viewer, limit, page(page) * limit);
-        posts.forEach(post -> post.put("images", images("post", ((Number) post.get("id")).longValue())));
-        Long total = jdbc.queryForObject("SELECT COUNT(*) FROM forum_post WHERE status = 'visible'", Long.class);
+        if (mine && viewer == null) throw new IllegalArgumentException("请重新登录");
+        String filter = mine ? "p.author_id = ?" : "p.status = 'visible'";
+        List<Map<String, Object>> posts = mine
+            ? jdbc.queryForList("SELECT " + POST_FIELDS + ", EXISTS(SELECT 1 FROM forum_post_like l WHERE l.post_id = p.id AND l.identity_id = ?) AS liked FROM forum_post p JOIN identity i ON i.id = p.author_id WHERE " + filter + " ORDER BY p.created_at DESC, p.id DESC LIMIT ? OFFSET ?", viewer, viewer, limit, page(page) * limit)
+            : jdbc.queryForList("SELECT " + POST_FIELDS + ", EXISTS(SELECT 1 FROM forum_post_like l WHERE l.post_id = p.id AND l.identity_id = ?) AS liked FROM forum_post p JOIN identity i ON i.id = p.author_id WHERE " + filter + " ORDER BY p.created_at DESC, p.id DESC LIMIT ? OFFSET ?", viewer, limit, page(page) * limit);
+        posts.forEach(post -> {
+            long id = ((Number) post.get("id")).longValue();
+            post.put("images", images("post", id));
+            post.put("files", files(id));
+        });
+        Long total = mine ? jdbc.queryForObject("SELECT COUNT(*) FROM forum_post WHERE author_id = ?", Long.class, viewer) : jdbc.queryForObject("SELECT COUNT(*) FROM forum_post WHERE status = 'visible'", Long.class);
         return Map.of("list", posts, "total", total == null ? 0 : total);
     }
 
     public Map<String, Object> post(long postId, Integer viewer, boolean admin) {
-        String statusFilter = admin ? "" : " AND p.status = 'visible'";
-        Map<String, Object> post = one("SELECT " + POST_FIELDS + ", EXISTS(SELECT 1 FROM forum_post_like l WHERE l.post_id = p.id AND l.identity_id = ?) AS liked FROM forum_post p JOIN identity i ON i.id = p.author_id WHERE p.id = ?" + statusFilter, viewer, postId);
+        String statusFilter = admin ? "" : " AND (p.status = 'visible' OR (p.status = 'hidden' AND p.author_id = ?))";
+        Map<String, Object> post = admin
+            ? one("SELECT " + POST_FIELDS + ", EXISTS(SELECT 1 FROM forum_post_like l WHERE l.post_id = p.id AND l.identity_id = ?) AS liked FROM forum_post p JOIN identity i ON i.id = p.author_id WHERE p.id = ?", viewer, postId)
+            : one("SELECT " + POST_FIELDS + ", EXISTS(SELECT 1 FROM forum_post_like l WHERE l.post_id = p.id AND l.identity_id = ?) AS liked FROM forum_post p JOIN identity i ON i.id = p.author_id WHERE p.id = ?" + statusFilter, viewer, postId, viewer);
         post.put("images", images("post", postId));
-        String replyFilter = admin ? "" : " AND r.status = 'visible'";
-        List<Map<String, Object>> replies = jdbc.queryForList("SELECT " + REPLY_FIELDS + ", EXISTS(SELECT 1 FROM forum_reply_like l WHERE l.reply_id = r.id AND l.identity_id = ?) AS liked FROM forum_reply r JOIN identity i ON i.id = r.author_id WHERE r.post_id = ?" + replyFilter + " ORDER BY r.created_at, r.id", viewer, postId);
+        post.put("files", files(postId));
+        String replyFilter = admin ? "" : " AND (r.status = 'visible' OR (r.status = 'hidden' AND (r.author_id = ? OR ? = (SELECT author_id FROM forum_post WHERE id = r.post_id))))";
+        List<Map<String, Object>> replies = admin
+            ? jdbc.queryForList("SELECT " + REPLY_FIELDS + ", EXISTS(SELECT 1 FROM forum_reply_like l WHERE l.reply_id = r.id AND l.identity_id = ?) AS liked FROM forum_reply r JOIN identity i ON i.id = r.author_id WHERE r.post_id = ? ORDER BY r.created_at, r.id", viewer, postId)
+            : jdbc.queryForList("SELECT " + REPLY_FIELDS + ", EXISTS(SELECT 1 FROM forum_reply_like l WHERE l.reply_id = r.id AND l.identity_id = ?) AS liked FROM forum_reply r JOIN identity i ON i.id = r.author_id WHERE r.post_id = ?" + replyFilter + " ORDER BY r.created_at, r.id", viewer, postId, viewer, viewer);
         replies.forEach(reply -> reply.put("images", images("reply", ((Number) reply.get("id")).longValue())));
         post.put("replies", replies);
         return post;
@@ -77,13 +90,29 @@ public class ForumService {
         return jdbc.queryForList("SELECT id, storage_path AS url FROM forum_image WHERE " + targetColumn(type) + " = ? ORDER BY sort_order, id", id);
     }
 
+    public List<Map<String, Object>> files(long postId) {
+        return jdbc.queryForList("SELECT id, storage_path AS url, original_name AS name FROM forum_file WHERE post_id = ? ORDER BY id", postId);
+    }
+
     public boolean canViewImage(String path, Integer viewer) {
         if (viewer != null && isAdmin(viewer)) {
             Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM forum_image WHERE storage_path = ?", Integer.class, path);
             return count != null && count > 0;
         }
-        Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM forum_image im LEFT JOIN forum_post p ON p.id = im.post_id LEFT JOIN forum_reply r ON r.id = im.reply_id LEFT JOIN forum_post rp ON rp.id = r.post_id WHERE im.storage_path = ? AND ((p.status = 'visible') OR (r.status = 'visible' AND rp.status = 'visible'))", Integer.class, path);
+        Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM forum_image im LEFT JOIN forum_post p ON p.id = im.post_id LEFT JOIN forum_reply r ON r.id = im.reply_id LEFT JOIN forum_post rp ON rp.id = r.post_id WHERE im.storage_path = ? AND ((p.status = 'visible' OR (p.status = 'hidden' AND p.author_id = ?)) OR (r.status = 'visible' AND rp.status = 'visible') OR (r.status = 'hidden' AND rp.status <> 'deleted' AND (r.author_id = ? OR rp.author_id = ?)))", Integer.class, path, viewer, viewer, viewer);
         return count != null && count > 0;
+    }
+
+    public boolean canViewFile(String path, Integer viewer) {
+        Integer count = viewer != null && isAdmin(viewer)
+            ? jdbc.queryForObject("SELECT COUNT(*) FROM forum_file WHERE storage_path = ?", Integer.class, path)
+            : jdbc.queryForObject("SELECT COUNT(*) FROM forum_file f JOIN forum_post p ON p.id = f.post_id WHERE f.storage_path = ? AND (p.status = 'visible' OR (p.status = 'hidden' AND p.author_id = ?))", Integer.class, path, viewer);
+        return count != null && count > 0;
+    }
+
+    public String originalFileName(String path) {
+        Map<String, Object> row = one("SELECT original_name AS name FROM forum_file WHERE storage_path = ?", path);
+        return (String) row.get("name");
     }
 
     @Transactional
@@ -127,10 +156,72 @@ public class ForumService {
     public void addImage(Integer userId, String type, long id, String path) {
         Map<String, Object> target = one("SELECT author_id AS authorId, status FROM " + table(type) + " WHERE id = ? FOR UPDATE", id);
         if (((Number) target.get("authorId")).intValue() != userId || !"visible".equals(target.get("status"))) throw new IllegalArgumentException("只能给自己的可见内容添加图片");
+        if ("reply".equals(type)) one("SELECT p.id FROM forum_reply r JOIN forum_post p ON p.id = r.post_id WHERE r.id = ? AND p.status = 'visible'", id);
         Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM forum_image WHERE " + targetColumn(type) + " = ?", Integer.class, id);
         int max = "post".equals(type) ? 6 : 1;
         if (count != null && count >= max) throw new IllegalArgumentException("图片数量已达上限");
         jdbc.update("INSERT INTO forum_image (" + targetColumn(type) + ", storage_path, sort_order) VALUES (?, ?, ?)", id, path, count == null ? 0 : count);
+    }
+
+    @Transactional
+    public void addFile(Integer userId, long postId, String path, String originalName) {
+        Map<String, Object> post = one("SELECT author_id AS authorId, status FROM forum_post WHERE id = ? FOR UPDATE", postId);
+        if (((Number) post.get("authorId")).intValue() != userId || !"visible".equals(post.get("status"))) throw new IllegalArgumentException("只能给自己的可见帖子添加文件");
+        Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM forum_file WHERE post_id = ?", Integer.class, postId);
+        if (count != null && count >= 3) throw new IllegalArgumentException("帖子最多添加3个文件");
+        jdbc.update("INSERT INTO forum_file (post_id, storage_path, original_name) VALUES (?, ?, ?)", postId, path, originalName);
+    }
+
+    @Transactional
+    public String removeImage(Integer userId, long imageId) {
+        Map<String, Object> image = one("SELECT im.storage_path AS path, COALESCE(p.author_id, r.author_id) AS authorId, COALESCE(p.status, r.status) AS status, rp.status AS postStatus FROM forum_image im LEFT JOIN forum_post p ON p.id = im.post_id LEFT JOIN forum_reply r ON r.id = im.reply_id LEFT JOIN forum_post rp ON rp.id = r.post_id WHERE im.id = ? FOR UPDATE", imageId);
+        if (((Number) image.get("authorId")).intValue() != userId || !"visible".equals(image.get("status")) || (image.get("postStatus") != null && !"visible".equals(image.get("postStatus")))) throw new IllegalArgumentException("只能移除自己可见内容的图片");
+        jdbc.update("DELETE FROM forum_image WHERE id = ?", imageId);
+        return (String) image.get("path");
+    }
+
+    @Transactional
+    public String removeFile(Integer userId, long fileId) {
+        Map<String, Object> file = one("SELECT f.storage_path AS path, p.author_id AS authorId, p.status FROM forum_file f JOIN forum_post p ON p.id = f.post_id WHERE f.id = ? FOR UPDATE", fileId);
+        if (((Number) file.get("authorId")).intValue() != userId || !"visible".equals(file.get("status"))) throw new IllegalArgumentException("只能移除自己可见帖子的文件");
+        jdbc.update("DELETE FROM forum_file WHERE id = ?", fileId);
+        return (String) file.get("path");
+    }
+
+    @Transactional
+    public void editPost(Integer userId, long postId, String title, String content) {
+        String cleanTitle = title == null ? "" : title.trim();
+        String cleanContent = content == null ? "" : content.trim();
+        if (cleanTitle.isEmpty() || cleanTitle.length() > 120 || cleanContent.isEmpty() || cleanContent.length() > 10000) throw new IllegalArgumentException("标题需为1至120字，正文需为1至10000字");
+        Map<String, Object> old = one("SELECT author_id AS authorId, title, content, status FROM forum_post WHERE id = ? FOR UPDATE", postId);
+        if (((Number) old.get("authorId")).intValue() != userId || !"visible".equals(old.get("status"))) throw new IllegalArgumentException("只能修改自己的可见帖子");
+        jdbc.update("INSERT INTO forum_edit_history (post_id, editor_id, old_title, new_title, old_content, new_content) VALUES (?, ?, ?, ?, ?, ?)", postId, userId, old.get("title"), cleanTitle, old.get("content"), cleanContent);
+        jdbc.update("UPDATE forum_post SET title = ?, content = ? WHERE id = ?", cleanTitle, cleanContent, postId);
+    }
+
+    @Transactional
+    public void editReply(Integer userId, long replyId, String content) {
+        String cleanContent = content == null ? "" : content.trim();
+        if (cleanContent.isEmpty() || cleanContent.length() > 3000) throw new IllegalArgumentException("回复需为1至3000字");
+        Map<String, Object> old = one("SELECT r.author_id AS authorId, r.content, r.status, p.status AS postStatus FROM forum_reply r JOIN forum_post p ON p.id = r.post_id WHERE r.id = ? FOR UPDATE", replyId);
+        if (((Number) old.get("authorId")).intValue() != userId || !"visible".equals(old.get("status")) || !"visible".equals(old.get("postStatus"))) throw new IllegalArgumentException("只能修改自己的可见回复");
+        jdbc.update("INSERT INTO forum_edit_history (reply_id, editor_id, old_content, new_content) VALUES (?, ?, ?, ?)", replyId, userId, old.get("content"), cleanContent);
+        jdbc.update("UPDATE forum_reply SET content = ? WHERE id = ?", cleanContent, replyId);
+    }
+
+    @Transactional
+    public void deleteOwnContent(Integer userId, String type, long id) {
+        Map<String, Object> target = "post".equals(type)
+            ? one("SELECT author_id AS authorId, status FROM forum_post WHERE id = ? FOR UPDATE", id)
+            : one("SELECT r.author_id AS authorId, p.author_id AS postAuthorId, r.status FROM forum_reply r JOIN forum_post p ON p.id = r.post_id WHERE r.id = ? FOR UPDATE", id);
+        if ("deleted".equals(target.get("status"))) throw new IllegalArgumentException("内容已删除");
+        boolean own = ((Number) target.get("authorId")).intValue() == userId;
+        boolean postOwner = "reply".equals(type) && ((Number) target.get("postAuthorId")).intValue() == userId;
+        if (!own && !postOwner) throw new IllegalArgumentException("没有删除权限");
+        String previous = (String) target.get("status");
+        jdbc.update("UPDATE " + table(type) + " SET status = 'deleted', deleted_at = CURRENT_TIMESTAMP WHERE id = ?", id);
+        jdbc.update("UPDATE forum_report SET status = 'deleted', handled_by = ?, handled_at = CURRENT_TIMESTAMP WHERE " + targetColumn(type) + " = ? AND status = 'pending'", userId, id);
+        action(type, id, userId, postOwner && !own ? "post_owner_delete" : "author_delete", "用户主动删除", previous, "deleted");
     }
 
     @Transactional
@@ -186,6 +277,11 @@ public class ForumService {
     public List<Map<String, Object>> adminActions(Integer adminId, String type, long id) {
         requireAdmin(adminId);
         return jdbc.queryForList("SELECT a.id, a.operator_id AS operatorId, i.account AS operatorName, a.action, a.reason, a.previous_status AS previousStatus, a.new_status AS newStatus, a.created_at AS createdAt FROM forum_moderation_action a LEFT JOIN identity i ON i.id = a.operator_id WHERE a." + targetColumn(type) + " = ? ORDER BY a.id DESC", id);
+    }
+
+    public List<Map<String, Object>> adminEdits(Integer adminId, String type, long id) {
+        requireAdmin(adminId);
+        return jdbc.queryForList("SELECT e.id, e.editor_id AS editorId, i.account AS editorName, e.old_title AS oldTitle, e.new_title AS newTitle, e.old_content AS oldContent, e.new_content AS newContent, e.created_at AS createdAt FROM forum_edit_history e JOIN identity i ON i.id = e.editor_id WHERE e." + targetColumn(type) + " = ? ORDER BY e.id DESC", id);
     }
 
     @Transactional
