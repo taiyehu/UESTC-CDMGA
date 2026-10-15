@@ -15,11 +15,14 @@ public class ForumService {
     @Autowired
     private JdbcTemplate jdbc;
 
-    private static final String POST_FIELDS = "p.id, p.author_id AS authorId, i.account AS authorName, p.title, p.content, p.status, p.created_at AS createdAt, p.updated_at AS updatedAt, (SELECT pr.avatar FROM profile pr WHERE pr.identity_id = i.id AND pr.status = 1 ORDER BY pr.id DESC LIMIT 1) AS avatar, (SELECT COUNT(*) FROM forum_post_like l WHERE l.post_id = p.id) AS likeCount, (SELECT COUNT(*) FROM forum_reply r WHERE r.post_id = p.id AND r.status = 'visible') AS replyCount";
-    private static final String REPLY_FIELDS = "r.id, r.post_id AS postId, r.parent_reply_id AS parentReplyId, r.author_id AS authorId, i.account AS authorName, r.content, r.status, r.created_at AS createdAt, (SELECT pr.avatar FROM profile pr WHERE pr.identity_id = i.id AND pr.status = 1 ORDER BY pr.id DESC LIMIT 1) AS avatar, (SELECT COUNT(*) FROM forum_reply_like l WHERE l.reply_id = r.id) AS likeCount";
+    private static final String POST_FIELDS = "p.id, p.author_id AS authorId, i.account AS authorName, td.name AS titleName, td.tier AS titleTier, td.acquisition_method AS titleAcquisitionMethod, p.title, p.content, p.status, p.created_at AS createdAt, p.updated_at AS updatedAt, (SELECT pr.avatar FROM profile pr WHERE pr.identity_id = i.id AND pr.status = 1 ORDER BY pr.id DESC LIMIT 1) AS avatar, (SELECT COUNT(*) FROM forum_post_like l WHERE l.post_id = p.id) AS likeCount, (SELECT COUNT(*) FROM forum_reply r WHERE r.post_id = p.id AND r.status = 'visible') AS replyCount";
+    private static final String REPLY_FIELDS = "r.id, r.post_id AS postId, r.parent_reply_id AS parentReplyId, r.author_id AS authorId, i.account AS authorName, td.name AS titleName, td.tier AS titleTier, td.acquisition_method AS titleAcquisitionMethod, r.content, r.status, r.created_at AS createdAt, (SELECT pr.avatar FROM profile pr WHERE pr.identity_id = i.id AND pr.status = 1 ORDER BY pr.id DESC LIMIT 1) AS avatar, (SELECT COUNT(*) FROM forum_reply_like l WHERE l.reply_id = r.id) AS likeCount";
+    private static final String TITLE_JOIN = " LEFT JOIN title_award ta ON ta.identity_id = i.id AND ta.status = 'approved' AND ta.is_equipped = 1 LEFT JOIN title_definition td ON td.id = ta.title_id";
 
     private int page(int page) { return Math.max(0, page); }
     private int size(int size) { return Math.min(50, Math.max(1, size)); }
+    private String postOrder(String sort) { return "likes".equals(sort) ? "likeCount DESC, p.created_at DESC, p.id DESC" : "p.created_at DESC, p.id DESC"; }
+    private String replyOrder(String sort) { return "likes".equals(sort) ? "likeCount DESC, r.created_at DESC, r.id DESC" : "r.created_at, r.id"; }
 
     private Map<String, Object> one(String sql, Object... args) {
         List<Map<String, Object>> rows = jdbc.queryForList(sql, args);
@@ -54,13 +57,13 @@ public class ForumService {
         if (!isAdmin(id)) throw new IllegalArgumentException("需要管理员权限");
     }
 
-    public Map<String, Object> listPosts(int page, int size, Integer viewer, boolean mine) {
+    public Map<String, Object> listPosts(int page, int size, Integer viewer, boolean mine, String sort) {
         int limit = size(size);
         if (mine && viewer == null) throw new IllegalArgumentException("请重新登录");
         String filter = mine ? "p.author_id = ?" : "p.status = 'visible'";
         List<Map<String, Object>> posts = mine
-            ? jdbc.queryForList("SELECT " + POST_FIELDS + ", EXISTS(SELECT 1 FROM forum_post_like l WHERE l.post_id = p.id AND l.identity_id = ?) AS liked FROM forum_post p JOIN identity i ON i.id = p.author_id WHERE " + filter + " ORDER BY p.created_at DESC, p.id DESC LIMIT ? OFFSET ?", viewer, viewer, limit, page(page) * limit)
-            : jdbc.queryForList("SELECT " + POST_FIELDS + ", EXISTS(SELECT 1 FROM forum_post_like l WHERE l.post_id = p.id AND l.identity_id = ?) AS liked FROM forum_post p JOIN identity i ON i.id = p.author_id WHERE " + filter + " ORDER BY p.created_at DESC, p.id DESC LIMIT ? OFFSET ?", viewer, limit, page(page) * limit);
+            ? jdbc.queryForList("SELECT " + POST_FIELDS + ", EXISTS(SELECT 1 FROM forum_post_like l WHERE l.post_id = p.id AND l.identity_id = ?) AS liked FROM forum_post p JOIN identity i ON i.id = p.author_id" + TITLE_JOIN + " WHERE " + filter + " ORDER BY " + postOrder(sort) + " LIMIT ? OFFSET ?", viewer, viewer, limit, page(page) * limit)
+            : jdbc.queryForList("SELECT " + POST_FIELDS + ", EXISTS(SELECT 1 FROM forum_post_like l WHERE l.post_id = p.id AND l.identity_id = ?) AS liked FROM forum_post p JOIN identity i ON i.id = p.author_id" + TITLE_JOIN + " WHERE " + filter + " ORDER BY " + postOrder(sort) + " LIMIT ? OFFSET ?", viewer, limit, page(page) * limit);
         posts.forEach(post -> {
             long id = ((Number) post.get("id")).longValue();
             post.put("images", images("post", id));
@@ -70,17 +73,17 @@ public class ForumService {
         return Map.of("list", posts, "total", total == null ? 0 : total);
     }
 
-    public Map<String, Object> post(long postId, Integer viewer, boolean admin) {
+    public Map<String, Object> post(long postId, Integer viewer, boolean admin, String replySort) {
         String statusFilter = admin ? "" : " AND (p.status = 'visible' OR (p.status = 'hidden' AND p.author_id = ?))";
         Map<String, Object> post = admin
-            ? one("SELECT " + POST_FIELDS + ", EXISTS(SELECT 1 FROM forum_post_like l WHERE l.post_id = p.id AND l.identity_id = ?) AS liked FROM forum_post p JOIN identity i ON i.id = p.author_id WHERE p.id = ?", viewer, postId)
-            : one("SELECT " + POST_FIELDS + ", EXISTS(SELECT 1 FROM forum_post_like l WHERE l.post_id = p.id AND l.identity_id = ?) AS liked FROM forum_post p JOIN identity i ON i.id = p.author_id WHERE p.id = ?" + statusFilter, viewer, postId, viewer);
+            ? one("SELECT " + POST_FIELDS + ", EXISTS(SELECT 1 FROM forum_post_like l WHERE l.post_id = p.id AND l.identity_id = ?) AS liked FROM forum_post p JOIN identity i ON i.id = p.author_id" + TITLE_JOIN + " WHERE p.id = ?", viewer, postId)
+            : one("SELECT " + POST_FIELDS + ", EXISTS(SELECT 1 FROM forum_post_like l WHERE l.post_id = p.id AND l.identity_id = ?) AS liked FROM forum_post p JOIN identity i ON i.id = p.author_id" + TITLE_JOIN + " WHERE p.id = ?" + statusFilter, viewer, postId, viewer);
         post.put("images", images("post", postId));
         post.put("files", files(postId));
         String replyFilter = admin ? "" : " AND (r.status = 'visible' OR (r.status = 'hidden' AND (r.author_id = ? OR ? = (SELECT author_id FROM forum_post WHERE id = r.post_id))))";
         List<Map<String, Object>> replies = admin
-            ? jdbc.queryForList("SELECT " + REPLY_FIELDS + ", EXISTS(SELECT 1 FROM forum_reply_like l WHERE l.reply_id = r.id AND l.identity_id = ?) AS liked FROM forum_reply r JOIN identity i ON i.id = r.author_id WHERE r.post_id = ? ORDER BY r.created_at, r.id", viewer, postId)
-            : jdbc.queryForList("SELECT " + REPLY_FIELDS + ", EXISTS(SELECT 1 FROM forum_reply_like l WHERE l.reply_id = r.id AND l.identity_id = ?) AS liked FROM forum_reply r JOIN identity i ON i.id = r.author_id WHERE r.post_id = ?" + replyFilter + " ORDER BY r.created_at, r.id", viewer, postId, viewer, viewer);
+            ? jdbc.queryForList("SELECT " + REPLY_FIELDS + ", EXISTS(SELECT 1 FROM forum_reply_like l WHERE l.reply_id = r.id AND l.identity_id = ?) AS liked FROM forum_reply r JOIN identity i ON i.id = r.author_id" + TITLE_JOIN + " WHERE r.post_id = ? ORDER BY " + replyOrder(replySort), viewer, postId)
+            : jdbc.queryForList("SELECT " + REPLY_FIELDS + ", EXISTS(SELECT 1 FROM forum_reply_like l WHERE l.reply_id = r.id AND l.identity_id = ?) AS liked FROM forum_reply r JOIN identity i ON i.id = r.author_id" + TITLE_JOIN + " WHERE r.post_id = ?" + replyFilter + " ORDER BY " + replyOrder(replySort), viewer, postId, viewer, viewer);
         replies.forEach(reply -> reply.put("images", images("reply", ((Number) reply.get("id")).longValue())));
         post.put("replies", replies);
         return post;
@@ -261,7 +264,7 @@ public class ForumService {
     public Map<String, Object> adminPosts(Integer adminId, int page, int size) {
         requireAdmin(adminId);
         int limit = size(size);
-        List<Map<String, Object>> posts = jdbc.queryForList("SELECT " + POST_FIELDS + " FROM forum_post p JOIN identity i ON i.id = p.author_id ORDER BY p.created_at DESC, p.id DESC LIMIT ? OFFSET ?", limit, page(page) * limit);
+        List<Map<String, Object>> posts = jdbc.queryForList("SELECT " + POST_FIELDS + " FROM forum_post p JOIN identity i ON i.id = p.author_id" + TITLE_JOIN + " ORDER BY p.created_at DESC, p.id DESC LIMIT ? OFFSET ?", limit, page(page) * limit);
         Long total = jdbc.queryForObject("SELECT COUNT(*) FROM forum_post", Long.class);
         return Map.of("list", posts, "total", total == null ? 0 : total);
     }

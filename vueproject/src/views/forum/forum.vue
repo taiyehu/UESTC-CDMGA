@@ -11,10 +11,9 @@
 
     <div class="forum-layout">
       <main class="min-w-0">
-        <div class="surface-panel mb-4 flex items-center gap-1 p-2" role="tablist" aria-label="帖子列表">
-          <button class="feed-tab" :class="{ active: !mine }" role="tab" :aria-selected="!mine" @click="switchList(false)">全部动态</button>
-          <button class="feed-tab" :class="{ active: mine }" role="tab" :aria-selected="mine" @click="switchList(true)">我的帖子</button>
-          <span class="ml-auto pr-3 text-xs text-slate-400">{{ total }} 篇帖子</span>
+        <div class="surface-panel mb-4 flex flex-wrap items-center gap-1 p-2">
+          <div class="flex items-center" role="tablist" aria-label="帖子列表"><button class="feed-tab" :class="{ active: !mine }" role="tab" :aria-selected="!mine" @click="switchList(false)">全部动态</button><button class="feed-tab" :class="{ active: mine }" role="tab" :aria-selected="mine" @click="switchList(true)">我的帖子</button></div>
+          <div class="ml-auto flex items-center gap-1" role="group" aria-label="帖子排序"><button class="sort-button" :class="{ active: sort === 'latest' }" @click="switchSort('latest')">最新</button><button class="sort-button" :class="{ active: sort === 'likes' }" @click="switchSort('likes')">最多点赞</button></div>
         </div>
 
         <div v-if="showEditor" class="surface-panel mb-4 p-5 md:p-6">
@@ -32,11 +31,12 @@
         <div v-else-if="error" class="surface-panel py-12 text-center text-rose-300">{{ error }}</div>
         <div v-else-if="!posts.length" class="surface-panel py-14 text-center"><p class="text-lg font-semibold">这里还没有帖子</p><p class="mt-2 text-sm text-slate-400">发布第一篇，开启讨论吧。</p></div>
         <div v-else class="space-y-4">
-          <article v-for="post in posts" :key="post.id" class="surface-panel feed-card p-5 md:p-6">
-            <div class="flex gap-3">
+          <article v-for="post in posts" :key="post.id" class="surface-panel feed-card relative p-5 md:p-6">
+            <button v-if="post.authorId !== me && post.status === 'visible'" class="report-button" :disabled="reportingPostId === post.id" @click="reportPost(post.id)">举报</button>
+            <div class="flex gap-3 pr-10">
               <router-link :to="`/profile/${post.authorId}`" class="shrink-0"><img :src="avatarUrl(post.avatar)" :alt="`${post.authorName}的头像`" class="avatar" /></router-link>
               <div class="min-w-0 flex-1">
-                <div class="flex flex-wrap items-center gap-x-2 gap-y-1"><router-link :to="`/profile/${post.authorId}`" class="font-semibold text-sky-300 hover:text-sky-200">{{ post.authorName }}</router-link><span v-if="post.status !== 'visible'" class="status-tag">{{ post.status === 'hidden' ? '已隐藏' : '已删除' }}</span></div>
+                <div class="flex flex-wrap items-center gap-x-2 gap-y-1"><router-link :to="`/profile/${post.authorId}`" class="font-semibold text-sky-300 hover:text-sky-200">{{ post.authorName }}</router-link><TitleBadge v-if="post.titleName && post.titleTier" :name="post.titleName" :tier="post.titleTier" :acquisition-method="post.titleAcquisitionMethod" /><span v-if="post.status !== 'visible'" class="status-tag">{{ post.status === 'hidden' ? '已隐藏' : '已删除' }}</span></div>
                 <p class="mt-1 text-xs text-slate-400">{{ formatTime(post.createdAt) }}</p>
                 <router-link v-if="post.status !== 'deleted'" :to="`/forum/${post.id}`" class="mt-4 block text-xl font-semibold leading-snug hover:text-sky-300">{{ post.title }}</router-link>
                 <h2 v-else class="mt-4 text-xl font-semibold text-slate-400">{{ post.title }}</h2>
@@ -46,7 +46,8 @@
                 </router-link>
                 <div class="feed-actions mt-5 flex flex-wrap items-center gap-5 border-t border-white/10 pt-4 text-sm text-slate-400">
                   <router-link v-if="post.status !== 'deleted'" :to="`/forum/${post.id}`" class="hover:text-sky-300">↩ <span class="ml-1">{{ post.replyCount }} 评论</span></router-link>
-                  <span>♡ <span class="ml-1">{{ post.likeCount }} 点赞</span></span>
+                  <button v-if="post.status === 'visible'" class="like-button" :class="{ liked: !!post.liked }" :disabled="likingPostId === post.id" @click="likePost(post)">{{ post.liked ? '♥' : '♡' }} <span class="ml-1">{{ post.likeCount }} 点赞</span></button>
+                  <span v-else>♡ <span class="ml-1">{{ post.likeCount }} 点赞</span></span>
                   <span v-if="post.files?.length">▧ <span class="ml-1">{{ post.files.length }} 个附件</span></span>
                 </div>
               </div>
@@ -62,7 +63,7 @@
 
       <aside class="space-y-4">
         <div class="surface-panel p-5"><p class="text-sm font-semibold">加入讨论</p><p class="mt-2 text-sm leading-6 text-slate-400">无论是课题心得、活动见闻，还是想和群友聊的话题，都可以在这里发布。</p><button class="primary-button mt-4 w-full" @click="showEditor = true">写一篇帖子</button></div>
-        <div class="surface-panel p-5"><p class="text-sm font-semibold">社区动态</p><p class="mt-3 text-2xl font-bold text-sky-300">{{ total }}</p><p class="text-xs text-slate-400">{{ mine ? '我的帖子' : '当前可见帖子' }}</p><p class="mt-4 border-t border-white/10 pt-4 text-xs leading-5 text-slate-400">请友善交流。发现不合适的内容，可以进入帖子进行举报。</p></div>
+        <div class="surface-panel p-5"><p class="text-sm font-semibold">社区动态</p><p class="mt-3 text-2xl font-bold text-sky-300">{{ total }}</p><p class="text-xs text-slate-400">{{ mine ? '我的帖子' : '当前可见帖子' }}</p><p class="mt-4 border-t border-white/10 pt-4 text-xs leading-5 text-slate-400">请友善交流。发现不合适的内容，可在帖子右上角举报。</p></div>
       </aside>
     </div>
   </section>
@@ -71,9 +72,10 @@
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { forumApi, type ForumPost } from '@/api/forum'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { forumApi, type ForumPost, type ForumSort } from '@/api/forum'
 import ForumAttachmentPicker from '@/components/ForumAttachmentPicker.vue'
+import TitleBadge from '@/components/TitleBadge.vue'
 import defaultAvatar from '@/assets/default-avatar.png'
 
 type AttachmentPickerExpose = { getImages: () => File[]; getFiles: () => File[]; clear: () => void; isPreparing: () => boolean; hasError: () => boolean }
@@ -89,10 +91,14 @@ const title = ref('')
 const content = ref('')
 const attachments = ref<AttachmentPickerExpose | null>(null)
 const mine = ref(false)
+const sort = ref<ForumSort>('latest')
 const submitting = ref(false)
+const likingPostId = ref<number | null>(null)
+const reportingPostId = ref<number | null>(null)
 const formError = ref('')
 const userInfo = JSON.parse(sessionStorage.getItem('userInfo') || '{}')
-const myAvatar = avatarUrl(userInfo.avatar || userInfo.avatarUrl || userInfo.profile?.avatar)
+const me = Number(userInfo.id || userInfo.identityId || 0)
+const myAvatar = ref(avatarUrl(userInfo.avatar || userInfo.avatarUrl || userInfo.profile?.avatar))
 
 function formatTime(value: string): string { return value ? new Date(value).toLocaleString('zh-CN') : '' }
 function avatarUrl(value?: string): string { return value ? (/^https?:\/\//.test(value) || value.startsWith('/') ? value : `/${value}`) : defaultAvatar }
@@ -101,11 +107,18 @@ function uploadError(error: any): string {
   return error?.response?.data?.message || error?.message || '未知错误'
 }
 function switchList(value: boolean): void { mine.value = value; page.value = 0; void load() }
+function switchSort(value: ForumSort): void { sort.value = value; page.value = 0; void load() }
+
+async function loadMyAvatar(): Promise<void> {
+  if (!me) return
+  try { myAvatar.value = avatarUrl((await forumApi.myAvatar(me)) || undefined) }
+  catch { /* 保留登录信息中的头像 */ }
+}
 
 async function load(): Promise<void> {
   loading.value = true
   try {
-    const response = await forumApi.posts(page.value, mine.value)
+    const response = await forumApi.posts(page.value, mine.value, sort.value)
     posts.value = response.list
     total.value = response.total
     error.value = ''
@@ -114,6 +127,30 @@ async function load(): Promise<void> {
 }
 
 function changePage(next: number): void { page.value = next; void load() }
+
+async function likePost(post: ForumPost): Promise<void> {
+  if (likingPostId.value !== null) return
+  likingPostId.value = post.id
+  try {
+    const liked = await forumApi.like('post', post.id)
+    post.liked = liked
+    post.likeCount += liked ? 1 : -1
+    if (sort.value === 'likes') await load()
+  } catch (e: any) { ElMessage.error(e?.message || '点赞失败') }
+  finally { likingPostId.value = null }
+}
+
+async function reportPost(id: number): Promise<void> {
+  if (reportingPostId.value !== null) return
+  try {
+    const result = await ElMessageBox.prompt('请填写举报原因', '举报帖子', { inputPattern: /^.{1,100}$/, inputErrorMessage: '请输入1至100字' })
+    reportingPostId.value = id
+    await forumApi.report('post', id, result.value)
+    ElMessage.success('举报已提交，帖子已隐藏')
+    await load()
+  } catch (e: any) { if (e !== 'cancel' && e !== 'close') ElMessage.error(e?.message || '举报失败') }
+  finally { reportingPostId.value = null }
+}
 
 async function publish(): Promise<void> {
   if (!title.value.trim() || !content.value.trim()) { formError.value = '请填写标题和正文'; return }
@@ -139,7 +176,7 @@ async function publish(): Promise<void> {
   finally { submitting.value = false }
 }
 
-onMounted(load)
+onMounted(() => { void load(); void loadMyAvatar() })
 </script>
 
 <style scoped>
@@ -152,6 +189,14 @@ onMounted(load)
 .feed-tab { padding: 10px 16px; border-radius: 10px; color: #94a3b8; font-size: 14px; font-weight: 600; }
 .feed-tab.active { color: #7dd3fc; background: rgba(14, 165, 233, .16); }
 .feed-tab:hover { color: #e0f2fe; }
+.sort-button { padding: 8px 10px; border-radius: 8px; color: #94a3b8; font-size: 12px; }
+.sort-button.active { color: #7dd3fc; background: rgba(14, 165, 233, .12); }
+.sort-button:hover { color: #e0f2fe; }
+.report-button { position: absolute; right: 20px; top: 19px; color: #cbd5e1; font-size: 12px; opacity: .45; transition: opacity .2s; }
+.report-button:hover, .report-button:focus-visible { opacity: 1; color: #fda4af; }
+.report-button:disabled { cursor: not-allowed; }
+.like-button:hover, .like-button.liked { color: #fda4af; }
+.like-button:disabled { opacity: .5; cursor: not-allowed; }
 .status-tag { padding: 2px 8px; border-radius: 999px; background: rgba(251, 191, 36, .15); color: #fde68a; font-size: 11px; }
 .forum-input { width: 100%; border: 1px solid rgba(148,163,184,.3); border-radius: 10px; background: rgba(30,41,59,.75); padding: 11px 13px; color: #f8fafc; outline: none; }
 .forum-input:focus { border-color: #38bdf8; }

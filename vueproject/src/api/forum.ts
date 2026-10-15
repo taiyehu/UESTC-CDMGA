@@ -2,7 +2,9 @@ import request from '@/utils/request'
 
 export type ForumImage = { id: number; url: string }
 export type ForumFile = { id: number; url: string; name: string }
-export type ForumReply = {
+export type ForumSort = 'latest' | 'likes'
+export type ForumTitle = { titleName?: string | null; titleTier?: string | null; titleAcquisitionMethod?: string | null }
+export type ForumReply = ForumTitle & {
   id: number
   postId: number
   parentReplyId: number | null
@@ -16,7 +18,7 @@ export type ForumReply = {
   liked: boolean | number
   images: ForumImage[]
 }
-export type ForumPost = {
+export type ForumPost = ForumTitle & {
   id: number
   authorId: number
   authorName: string
@@ -52,11 +54,16 @@ function data<T>(response: any): T {
 }
 
 export const forumApi = {
-  async posts(page = 0, mine = false): Promise<Page<ForumPost>> {
-    return data(await request.get('/forum/posts', { params: { page, size: 10, mine }, withCredentials: true }))
+  async posts(page = 0, mine = false, sort: ForumSort = 'latest'): Promise<Page<ForumPost>> {
+    return data(await request.get('/forum/posts', { params: { page, size: 10, mine, sort }, withCredentials: true }))
   },
-  async post(id: number): Promise<ForumPost> {
-    return data(await request.get(`/forum/posts/${id}`, { withCredentials: true }))
+  async post(id: number, replySort: ForumSort = 'latest'): Promise<ForumPost> {
+    return data(await request.get(`/forum/posts/${id}`, { params: { replySort }, withCredentials: true }))
+  },
+  async myAvatar(identityId: number): Promise<string | null> {
+    const response = await request.get(`/profile/identity/${identityId}`, { withCredentials: true })
+    const profile = response.data?.data || response.data
+    return Number(profile?.status) === 1 ? profile?.avatar || profile?.avatarUrl || null : null
   },
   async createPost(title: string, content: string): Promise<number> {
     const response = data<{ id: number }>(await request.post('/forum/posts', { title, content }, { withCredentials: true }))

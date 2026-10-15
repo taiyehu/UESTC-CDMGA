@@ -57,16 +57,16 @@ public class ForumController {
     }
 
     @GetMapping("/posts")
-    public Result posts(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, @RequestParam(defaultValue = "false") boolean mine, HttpServletRequest request) {
-        try { return Result.success(service.listPosts(page, size, viewer(request), mine)); }
+    public Result posts(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, @RequestParam(defaultValue = "false") boolean mine, @RequestParam(defaultValue = "latest") String sort, HttpServletRequest request) {
+        try { return Result.success(service.listPosts(page, size, viewer(request), mine, sort)); }
         catch (Exception e) { return Result.error(e.getMessage()); }
     }
 
     @GetMapping("/posts/{id}")
-    public Result post(@PathVariable long id, HttpServletRequest request) {
+    public Result post(@PathVariable long id, @RequestParam(defaultValue = "latest") String replySort, HttpServletRequest request) {
         try {
             Integer viewer = viewer(request);
-            return Result.success(service.post(id, viewer, viewer != null && service.isAdmin(viewer)));
+            return Result.success(service.post(id, viewer, viewer != null && service.isAdmin(viewer), replySort));
         } catch (Exception e) { return Result.error(e.getMessage()); }
     }
 
