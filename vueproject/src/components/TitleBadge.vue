@@ -22,7 +22,13 @@ defineProps<{ name: string; tier: string; acquisitionMethod?: string | null; com
   background: linear-gradient(120deg, rgba(8, 47, 73, 0.9), rgba(14, 116, 144, 0.55));
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.2), 0 0 14px rgba(34, 211, 238, 0.2);
 }
-.title-compact { zoom: .5; }
+.title-compact {
+  align-self: flex-start;
+  padding: 2.8px 8.4px;
+  border-width: 0.7px;
+  font-size: 9.1px;
+  box-shadow: inset 0 0.7px rgba(255, 255, 255, 0.2), 0 0 9.8px rgba(34, 211, 238, 0.2);
+}
 
 .title-silver {
   color: #f8fafc;

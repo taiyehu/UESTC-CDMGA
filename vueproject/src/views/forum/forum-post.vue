@@ -6,20 +6,20 @@
     <div v-else-if="post" class="forum-layout">
       <main class="min-w-0 space-y-4">
         <article class="surface-panel p-5 md:p-7">
-          <h1 class="break-words text-2xl font-bold leading-tight">{{ post.title }}</h1>
-          <div class="mt-5 flex items-start gap-3">
+          <div class="flex items-start gap-3">
             <router-link :to="`/profile/${post.authorId}`" class="shrink-0"><img :src="avatarUrl(post.avatar)" :alt="`${post.authorName}的头像`" class="avatar" /></router-link>
-            <div class="min-w-0 flex-1"><router-link :to="`/profile/${post.authorId}`" class="font-semibold text-sky-300 hover:text-sky-200">{{ post.authorName }}</router-link><div v-if="post.titleName && post.titleTier" class="mt-1"><TitleBadge compact :name="post.titleName" :tier="post.titleTier" :acquisition-method="post.titleAcquisitionMethod" /></div><p class="mt-1 text-xs text-slate-400">{{ formatTime(post.createdAt) }} <span v-if="post.status !== 'visible'">· {{ statusText(post.status) }}</span></p></div>
+            <div class="flex min-w-0 flex-1 flex-col items-start gap-1"><div class="flex flex-wrap items-center gap-2"><router-link :to="`/profile/${post.authorId}`" class="font-semibold text-sky-300 hover:text-sky-200">{{ post.authorName }}</router-link><span v-if="post.status !== 'visible'" class="status-tag">{{ statusText(post.status) }}</span></div><TitleBadge v-if="post.titleName && post.titleTier" compact :name="post.titleName" :tier="post.titleTier" :acquisition-method="post.titleAcquisitionMethod" /></div>
           </div>
-          <div class="mt-5">
+          <h1 class="mt-5 break-words text-2xl font-bold leading-tight">{{ post.title }}</h1>
+          <div class="mt-4">
             <template v-if="editingPost">
-              <input v-model="editTitle" maxlength="120" class="forum-input mt-5" placeholder="标题" />
+              <input v-model="editTitle" maxlength="120" class="forum-input" placeholder="标题" />
               <textarea v-model="editContent" maxlength="10000" rows="6" class="forum-input mt-3" placeholder="正文" />
               <p class="mt-4 text-sm text-slate-400">移除现有附件会立即生效；新附件将在保存后上传。</p>
               <ForumAttachmentPicker ref="editAttachments" class="mt-3" :max-images="6" :max-files="3" :existing-image-count="post.images.length" :existing-file-count="post.files.length" :disabled="submitting" />
               <div class="mt-4 flex gap-2"><button class="primary-button" :disabled="submitting" @click="savePostEdit">保存修改</button><button class="secondary-button" @click="editingPost = false">取消</button></div>
             </template>
-            <p v-else class="mt-5 whitespace-pre-wrap break-words leading-8 text-slate-200">{{ post.content }}</p>
+            <p v-else class="whitespace-pre-wrap break-words leading-8 text-slate-200">{{ post.content }}</p>
             <div v-if="post.images?.length" class="mt-5 grid max-w-2xl grid-cols-2 gap-2 sm:grid-cols-3">
               <div v-for="image in post.images" :key="image.id"><button type="button" class="w-full" @click="previewUrl = image.url"><img :src="image.url" alt="帖子图片" class="post-image" /></button><button v-if="editingPost" class="text-button mt-1" @click="removeImage(image.id)">移除图片</button></div>
             </div>
@@ -28,9 +28,7 @@
           <div class="action-row mt-6 flex flex-wrap items-center gap-5 border-t border-white/10 pt-4 text-sm text-slate-400">
             <button v-if="post.status === 'visible'" class="text-button" @click="like('post', post.id)">{{ post.liked ? '♥' : '♡' }} {{ post.likeCount }} 点赞</button>
             <span>↩ {{ post.replies?.length || 0 }} 评论</span>
-            <button v-if="post.authorId !== me && post.status === 'visible'" class="text-button ml-auto" @click="openReport('post', post.id)">举报</button>
-            <button v-if="post.authorId === me && post.status === 'visible'" class="text-button" @click="startPostEdit">编辑</button>
-            <button v-if="post.authorId === me && post.status !== 'deleted'" class="text-button danger" @click="requestDelete('post', post.id)">删除帖子</button>
+            <div class="ml-auto flex flex-wrap items-center gap-4"><time class="text-xs text-slate-400" :datetime="post.createdAt">{{ formatTime(post.createdAt) }}</time><button v-if="post.authorId !== me && post.status === 'visible'" class="text-button" @click="openReport('post', post.id)">举报</button><button v-if="post.authorId === me && post.status === 'visible'" class="text-button" @click="startPostEdit">编辑</button><button v-if="post.authorId === me && post.status !== 'deleted'" class="text-button danger" @click="requestDelete('post', post.id)">删除帖子</button></div>
           </div>
         </article>
 
@@ -43,7 +41,7 @@
           <div v-for="reply in post.replies || []" :key="reply.id" class="comment-row flex gap-3 border-b border-white/10 py-5 last:border-b-0">
             <router-link :to="`/profile/${reply.authorId}`" class="shrink-0"><img :src="avatarUrl(reply.avatar)" :alt="`${reply.authorName}的头像`" class="avatar" /></router-link>
             <div class="min-w-0 flex-1">
-              <div class="flex flex-wrap items-center gap-2"><router-link :to="`/profile/${reply.authorId}`" class="font-semibold text-sky-300 hover:text-sky-200">{{ reply.authorName }}</router-link><span v-if="reply.authorId === post.authorId" class="owner-tag">楼主</span><span v-if="reply.status !== 'visible'" class="status-tag">{{ statusText(reply.status) }}</span></div><div v-if="reply.titleName && reply.titleTier" class="mt-1"><TitleBadge compact :name="reply.titleName" :tier="reply.titleTier" :acquisition-method="reply.titleAcquisitionMethod" /></div>
+              <div class="flex flex-col items-start gap-1"><div class="flex flex-wrap items-center gap-2"><router-link :to="`/profile/${reply.authorId}`" class="font-semibold text-sky-300 hover:text-sky-200">{{ reply.authorName }}</router-link><span v-if="reply.authorId === post.authorId" class="owner-tag">楼主</span><span v-if="reply.status !== 'visible'" class="status-tag">{{ statusText(reply.status) }}</span></div><TitleBadge v-if="reply.titleName && reply.titleTier" compact :name="reply.titleName" :tier="reply.titleTier" :acquisition-method="reply.titleAcquisitionMethod" /></div>
               <p v-if="reply.parentReplyId" class="mt-1 text-xs text-slate-400">回复 #{{ reply.parentReplyId }}</p>
               <template v-if="editingReplyId === reply.id"><textarea v-model="editReplyContent" maxlength="3000" rows="4" class="forum-input mt-3" /><ForumAttachmentPicker ref="editReplyAttachments" class="mt-3" :max-images="1" :existing-image-count="reply.images.length" :disabled="submitting" /><div class="mt-3 flex gap-2"><button class="primary-button" :disabled="submitting" @click="saveReplyEdit(reply.id)">保存</button><button class="secondary-button" @click="editingReplyId = null">取消</button></div></template>
               <p v-else class="mt-3 whitespace-pre-wrap break-words text-sm leading-7 text-slate-200">{{ reply.content }}</p>
@@ -54,7 +52,7 @@
         </section>
       </main>
 
-      <aside class="space-y-4"><div class="surface-panel p-5"><p class="mb-4 text-sm font-semibold">关于作者</p><div class="flex items-center gap-3"><router-link :to="`/profile/${post.authorId}`"><img :src="avatarUrl(post.avatar)" :alt="`${post.authorName}的头像`" class="avatar" /></router-link><div class="min-w-0"><router-link :to="`/profile/${post.authorId}`" class="font-semibold text-sky-300">{{ post.authorName }}</router-link><div v-if="post.titleName && post.titleTier" class="mt-1"><TitleBadge compact :name="post.titleName" :tier="post.titleTier" :acquisition-method="post.titleAcquisitionMethod" /></div></div></div><p class="mt-4 text-xs text-slate-400">发布于 {{ formatTime(post.createdAt) }}</p></div><div class="surface-panel p-5"><p class="text-sm font-semibold">参与讨论</p><p class="mt-2 text-sm leading-6 text-slate-400">喜欢这篇帖子可以点赞，也欢迎在评论区继续交流。</p><router-link to="/forum" class="mt-4 inline-block text-sm text-sky-300 hover:underline">浏览更多帖子 →</router-link></div></aside>
+      <aside class="space-y-4"><div class="surface-panel p-5"><p class="mb-4 text-sm font-semibold">关于作者</p><div class="flex items-start gap-3"><router-link :to="`/profile/${post.authorId}`"><img :src="avatarUrl(post.avatar)" :alt="`${post.authorName}的头像`" class="avatar" /></router-link><div class="flex min-w-0 flex-col items-start gap-1"><router-link :to="`/profile/${post.authorId}`" class="font-semibold text-sky-300">{{ post.authorName }}</router-link><TitleBadge v-if="post.titleName && post.titleTier" compact :name="post.titleName" :tier="post.titleTier" :acquisition-method="post.titleAcquisitionMethod" /></div></div></div><div class="surface-panel p-5"><p class="text-sm font-semibold">参与讨论</p><p class="mt-2 text-sm leading-6 text-slate-400">喜欢这篇帖子可以点赞，也欢迎在评论区继续交流。</p><router-link to="/forum" class="mt-4 inline-block text-sm text-sky-300 hover:underline">浏览更多帖子 →</router-link></div></aside>
     </div>
     <el-dialog v-model="previewOpen" title="图片预览" width="min(90vw, 800px)"><img :src="previewUrl" alt="图片预览" class="max-h-[70vh] w-full object-contain" /></el-dialog>
     <ForumReportDialog v-model="reportOpen" :target="reportTarget" @reported="handleReported" />

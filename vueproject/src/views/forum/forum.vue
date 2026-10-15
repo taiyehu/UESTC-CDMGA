@@ -33,25 +33,25 @@
         <div v-else class="space-y-4">
           <article v-for="post in posts" :key="post.id" class="surface-panel feed-card relative p-5 md:p-6">
             <button v-if="post.authorId !== me && post.status === 'visible'" class="report-button" @click="openReport(post.id)">举报</button>
-            <div class="flex gap-3 pr-10">
+            <div class="flex items-start gap-3 pr-10">
               <router-link :to="`/profile/${post.authorId}`" class="shrink-0"><img :src="avatarUrl(post.avatar)" :alt="`${post.authorName}的头像`" class="avatar" /></router-link>
-              <div class="min-w-0 flex-1">
+              <div class="flex min-w-0 flex-col items-start gap-1">
                 <div class="flex flex-wrap items-center gap-x-2 gap-y-1"><router-link :to="`/profile/${post.authorId}`" class="font-semibold text-sky-300 hover:text-sky-200">{{ post.authorName }}</router-link><span v-if="post.status !== 'visible'" class="status-tag">{{ post.status === 'hidden' ? '已隐藏' : '已删除' }}</span></div>
-                <div v-if="post.titleName && post.titleTier" class="mt-1"><TitleBadge compact :name="post.titleName" :tier="post.titleTier" :acquisition-method="post.titleAcquisitionMethod" /></div>
-                <p class="mt-1 text-xs text-slate-400">{{ formatTime(post.createdAt) }}</p>
-                <router-link v-if="post.status !== 'deleted'" :to="`/forum/${post.id}`" class="mt-4 block text-xl font-semibold leading-snug hover:text-sky-300">{{ post.title }}</router-link>
-                <h2 v-else class="mt-4 text-xl font-semibold text-slate-400">{{ post.title }}</h2>
-                <p class="mt-2 line-clamp-3 whitespace-pre-wrap break-words text-sm leading-6 text-slate-200">{{ post.content }}</p>
-                <router-link v-if="post.status === 'visible' && post.images?.length" :to="`/forum/${post.id}`" class="mt-4 grid max-w-xl grid-cols-3 gap-2">
-                  <img v-for="image in post.images.slice(0, 3)" :key="image.id" :src="image.url" alt="帖子图片" class="feed-image" />
-                </router-link>
-                <div class="feed-actions mt-5 flex flex-wrap items-center gap-5 border-t border-white/10 pt-4 text-sm text-slate-400">
-                  <router-link v-if="post.status !== 'deleted'" :to="`/forum/${post.id}`" class="hover:text-sky-300">↩ <span class="ml-1">{{ post.replyCount }} 评论</span></router-link>
-                  <button v-if="post.status === 'visible'" class="like-button" :class="{ liked: !!post.liked }" :disabled="likingPostId === post.id" @click="likePost(post)">{{ post.liked ? '♥' : '♡' }} <span class="ml-1">{{ post.likeCount }} 点赞</span></button>
-                  <span v-else>♡ <span class="ml-1">{{ post.likeCount }} 点赞</span></span>
-                  <span v-if="post.files?.length">▧ <span class="ml-1">{{ post.files.length }} 个附件</span></span>
-                </div>
+                <TitleBadge v-if="post.titleName && post.titleTier" compact :name="post.titleName" :tier="post.titleTier" :acquisition-method="post.titleAcquisitionMethod" />
               </div>
+            </div>
+            <router-link v-if="post.status !== 'deleted'" :to="`/forum/${post.id}`" class="mt-5 block text-xl font-semibold leading-snug hover:text-sky-300">{{ post.title }}</router-link>
+            <h2 v-else class="mt-5 text-xl font-semibold text-slate-400">{{ post.title }}</h2>
+            <p class="mt-2 line-clamp-3 whitespace-pre-wrap break-words text-sm leading-6 text-slate-200">{{ post.content }}</p>
+            <router-link v-if="post.status === 'visible' && post.images?.length" :to="`/forum/${post.id}`" class="mt-4 grid max-w-xl grid-cols-3 gap-2">
+              <img v-for="image in post.images.slice(0, 3)" :key="image.id" :src="image.url" alt="帖子图片" class="feed-image" />
+            </router-link>
+            <div class="feed-actions mt-5 flex flex-wrap items-center gap-5 border-t border-white/10 pt-4 text-sm text-slate-400">
+              <router-link v-if="post.status !== 'deleted'" :to="`/forum/${post.id}`" class="hover:text-sky-300">↩ <span class="ml-1">{{ post.replyCount }} 评论</span></router-link>
+              <button v-if="post.status === 'visible'" class="like-button" :class="{ liked: !!post.liked }" :disabled="likingPostId === post.id" @click="likePost(post)">{{ post.liked ? '♥' : '♡' }} <span class="ml-1">{{ post.likeCount }} 点赞</span></button>
+              <span v-else>♡ <span class="ml-1">{{ post.likeCount }} 点赞</span></span>
+              <span v-if="post.files?.length">▧ <span class="ml-1">{{ post.files.length }} 个附件</span></span>
+              <time class="ml-auto text-xs text-slate-400" :datetime="post.createdAt">{{ formatTime(post.createdAt) }}</time>
             </div>
           </article>
         </div>
