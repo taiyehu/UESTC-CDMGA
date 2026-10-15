@@ -10,7 +10,7 @@
             <router-link :to="`/profile/${post.authorId}`" class="shrink-0"><img :src="avatarUrl(post.avatar)" :alt="`${post.authorName}的头像`" class="avatar" /></router-link>
             <div class="flex min-w-0 flex-1 flex-col items-start gap-1"><div class="flex flex-wrap items-center gap-2"><router-link :to="`/profile/${post.authorId}`" class="font-semibold text-sky-300 hover:text-sky-200">{{ post.authorName }}</router-link><span v-if="post.status !== 'visible'" class="status-tag">{{ statusText(post.status) }}</span></div><TitleBadge v-if="post.titleName && post.titleTier" compact :name="post.titleName" :tier="post.titleTier" :acquisition-method="post.titleAcquisitionMethod" /></div>
           </div>
-          <h1 class="mt-5 break-words text-left text-2xl font-bold leading-tight">{{ post.title }}</h1>
+          <h1 class="mt-5 break-words text-center text-2xl font-bold leading-tight">{{ post.title }}</h1>
           <div class="mt-4 text-left">
             <template v-if="editingPost">
               <input v-model="editTitle" maxlength="120" class="forum-input" placeholder="标题" />

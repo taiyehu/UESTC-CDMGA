@@ -40,9 +40,9 @@
                 <TitleBadge v-if="post.titleName && post.titleTier" compact :name="post.titleName" :tier="post.titleTier" :acquisition-method="post.titleAcquisitionMethod" />
               </div>
             </div>
-            <router-link v-if="post.status !== 'deleted'" :to="`/forum/${post.id}`" class="mt-5 block text-xl font-semibold leading-snug hover:text-sky-300">{{ post.title }}</router-link>
-            <h2 v-else class="mt-5 text-xl font-semibold text-slate-400">{{ post.title }}</h2>
-            <p class="mt-2 line-clamp-3 whitespace-pre-wrap break-words text-sm leading-6 text-slate-200">{{ post.content }}</p>
+            <router-link v-if="post.status !== 'deleted'" :to="`/forum/${post.id}`" class="mt-5 block text-center text-xl font-semibold leading-snug hover:text-sky-300">{{ post.title }}</router-link>
+            <h2 v-else class="mt-5 text-center text-xl font-semibold text-slate-400">{{ post.title }}</h2>
+            <p class="mt-2 line-clamp-3 whitespace-pre-wrap break-words text-left text-sm leading-6 text-slate-200">{{ post.content }}</p>
             <router-link v-if="post.status === 'visible' && post.images?.length" :to="`/forum/${post.id}`" class="mt-4 grid max-w-xl grid-cols-3 gap-2">
               <img v-for="image in post.images.slice(0, 3)" :key="image.id" :src="image.url" alt="帖子图片" class="feed-image" />
             </router-link>
