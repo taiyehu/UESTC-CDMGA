@@ -10,7 +10,7 @@
     </article>
 
     <div class="mt-6 flex justify-end">
-      <button type="button" class="neon-back" @click="goList">返回课题列表</button>
+      <button type="button" class="neon-back" @click="goList">{{ course?.category?.trim().toLowerCase() === 'award' ? '返回奖品列表' : '返回课题列表' }}</button>
     </div>
   </section>
 </template>
@@ -65,7 +65,7 @@ async function loadData() {
 }
 
 function goList() {
-  router.push('/task')
+  router.push(course.value?.category?.trim().toLowerCase() === 'award' ? '/awards' : '/task')
 }
 
 watch(

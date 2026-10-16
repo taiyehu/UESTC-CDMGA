@@ -65,7 +65,7 @@ import NeonActionButton from '@/components/NeonActionButton.vue'
 import { isMobileLite } from '@/utils/visualMode'
 
 const activities = ref<any[]>([])
-const pageSize = 3
+const pageSize = 6
 const currentPage = ref(1)
 const totalPages = computed(() => Math.max(1, Math.ceil(activities.value.length / pageSize)))
 const pagedActivities = computed(() => activities.value.slice((currentPage.value - 1) * pageSize, currentPage.value * pageSize))

@@ -179,6 +179,7 @@ const navLinks = [
   { label: '活动', to: '/activity' },
   { label: '排行榜', to: '/ranking' },
   { label: '论坛', to: '/forum' },
+  { label: '奖品', to: '/awards' },
   { label: '网站功能', to: '/links' },
 ]
 

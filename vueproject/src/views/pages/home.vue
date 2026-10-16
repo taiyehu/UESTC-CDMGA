@@ -263,7 +263,7 @@ function shanghaiDay(): string {
 const nowMs = computed(() => nowTick.value.getTime())
 
 const normalizedCourses = computed<CourseLike[]>(() => {
-  return [...courses.value].map((course: any) => ({
+  return [...courses.value].filter((course: any) => String(course.category || '').trim().toLowerCase() !== 'award').map((course: any) => ({
     id: Number(course.id),
     title: String(course.title || ''),
     category: String(course.category || ''),

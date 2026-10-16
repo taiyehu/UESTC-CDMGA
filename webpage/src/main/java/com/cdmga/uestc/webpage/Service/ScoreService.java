@@ -49,8 +49,6 @@ public class ScoreService {
 
     @Autowired
     private ProfileRepository profileRepository;
-    @Autowired
-    private TitleAwardRepository titleAwardRepository;
 
     @Autowired
     private ActivityRepository activityRepository;
@@ -673,19 +671,7 @@ public class ScoreService {
         LocalDateTime startTime = LocalDateTime.of(effectiveStartYear, Month.OCTOBER, 1, 0, 0);
         LocalDateTime endTime = startTime.plusYears(1);
         List<Score> scores = scoreRepository.findScoredRegularScoresBetween(startTime, endTime);
-        List<UserScoreDto> board = calculateScoresForAllUsers(scores);
-        if (!board.isEmpty()) {
-            Map<Integer, UserScoreDto> byIdentity = new HashMap<>();
-            for (UserScoreDto row : board) byIdentity.put(row.getIdentityId(), row);
-            for (Object[] title : titleAwardRepository.findEquippedForIdentityIds(byIdentity.keySet())) {
-                UserScoreDto row = byIdentity.get(((Number) title[0]).intValue());
-                if (row == null) continue;
-                row.setTitleName((String) title[1]);
-                row.setTitleTier((String) title[2]);
-                row.setTitleAcquisitionMethod((String) title[3]);
-            }
-        }
-        return board;
+        return calculateScoresForAllUsers(scores);
     }
 
     private int currentRankingStartYear() {

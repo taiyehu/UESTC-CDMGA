@@ -5,11 +5,11 @@ import com.cdmga.uestc.webpage.Dto.ProfileDto;
 import com.cdmga.uestc.webpage.Entity.Identity;
 import com.cdmga.uestc.webpage.Entity.Profile;
 import com.cdmga.uestc.webpage.Service.IdentityService;
+import com.cdmga.uestc.webpage.Service.DailyMemberService;
 import com.cdmga.uestc.webpage.Service.ProfileService;
-import com.cdmga.uestc.webpage.Repository.IdentityRepository;
 
-import java.time.LocalDate;
-import java.time.ZoneId;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -34,20 +34,18 @@ public class ProfileController {
     private IdentityService identityService;
 
     @Autowired
-    private IdentityRepository identityRepository;
+    private DailyMemberService dailyMemberService;
 
     @Value("${avatar.upload.directory}")
     private String uploadDir;
 
     @GetMapping("/daily")
-    public ProfileDto getDailyMember() {
-        List<Identity> members = identityRepository.findByIsDeletedFalseOrderByIdAsc();
-        if (members.isEmpty()) {
-            return null;
-        }
-
-        long day = LocalDate.now(ZoneId.of("Asia/Shanghai")).toEpochDay();
-        Identity member = members.get((int) Math.floorMod(day, members.size()));
+    public ProfileDto getDailyMember(HttpSession session, HttpServletResponse response) {
+        response.setHeader("Cache-Control", "private, no-store");
+        Object viewerId = session.getAttribute("identityId");
+        if (!(viewerId instanceof Integer)) throw new IllegalArgumentException("请重新登录");
+        Identity member = dailyMemberService.getDailyMember((Integer) viewerId);
+        if (member == null) return null;
         Profile profile = profileService.getProfileByIdentityId(member.getId());
         ProfileDto dto = new ProfileDto();
         dto.setIdentityId(member.getId());

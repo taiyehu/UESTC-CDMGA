@@ -1,16 +1,13 @@
 <template>
-  <section class="relative mx-auto w-full max-w-6xl px-4 pb-12 pt-6 md:px-8">
+  <section class="relative mx-auto w-full max-w-7xl px-4 pb-12 pt-6 md:px-8">
     <header class="mb-8 text-center">
       <h1 class="glitch-title text-5xl font-semibold md:text-7xl" data-text="RANK">
         RANK
       </h1>
     </header>
-    <div class="mb-5 flex flex-wrap justify-center gap-3">
-      <NeonActionButton @click="router.push('/contest-ranking')">比赛排行榜</NeonActionButton>
-      <NeonActionButton @click="router.push('/ranking-new')">打榜排行榜</NeonActionButton>
-    </div>
-    <div class="hud-card p-4 md:p-6">
-      <h2 class="mb-5 text-center text-xl font-semibold text-cyan-100 md:text-2xl">用户总分排行榜</h2>
+    <div class="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
+    <div class="hud-card min-w-0 p-4 md:p-6">
+      <h2 class="mb-5 text-center text-xl font-semibold text-cyan-100 md:text-2xl">课题总分排行榜</h2>
 
       <div class="mb-5 flex flex-wrap items-center justify-center gap-3">
         <label for="ranking-season" class="text-sm text-cyan-100/85">排行榜时段</label>
@@ -21,7 +18,7 @@
         </select>
       </div>
 
-      <NeonRankTable min-width-class="min-w-110" text-size-class="text-lg">
+      <NeonRankTable min-width-class="min-w-90" text-size-class="text-base">
           <template #head>
             <tr>
               <th class="px-4 py-3 text-center">排名</th>
@@ -50,7 +47,6 @@
                   </button>
                   <div class="flex min-w-0 flex-col items-start gap-1">
                     <button type="button" class="break-all text-left font-semibold text-sky-300 hover:text-sky-200" @click="goToProfile(row.identityId)">{{ row.account }}</button>
-                    <TitleBadge v-if="row.titleName && row.titleTier" compact :name="row.titleName" :tier="row.titleTier" :acquisition-method="row.titleAcquisitionMethod" />
                   </div>
                 </div>
               </td>
@@ -89,6 +85,8 @@
       </div>
 
     </div>
+    <SecondaryRankPanel />
+    </div>
 
   </section>
 </template>
@@ -101,7 +99,7 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import NeonRankTable from '@/components/NeonRankTable.vue'
 import NeonActionButton from '@/components/NeonActionButton.vue'
-import TitleBadge from '@/components/TitleBadge.vue'
+import SecondaryRankPanel from '@/components/SecondaryRankPanel.vue'
 import defaultAvatar from '@/assets/default-avatar.png'
 
 const rankAllData = ref<any[]>([])

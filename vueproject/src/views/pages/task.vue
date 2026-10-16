@@ -1,16 +1,16 @@
 <template>
   <section class="relative mx-auto max-w-6xl px-4 pb-12 pt-6 md:px-8">
     <header class="mb-8 text-center">
-      <h1 class="glitch-title text-5xl font-semibold md:text-7xl" data-text="TASK">
-        TASK
+      <h1 class="glitch-title text-5xl font-semibold md:text-7xl" :data-text="awardMode ? 'AWARDS' : 'TASK'">
+        {{ awardMode ? 'AWARDS' : 'TASK' }}
       </h1>
     </header>
 
-    <div v-if="loading" class="hud-card p-8 text-cyan-100/80">载入课题数据中...</div>
+    <div v-if="loading" class="hud-card p-8 text-cyan-100/80">{{ awardMode ? '载入奖品数据中...' : '载入课题数据中...' }}</div>
     <div v-else-if="error" class="hud-card p-8 text-rose-300">{{ error }}</div>
 
     <template v-else>
-    <div v-if="!courses.length" class="hud-card p-8 text-center text-cyan-100/75">暂无课题</div>
+    <div v-if="!courses.length" class="hud-card p-8 text-center text-cyan-100/75">{{ awardMode ? '暂无奖品' : '暂无课题' }}</div>
     <div v-else class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
       <Motion
         v-for="(course, index) in pagedCourses"
@@ -37,7 +37,7 @@
             {{ formatDate(course.startTime) }} - {{ formatDate(course.endTime) }}
           </p>
 
-          <p v-if="normalizeCategory(course.category) === 'award'" class="mb-2 text-sm font-semibold text-amber-200">
+          <p v-if="awardMode" class="mb-2 text-sm font-semibold text-amber-200">
             兑换所需积分：{{ course.award?.cost ?? '-' }} · {{ Number(course.award?.remainingStock || 0) > 0 ? '可兑换' : '已售罄' }}
           </p>
 
@@ -46,12 +46,12 @@
           </p>
 
           <NeonActionButton class="mt-4 w-full" @click="goTaskDetail(course.id)">
-            进入课题
+            {{ awardMode ? '去兑换' : '进入课题' }}
           </NeonActionButton>
         </div>
       </Motion>
     </div>
-    <nav v-if="totalPages > 1" class="mt-6 flex items-center justify-center gap-4" aria-label="课题分页">
+    <nav v-if="totalPages > 1" class="mt-6 flex items-center justify-center gap-4" :aria-label="awardMode ? '奖品分页' : '课题分页'">
       <NeonActionButton :disabled="currentPage === 1" @click="changePage(currentPage - 1)">上一页</NeonActionButton>
       <span class="text-sm text-cyan-100/85">{{ currentPage }} / {{ totalPages }}</span>
       <NeonActionButton :disabled="currentPage === totalPages" @click="changePage(currentPage + 1)">下一页</NeonActionButton>
@@ -69,10 +69,15 @@ import type { Course } from '@/api/types'
 import NeonActionButton from '@/components/NeonActionButton.vue'
 import { isMobileLite } from '@/utils/visualMode'
 
+const { awardMode = false } = defineProps<{ awardMode?: boolean }>()
 const router = useRouter()
 
-const courses = ref<Course[]>([])
-const pageSize = 3
+const allCourses = ref<Course[]>([])
+const courses = computed(() => allCourses.value.filter((course) => {
+  const isAward = normalizeCategory(course.category) === 'award'
+  return awardMode ? isAward : !isAward
+}))
+const pageSize = 6
 const currentPage = ref(1)
 const totalPages = computed(() => Math.max(1, Math.ceil(courses.value.length / pageSize)))
 const pagedCourses = computed(() => courses.value.slice((currentPage.value - 1) * pageSize, currentPage.value * pageSize))
@@ -83,7 +88,7 @@ async function fetchCourses() {
   try {
     const response = await fetchCourseData()
     const data = (response?.data || []) as Course[]
-    courses.value = [...data].sort(
+    allCourses.value = [...data].sort(
       (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
     )
     currentPage.value = 1
@@ -115,7 +120,7 @@ function formatDate(date: string | number | Date) {
 }
 
 function normalizeCategory(category?: string) {
-  const value = (category || '').toLowerCase()
+  const value = (category || '').trim().toLowerCase()
   if (value === 'typical') return 'typical'
   if (value === 'bingo') return 'bingo'
   if (value === 'award') return 'award'

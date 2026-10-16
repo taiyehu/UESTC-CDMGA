@@ -25,6 +25,7 @@ const AdminContentPublish = () => import('@/views/admin/admin-content-publish.vu
 const Ranking = () => import('@/views/pages/ranking.vue')
 const RankingNew = () => import('@/views/pages/ranking-new.vue')
 const Task = () => import('@/views/pages/task.vue')
+const Awards = () => import('@/views/pages/awards.vue')
 const TaskDetailPage = () => import('@/views/task/TaskDetailPage.vue')
 const TaskBingoDetail = () => import('@/views/task/TaskBingoDetail.vue')
 const Links = () => import('@/views/pages/links.vue')
@@ -154,6 +155,10 @@ const routes = [
   {
     path: '/task',
     component: Task,
+  },
+  {
+    path: '/awards',
+    component: Awards,
   },
   {
     path: '/task/:id',

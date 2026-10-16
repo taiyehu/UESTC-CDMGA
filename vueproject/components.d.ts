@@ -47,6 +47,7 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     ScoreImageUploader: typeof import('./src/components/ScoreImageUploader.vue')['default']
+    SecondaryRankPanel: typeof import('./src/components/SecondaryRankPanel.vue')['default']
     TaskScoreAction: typeof import('./src/components/TaskScoreAction.vue')['default']
     TitleBadge: typeof import('./src/components/TitleBadge.vue')['default']
     VisualEffectsToggle: typeof import('./src/components/VisualEffectsToggle.vue')['default']
