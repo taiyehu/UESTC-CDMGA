@@ -7,34 +7,39 @@
     </header>
 
     <NeonCard v-if="user.id !== null" class="box-card">
-      <div class="flex flex-col gap-6 lg:flex-row lg:items-start">
-        <div class="flex flex-col items-center lg:mr-8">
-          <button
-            type="button"
-            class="avatar-btn"
-            :title="isSelf ? '点击修改资料' : '点击查看大图'"
-            @click="isSelf ? goToSettings('avatar') : previewAvatar()"
-          >
-            <img
-              class="avatar-image"
-              :src="profileStatus === 1 ? mediaThumbnailUrl(getImageUrl(profile.avatar), 256) : defaultAvatar"
-              @error="restoreOriginalImage($event, getImageUrl(profile.avatar))"
-              alt="用户头像"
-            />
-          </button>
-        </div>
+      <div class="profile-head">
+        <button
+          type="button"
+          class="avatar-btn"
+          :title="isSelf ? '点击修改资料' : '点击查看大图'"
+          @click="isSelf ? goToSettings('avatar') : previewAvatar()"
+        >
+          <img
+            class="avatar-image"
+            :src="profileStatus === 1 ? mediaThumbnailUrl(getImageUrl(profile.avatar), 256) : defaultAvatar"
+            @error="restoreOriginalImage($event, getImageUrl(profile.avatar))"
+            alt="用户头像"
+          />
+        </button>
 
-        <div class="flex flex-1 flex-col items-center pt-4">
-          <div class="mb-4">
+        <div class="profile-head-main">
+          <div class="profile-name-row">
             <h2 class="profile-name">
               {{ profile.account || (isSelf ? user.account : '未知用户') }}
             </h2>
-            <p v-if="onlineStatus !== null" class="mt-1 text-center text-xs" :class="onlineStatus ? 'text-emerald-300' : 'text-cyan-100/60'">
-              {{ onlineStatus ? '● 在线' : '● 离线' }}
-            </p>
-            <div v-if="equippedTitle" class="mt-2 text-center">
-              <TitleBadge :name="equippedTitle.name" :tier="equippedTitle.tier" :acquisition-method="equippedTitle.acquisitionMethod" />
-            </div>
+            <span
+              v-if="onlineStatus !== null"
+              class="status-pill"
+              :class="onlineStatus ? 'status-online' : 'status-offline'"
+            >
+              {{ onlineStatus ? '在线' : '离线' }}
+            </span>
+            <TitleBadge
+              v-if="equippedTitle"
+              :name="equippedTitle.name"
+              :tier="equippedTitle.tier"
+              :acquisition-method="equippedTitle.acquisitionMethod"
+            />
           </div>
 
           <div class="profile-signature" :title="getStatusText()">
@@ -43,22 +48,23 @@
             </div>
           </div>
 
-          <div v-if="profileStatus !== 1" class="mt-2 text-cyan-100/85">
-            资料审核通过后才会显示头像和签名
-          </div>
-
-          <div v-if="isSelf" class="mt-3">
-            <NeonActionButton variant="profile-outline" @click="goToSettings()">设置个人资料</NeonActionButton>
+          <div class="profile-head-foot">
+            <span v-if="profileStatus !== 1" class="profile-hint">
+              资料审核通过后才会显示头像和签名
+            </span>
+            <NeonActionButton v-if="isSelf" variant="profile-outline" @click="goToSettings()">
+              设置个人资料
+            </NeonActionButton>
           </div>
         </div>
       </div>
-
-      <div class="section-divider" />
     </NeonCard>
 
     <NeonCard v-if="isSelf" class="box-card mt-5">
-      <h3 class="section-title mb-3">我的称号</h3>
-      <NeonActionButton variant="profile-outline" @click="goToSettings('titles')">申请称号</NeonActionButton>
+      <div class="section-head">
+        <h3 class="section-title">我的称号</h3>
+        <NeonActionButton variant="profile-outline" size="sm" @click="goToSettings('titles')">申请称号</NeonActionButton>
+      </div>
       <div v-if="visibleMyTitles.length" class="mt-5 flex flex-wrap gap-3">
         <div v-for="item in visibleMyTitles" :key="item.id" class="title-item">
           <TitleBadge :name="item.name" :tier="item.tier" :acquisition-method="item.acquisitionMethod" />
@@ -72,14 +78,14 @@
     </NeonCard>
 
     <NeonCard v-else-if="publicTitles.length" class="box-card mt-5">
-      <h3 class="section-title mb-3">获得的称号</h3>
+      <h3 class="section-title">获得的称号</h3>
       <div class="flex flex-wrap gap-2">
         <TitleBadge v-for="item in publicTitles" :key="item.id" :name="item.name" :tier="item.tier" :acquisition-method="item.acquisitionMethod" />
       </div>
     </NeonCard>
 
     <NeonCard v-if="scoredScores.length > 0" class="box-card mt-5">
-      <h3 class="section-title mb-3">已完成课题及分数</h3>
+      <h3 class="section-title">已完成课题及分数</h3>
 
       <NeonRankTable min-width-class="min-w-220" text-size-class="text-base">
           <template #head>
@@ -147,10 +153,10 @@
       </div>
     </NeonCard>
 
-    <NeonCard v-if="viewUserId" class="box-card mt-5">
-      <h3 class="section-title mb-3">兑换记录</h3>
+    <NeonCard v-if="viewUserId && awardRedemptions.length > 0" class="box-card mt-5">
+      <h3 class="section-title">兑换记录</h3>
 
-      <NeonRankTable v-if="awardRedemptions.length > 0" min-width-class="min-w-180" text-size-class="text-base">
+      <NeonRankTable min-width-class="min-w-180" text-size-class="text-base">
         <template #head>
           <tr>
             <th class="px-4 py-3 text-center">奖品名称</th>
@@ -182,8 +188,6 @@
         </tr>
       </NeonRankTable>
 
-      <div v-else class="py-3 text-center text-cyan-100/75">暂无兑换记录</div>
-
       <div v-if="awardRedemptions.length > tablePageSize" class="mt-4 flex items-center justify-center gap-2">
         <NeonActionButton variant="profile-outline" :disabled="awardPage <= 1" @click="goAwardPage(awardPage - 1)">上一页</NeonActionButton>
         <span class="text-cyan-100/85">{{ awardPage }} / {{ awardTotalPages }}</span>
@@ -192,7 +196,7 @@
     </NeonCard>
 
     <NeonCard v-if="RatedActivities.length > 0" class="box-card mt-5" padding-class="p-4">
-      <h3 class="section-title mb-3">已参与的活动与分数详情</h3>
+      <h3 class="section-title">已参与的活动与分数详情</h3>
 
       <div class="space-y-3">
         <section
@@ -639,17 +643,157 @@ watch(() => route.params.id, () => {
 </script>
 
 <style scoped>
+/* ===== 页面容器 ===== */
+.profile-page {
+  font-size: 16px;
+}
+
+/* ===== 头部卡片：头像 + 信息两栏，信息左对齐 ===== */
+.profile-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.profile-head-main {
+  flex: 1;
+  min-width: 0;          /* 允许内部文本收缩，避免撑破卡片 */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 姓名 / 在线状态 / 佩戴称号 同一行，重点信息集中 */
+.profile-name-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.profile-head-foot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-height: 32px;
+}
+
+.profile-hint {
+  font-size: 13px;
+  color: rgba(224, 247, 255, 0.72);
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 18px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.status-online {
+  color: #6ee7b7;
+  border-color: rgba(110, 231, 183, 0.35);
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.status-offline {
+  color: rgba(207, 250, 254, 0.6);
+  border-color: rgba(207, 250, 254, 0.18);
+  background: rgba(148, 163, 184, 0.1);
+}
+
+/* 签名：随内容增高，不再固定 88px 造成大片空白 */
+.signature-box {
+  min-height: 0;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(7, 24, 46, 0.5);
+  color: #e0f7ff;
+  padding: 10px 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.profile-signature {
+  width: 100%;
+  max-width: 720px;
+  text-align: left;
+}
+
+/* ===== 区块：标题左对齐 + 与表格对齐 ===== */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+  text-align: left;
+}
+
+.section-title {
+  color: rgba(224, 247, 255, 0.95);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin: 0 0 12px;
+  text-align: left;      /* 抵消全局 #app 居中 */
+}
+
+.section-head .section-title {
+  margin-bottom: 0;
+}
+
+/* 卡片内一律左对齐，与表格列对齐 */
+.box-card {
+  text-align: left;
+}
+
+.box-card h2 {
+  font-size: 1.5rem;
+}
+
+.box-card h3 {
+  font-size: 1.25rem;
+}
+
+/* ===== 头像 ===== */
+.avatar-btn {
+  display: inline-flex;
+  flex: none;
+  border-radius: 999px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(7, 24, 46, 0.45);
+}
+
+.avatar-image {
+  width: 112px;
+  height: 112px;
+  border-radius: 999px;
+  object-fit: cover;
+  display: block;
+}
+
+/* ===== 称号列表：紧凑网格，避免竖着堆成一列 ===== */
 .title-item {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 10px;
+  padding: 10px 12px;
   border: 1px solid rgba(103, 232, 249, 0.18);
   border-radius: 12px;
   background: rgba(15, 23, 42, 0.4);
+  text-align: left;
 }
 
+/* ===== 页标题 ===== */
 .glitch-title {
   position: relative;
   display: inline-block;
@@ -661,91 +805,6 @@ watch(() => route.params.id, () => {
   color: transparent;
   -webkit-text-fill-color: transparent;
   text-shadow: 0 0 16px rgba(139, 92, 246, 0.38);
-}
-
-.profile-page {
-  font-size: 16px;
-}
-
-.profile-name {
-  margin: 0;
-  color: #f5fbff;
-  text-shadow: 0 0 10px rgba(125, 211, 252, 0.25);
-}
-
-.profile-signature {
-  width: min(92vw, 520px);
-}
-
-.signature-box {
-  min-height: 88px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  background: rgba(7, 24, 46, 0.58);
-  color: #e0f7ff;
-  padding: 10px 12px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-}
-
-.thumb {
-  width: 60px;
-  height: 60px;
-  object-fit: cover;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.avatar-btn {
-  display: inline-flex;
-  border-radius: 999px;
-  padding: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  background: rgba(7, 24, 46, 0.45);
-}
-
-.avatar-image {
-  width: 128px;
-  height: 128px;
-  border-radius: 999px;
-  object-fit: cover;
-}
-
-.section-divider {
-  margin-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.close-btn {
-  position: absolute;
-  right: 16px;
-  top: 16px;
-  z-index: 2;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 8px;
-  background: rgba(15, 23, 42, 0.7);
-  color: #fff;
-  padding: 6px 12px;
-}
-
-.preview-image {
-  max-width: 90vw;
-  max-height: 80vh;
-  border-radius: 12px;
-}
-
-.box-card h2 {
-  font-size: 1.5rem;
-}
-
-.box-card h3 {
-  font-size: 1.25rem;
-}
-
-.section-title {
-  color: rgba(224, 247, 255, 0.95);
-  font-weight: 600;
-  letter-spacing: 0.04em;
 }
 
 .glitch-title::before,
@@ -768,8 +827,76 @@ watch(() => route.params.id, () => {
   clip-path: polygon(0 62%, 100% 58%, 100% 100%, 0 96%);
 }
 
+.profile-name {
+  margin: 0;
+  color: #f5fbff;
+  text-shadow: 0 0 10px rgba(125, 211, 252, 0.25);
+  font-size: 1.5rem;
+  line-height: 1.3;
+}
+
+/* ===== 表格缩略图 ===== */
+.thumb {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* ===== 弹层 ===== */
+.close-btn {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  z-index: 2;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.7);
+  color: #fff;
+  padding: 6px 12px;
+}
+
+.preview-image {
+  max-width: 90vw;
+  max-height: 80vh;
+  border-radius: 12px;
+}
+
+/* ===== 活动面板 ===== */
 .activity-panel {
   font-size: 15px;
+  text-align: left;
+}
+
+.activity-panel button {
+  text-align: left;
+}
+
+/* ===== 窄屏：头像居中、信息占满整宽 ===== */
+@media (max-width: 640px) {
+  .profile-head {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .profile-head-main {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .profile-name-row {
+    justify-content: center;
+  }
+
+  .profile-head-foot {
+    justify-content: center;
+  }
+
+  .profile-signature {
+    max-width: 100%;
+  }
 }
 </style>
 
