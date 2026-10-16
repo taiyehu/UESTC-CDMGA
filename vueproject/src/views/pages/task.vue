@@ -9,9 +9,11 @@
     <div v-if="loading" class="hud-card p-8 text-cyan-100/80">载入课题数据中...</div>
     <div v-else-if="error" class="hud-card p-8 text-rose-300">{{ error }}</div>
 
+    <template v-else>
+    <div v-if="!courses.length" class="hud-card p-8 text-center text-cyan-100/75">暂无课题</div>
     <div v-else class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
       <Motion
-        v-for="(course, index) in courses"
+        v-for="(course, index) in pagedCourses"
         :key="course.id"
         :initial="isMobileLite ? false : { opacity: 0, y: 18 }"
         :animate="isMobileLite ? undefined : { opacity: 1, y: 0 }"
@@ -49,11 +51,17 @@
         </div>
       </Motion>
     </div>
+    <nav v-if="totalPages > 1" class="mt-6 flex items-center justify-center gap-4" aria-label="课题分页">
+      <NeonActionButton :disabled="currentPage === 1" @click="changePage(currentPage - 1)">上一页</NeonActionButton>
+      <span class="text-sm text-cyan-100/85">{{ currentPage }} / {{ totalPages }}</span>
+      <NeonActionButton :disabled="currentPage === totalPages" @click="changePage(currentPage + 1)">下一页</NeonActionButton>
+    </nav>
+    </template>
   </section>
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Motion } from 'motion-v'
 import { fetchCourseData } from '@/api/course'
@@ -64,6 +72,10 @@ import { isMobileLite } from '@/utils/visualMode'
 const router = useRouter()
 
 const courses = ref<Course[]>([])
+const pageSize = 3
+const currentPage = ref(1)
+const totalPages = computed(() => Math.max(1, Math.ceil(courses.value.length / pageSize)))
+const pagedCourses = computed(() => courses.value.slice((currentPage.value - 1) * pageSize, currentPage.value * pageSize))
 const loading = ref(true)
 const error = ref<string | null>(null)
 
@@ -74,11 +86,16 @@ async function fetchCourses() {
     courses.value = [...data].sort(
       (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
     )
+    currentPage.value = 1
   } catch (err: any) {
     error.value = err?.message || String(err)
   } finally {
     loading.value = false
   }
+}
+
+function changePage(page: number): void {
+  currentPage.value = Math.min(totalPages.value, Math.max(1, page))
 }
 
 function goTaskDetail(id: number) {

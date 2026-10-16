@@ -12,13 +12,21 @@
     <div class="hud-card p-4 md:p-6">
       <h2 class="mb-5 text-center text-xl font-semibold text-cyan-100 md:text-2xl">用户总分排行榜</h2>
 
-      <NeonRankTable min-width-class="min-w-160" text-size-class="text-lg">
+      <div class="mb-5 flex flex-wrap items-center justify-center gap-3">
+        <label for="ranking-season" class="text-sm text-cyan-100/85">排行榜时段</label>
+        <select id="ranking-season" v-model.number="selectedStartYear" class="season-select" @change="handleSeasonChange">
+          <option v-for="season in seasonOptions" :key="season.startYear" :value="season.startYear">
+            {{ season.label }}
+          </option>
+        </select>
+      </div>
+
+      <NeonRankTable min-width-class="min-w-110" text-size-class="text-lg">
           <template #head>
             <tr>
               <th class="px-4 py-3 text-center">排名</th>
-              <th class="px-4 py-3 text-center">头像</th>
-              <th class="px-4 py-3 text-center">用户名</th>
-              <th class="px-4 py-3 text-center">总分</th>
+              <th class="px-4 py-3 text-left">用户</th>
+              <th class="px-4 py-3 text-center">分数</th>
             </tr>
           </template>
             <tr
@@ -30,23 +38,22 @@
                 {{ getDisplayRank(row) }}
               </td>
               <td class="px-4 py-3">
-                <button
-                  type="button"
-                  class="mx-auto block cursor-pointer"
-                  :title="row.description || '暂无个性签名 · 点击查看玩家信息'"
-                  :aria-label="`查看${row.account}的玩家信息`"
-                  @click="goToProfile(row.identityId)"
-                >
-                  <img
-                    loading="lazy"
-                    :src="mediaThumbnailUrl(getImageUrl(row.avatar), 96)"
-                    @error="restoreOriginalImage($event, getImageUrl(row.avatar))"
-                    alt="头像"
-                    class="h-10 w-10 rounded-full border border-cyan-300/45 object-cover"
-                  />
-                </button>
+                <div class="flex items-center gap-3">
+                  <button type="button" class="shrink-0" :title="row.description || '暂无个性签名 · 点击查看玩家信息'" :aria-label="`查看${row.account}的玩家信息`" @click="goToProfile(row.identityId)">
+                    <img
+                      loading="lazy"
+                      :src="mediaThumbnailUrl(getImageUrl(row.avatar) || defaultAvatar, 96)"
+                      @error="restoreOriginalImage($event, getImageUrl(row.avatar) || defaultAvatar)"
+                      :alt="`${row.account}的头像`"
+                      class="h-10 w-10 rounded-full border border-cyan-300/45 object-cover"
+                    />
+                  </button>
+                  <div class="flex min-w-0 flex-col items-start gap-1">
+                    <button type="button" class="break-all text-left font-semibold text-sky-300 hover:text-sky-200" @click="goToProfile(row.identityId)">{{ row.account }}</button>
+                    <TitleBadge v-if="row.titleName && row.titleTier" compact :name="row.titleName" :tier="row.titleTier" :acquisition-method="row.titleAcquisitionMethod" />
+                  </div>
+                </div>
               </td>
-              <td class="px-4 py-3 text-center">{{ row.account }}</td>
               <td class="px-4 py-3 text-center font-semibold text-cyan-100">{{ row.totalScore }}</td>
             </tr>
       </NeonRankTable>
@@ -81,14 +88,6 @@
         </NeonActionButton>
       </div>
 
-      <div class="mt-5 flex items-center justify-center gap-3">
-        <label for="ranking-season" class="text-sm text-cyan-100/85">排行榜时段</label>
-        <select id="ranking-season" v-model.number="selectedStartYear" class="season-select" @change="handleSeasonChange">
-          <option v-for="season in seasonOptions" :key="season.startYear" :value="season.startYear">
-            {{ season.label }}
-          </option>
-        </select>
-      </div>
     </div>
 
   </section>
@@ -102,6 +101,8 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import NeonRankTable from '@/components/NeonRankTable.vue'
 import NeonActionButton from '@/components/NeonActionButton.vue'
+import TitleBadge from '@/components/TitleBadge.vue'
+import defaultAvatar from '@/assets/default-avatar.png'
 
 const rankAllData = ref<any[]>([])
 const rankSortedData = ref<any[]>([])

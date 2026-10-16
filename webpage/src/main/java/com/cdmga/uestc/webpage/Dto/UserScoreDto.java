@@ -6,6 +6,9 @@ public class UserScoreDto {
     private String avatar;
     private String description;
     private String account;
+    private String titleName;
+    private String titleTier;
+    private String titleAcquisitionMethod;
 
     public UserScoreDto(Integer identityId, Float totalScore, String avatar, String account) {
         this.identityId = identityId;
@@ -54,6 +57,13 @@ public class UserScoreDto {
     public void setAccount(String account) {
         this.account = account;
     }
+
+    public String getTitleName() { return titleName; }
+    public void setTitleName(String titleName) { this.titleName = titleName; }
+    public String getTitleTier() { return titleTier; }
+    public void setTitleTier(String titleTier) { this.titleTier = titleTier; }
+    public String getTitleAcquisitionMethod() { return titleAcquisitionMethod; }
+    public void setTitleAcquisitionMethod(String titleAcquisitionMethod) { this.titleAcquisitionMethod = titleAcquisitionMethod; }
 
     public void setPoint(double point) {
         this.totalScore = (float) point;

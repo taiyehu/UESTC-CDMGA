@@ -1,12 +1,10 @@
 <template>
   <section class="forum-page mx-auto max-w-7xl px-4 pb-14 pt-6 text-cyan-50 md:px-8">
-    <header class="forum-header mb-6 flex flex-wrap items-center justify-between gap-4">
-      <div>
-        <p class="text-xs font-semibold tracking-[0.22em] text-sky-300">CDMGA COMMUNITY</p>
-        <h1 class="mt-1 text-3xl font-bold">群友论坛</h1>
-        <p class="mt-2 text-sm text-slate-400">分享动态、交流想法，看看群友最近在聊什么。</p>
+    <header class="forum-header mb-6 text-center">
+      <h1 class="glitch-title text-[clamp(1.8rem,6vw,4.5rem)] font-semibold" data-text="CDMGA FORUM">CDMGA FORUM</h1>
+      <div class="mt-4 flex justify-end">
+        <button class="primary-button" @click="showEditor = !showEditor">{{ showEditor ? '收起编辑器' : '＋ 发布帖子' }}</button>
       </div>
-      <button class="primary-button" @click="showEditor = !showEditor">{{ showEditor ? '收起编辑器' : '＋ 发布帖子' }}</button>
     </header>
 
     <div class="forum-layout">
@@ -177,6 +175,34 @@ onMounted(() => { void load(); void loadMyAvatar() })
 </script>
 
 <style scoped>
+.glitch-title {
+  position: relative;
+  display: inline-block;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  background-image: linear-gradient(135deg, #22d3ee 0%, #9333ea 40%, #c026d3 62%, #f472b6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 16px rgba(139, 92, 246, 0.38);
+}
+.glitch-title::before, .glitch-title::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.glitch-title::before {
+  color: rgba(34, 211, 238, 0.45);
+  transform: translateX(1px);
+  clip-path: polygon(0 4%, 100% 0, 100% 38%, 0 42%);
+}
+.glitch-title::after {
+  color: rgba(192, 38, 211, 0.82);
+  transform: translateX(-1px);
+  clip-path: polygon(0 62%, 100% 58%, 100% 100%, 0 96%);
+}
 .forum-layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; align-items: start; gap: 20px; }
 .surface-panel { border: 1px solid rgba(148, 163, 184, .2); border-radius: 16px; background: rgba(15, 23, 42, .92); box-shadow: 0 12px 32px rgba(2, 6, 23, .16); }
 .feed-card { transition: border-color .2s, transform .2s; }

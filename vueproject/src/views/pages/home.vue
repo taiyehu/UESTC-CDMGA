@@ -1,49 +1,8 @@
 <template>
   <section class="mx-auto w-full max-w-7xl px-4 pb-10 pt-4 md:px-8 md:pt-6">
-    <div class="mb-5 flex items-end justify-between gap-3 max-md:flex-col max-md:items-start">
-      <div>
-        <p class="text-xs uppercase tracking-[0.26em] text-cyan-100/70">UESTC CDMGA</p>
-        <h1 class="mt-1 text-3xl font-bold text-cyan-50 md:text-4xl">主页看板</h1>
-      </div>
-      <p class="text-sm text-cyan-100/80">当前时间：{{ formatDateTime(nowTick) }}</p>
-    </div>
-
-    <NeonCard class="mb-5 rounded-3xl p-5 md:p-6">
-      <div class="flex flex-wrap items-center gap-5">
-        <div class="min-w-0 flex-1">
-          <p class="text-xs uppercase tracking-[0.22em] text-cyan-100/65">每日群友</p>
-          <h2 class="mt-1 text-xl font-semibold text-cyan-50">每天认识一名群友</h2>
-          <p v-if="dailyMemberLoading" class="mt-3 text-sm text-cyan-100/75">正在寻找今天的群友...</p>
-          <p v-else-if="!dailyMember" class="mt-3 text-sm text-cyan-100/75">今天暂时没有可介绍的群友</p>
-          <div v-else class="mt-4 flex items-center gap-4">
-            <img :src="getImageUrl(dailyMember.avatar) || defaultAvatar" alt="今日群友头像" class="h-16 w-16 rounded-full border border-cyan-300/50 object-cover" />
-            <div class="min-w-0">
-              <p class="text-lg font-semibold text-cyan-50">{{ dailyMember.account }}</p>
-              <p class="mt-1 break-words text-sm text-cyan-100/80">{{ dailyMember.description || '这位群友还没有填写个性签名' }}</p>
-            </div>
-          </div>
-        </div>
-        <button v-if="dailyMember" class="home-btn" @click="router.push(`/profile/${dailyMember.identityId}`)">认识 TA</button>
-      </div>
-    </NeonCard>
-
-    <NeonCard class="mb-5 rounded-3xl p-5 md:p-6">
-      <div class="flex flex-wrap items-center justify-between gap-5">
-        <div>
-          <p class="text-xs uppercase tracking-[0.22em] text-cyan-100/65">每日签到 · {{ checkin?.date || shanghaiDay() }}</p>
-          <h2 class="mt-1 text-xl font-semibold text-cyan-50">{{ checkin?.checkedIn ? '今天已签到' : '抽取今日运势' }}</h2>
-          <p v-if="checkin?.fortune" class="mt-3 text-lg font-bold text-amber-200">{{ checkin.fortune.fortuneLevel }} · {{ checkin.fortune.fortuneText }}</p>
-          <div v-if="checkinFortuneDetail" class="mt-2 flex flex-wrap gap-4 text-sm text-cyan-100/85">
-            <span>宜：{{ checkinFortuneDetail.good }}</span>
-            <span>忌：{{ checkinFortuneDetail.avoid }}</span>
-          </div>
-          <p v-if="checkinError" class="mt-2 text-sm text-rose-200">{{ checkinError }}</p>
-        </div>
-        <button class="home-btn" :disabled="checkinLoading || !!checkin?.checkedIn" @click="checkinToday">
-          {{ checkinLoading ? '加载中...' : checkin?.checkedIn ? '明天再来' : '立即签到' }}
-        </button>
-      </div>
-    </NeonCard>
+    <header class="mb-8 text-center">
+      <h1 class="glitch-title text-[clamp(1.8rem,6vw,4.5rem)] font-semibold" data-text="UESTC CDMGA">UESTC CDMGA</h1>
+    </header>
 
     <div class="grid grid-cols-[1.65fr_1fr] gap-5 max-lg:grid-cols-1">
       <NeonCard
@@ -189,6 +148,45 @@
             <div class="metronome-pulse" />
           </div>
           <p class="mt-4 text-center text-xs text-cyan-100/70">节拍保持中，等待下一场活动</p>
+        </div>
+      </NeonCard>
+    </div>
+
+    <div class="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-2">
+      <NeonCard class="rounded-3xl p-5 md:p-6">
+        <div class="flex h-full flex-wrap items-center gap-5">
+          <div class="min-w-0 flex-1">
+            <p class="text-xs uppercase tracking-[0.22em] text-cyan-100/65">每日群友</p>
+            <h2 class="mt-1 text-xl font-semibold text-cyan-50">每天认识一名群友</h2>
+            <p v-if="dailyMemberLoading" class="mt-3 text-sm text-cyan-100/75">正在寻找今天的群友...</p>
+            <p v-else-if="!dailyMember" class="mt-3 text-sm text-cyan-100/75">今天暂时没有可介绍的群友</p>
+            <div v-else class="mt-4 flex items-center gap-4">
+              <img :src="getImageUrl(dailyMember.avatar) || defaultAvatar" alt="今日群友头像" class="h-16 w-16 rounded-full border border-cyan-300/50 object-cover" />
+              <div class="min-w-0">
+                <p class="text-lg font-semibold text-cyan-50">{{ dailyMember.account }}</p>
+                <p class="mt-1 break-words text-sm text-cyan-100/80">{{ dailyMember.description || '这位群友还没有填写个性签名' }}</p>
+              </div>
+            </div>
+          </div>
+          <button v-if="dailyMember" class="home-btn" @click="router.push(`/profile/${dailyMember.identityId}`)">认识 TA</button>
+        </div>
+      </NeonCard>
+
+      <NeonCard class="rounded-3xl p-5 md:p-6">
+        <div class="flex h-full flex-wrap items-center justify-between gap-5">
+          <div>
+            <p class="text-xs uppercase tracking-[0.22em] text-cyan-100/65">每日签到 · {{ checkin?.date || shanghaiDay() }}</p>
+            <h2 class="mt-1 text-xl font-semibold text-cyan-50">{{ checkin?.checkedIn ? '今天已签到' : '抽取今日运势' }}</h2>
+            <p v-if="checkin?.fortune" class="mt-3 text-lg font-bold text-amber-200">{{ checkin.fortune.fortuneLevel }} · {{ checkin.fortune.fortuneText }}</p>
+            <div v-if="checkinFortuneDetail" class="mt-2 flex flex-wrap gap-4 text-sm text-cyan-100/85">
+              <span>宜：{{ checkinFortuneDetail.good }}</span>
+              <span>忌：{{ checkinFortuneDetail.avoid }}</span>
+            </div>
+            <p v-if="checkinError" class="mt-2 text-sm text-rose-200">{{ checkinError }}</p>
+          </div>
+          <button class="home-btn" :disabled="checkinLoading || !!checkin?.checkedIn" @click="checkinToday">
+            {{ checkinLoading ? '加载中...' : checkin?.checkedIn ? '明天再来' : '立即签到' }}
+          </button>
         </div>
       </NeonCard>
     </div>
@@ -488,6 +486,39 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.glitch-title {
+  position: relative;
+  display: inline-block;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  background-image: linear-gradient(135deg, #22d3ee 0%, #9333ea 40%, #c026d3 62%, #f472b6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 16px rgba(139, 92, 246, 0.38);
+}
+
+.glitch-title::before,
+.glitch-title::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.glitch-title::before {
+  color: rgba(34, 211, 238, 0.45);
+  transform: translateX(1px);
+  clip-path: polygon(0 4%, 100% 0, 100% 38%, 0 42%);
+}
+
+.glitch-title::after {
+  color: rgba(192, 38, 211, 0.82);
+  transform: translateX(-1px);
+  clip-path: polygon(0 62%, 100% 58%, 100% 100%, 0 96%);
+}
+
 .home-btn {
   border: 1px solid rgba(125, 220, 255, 0.58);
   border-radius: 10px;
