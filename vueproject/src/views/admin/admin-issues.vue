@@ -47,7 +47,7 @@
         <td class="px-3 py-3 text-center">{{ row.issueId }}</td>
         <td class="px-3 py-3 text-center">
           <div class="flex flex-col items-center gap-2">
-            <img v-if="row.image" :src="toUrl(row.image)" alt="issue图片" class="thumb" />
+            <img v-if="row.image" loading="lazy" :src="toUrl(row.image)" alt="issue图片" class="thumb" />
             <input type="file" accept="image/*" class="hidden" :id="`img-${row.issueId}`" @change="onPickImage($event, row.issueId)" />
             <button type="button" class="neon-btn" @click="triggerPick(`img-${row.issueId}`)">上传图片</button>
           </div>

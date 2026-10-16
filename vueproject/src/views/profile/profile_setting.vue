@@ -119,7 +119,7 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { useRoute } from 'vue-router'
 import { watch } from 'vue'
-import { compressImage } from '@/components/imageCompressor'
+import { optimizeImage } from '@/utils/compression'
 import AvatarCropper from '@/components/AvatarCropper.vue'
 import defaultAvatar from '@/assets/default-avatar.png'
 import { ElMessage } from 'element-plus'
@@ -193,7 +193,7 @@ function onFileChange(e: Event) {
 async function handleAvatarCrop(croppedBlob: Blob) {
   cropperVisible.value = false
   try {
-    const compressedFile = await compressImage(croppedBlob)
+    const compressedFile = await optimizeImage(croppedBlob, { maxSide: 256, quality: 0.84 })
     const formData = new FormData()
     formData.append('avatar', compressedFile)
     formData.append('identityId', String(user.id))

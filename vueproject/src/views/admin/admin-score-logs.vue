@@ -80,6 +80,7 @@
         <td class="px-3 py-3 text-center">{{ formatDateTime(row.uploadTime) }}</td>
         <td class="px-3 py-3 text-center">
           <img
+            loading="lazy"
             v-if="row.image"
             :src="getImageUrl(row.image)"
             alt="成绩图片"

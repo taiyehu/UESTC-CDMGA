@@ -23,6 +23,7 @@
         <td class="px-3 py-3 text-center">{{ formatDateTime(score.uploadTime) }}</td>
         <td class="px-3 py-3 text-center">
           <img
+            loading="lazy"
             v-if="score.image"
             :src="getImageUrl(score.image)"
             alt="成绩图片"

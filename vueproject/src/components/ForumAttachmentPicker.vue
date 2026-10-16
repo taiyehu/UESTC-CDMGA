@@ -40,7 +40,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeUnmount, ref } from 'vue'
 import NeonActionButton from '@/components/NeonActionButton.vue'
-import { compressImage } from '@/components/imageCompressor'
+import { optimizeImage } from '@/utils/compression'
 
 const props = withDefaults(defineProps<{
   maxImages: number
@@ -71,7 +71,7 @@ async function pickImages(event: Event): Promise<void> {
   try {
     for (const file of selected) {
       if (!['image/png', 'image/jpeg', 'image/gif'].includes(file.type)) throw new Error('仅支持 PNG、JPEG、GIF 图片')
-      const compressed = await compressImage(file)
+      const compressed = await optimizeImage(file, { maxSide: 1600, quality: 0.86 })
       if (compressed.size > 5 * 1024 * 1024) throw new Error('图片压缩后仍超过5MB')
       images.value.push({ file: compressed, url: URL.createObjectURL(compressed) })
     }

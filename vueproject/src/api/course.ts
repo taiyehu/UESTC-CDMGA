@@ -1,6 +1,7 @@
 // src/api/course.js
 import request from '@/utils/request'
 import axios from 'axios'
+import { optimizeImage } from '@/utils/compression'
 
 export interface PageParams {
   page: number
@@ -74,7 +75,8 @@ export const updateCourseData = (courseId: number | string, payload: UpdateCours
 
 export const uploadCourseImage = async (file: File) => {
   const formData = new FormData()
-  formData.append('image', file)
+  const optimized = await optimizeImage(file, { maxSide: 1600, quality: 0.86 })
+  formData.append('image', optimized, optimized.name)
   const res = await axios.post('/api/course/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })

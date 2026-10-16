@@ -49,6 +49,7 @@
           <td v-if="isGlobalHistoryMode" class="px-3 py-3 text-center">{{ row.teamId ?? '-' }}</td>
           <td v-else class="px-3 py-3 text-center">
             <img
+              loading="lazy"
               v-if="row.image"
               :src="getImageUrl(row.image)"
               alt="提交图片"

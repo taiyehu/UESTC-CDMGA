@@ -19,7 +19,7 @@
 
       <tr v-for="profile in pagedProfiles" :key="profile.id || profile.identityId" class="border-t border-white/12">
         <td class="px-4 py-3 text-center">
-          <img :src="getImageUrl(profile.avatar)" alt="头像" class="avatar mx-auto" />
+          <img loading="lazy" :src="getImageUrl(profile.avatar)" alt="头像" class="avatar mx-auto" />
         </td>
         <td class="px-4 py-3 text-center">{{ profile.account || '-' }}</td>
         <td class="px-4 py-3 text-center">{{ profile.identityId || '-' }}</td>

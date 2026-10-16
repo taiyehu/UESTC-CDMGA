@@ -34,7 +34,7 @@
           <article v-for="post in posts" :key="post.id" class="surface-panel feed-card relative p-5 md:p-6">
             <button v-if="post.authorId !== me && post.status === 'visible'" class="report-button" @click="openReport(post.id)">举报</button>
             <div class="flex items-start gap-3 pr-10">
-              <router-link :to="`/profile/${post.authorId}`" class="shrink-0"><img :src="avatarUrl(post.avatar)" :alt="`${post.authorName}的头像`" class="avatar" /></router-link>
+              <router-link :to="`/profile/${post.authorId}`" class="shrink-0"><img loading="lazy" :src="avatarUrl(post.avatar)" :alt="`${post.authorName}的头像`" class="avatar" /></router-link>
               <div class="flex min-w-0 flex-col items-start gap-1">
                 <div class="flex flex-wrap items-center gap-x-2 gap-y-1"><router-link :to="`/profile/${post.authorId}`" class="font-semibold text-sky-300 hover:text-sky-200">{{ post.authorName }}</router-link><span v-if="post.status !== 'visible'" class="status-tag">{{ post.status === 'hidden' ? '已隐藏' : '已删除' }}</span></div>
                 <TitleBadge v-if="post.titleName && post.titleTier" compact :name="post.titleName" :tier="post.titleTier" :acquisition-method="post.titleAcquisitionMethod" />
@@ -44,7 +44,7 @@
             <h2 v-else class="mt-5 text-center text-xl font-semibold text-slate-400">{{ post.title }}</h2>
             <p class="post-body mt-2 line-clamp-3 whitespace-pre-wrap break-words text-left text-sm leading-6 text-slate-200">{{ post.content }}</p>
             <router-link v-if="post.status === 'visible' && post.images?.length" :to="`/forum/${post.id}`" class="post-body mt-4 grid max-w-xl grid-cols-3 gap-2">
-              <img v-for="image in post.images.slice(0, 3)" :key="image.id" :src="image.url" alt="帖子图片" class="feed-image" />
+              <img v-for="image in post.images.slice(0, 3)" :key="image.id" loading="lazy" :src="image.url" alt="帖子图片" class="feed-image" />
             </router-link>
             <div class="feed-actions mt-5 flex flex-wrap items-center gap-5 border-t border-white/10 pt-4 text-sm text-slate-400">
               <router-link v-if="post.status !== 'deleted'" :to="`/forum/${post.id}`" class="hover:text-sky-300">↩ <span class="ml-1">{{ post.replyCount }} 评论</span></router-link>

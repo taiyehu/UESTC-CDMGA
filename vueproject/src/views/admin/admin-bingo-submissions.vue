@@ -25,7 +25,7 @@
         <td class="px-3 py-3 text-center">{{ row.teamId }}</td>
         <td class="px-3 py-3 text-center">{{ row.uploadTime }}</td>
         <td class="px-3 py-3 text-center">
-          <img v-if="row.image" :src="row.image" alt="提交图片" class="thumb mx-auto" @click="openPreview(row.image)" />
+          <img v-if="row.image" loading="lazy" :src="row.image" alt="提交图片" class="thumb mx-auto" @click="openPreview(row.image)" />
           <span v-else>-</span>
         </td>
         <td class="px-2 py-3 text-left wrap-break-word">{{ row.method }}</td>

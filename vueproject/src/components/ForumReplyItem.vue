@@ -1,6 +1,6 @@
 <template>
   <div class="reply-item flex items-start gap-3 text-left" :class="{ nested }">
-    <router-link :to="`/profile/${reply.authorId}`" class="shrink-0"><img :src="avatarUrl(reply.avatar)" :alt="`${reply.authorName}的头像`" class="avatar" /></router-link>
+    <router-link :to="`/profile/${reply.authorId}`" class="shrink-0"><img loading="lazy" :src="avatarUrl(reply.avatar)" :alt="`${reply.authorName}的头像`" class="avatar" /></router-link>
     <div class="min-w-0 flex-1 text-left">
       <div class="flex items-start justify-between gap-2">
         <div class="flex min-w-0 flex-col items-start gap-1 text-left">
@@ -11,7 +11,7 @@
       </div>
       <p v-if="reply.parentReplyId && reply.parentAuthorName" class="mt-2 text-xs text-slate-400">回复 <span class="text-sky-300">@{{ reply.parentAuthorName }}</span></p>
       <p class="mt-3 whitespace-pre-wrap break-words text-left text-sm leading-7 text-slate-200">{{ reply.content }}</p>
-      <div v-for="image in reply.images" :key="image.id" class="mt-3"><button type="button" @click="$emit('preview', image.url)"><img :src="image.url" alt="回复图片" class="reply-image" /></button></div>
+      <div v-for="image in reply.images" :key="image.id" class="mt-3"><button type="button" @click="$emit('preview', image.url)"><img loading="lazy" :src="image.url" alt="回复图片" class="reply-image" /></button></div>
       <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-400"><span>{{ formatTime(reply.createdAt) }}</span><button v-if="reply.status === 'visible'" class="text-button" @click="$emit('like', reply.id)">{{ reply.liked ? '♥' : '♡' }} {{ reply.likeCount }}</button><button v-if="reply.status === 'visible'" class="text-button" @click="$emit('reply', reply)">回复</button><button v-if="reply.authorId !== me && reply.status === 'visible'" class="text-button" @click="$emit('report', reply.id)">举报</button><button v-if="(reply.authorId === me || postAuthorId === me) && reply.status !== 'deleted'" class="text-button danger" @click="$emit('delete', reply)">删除</button></div>
     </div>
   </div>

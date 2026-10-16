@@ -21,7 +21,7 @@
             </template>
             <p v-else class="whitespace-pre-wrap break-words text-left leading-8 text-slate-200">{{ post.content }}</p>
             <div v-if="post.images?.length" class="mt-5 grid max-w-2xl grid-cols-2 gap-2 sm:grid-cols-3">
-              <div v-for="image in post.images" :key="image.id"><button type="button" class="w-full" @click="previewUrl = image.url"><img :src="image.url" alt="帖子图片" class="post-image" /></button><button v-if="editingPost" class="text-button mt-1" @click="removeImage(image.id)">移除图片</button></div>
+              <div v-for="image in post.images" :key="image.id"><button type="button" class="w-full" @click="previewUrl = image.url"><img loading="lazy" :src="image.url" alt="帖子图片" class="post-image" /></button><button v-if="editingPost" class="text-button mt-1" @click="removeImage(image.id)">移除图片</button></div>
             </div>
             <div v-if="post.files?.length" class="mt-5 space-y-2"><div v-for="file in post.files" :key="file.id" class="file-row"><a :href="file.url" class="min-w-0 truncate text-sky-300 hover:underline">▧ {{ file.name }}</a><button v-if="editingPost" class="text-button" @click="removeFile(file.id)">移除</button></div></div>
           </div>

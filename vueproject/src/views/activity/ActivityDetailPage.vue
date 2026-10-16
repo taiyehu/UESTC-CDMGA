@@ -49,7 +49,7 @@
               <td class="px-3 py-3 text-center">{{ formatDateTime(course.endTime) }}</td>
               <td class="px-3 py-3 text-center">{{ course.rule || '-' }}</td>
               <td class="px-3 py-3 text-center">
-                <img v-if="course.image" :src="getImageUrl(course.image)" alt="课题图片" class="thumb mx-auto" />
+                <img v-if="course.image" loading="lazy" :src="getImageUrl(course.image)" alt="课题图片" class="thumb mx-auto" />
                 <span v-else>-</span>
               </td>
               <td class="px-3 py-3 text-center">

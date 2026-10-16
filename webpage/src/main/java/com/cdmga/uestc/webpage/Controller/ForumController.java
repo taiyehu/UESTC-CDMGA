@@ -130,10 +130,12 @@ public class ForumController {
     }
 
     private String imageExtension(byte[] data) {
+        if (data.length >= 12 && data[0] == 'R' && data[1] == 'I' && data[2] == 'F' && data[3] == 'F'
+                && data[8] == 'W' && data[9] == 'E' && data[10] == 'B' && data[11] == 'P') return "webp";
         if (data.length >= 8 && (data[0] & 255) == 0x89 && data[1] == 'P' && data[2] == 'N' && data[3] == 'G' && data[4] == 13 && data[5] == 10 && data[6] == 26 && data[7] == 10) return "png";
         if (data.length >= 3 && (data[0] & 255) == 0xff && (data[1] & 255) == 0xd8 && (data[2] & 255) == 0xff) return "jpg";
         if (data.length >= 6 && data[0] == 'G' && data[1] == 'I' && data[2] == 'F' && data[3] == '8' && (data[4] == '7' || data[4] == '9') && data[5] == 'a') return "gif";
-        throw new IllegalArgumentException("仅支持 PNG、JPEG、GIF 图片");
+        throw new IllegalArgumentException("仅支持 PNG、JPEG、GIF、WebP 图片");
     }
 
     @DeleteMapping("/images/{id}")
@@ -194,12 +196,14 @@ public class ForumController {
 
     @GetMapping("/media/{filename:.+}")
     public ResponseEntity<Resource> image(@PathVariable String filename, HttpServletRequest request) throws IOException {
-        if (!filename.matches("[0-9a-f-]{36}\\.(png|jpg|gif)")) return ResponseEntity.notFound().build();
+        if (!filename.matches("[0-9a-f-]{36}\\.(png|jpg|gif|webp)")) return ResponseEntity.notFound().build();
         String url = "/api/forum/media/" + filename;
         if (!service.canViewImage(url, viewer(request))) return ResponseEntity.notFound().build();
         Path target = Path.of(uploadDirectory).toAbsolutePath().normalize().resolve(filename);
         if (!Files.isRegularFile(target)) return ResponseEntity.notFound().build();
-        MediaType type = filename.endsWith(".png") ? MediaType.IMAGE_PNG : filename.endsWith(".gif") ? MediaType.parseMediaType("image/gif") : MediaType.IMAGE_JPEG;
+        MediaType type = filename.endsWith(".png") ? MediaType.IMAGE_PNG
+            : filename.endsWith(".gif") ? MediaType.parseMediaType("image/gif")
+            : filename.endsWith(".webp") ? MediaType.parseMediaType("image/webp") : MediaType.IMAGE_JPEG;
         return ResponseEntity.ok().contentType(type).header("X-Content-Type-Options", "nosniff").body(new UrlResource(target.toUri()));
     }
 

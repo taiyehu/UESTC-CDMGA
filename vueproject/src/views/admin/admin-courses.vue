@@ -47,6 +47,7 @@
         <td class="px-3 py-3 text-center">
           <div class="flex flex-col items-center gap-2">
             <img
+            loading="lazy"
               v-if="course.image"
               :src="getImageUrl(course.image)"
               alt="课题图片"

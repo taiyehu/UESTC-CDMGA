@@ -44,8 +44,10 @@
             class="course-card"
           >
             <img
+              loading="lazy"
               v-if="course.image"
-              :src="getImageUrl(course.image)"
+              :src="mediaThumbnailUrl(getImageUrl(course.image), 960)"
+              @error="restoreOriginalImage($event, getImageUrl(course.image))"
               :alt="course.title"
               class="course-image"
             />
@@ -81,7 +83,9 @@
             <td class="px-4 py-3">
               <button type="button" class="mx-auto block cursor-pointer" :title="row.description || '暂无个性签名 · 点击查看玩家信息'" :aria-label="`查看${row.account}的玩家信息`" @click="goToProfile(row.identityId)">
                 <img
-                  :src="getImageUrl(row.avatar)"
+                  loading="lazy"
+                  :src="mediaThumbnailUrl(getImageUrl(row.avatar), 96)"
+                  @error="restoreOriginalImage($event, getImageUrl(row.avatar))"
                   alt="头像"
                   class="h-10 w-10 rounded-full border border-cyan-300/45 object-cover"
                 />
@@ -102,7 +106,9 @@
                   <p class="text-xs font-semibold tracking-wide text-cyan-50">{{ submission.courseTitle || '课题' }}</p>
                   <p class="my-2 text-sm font-semibold text-fuchsia-100">{{ submission.displayScoreText || submission.displayScore }}</p>
                   <img
-                    :src="getImageUrl(submission.image)"
+                    loading="lazy"
+                    :src="mediaThumbnailUrl(getImageUrl(submission.image), 160)"
+                    @error="restoreOriginalImage($event, getImageUrl(submission.image))"
                     alt="课题图片"
                     class="h-15 w-15 cursor-pointer rounded-md border border-white/50 object-cover transition hover:scale-105"
                     @click="handleImageClick(getImageUrl(submission.image))"
@@ -160,6 +166,7 @@
 </template>
 
 <script lang="ts" setup>
+import { mediaThumbnailUrl, restoreOriginalImage } from '@/utils/mediaThumbnail'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'

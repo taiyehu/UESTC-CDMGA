@@ -23,7 +23,7 @@
 <script lang="ts" setup>
 import axios from 'axios'
 import { computed, ref } from 'vue'
-import { compressImage } from '@/components/imageCompressor'
+import { optimizeImage } from '@/utils/compression'
 
 const props = withDefaults(
   defineProps<{
@@ -121,7 +121,7 @@ async function handleFileChange(event: Event): Promise<void> {
   statusText.value = ''
 
   try {
-    const uploadUrl = await uploadNow(file, file.name)
+    const uploadUrl = await uploadNow(file)
     if (!uploadUrl) return
 
     pendingFile.value = null
@@ -137,7 +137,7 @@ async function handleFileChange(event: Event): Promise<void> {
   }
 }
 
-async function uploadNow(fileParam?: File | Blob | null, fileNameParam?: string): Promise<string> {
+async function uploadNow(fileParam?: File | Blob | null): Promise<string> {
   const file = fileParam || pendingFile.value
   if (!file) {
     return props.modelValue || ''
@@ -147,10 +147,9 @@ async function uploadNow(fileParam?: File | Blob | null, fileNameParam?: string)
   statusText.value = ''
 
   try {
-    const compressed = await compressImage(file)
+    const compressed = await optimizeImage(file, { maxSide: 1920, quality: 0.88 })
     const formData = new FormData()
-    const fileName = fileNameParam || pendingName.value || 'upload-image.jpg'
-    formData.append(props.fieldName, compressed, fileName)
+    formData.append(props.fieldName, compressed, compressed.name)
 
     const res = await axios.post(props.action, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },

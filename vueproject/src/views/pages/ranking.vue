@@ -38,7 +38,9 @@
                   @click="goToProfile(row.identityId)"
                 >
                   <img
-                    :src="getImageUrl(row.avatar)"
+                    loading="lazy"
+                    :src="mediaThumbnailUrl(getImageUrl(row.avatar), 96)"
+                    @error="restoreOriginalImage($event, getImageUrl(row.avatar))"
                     alt="头像"
                     class="h-10 w-10 rounded-full border border-cyan-300/45 object-cover"
                   />
@@ -93,6 +95,7 @@
 </template>
 
 <script lang="ts" setup>
+import { mediaThumbnailUrl, restoreOriginalImage } from '@/utils/mediaThumbnail'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'

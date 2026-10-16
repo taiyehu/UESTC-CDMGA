@@ -157,6 +157,7 @@
             class="overflow-hidden rounded-2xl border border-cyan-100/20 bg-cyan-100/6"
           >
             <img
+              loading="lazy"
               v-if="hasImage(activity.activityBanner)"
               :src="getImageUrl(activity.activityBanner)"
               alt="活动宣传图"

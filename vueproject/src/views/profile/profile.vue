@@ -17,7 +17,8 @@
           >
             <img
               class="avatar-image"
-              :src="profileStatus === 1 ? getImageUrl(profile.avatar) : defaultAvatar"
+              :src="profileStatus === 1 ? mediaThumbnailUrl(getImageUrl(profile.avatar), 256) : defaultAvatar"
+              @error="restoreOriginalImage($event, getImageUrl(profile.avatar))"
               alt="用户头像"
             />
           </button>
@@ -99,8 +100,10 @@
               <td class="px-3 py-3">{{ row.course?.title || '-' }}</td>
               <td class="px-3 py-3 text-center">
                 <img
+                  loading="lazy"
                   v-if="row.course?.image"
-                  :src="getImageUrl(row.course.image)"
+                  :src="mediaThumbnailUrl(getImageUrl(row.course.image), 160)"
+                  @error="restoreOriginalImage($event, getImageUrl(row.course.image))"
                   alt="课题图片"
                   class="thumb mx-auto"
                   @click="previewImage(row.course.image)"
@@ -110,8 +113,10 @@
               <td class="px-3 py-3">{{ formatUploadTime(row.uploadTime) }}</td>
               <td class="px-3 py-3 text-center">
                 <img
+                  loading="lazy"
                   v-if="row.image"
-                  :src="getImageUrl(row.image)"
+                  :src="mediaThumbnailUrl(getImageUrl(row.image), 160)"
+                  @error="restoreOriginalImage($event, getImageUrl(row.image))"
                   alt="成绩图片"
                   class="thumb mx-auto"
                   @click="previewImage(row.image)"
@@ -160,8 +165,10 @@
           <td class="px-3 py-3">{{ row.course?.title || '-' }}</td>
           <td class="px-3 py-3 text-center">
             <img
+              loading="lazy"
               v-if="row.course?.image"
-              :src="getImageUrl(row.course.image)"
+              :src="mediaThumbnailUrl(getImageUrl(row.course.image), 160)"
+              @error="restoreOriginalImage($event, getImageUrl(row.course.image))"
               alt="奖品图片"
               class="thumb mx-auto"
               @click="previewImage(row.course.image)"
@@ -234,8 +241,10 @@
                       <td class="px-3 py-3">{{ row.course?.title || '-' }}</td>
                       <td class="px-3 py-3 text-center">
                         <img
+                          loading="lazy"
                           v-if="row.course?.image"
-                          :src="getImageUrl(row.course.image)"
+                          :src="mediaThumbnailUrl(getImageUrl(row.course.image), 160)"
+                          @error="restoreOriginalImage($event, getImageUrl(row.course.image))"
                           alt="课题图片"
                           class="thumb mx-auto"
                           @click="previewImage(row.course.image)"
@@ -245,8 +254,10 @@
                       <td class="px-3 py-3">{{ formatUploadTime(row.uploadTime) }}</td>
                       <td class="px-3 py-3 text-center">
                         <img
+                          loading="lazy"
                           v-if="row.image"
-                          :src="getImageUrl(row.image)"
+                          :src="mediaThumbnailUrl(getImageUrl(row.image), 160)"
+                          @error="restoreOriginalImage($event, getImageUrl(row.image))"
                           alt="成绩图片"
                           class="thumb mx-auto"
                           @click="previewImage(row.image)"
@@ -304,6 +315,7 @@
 </template>
 
 <script lang="ts" setup>
+import { mediaThumbnailUrl, restoreOriginalImage } from '@/utils/mediaThumbnail'
 import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'

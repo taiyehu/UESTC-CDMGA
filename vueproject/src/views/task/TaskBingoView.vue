@@ -36,7 +36,7 @@
           <div class="member-row">
             <div v-for="slot in memberSlots" :key="slot.slot" class="member-card" :class="{ empty: !slot.member }" @click="onMemberSlotClick(slot.member)">
               <template v-if="slot.member">
-                <img v-if="slot.member.avatar" :src="toUrl(slot.member.avatar)" class="member-avatar" alt="队员头像" />
+                <img v-if="slot.member.avatar" loading="lazy" :src="toUrl(slot.member.avatar)" class="member-avatar" alt="队员头像" />
                 <div v-else class="member-avatar placeholder">?</div>
                 <p class="member-name">{{ slot.member.account }}</p>
               </template>
