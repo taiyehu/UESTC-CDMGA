@@ -227,8 +227,8 @@ async function deleteCourse(courseId: number): Promise<void> {
     } else {
       ElMessage({ message: '删除失败', type: 'error' })
     }
-  } catch {
-    ElMessage({ message: '删除失败', type: 'error' })
+  } catch (error: any) {
+    ElMessage({ message: error?.response?.data?.message || '删除失败', type: 'error' })
   }
 }
 

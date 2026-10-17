@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
@@ -65,6 +66,19 @@ class CourseAwardStockTests {
 
         assertEquals(0, course.getAward().getRemainingStock());
         verify(scoreRepository).rejectOtherPendingAwardScores(eq(3), eq(-1L), eq("奖品已售罄"), any());
+    }
+
+    @Test
+    void deletingAwardKeepsCompletedRedemptionsAndRejectsPendingRequests() {
+        Course course = courseWithStock(3, 1);
+        when(courseRepository.findById(3)).thenReturn(Optional.of(course));
+        when(courseRepository.save(course)).thenReturn(course);
+
+        Course deleted = courseService.deleteCourse(3);
+
+        assertEquals(true, deleted.getIsDeleted());
+        verify(scoreRepository).rejectOtherPendingAwardScores(eq(3), eq(-1L), eq("奖品已下架"), any());
+        verify(scoreRepository, never()).findByCourse_Id(3);
     }
 
     private Course courseWithStock(int total, int remaining) {

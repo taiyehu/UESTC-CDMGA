@@ -160,7 +160,7 @@ public class CourseController {
     }
 
     @DeleteMapping("/{courseId}")
-    public ResponseEntity<Void> deleteCourse(@PathVariable Integer courseId) {
+    public ResponseEntity<?> deleteCourse(@PathVariable Integer courseId) {
         try {
             Course deletedCourse = courseService.deleteCourse(courseId); // 接收 Course 类型
             if (deletedCourse != null) {
@@ -168,8 +168,10 @@ public class CourseController {
             } else {
                 return ResponseEntity.notFound().build(); // 失败（课程不存在）：404
             }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Result.error(e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(500).build(); // 服务器异常：500
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error("课题删除失败"));
         }
     }
 

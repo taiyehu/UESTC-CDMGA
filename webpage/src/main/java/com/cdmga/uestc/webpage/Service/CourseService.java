@@ -171,16 +171,19 @@ public class CourseService {
     }
 
     // 设置课程为删除状态
+    @Transactional
     public Course deleteCourse(Integer courseId) {
         Course course = courseRepository.findById(courseId).orElse(null);
         if (course != null) {
-            if ("award".equalsIgnoreCase(course.getCategory().trim())
-                    && scoreRepository.existsApprovedAwardByCourseId(courseId)) {
-                throw new IllegalArgumentException("已有兑换记录的奖品课题不允许删除");
-            }
-            List<Score> scores = scoreRepository.findByCourse_Id(courseId);
-            for (Score score : scores) {
-                score.setIsDeleted(true);
+            if (isAwardCategory(course.getCategory())) {
+                // 奖品只下架课题，已兑换记录须继续参与积分计算并保留在用户历史中。
+                scoreRepository.rejectOtherPendingAwardScores(
+                        courseId, -1L, "奖品已下架", LocalDateTime.now());
+            } else {
+                List<Score> scores = scoreRepository.findByCourse_Id(courseId);
+                for (Score score : scores) {
+                    score.setIsDeleted(true);
+                }
             }
             course.setIsDeleted(true); // 设置课程为已删除状态
             return courseRepository.save(course); // 保存更新后的课程对象

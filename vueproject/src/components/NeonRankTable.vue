@@ -1,22 +1,24 @@
 <template>
   <div class="rank-table-wrap">
-    <div
-      ref="scroller"
-      class="rank-table-shell overflow-x-auto rounded-xl bg-slate-900/40"
-      @scroll="updateScrollHint"
-    >
-      <table class="w-full text-cyan-50" :class="[minWidthClass, textSizeClass]">
-        <thead class="bg-cyan-300/12">
-          <slot name="head" />
-        </thead>
-        <tbody>
-          <slot />
-        </tbody>
-      </table>
+    <div class="rank-table-frame">
+      <div
+        ref="scroller"
+        class="rank-table-shell overflow-x-auto rounded-xl bg-slate-900/40"
+        @scroll="updateScrollHint"
+      >
+        <table class="w-full text-cyan-50" :class="[minWidthClass, textSizeClass]">
+          <thead class="bg-cyan-300/12">
+            <slot name="head" />
+          </thead>
+          <tbody>
+            <slot />
+          </tbody>
+        </table>
+      </div>
+      <div v-if="overflow" class="scroll-fade-left" :class="{ 'is-hidden': atStart }" aria-hidden="true" />
+      <div v-if="overflow" class="scroll-fade-right" :class="{ 'is-hidden': atEnd }" aria-hidden="true" />
     </div>
     <!-- 窄屏溢出提示：左右渐隐 + 文案 -->
-    <div v-if="overflow" class="scroll-fade-left" :class="{ 'is-hidden': atStart }" aria-hidden="true" />
-    <div v-if="overflow" class="scroll-fade-right" :class="{ 'is-hidden': atEnd }" aria-hidden="true" />
     <p v-if="overflow" class="scroll-tip">← 左右滑动查看全部 {{ columnCount }} 列 →</p>
   </div>
 </template>
@@ -83,8 +85,12 @@ onBeforeUnmount(() => {
   text-align: left;
 }
 
-.rank-table-shell {
+.rank-table-frame {
   position: relative;
+  border-radius: 12px;
+}
+
+.rank-table-shell {
   scrollbar-width: thin;
 }
 
@@ -132,7 +138,7 @@ onBeforeUnmount(() => {
   letter-spacing: 0.04em;
 }
 
-.rank-table-shell::before {
+.rank-table-frame::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -148,5 +154,6 @@ onBeforeUnmount(() => {
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
+  z-index: 3;
 }
 </style>
