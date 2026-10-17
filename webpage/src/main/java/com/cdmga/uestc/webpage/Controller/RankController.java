@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@CrossOrigin(origins = "https://localhost:8081")
 @RestController
 @RequestMapping("/api/rank")
 public class RankController {

@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
-@CrossOrigin(origins = "https://localhost:8081")
 @RestController
 @RequestMapping("/api/bingo-tip")
 public class BingoTipController {

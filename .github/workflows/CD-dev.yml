@@ -15,6 +15,7 @@ jobs:
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       SSH_PORT: ${{ secrets.SSH_PORT }}
       SSH_DOMIAN: ${{ secrets.SSH_DOMIAN }}
+      CERTBOT_EMAIL: ${{ secrets.CERTBOT_EMAIL }}
   update_npm:
     needs: update_env
     uses: ./.github/workflows/pnpm_update.yml

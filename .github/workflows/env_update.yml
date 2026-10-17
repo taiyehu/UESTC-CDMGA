@@ -9,6 +9,7 @@ on:
       SSH_PRIVATE_KEY: {}
       SSH_PORT: {}
       SSH_DOMIAN: {}
+      CERTBOT_EMAIL: {}
 
 jobs:
   deploy-env:
@@ -69,7 +70,7 @@ jobs:
               systemd=true
             fi
 
-            if ! git diff --quiet $RANGE -- script/cdmga_nginx.conf script/cdmga_assets.conf; then
+            if ! git diff --quiet $RANGE -- script/cdmga_nginx.conf script/cdmga_nginx_https.conf script/cdmga_assets.conf script/deploy_nginx.sh script/reload_nginx_after_renewal.sh; then
               nginx=true
             fi
           fi
@@ -80,6 +81,10 @@ jobs:
           if [ "$systemd" = "false" ] && [ "$nginx" = "false" ]; then
             echo "No environment changes detected"
           fi
+
+      - name: Validate Nginx deployment scripts
+        if: steps.env_diff.outputs.nginx_changed == 'true'
+        run: bash -n script/deploy_nginx.sh script/reload_nginx_after_renewal.sh
 
       # ----------------------------
       # Step 4: 仅在有变化时上传文件（SCP）
@@ -127,18 +132,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
-            echo "Deploying Nginx..."
-            sudo mkdir -p /etc/nginx/snippets
-            sudo cp /opt/webserver/script/cdmga_assets.conf /etc/nginx/snippets/cdmga_assets.conf
-            sudo cp /opt/webserver/script/cdmga_nginx.conf /etc/nginx/sites-available/cdmga_nginx.conf
-            sudo rm -f /etc/nginx/sites-enabled/default
-            if [ ! -f /etc/nginx/sites-enabled/cdmga_nginx.conf ]; then
-              sudo ln -s /etc/nginx/sites-available/cdmga_nginx.conf /etc/nginx/sites-enabled/
-            fi
-            sudo sed -i "s/server_name localhost;/server_name ${{ secrets.SSH_DOMIAN }};/" /etc/nginx/sites-available/cdmga_nginx.conf
-            sudo sed -i "s/server_name dev.localhost;/server_name dev.${{ secrets.SSH_DOMIAN }};/" /etc/nginx/sites-available/cdmga_nginx.conf
-            sudo nginx -t
-            sudo systemctl restart nginx
+            set -e
+            bash /opt/webserver/script/deploy_nginx.sh "${{ secrets.SSH_DOMIAN }}" "${{ secrets.CERTBOT_EMAIL }}"
             echo "Nginx deployed"
 
       - name: Update remote hashes

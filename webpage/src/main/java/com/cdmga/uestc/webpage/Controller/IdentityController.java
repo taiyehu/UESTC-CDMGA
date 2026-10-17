@@ -8,7 +8,6 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,7 +27,6 @@ import com.cdmga.uestc.webpage.Entity.Identity;
 import com.cdmga.uestc.webpage.Service.IdentityService;
 import com.cdmga.uestc.webpage.Service.IdentitySessionService;
 
-@CrossOrigin(origins = "http://localhost:8081")
 @RestController
 @RequestMapping("/api/identity")
 public class IdentityController {
@@ -41,7 +39,6 @@ public class IdentityController {
 
 
     // 注册接口
-    @CrossOrigin(origins = "http://localhost:8081")
     @PostMapping("/register")
     public Result register(@RequestBody RegisterRequest registerRequest) {
         try {
@@ -73,7 +70,6 @@ public class IdentityController {
     }
 
     // 接收 JSON 请求体
-    @CrossOrigin(origins = "http://localhost:8081")
     @PostMapping("/login")
     public Result login(@RequestBody LoginRequest loginRequest, HttpServletRequest request, HttpSession session) {
         if (session.getAttribute("identityId") instanceof Integer) identitySessionService.logout(session);

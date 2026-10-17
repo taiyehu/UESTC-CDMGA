@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-@CrossOrigin(origins = "https://localhost:8081")
 @RestController
 @RequestMapping("/api/issue")
 public class IssueController {

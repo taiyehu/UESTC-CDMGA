@@ -24,7 +24,6 @@ import com.cdmga.uestc.webpage.Entity.Score;
 import com.cdmga.uestc.webpage.Service.ScoreService;
 
 
-@CrossOrigin(origins = "https://localhost:8081")
 @RestController
 @RequestMapping("/api/score")
 public class ScoreController {
