@@ -49,6 +49,10 @@ public class CourseService {
         return courseRepository.findByIsDeletedFalse();
     }
 
+    public List<Course> getStandaloneCourses() {
+        return courseRepository.findStandaloneCourses();
+    }
+
     public Course getCurrentCourse(){
         return courseRepository.findLatestStartTimeCourseBeforeEndTime();
     }

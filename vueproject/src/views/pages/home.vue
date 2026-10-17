@@ -197,7 +197,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
-import { fetchCourseData } from '@/api/course'
+import { fetchStandaloneCourseData } from '@/api/course'
 import NeonCard from '@/components/NeonCard.vue'
 import { MaimaiRing } from '@/components/effects'
 import defaultAvatar from '@/assets/default-avatar.png'
@@ -431,7 +431,7 @@ async function fetchHomeData(): Promise<void> {
 
   try {
     const [courseRes, activityRes] = await Promise.all([
-      fetchCourseData(),
+      fetchStandaloneCourseData(),
       axios.get('/api/activity/list'),
     ])
 

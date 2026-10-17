@@ -64,7 +64,7 @@
 import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Motion } from 'motion-v'
-import { fetchCourseData } from '@/api/course'
+import { fetchCourseData, fetchStandaloneCourseData } from '@/api/course'
 import type { Course } from '@/api/types'
 import NeonActionButton from '@/components/NeonActionButton.vue'
 import { isMobileLite } from '@/utils/visualMode'
@@ -86,7 +86,7 @@ const error = ref<string | null>(null)
 
 async function fetchCourses() {
   try {
-    const response = await fetchCourseData()
+    const response = await (awardMode ? fetchCourseData() : fetchStandaloneCourseData())
     const data = (response?.data || []) as Course[]
     allCourses.value = [...data].sort(
       (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()

@@ -10,7 +10,7 @@
     </article>
 
     <div class="mt-6 flex justify-end">
-      <button type="button" class="neon-back" @click="goList">{{ course?.category?.trim().toLowerCase() === 'award' ? '返回奖品列表' : '返回课题列表' }}</button>
+      <button type="button" class="neon-back" @click="goList">{{ sourceActivityId ? '返回活动' : course?.category?.trim().toLowerCase() === 'award' ? '返回奖品列表' : '返回课题列表' }}</button>
     </div>
   </section>
 </template>
@@ -31,6 +31,10 @@ const router = useRouter()
 const loading = ref(true)
 const error = ref<string | null>(null)
 const course = ref<Course | null>(null)
+const sourceActivityId = computed(() => {
+  const id = Number(route.query.fromActivity)
+  return Number.isInteger(id) && id > 0 ? id : null
+})
 
 const renderComponent = computed(() => {
   if (!course.value) return TaskLegacyView
@@ -65,6 +69,10 @@ async function loadData() {
 }
 
 function goList() {
+  if (sourceActivityId.value) {
+    router.push(`/activity/${sourceActivityId.value}`)
+    return
+  }
   router.push(course.value?.category?.trim().toLowerCase() === 'award' ? '/awards' : '/task')
 }
 

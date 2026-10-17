@@ -172,7 +172,7 @@ function formatDateTime(date: any): string {
 function goTaskDetail(courseId: string | number): void {
   const id = Number(courseId)
   if (!Number.isFinite(id) || id <= 0) return
-  router.push(`/task/${id}`)
+  router.push({ path: `/task/${id}`, query: { fromActivity: String(route.params.id) } })
 }
 
 function getImageUrl(imagePath?: string): string {

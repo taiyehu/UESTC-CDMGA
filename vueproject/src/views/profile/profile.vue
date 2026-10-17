@@ -6,7 +6,9 @@
       </h1>
     </header>
 
+    <div class="profile-top-grid">
     <NeonCard v-if="user.id !== null" class="box-card">
+      <h3 class="section-title">个人资料</h3>
       <div class="profile-head">
         <button
           type="button"
@@ -60,29 +62,54 @@
       </div>
     </NeonCard>
 
-    <NeonCard v-if="isSelf" class="box-card mt-5">
+    <NeonCard v-if="isSelf || publicTitles.length" class="box-card">
       <div class="section-head">
-        <h3 class="section-title">我的称号</h3>
-        <NeonActionButton variant="profile-outline" size="sm" @click="goToSettings('titles')">申请称号</NeonActionButton>
+        <h3 class="section-title">{{ isSelf ? '我的称号' : '获得的称号' }}</h3>
+        <NeonActionButton v-if="isSelf" variant="profile-outline" size="sm" @click="goToSettings('titles')">申请称号</NeonActionButton>
       </div>
-      <div v-if="visibleMyTitles.length" class="mt-5 flex flex-wrap gap-3">
-        <div v-for="item in visibleMyTitles" :key="item.id" class="title-item">
+      <div class="title-filters">
+        <label>称号等级
+          <select v-model="titleTierFilter" class="title-select" aria-label="按称号等级筛选">
+            <option value="all">全部等级</option>
+            <option value="color">彩色</option>
+            <option value="gold">金色</option>
+            <option value="silver">银色</option>
+            <option value="normal">普通</option>
+          </select>
+        </label>
+        <label>获得类别
+          <select v-model="titleSourceFilter" class="title-select" aria-label="按称号获得类别筛选">
+            <option value="all">全部类别</option>
+            <option value="registration">注册获得</option>
+            <option value="admin_created">管理员颁发</option>
+            <option value="user_application">用户申请</option>
+          </select>
+        </label>
+        <label>获得时间
+          <select v-model="titleTimeOrder" class="title-select" aria-label="按称号获得时间排序">
+            <option value="newest">最新在前</option>
+            <option value="oldest">最早在前</option>
+          </select>
+        </label>
+      </div>
+      <div v-if="pagedTitles.length" class="title-grid">
+        <div v-for="item in pagedTitles" :key="item.id" class="title-item">
           <TitleBadge :name="item.name" :tier="item.tier" :acquisition-method="item.acquisitionMethod" />
-          <span class="text-xs text-cyan-100/75">{{ titleStatusText(item.status) }}</span>
-          <NeonActionButton v-if="item.status === 'approved' && !item.isEquipped" size="sm" @click="equipTitle(item.id)">佩戴</NeonActionButton>
-          <NeonActionButton v-if="item.isEquipped" size="sm" variant="gray" @click="unequipTitle">取消佩戴</NeonActionButton>
-          <span v-if="item.status === 'rejected' && item.reviewNote" class="text-xs text-rose-200">{{ item.reviewNote }}</span>
+          <span v-if="isSelf" class="text-xs text-cyan-100/75">{{ titleStatusText(item.status) }}</span>
+          <span class="text-xs text-cyan-100/60">{{ formatUploadTime(item.grantedAt || item.createdAt) }}</span>
+          <NeonActionButton v-if="isSelf && item.status === 'approved' && !item.isEquipped" size="sm" @click="equipTitle(item.id)">佩戴</NeonActionButton>
+          <NeonActionButton v-if="isSelf && item.isEquipped" size="sm" variant="gray" @click="unequipTitle">取消佩戴</NeonActionButton>
+          <span v-if="isSelf && item.status === 'rejected' && item.reviewNote" class="text-xs text-rose-200">{{ item.reviewNote }}</span>
         </div>
       </div>
-      <p v-else class="mt-4 text-sm text-cyan-100/70">还没有称号记录</p>
-    </NeonCard>
-
-    <NeonCard v-else-if="publicTitles.length" class="box-card mt-5">
-      <h3 class="section-title">获得的称号</h3>
-      <div class="flex flex-wrap gap-2">
-        <TitleBadge v-for="item in publicTitles" :key="item.id" :name="item.name" :tier="item.tier" :acquisition-method="item.acquisitionMethod" />
+      <p v-else class="mt-4 text-sm text-cyan-100/70">{{ availableTitles.length ? '没有符合筛选条件的称号' : '还没有称号记录' }}</p>
+      <div v-if="titleTotalPages > 1" class="mt-4 flex items-center justify-center gap-2">
+        <NeonActionButton variant="profile-outline" size="sm" :disabled="titlePage <= 1" @click="titlePage--">上一页</NeonActionButton>
+        <span class="text-sm text-cyan-100/85">{{ titlePage }} / {{ titleTotalPages }}</span>
+        <NeonActionButton variant="profile-outline" size="sm" :disabled="titlePage >= titleTotalPages" @click="titlePage++">下一页</NeonActionButton>
       </div>
     </NeonCard>
+    </div>
 
     <NeonCard v-if="scoredScores.length > 0" class="box-card mt-5">
       <h3 class="section-title">已完成课题及分数</h3>
@@ -336,17 +363,35 @@ const router = useRouter()
 const user = reactive<{ account: string; id: number | null; role: string }>({ account: '', id: null, role: '' })
 const profile = reactive<any>({ avatar: '', description: '', status: -1, account: '' })
 const profileStatus = ref<number>(-1)
-type TitleRecord = { id: number; name: string; tier: string; status: string; isEquipped: boolean; acquisitionMethod?: string; reviewNote?: string }
+type TitleRecord = { id: number; name: string; tier: string; source?: string; status: string; isEquipped: boolean; acquisitionMethod?: string; reviewNote?: string; grantedAt?: string; createdAt?: string }
 const myTitles = ref<TitleRecord[]>([])
 const visibleMyTitles = computed(() => myTitles.value.filter((item) => item.status !== 'revoked'))
 const publicTitles = ref<TitleRecord[]>([])
+const isSelf = ref(false)
+const titleTierFilter = ref('all')
+const titleSourceFilter = ref('all')
+const titleTimeOrder = ref<'newest' | 'oldest'>('newest')
+const titlePage = ref(1)
+const titlePageSize = 4
+const availableTitles = computed(() => isSelf.value ? visibleMyTitles.value : publicTitles.value)
+const displayTitles = computed(() => availableTitles.value
+  .filter((item) => titleTierFilter.value === 'all' || item.tier === titleTierFilter.value)
+  .filter((item) => titleSourceFilter.value === 'all' || item.source === titleSourceFilter.value)
+  .sort((a, b) => {
+    const aTime = Date.parse(a.grantedAt || a.createdAt || '') || 0
+    const bTime = Date.parse(b.grantedAt || b.createdAt || '') || 0
+    return titleTimeOrder.value === 'newest' ? bTime - aTime || b.id - a.id : aTime - bTime || a.id - b.id
+  }))
+const titleTotalPages = computed(() => Math.max(1, Math.ceil(displayTitles.value.length / titlePageSize)))
+const pagedTitles = computed(() => displayTitles.value.slice((titlePage.value - 1) * titlePageSize, titlePage.value * titlePageSize))
+watch([titleTierFilter, titleSourceFilter, titleTimeOrder], () => { titlePage.value = 1 })
+watch(titleTotalPages, (total) => { titlePage.value = Math.min(titlePage.value, total) })
 const equippedTitle = computed(() => (isSelf.value ? visibleMyTitles.value : publicTitles.value).find((item) => item.isEquipped))
 const defaultAvatarRef = defaultAvatar
 const scoredScores = ref<any[]>([])
 const awardRedemptions = ref<any[]>([])
 const RatedActivities = ref<any[]>([])
 const viewUserId = ref<number | null>(null)
-const isSelf = ref(false)
 const onlineStatus = ref<boolean | null>(null)
 const avatarPreviewVisible = ref(false)
 const avatarPreviewUrl = ref('')
@@ -648,6 +693,19 @@ watch(() => route.params.id, () => {
   font-size: 16px;
 }
 
+.profile-top-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  align-items: stretch;
+  gap: 20px;
+}
+
+.profile-top-grid > :only-child { grid-column: 1 / -1; }
+
+@media (max-width: 900px) {
+  .profile-top-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* ===== 头部卡片：头像 + 信息两栏，信息左对齐 ===== */
 .profile-head {
   display: flex;
@@ -791,6 +849,38 @@ watch(() => route.params.id, () => {
   border-radius: 12px;
   background: rgba(15, 23, 42, 0.4);
   text-align: left;
+  min-width: 0;
+  align-content: start;
+}
+
+.title-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.title-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+}
+
+.title-filters label {
+  display: grid;
+  gap: 5px;
+  color: rgba(224, 247, 255, 0.76);
+  font-size: 12px;
+}
+
+.title-select {
+  max-width: 150px;
+  border: 1px solid rgba(103, 232, 249, 0.35);
+  border-radius: 8px;
+  padding: 6px 8px;
+  color: #e0f7ff;
+  background: #102039;
 }
 
 /* ===== 页标题 ===== */
@@ -875,6 +965,7 @@ watch(() => route.params.id, () => {
 
 /* ===== 窄屏：头像居中、信息占满整宽 ===== */
 @media (max-width: 640px) {
+  .title-grid { grid-template-columns: minmax(0, 1fr); }
   .profile-head {
     flex-direction: column;
     align-items: center;

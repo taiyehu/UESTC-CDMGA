@@ -36,6 +36,13 @@ export const fetchCourseData = () => {
   })
 }
 
+export const fetchStandaloneCourseData = () => {
+  return request({
+    url: '/course/standalone',
+    method: 'get',
+  })
+}
+
 export const fetchCourseByIdData = (courseId: number | string) => {
   return request({
     url: `/course/${courseId}`,

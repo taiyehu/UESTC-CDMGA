@@ -28,6 +28,10 @@ public interface CourseRepository extends JpaRepository<Course, Integer> {
     // 获取所有课程
     List<Course> findByIsDeletedFalse();
 
+    @Query("SELECT c FROM Course c WHERE c.isDeleted = false AND NOT EXISTS "
+            + "(SELECT assoc.id FROM ActivityCourseAssoc assoc WHERE assoc.course = c AND assoc.activity IS NOT NULL)")
+    List<Course> findStandaloneCourses();
+
     Page<Course> findByIsDeletedFalse(Pageable pageable);
 
     // 查找 start_time 最晚且没有超过 end_time 的课程，返回多个

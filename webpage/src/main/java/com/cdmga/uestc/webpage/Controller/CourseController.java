@@ -60,6 +60,11 @@ public class CourseController {
         }
     }
 
+    @GetMapping("/standalone")
+    public ResponseEntity<List<Course>> getStandaloneCourses() {
+        return ResponseEntity.ok(courseService.getStandaloneCourses());
+    }
+
     @GetMapping("/{id:\\d+}")
     public ResponseEntity<Course> getCourseById(@PathVariable Integer id) {
         Course course = courseService.getCourseById(id);
