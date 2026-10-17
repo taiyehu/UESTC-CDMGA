@@ -273,6 +273,17 @@ public class ScoreController {
         }
     }
 
+    @PutMapping("/award/{id}/reject")
+    public ResponseEntity<Result> rejectAward(@PathVariable Long id,
+                                              @RequestBody(required = false) Map<String, String> body) {
+        try {
+            String reason = body == null ? null : body.get("reason");
+            return ResponseEntity.ok(Result.success(scoreService.rejectAwardScore(id, reason)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(e.getMessage()));
+        }
+    }
+
     @GetMapping("/exists")
         public ResponseEntity<?> checkScoreExists(
                 @RequestParam("identityId") Integer identityId,

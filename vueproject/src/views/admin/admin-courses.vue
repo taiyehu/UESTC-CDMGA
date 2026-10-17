@@ -7,8 +7,9 @@
         <tr>
           <th class="w-14 px-2 py-3 text-center">ID</th>
           <th class="w-32 px-2 py-3 text-center">课题名称</th>
-          <th class="w-24 px-2 py-3 text-center">类别</th>
           <th class="w-24 px-2 py-3 text-center">兑换积分</th>
+          <th class="w-24 px-2 py-3 text-center">奖品数量</th>
+          <th class="w-24 px-2 py-3 text-center">类别</th>
           <th class="w-32 px-2 py-3 text-center">开始时间</th>
           <th class="w-32 px-2 py-3 text-center">结束时间</th>
           <th class="px-2 py-3 text-center" style="width: 36rem">描述</th>
@@ -24,6 +25,13 @@
         </td>
         <td class="px-2 py-3 text-center">
           <input v-if="course.category === 'award'" v-model.number="course.awardCost" type="number" min="1" step="1" class="inline-input" placeholder="积分" />
+          <span v-else>-</span>
+        </td>
+        <td class="px-2 py-3 text-center">
+          <template v-if="course.category === 'award'">
+            <input v-model.number="course.awardStock" type="number" min="1" step="1" class="inline-input" placeholder="总数" />
+            <span class="text-xs text-cyan-100/70">剩余 {{ course.remainingStock ?? '-' }}</span>
+          </template>
           <span v-else>-</span>
         </td>
         <td class="px-2 py-3">
@@ -115,6 +123,8 @@ type CourseRow = {
   description: string
   image: string
   awardCost: number | null
+  awardStock: number | null
+  remainingStock: number | null
 }
 
 const courses = ref<CourseRow[]>([])
@@ -161,6 +171,8 @@ function toCourseRow(course: any): CourseRow {
     description: String(course?.description || ''),
     image: String(course?.image || ''),
     awardCost: course?.award?.cost == null ? null : Number(course.award.cost),
+    awardStock: course?.award?.totalStock == null ? null : Number(course.award.totalStock),
+    remainingStock: course?.award?.remainingStock == null ? null : Number(course.award.remainingStock),
   }
 }
 
@@ -232,6 +244,7 @@ async function saveCourse(course: CourseRow): Promise<void> {
     description: course.description.trim(),
     image: course.image.trim(),
     awardCost: course.category.trim() === 'award' ? Number(course.awardCost) : null,
+    awardStock: course.category.trim() === 'award' ? Number(course.awardStock) : null,
   }
 
   if (!payload.id || !payload.title || !payload.category || !payload.startTime || !payload.endTime || !payload.description || !payload.image) {
@@ -240,6 +253,10 @@ async function saveCourse(course: CourseRow): Promise<void> {
   }
   if (payload.category === 'award' && (!Number.isInteger(payload.awardCost) || Number(payload.awardCost) <= 0)) {
     ElMessage({ message: '奖品兑换积分必须是大于 0 的整数', type: 'error' })
+    return
+  }
+  if (payload.category === 'award' && (!Number.isInteger(payload.awardStock) || Number(payload.awardStock) <= 0)) {
+    ElMessage({ message: '奖品数量必须是大于 0 的整数', type: 'error' })
     return
   }
 
@@ -253,6 +270,7 @@ async function saveCourse(course: CourseRow): Promise<void> {
       description: payload.description,
       image: payload.image,
       awardCost: payload.awardCost,
+      awardStock: payload.awardStock,
     })
 
     if (response.data?.code === 0) {
@@ -261,6 +279,7 @@ async function saveCourse(course: CourseRow): Promise<void> {
       course.category = payload.category
       course.description = payload.description
       course.image = payload.image
+      await fetchCourses()
     } else {
       ElMessage({ message: response.data?.message || '课题修改失败', type: 'error' })
     }

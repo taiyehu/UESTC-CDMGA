@@ -38,7 +38,7 @@
           </p>
 
           <p v-if="awardMode" class="mb-2 text-sm font-semibold text-amber-200">
-            兑换所需积分：{{ course.award?.cost ?? '-' }} · {{ Number(course.award?.remainingStock || 0) > 0 ? '可兑换' : '已售罄' }}
+            兑换所需积分：{{ course.award?.cost ?? '-' }} · 剩余 {{ course.award?.remainingStock ?? 0 }}/{{ course.award?.totalStock ?? 0 }} 份 · {{ Number(course.award?.remainingStock || 0) > 0 ? '可申请' : '已售罄' }}
           </p>
 
           <p class="line-clamp-3 min-h-16 text-sm text-cyan-50/80">

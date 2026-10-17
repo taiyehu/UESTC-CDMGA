@@ -44,6 +44,7 @@
         <td class="px-3 py-3 text-center">
           <div class="flex flex-wrap justify-center gap-2">
             <NeonActionButton size="sm" variant="green" @click="updateScore(score)">通过</NeonActionButton>
+            <NeonActionButton v-if="score.course?.category === 'award'" size="sm" variant="yellow" @click="rejectAward(score)">驳回</NeonActionButton>
             <NeonActionButton size="sm" variant="red" @click="deleteScore(score.id)">删除</NeonActionButton>
           </div>
         </td>
@@ -162,6 +163,19 @@ async function updateScore(score: any): Promise<void> {
   } catch (error: any) {
     const errorMsg = error?.response?.data?.message || '成绩提交失败，请重试'
     ElMessage({ message: errorMsg, type: 'error' })
+  }
+}
+
+async function rejectAward(score: any): Promise<void> {
+  const reason = window.prompt('请输入驳回原因（可留空）', '')
+  if (reason === null) return
+  try {
+    const response = await axios.put(`/api/score/award/${score.id}/reject`, { reason })
+    if (response.data?.code !== 0) throw new Error(response.data?.message || '驳回失败')
+    ElMessage({ message: '兑换申请已驳回', type: 'success' })
+    await fetchScores()
+  } catch (error: any) {
+    ElMessage({ message: error?.response?.data?.message || error?.message || '驳回失败', type: 'error' })
   }
 }
 

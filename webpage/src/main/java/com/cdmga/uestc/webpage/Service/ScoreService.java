@@ -160,7 +160,7 @@ public class ScoreService {
     public Score updateScore(Long scoreId, LocalDateTime upload_time, String image,
                              float point, Boolean is_scored, String remark, Integer issue_id) {
         // 查找Score
-        Score score = scoreRepository.findById(scoreId).orElse(null);
+        Score score = scoreRepository.findByIdForUpdate(scoreId).orElse(null);
         if (score != null && !Boolean.TRUE.equals(score.getIsDeleted())) {
             Course scoreCourse = score.getCourse();
             boolean award = scoreCourse != null && scoreCourse.getCategory() != null
@@ -333,22 +333,39 @@ public class ScoreService {
             Score savedScore = scoreRepository.save(score);
 
             if (award && Boolean.TRUE.equals(is_scored)) {
-                lockedAward.setRemainingStock(0);
-                lockedAward.setSoldOutAt(updatedAt);
+                int remaining = lockedAward.getRemainingStock() - 1;
+                lockedAward.setRemainingStock(remaining);
+                lockedAward.setSoldOutAt(remaining == 0 ? updatedAt : null);
                 lockedAward.setUpdatedAt(updatedAt);
                 awardRepository.save(lockedAward);
 
-                scoreCourse.setEndTime(updatedAt);
-                scoreCourse.setUpdatedAt(updatedAt);
-                courseRepository.save(scoreCourse);
-
-                scoreRepository.rejectOtherPendingAwardScores(
-                        scoreCourse.getId(), scoreId, "奖品已售罄", updatedAt);
+                if (remaining == 0) {
+                    scoreRepository.rejectOtherPendingAwardScores(
+                            scoreCourse.getId(), scoreId, "奖品已售罄", updatedAt);
+                }
             }
 
             return savedScore;
         }
         return null; // 如果没有找到Score，返回null
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public Score rejectAwardScore(Long scoreId, String reason) {
+        Score score = scoreRepository.findByIdForUpdate(scoreId)
+                .orElseThrow(() -> new IllegalArgumentException("兑换申请不存在"));
+        if (Boolean.TRUE.equals(score.getIsDeleted()) || score.getCourse() == null
+                || !"award".equalsIgnoreCase(score.getCourse().getCategory().trim())) {
+            throw new IllegalArgumentException("这不是有效的奖品兑换申请");
+        }
+        if (Boolean.TRUE.equals(score.getIsScored())) {
+            throw new IllegalArgumentException("兑换申请已审核，不能再次处理");
+        }
+        score.setIsScored(true);
+        score.setScore(0f);
+        score.setRemark(reason == null || reason.isBlank() ? "兑换申请未通过" : reason.trim());
+        score.setUpdatedAt(LocalDateTime.now());
+        return scoreRepository.save(score);
     }
 
 
@@ -505,6 +522,10 @@ public class ScoreService {
 
     public boolean existsByIdentityIdAndCourseId(int identityId, int courseId, Integer issueId) {
         if (issueId == null) {
+            Course course = courseRepository.findById(courseId).orElse(null);
+            if (course != null && "award".equalsIgnoreCase(course.getCategory().trim())) {
+                return scoreRepository.existsAwardByIdentityIdAndCourseId(identityId, courseId);
+            }
             return scoreRepository.existsByIdentityIdAndCourseIdAndIsDeletedFalse(identityId, courseId);
         }
         return scoreRepository.existsByIdentityIdAndCourseIdAndIssueIdAndIsDeletedFalse(identityId, courseId, issueId);
@@ -512,6 +533,14 @@ public class ScoreService {
 
     public Score getScoreByIdentityIdAndCourseId(Integer identityId, Integer courseId, Integer issueId) {
         if (issueId == null) {
+            Course course = courseRepository.findById(courseId).orElse(null);
+            if (course != null && "award".equalsIgnoreCase(course.getCategory().trim())) {
+                return scoreRepository.findByIdentityIdAndCourseIdAndIsDeletedFalseOrderByUploadTimeDescIdDesc(
+                        identityId, courseId).stream()
+                        .filter(s -> !Boolean.TRUE.equals(s.getIsScored())
+                                || (s.getScore() != null && s.getScore() < 0))
+                        .findFirst().orElse(null);
+            }
             return scoreRepository.findByIdentityIdAndCourseIdAndIsDeletedFalse(identityId, courseId);
         }
         return scoreRepository.findByIdentityIdAndCourseIdAndIssueIdAndIsDeletedFalse(identityId, courseId, issueId);

@@ -81,7 +81,7 @@ public class CourseController {
             courseRequest.getTitle(), courseRequest.getCategory(),
             courseRequest.getStartTime(), courseRequest.getEndTime(),
             courseRequest.getDescription(), courseRequest.getImage(),
-            courseRequest.getAwardCost());
+            courseRequest.getAwardCost(), courseRequest.getAwardStock());
             return Result.success(newCourse);
         } catch (Exception e){
             return Result.error(e.getMessage());
@@ -99,7 +99,7 @@ public class CourseController {
                 courseRequest.getEndTime(),
                 courseRequest.getDescription(),
                 courseRequest.getImage(),
-                courseRequest.getAwardCost()
+                courseRequest.getAwardCost(), courseRequest.getAwardStock()
             );
             if (updatedCourse != null) {
                 return ResponseEntity.ok(Result.success(updatedCourse));

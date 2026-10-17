@@ -12,6 +12,9 @@
     <p v-if="feedback.message" :class="['mt-2 text-sm', feedback.type === 'error' ? 'text-rose-300' : 'text-cyan-100/80']">
       {{ feedback.message }}
     </p>
+    <p v-if="isAwardCategory && lastAwardRejection" class="mt-2 text-sm text-amber-200">
+      上次申请未通过：{{ lastAwardRejection }}
+    </p>
 
     <div v-if="isBingoMode" class="mt-4">
       <div class="mb-2 flex items-center justify-between gap-3">
@@ -119,7 +122,7 @@
 
           <template v-else>
             <div class="space-y-4">
-              <p v-if="isAwardCategory" class="text-sm text-cyan-100/85">消耗 {{ awardCost }} 积分，审核通过后不可撤销。</p>
+              <p v-if="isAwardCategory" class="text-sm text-cyan-100/85">审核通过后消耗 {{ awardCost }} 积分并占用一份库存；申请不保证兑换成功，通过后不可撤销。</p>
               <div>
                 <p class="mb-1 text-sm text-cyan-100/85">课题名称</p>
                 <NeonInput :model-value="formCourseTitle" disabled />
@@ -220,6 +223,7 @@ const props = defineProps<{
 
 const submitted = ref(false)
 const scored = ref(false)
+const lastAwardRejection = ref('')
 const scoreId = ref<number | null>(null)
 const selectedScore = ref<Record<string, any> | null>(null)
 
@@ -426,6 +430,7 @@ async function refreshStatus(): Promise<void> {
     scored.value = false
     scoreId.value = null
     selectedScore.value = null
+    lastAwardRejection.value = ''
     return
   }
 
@@ -436,8 +441,24 @@ async function refreshStatus(): Promise<void> {
     scored.value = false
     scoreId.value = null
     selectedScore.value = null
+    lastAwardRejection.value = ''
+    if (isAwardCategory.value) {
+      try {
+        const historyRes = await axios.get('/api/score/history', {
+          params: { identity_id: identityId, course_id: props.course.id },
+        })
+        const latest = historyRes.data?.list?.[0]
+        if (latest?.isScored && Number(latest.score) === 0) {
+          lastAwardRejection.value = String(latest.remark || '兑换申请未通过')
+        }
+      } catch {
+        // 申请入口仍可用，历史提示不阻塞兑换。
+      }
+    }
     return
   }
+
+  lastAwardRejection.value = ''
 
   const scoreIdRes = await axios.get('/api/score/find', {
     params: {

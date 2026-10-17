@@ -69,9 +69,10 @@ public class CourseService {
     @Transactional
     public Course postNewCourse(String title, String category,
         LocalDateTime startTime, LocalDateTime endTime,
-        String description, String image, Integer awardCost
+        String description, String image, Integer awardCost, Integer awardStock
     ){
         validateAwardCost(category, awardCost);
+        int stock = validateAwardStock(category, awardStock);
         LocalDateTime now = LocalDateTime.now();
         Course course = new Course(now);
         course.setTitle(title);
@@ -86,8 +87,8 @@ public class CourseService {
             Award award = new Award();
             award.setCourse(savedCourse);
             award.setCost(awardCost);
-            award.setTotalStock(1);
-            award.setRemainingStock(1);
+            award.setTotalStock(stock);
+            award.setRemainingStock(stock);
             award.setCreatedAt(now);
             award.setUpdatedAt(now);
             awardRepository.save(award);
@@ -105,7 +106,8 @@ public class CourseService {
         LocalDateTime endTime,
         String description,
         String image,
-        Integer awardCost
+        Integer awardCost,
+        Integer awardStock
     ) {
         Course course = courseRepository.findById(courseId).orElse(null);
         if (course == null || Boolean.TRUE.equals(course.getIsDeleted())) {
@@ -115,7 +117,10 @@ public class CourseService {
         validateAwardCost(category, awardCost);
         boolean wasAward = isAwardCategory(course.getCategory());
         boolean isAward = isAwardCategory(category);
-        Award existingAward = awardRepository.findById(courseId).orElse(null);
+        Award existingAward = isAward || wasAward
+                ? awardRepository.findByCourseIdForUpdate(courseId).orElse(null) : null;
+        int stock = validateAwardStock(category, awardStock == null && existingAward != null
+                ? existingAward.getTotalStock() : awardStock);
         boolean priceChanged = isAward && existingAward != null && !existingAward.getCost().equals(awardCost);
         if ((wasAward || isAward) && scoreRepository.existsByCourseIdAndIsDeletedFalse(courseId)
                 && (!course.getTitle().equals(title) || !course.getCategory().equals(category) || priceChanged)) {
@@ -136,9 +141,22 @@ public class CourseService {
             Award award = existingAward == null ? new Award() : existingAward;
             if (existingAward == null) {
                 award.setCourse(savedCourse);
-                award.setTotalStock(1);
-                award.setRemainingStock(1);
+                award.setTotalStock(stock);
+                award.setRemainingStock(stock);
                 award.setCreatedAt(now);
+            } else {
+                int redeemed = award.getTotalStock() - award.getRemainingStock();
+                boolean hadRemaining = award.getRemainingStock() > 0;
+                if (stock < redeemed) {
+                    throw new IllegalArgumentException("奖品数量不能小于已兑换数量");
+                }
+                award.setTotalStock(stock);
+                award.setRemainingStock(stock - redeemed);
+                award.setSoldOutAt(stock == redeemed ? award.getSoldOutAt() == null ? now : award.getSoldOutAt() : null);
+                if (stock == redeemed && hadRemaining) {
+                    scoreRepository.rejectOtherPendingAwardScores(
+                            courseId, -1L, "奖品已售罄", now);
+                }
             }
             award.setCost(awardCost);
             award.setUpdatedAt(now);
@@ -157,7 +175,7 @@ public class CourseService {
         Course course = courseRepository.findById(courseId).orElse(null);
         if (course != null) {
             if ("award".equalsIgnoreCase(course.getCategory().trim())
-                    && scoreRepository.existsByCourseIdAndIsDeletedFalseAndIsScoredTrue(courseId)) {
+                    && scoreRepository.existsApprovedAwardByCourseId(courseId)) {
                 throw new IllegalArgumentException("已有兑换记录的奖品课题不允许删除");
             }
             List<Score> scores = scoreRepository.findByCourse_Id(courseId);
@@ -174,6 +192,15 @@ public class CourseService {
         if (isAwardCategory(category) && (awardCost == null || awardCost <= 0)) {
             throw new IllegalArgumentException("奖品必须设置大于 0 的兑换积分");
         }
+    }
+
+    private int validateAwardStock(String category, Integer awardStock) {
+        if (!isAwardCategory(category)) return 1;
+        int stock = awardStock == null ? 1 : awardStock;
+        if (stock <= 0) {
+            throw new IllegalArgumentException("奖品数量必须是大于 0 的整数");
+        }
+        return stock;
     }
 
     private boolean isAwardCategory(String category) {

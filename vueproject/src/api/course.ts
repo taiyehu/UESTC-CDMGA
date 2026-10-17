@@ -70,6 +70,7 @@ export interface UpdateCoursePayload {
   description: string
   image: string
   awardCost: number | null
+  awardStock: number | null
 }
 
 export const updateCourseData = (courseId: number | string, payload: UpdateCoursePayload) => {

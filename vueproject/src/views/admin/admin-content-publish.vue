@@ -34,6 +34,11 @@
         <NeonInput v-model="form.awardCost" placeholder="请输入大于 0 的整数" />
       </div>
 
+      <div v-if="publishType === 'course' && form.category === 'award'">
+        <p class="label">奖品数量</p>
+        <NeonInput v-model="form.awardStock" placeholder="请输入大于 0 的整数" />
+      </div>
+
       <div>
         <p class="label">开始时间</p>
         <NeonDateTimePicker v-model="form.startTime" placeholder="选择开始时间" />
@@ -104,6 +109,7 @@ const form = reactive({
   image: '',
   activityFile: '',
   awardCost: '',
+  awardStock: '1',
 })
 
 const imageUploaderRef = ref<ScoreImageUploaderExpose | null>(null)
@@ -122,6 +128,7 @@ watch(
     if (publishType.value === 'course') {
       form.title = ''
       form.awardCost = ''
+      form.awardStock = '1'
     }
   }
 )
@@ -135,6 +142,7 @@ function resetForm(): void {
   form.image = ''
   form.activityFile = ''
   form.awardCost = ''
+  form.awardStock = '1'
   activityFileList.value = []
   imageUploaderRef.value?.clearSelection()
 }
@@ -170,8 +178,13 @@ async function submitContent(): Promise<void> {
       return
     }
     const awardCost = Number(form.awardCost)
+    const awardStock = Number(form.awardStock)
     if (form.category === 'award' && (!Number.isInteger(awardCost) || awardCost <= 0)) {
       ElMessage({ message: '奖品兑换积分必须是大于 0 的整数', type: 'error' })
+      return
+    }
+    if (form.category === 'award' && (!Number.isInteger(awardStock) || awardStock <= 0)) {
+      ElMessage({ message: '奖品数量必须是大于 0 的整数', type: 'error' })
       return
     }
     try {
@@ -183,6 +196,7 @@ async function submitContent(): Promise<void> {
         description: form.description,
         image: form.image,
         awardCost: form.category === 'award' ? awardCost : null,
+        awardStock: form.category === 'award' ? awardStock : null,
         createTime: dayjs().format('YYYY-MM-DDTHH:mm:ss'),
         updateTime: dayjs().format('YYYY-MM-DDTHH:mm:ss'),
       })

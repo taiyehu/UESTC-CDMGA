@@ -5,6 +5,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -16,6 +18,10 @@ import java.util.Set;
 
 @Repository
 public interface ScoreRepository extends JpaRepository<Score, Long> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT s FROM Score s WHERE s.id = :scoreId")
+    Optional<Score> findByIdForUpdate(@Param("scoreId") Long scoreId);
 
     long countByIsDeletedFalse();
 
@@ -74,11 +80,11 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     Double sumAwardScoreByIdentityIdSince(@Param("identityId") Integer identityId,
                                           @Param("cutoff") java.time.LocalDateTime cutoff);
 
-    @Query("SELECT COUNT(s) > 0 FROM Score s WHERE s.identity.id = :identityId AND s.course.id = :courseId AND s.isDeleted = false AND LOWER(TRIM(COALESCE(s.course.category, ''))) = 'award'")
+    @Query("SELECT COUNT(s) > 0 FROM Score s WHERE s.identity.id = :identityId AND s.course.id = :courseId AND s.isDeleted = false AND (s.isScored = false OR (s.isScored = true AND s.score < 0)) AND LOWER(TRIM(COALESCE(s.course.category, ''))) = 'award'")
     boolean existsAwardByIdentityIdAndCourseId(@Param("identityId") Integer identityId,
                                                @Param("courseId") Integer courseId);
 
-    @Query("SELECT COUNT(s) > 0 FROM Score s WHERE s.identity.id = :identityId AND s.course.id = :courseId AND s.isDeleted = false AND s.id <> :scoreId AND LOWER(TRIM(COALESCE(s.course.category, ''))) = 'award'")
+    @Query("SELECT COUNT(s) > 0 FROM Score s WHERE s.identity.id = :identityId AND s.course.id = :courseId AND s.isDeleted = false AND s.id <> :scoreId AND (s.isScored = false OR (s.isScored = true AND s.score < 0)) AND LOWER(TRIM(COALESCE(s.course.category, ''))) = 'award'")
     boolean existsOtherAwardByIdentityIdAndCourseId(@Param("identityId") Integer identityId,
                                                     @Param("scoreId") Long scoreId,
                                                     @Param("courseId") Integer courseId);
@@ -93,6 +99,9 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     boolean existsByCourseIdAndIsDeletedFalse(Integer courseId);
 
     boolean existsByCourseIdAndIsDeletedFalseAndIsScoredTrue(Integer courseId);
+
+    @Query("SELECT COUNT(s) > 0 FROM Score s WHERE s.course.id = :courseId AND s.isDeleted = false AND s.isScored = true AND s.score < 0")
+    boolean existsApprovedAwardByCourseId(@Param("courseId") Integer courseId);
 
     List<Score> findByIdentity_IdAndIsScoredTrueAndIsDeletedFalse(int identityId);
 

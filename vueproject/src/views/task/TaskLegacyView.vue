@@ -5,7 +5,7 @@
       <h1 class="task-title">{{ course.title }}</h1>
       <p class="task-time">持续时间：{{ duration }}</p>
       <p v-if="isAward" class="award-cost">
-        兑换所需积分：{{ course.award?.cost ?? '-' }} · {{ Number(course.award?.remainingStock || 0) > 0 ? '可兑换' : '已售罄' }}
+        兑换所需积分：{{ course.award?.cost ?? '-' }} · 剩余 {{ course.award?.remainingStock ?? 0 }}/{{ course.award?.totalStock ?? 0 }} 份 · {{ Number(course.award?.remainingStock || 0) > 0 ? '可申请' : '已售罄' }}
       </p>
       <p class="task-content">{{ course.description || '暂无课题内容。' }}</p>
       <div v-if="showScoreAction" class="mt-4">

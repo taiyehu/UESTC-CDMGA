@@ -49,7 +49,7 @@ class ScoreAwardServiceTests {
     @Test
     void rejectsRedemptionWhenBalanceIsBelowCost() {
         Score pending = pendingAward();
-        when(scoreRepository.findById(1L)).thenReturn(Optional.of(pending));
+        when(scoreRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(pending));
         when(awardRepository.findByCourseIdForUpdate(3)).thenReturn(Optional.of(pending.getCourse().getAward()));
         when(identityRepository.findByIdForUpdate(2)).thenReturn(Optional.of(pending.getIdentity()));
         when(scoreRepository.sumRegularScoreByIdentityIdSince(eq(2), any(LocalDateTime.class))).thenReturn(30.0);
@@ -63,7 +63,7 @@ class ScoreAwardServiceTests {
     @Test
     void approvesWhenBalanceEqualsConfiguredAwardCost() {
         Score pending = pendingAward();
-        when(scoreRepository.findById(1L)).thenReturn(Optional.of(pending));
+        when(scoreRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(pending));
         when(awardRepository.findByCourseIdForUpdate(3)).thenReturn(Optional.of(pending.getCourse().getAward()));
         when(identityRepository.findByIdForUpdate(2)).thenReturn(Optional.of(pending.getIdentity()));
         when(scoreRepository.sumRegularScoreByIdentityIdSince(eq(2), any(LocalDateTime.class))).thenReturn(40.0);
@@ -76,8 +76,42 @@ class ScoreAwardServiceTests {
         assertEquals(true, approved.getIsScored());
         assertEquals(0, approved.getCourse().getAward().getRemainingStock());
         assertEquals(true, approved.getCourse().getAward().getSoldOutAt() != null);
-        assertEquals(true, approved.getCourse().getEndTime() != null);
+        assertEquals(null, approved.getCourse().getEndTime());
         verify(scoreRepository).rejectOtherPendingAwardScores(eq(3), eq(1L), eq("奖品已售罄"), any(LocalDateTime.class));
+    }
+
+    @Test
+    void approvalConsumesOnlyOneUnitUntilSoldOut() {
+        Score pending = pendingAward();
+        pending.getCourse().getAward().setTotalStock(3);
+        pending.getCourse().getAward().setRemainingStock(3);
+        when(scoreRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(pending));
+        when(awardRepository.findByCourseIdForUpdate(3)).thenReturn(Optional.of(pending.getCourse().getAward()));
+        when(identityRepository.findByIdForUpdate(2)).thenReturn(Optional.of(pending.getIdentity()));
+        when(scoreRepository.sumRegularScoreByIdentityIdSince(eq(2), any(LocalDateTime.class))).thenReturn(40.0);
+        when(scoreRepository.sumAwardScoreByIdentityIdSince(eq(2), any(LocalDateTime.class))).thenReturn(0.0);
+        when(scoreRepository.save(pending)).thenReturn(pending);
+
+        scoreService.updateScore(1L, null, "", -40f, true, "", null);
+
+        assertEquals(2, pending.getCourse().getAward().getRemainingStock());
+        assertEquals(null, pending.getCourse().getAward().getSoldOutAt());
+        verify(scoreRepository, never()).rejectOtherPendingAwardScores(eq(3), eq(1L), any(), any());
+    }
+
+    @Test
+    void rejectionDoesNotConsumeStockOrPoints() {
+        Score pending = pendingAward();
+        when(scoreRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(pending));
+        when(scoreRepository.save(pending)).thenReturn(pending);
+
+        Score rejected = scoreService.rejectAwardScore(1L, "信息不完整");
+
+        assertEquals(true, rejected.getIsScored());
+        assertEquals(0f, rejected.getScore());
+        assertEquals("信息不完整", rejected.getRemark());
+        assertEquals(1, rejected.getCourse().getAward().getRemainingStock());
+        verify(awardRepository, never()).save(any(Award.class));
     }
 
     @Test

@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS `award` (
   `course_id` INT NOT NULL COMMENT '奖品对应的课题ID',
   `cost` INT NOT NULL COMMENT '兑换所需积分',
-  `total_stock` INT NOT NULL DEFAULT 1 COMMENT '总库存；当前每个课题固定为1',
+  `total_stock` INT NOT NULL DEFAULT 1 COMMENT '奖品总数量',
   `remaining_stock` INT NOT NULL DEFAULT 1 COMMENT '剩余库存',
   `sold_out_at` DATETIME DEFAULT NULL COMMENT '售罄时间',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS `award` (
   PRIMARY KEY (`course_id`),
   CONSTRAINT `fk_award_course` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`) ON DELETE CASCADE,
   CONSTRAINT `ck_award_cost_positive` CHECK (`cost` > 0),
-  CONSTRAINT `ck_award_stock_range` CHECK (`total_stock` = 1 AND `remaining_stock` BETWEEN 0 AND 1)
+  CONSTRAINT `ck_award_stock_range` CHECK (`total_stock` >= 1 AND `remaining_stock` BETWEEN 0 AND `total_stock`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='奖品配置表';
 
 -- 兼容升级前已经存在的一、二、三等奖课题；新奖品请在后台填写实际名称和价格。
