@@ -25,6 +25,7 @@
           <el-option label="contest" value="contest" />
           <el-option label="ranking" value="ranking" />
           <el-option label="award" value="award" />
+          <el-option label="sign（现场签到，10 分）" value="sign" />
         </el-select>
       </div>
 

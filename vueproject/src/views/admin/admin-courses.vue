@@ -33,6 +33,7 @@
             <option value="bingo">bingo</option>
             <option value="legacy">legacy</option>
             <option value="award">award</option>
+            <option value="sign">sign</option>
           </select>
         </td>
         <td class="px-2 py-3">
@@ -147,7 +148,7 @@ function normalizeDateTime(value: any): string | null {
 }
 
 function isPresetCategory(category: string): boolean {
-  return category === 'typical' || category === 'bingo' || category === 'legacy' || category === 'award'
+  return category === 'typical' || category === 'bingo' || category === 'legacy' || category === 'award' || category === 'sign'
 }
 
 function toCourseRow(course: any): CourseRow {

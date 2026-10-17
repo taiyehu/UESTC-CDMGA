@@ -17,6 +17,7 @@
           <button v-if="currentActivity?.activityFile" class="neon-button" @click="downloadFile(currentActivity.activityFile)">
             下载活动文件
           </button>
+          <button v-if="isAdmin && assocCourses.some(course => course.category === 'sign')" class="neon-button" @click="router.push(`/activity/${route.params.id}/sign-display`)">展示签到二维码</button>
         </div>
       </div>
       <TaskLegacyView :course="activityCourse" :show-score-action="false" category-label="activity" />
@@ -81,6 +82,9 @@ const currentActivity = ref<any | null>(null)
 const assocCourses = ref<any[]>([])
 const assocLoading = ref(false)
 const assocError = ref<string | null>(null)
+const isAdmin = computed(() => {
+  try { return JSON.parse(sessionStorage.getItem('role') || 'null') === 'admin' } catch { return sessionStorage.getItem('role') === 'admin' }
+})
 
 const activityCourse = computed<Course | null>(() => {
   if (!currentActivity.value) return null

@@ -64,6 +64,19 @@ public class ActivityService {
         Activity activity = activityRepository.findByIdAndIsDeletedFalse(activityId);
         Course course = courseRepository.findByIdAndIsDeletedFalse(courseId);
         if (activity != null && course != null) {
+            if (activityCourseAssocRepository.findByActivityIdAndCourseId(activityId, courseId) != null) {
+                throw new IllegalArgumentException("课题已关联该活动");
+            }
+            if ("sign".equalsIgnoreCase(course.getCategory() == null ? "" : course.getCategory().trim())) {
+                if (!activityCourseAssocRepository.findByCourseId(courseId).isEmpty()) {
+                    throw new IllegalArgumentException("签到课题只能关联一场活动");
+                }
+                boolean hasSignCourse = activityCourseAssocRepository.findByActivityId(activityId).stream()
+                        .map(ActivityCourseAssoc::getCourse)
+                        .anyMatch(existing -> existing != null && !Boolean.TRUE.equals(existing.getIsDeleted())
+                                && "sign".equalsIgnoreCase(existing.getCategory() == null ? "" : existing.getCategory().trim()));
+                if (hasSignCourse) throw new IllegalArgumentException("每场活动只能关联一个签到课题");
+            }
             ActivityCourseAssoc assoc = new ActivityCourseAssoc();
             assoc.setActivity(activity);
             assoc.setCourse(course);

@@ -62,12 +62,13 @@
 
 <script lang="ts" setup>
 import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { login } from '@/api/auth'
 import NeonActionButton from '@/components/NeonActionButton.vue'
 
 const router = useRouter()
+const route = useRoute()
 const ruleFormRef = ref()
 const loading = ref(false)
 
@@ -110,7 +111,8 @@ const handleLoginSuccess = (response: any) => {
   if (response.data.code === 0) {
     sessionStorage.setItem('userInfo', JSON.stringify(response.data.data))
     sessionStorage.setItem('role', JSON.stringify(response.data.data.role))
-    router.push('/home')
+    const redirect = route.query.redirect
+    router.push(typeof redirect === 'string' && /^\/sign\/\d+\?token=/.test(redirect) ? redirect : '/home')
     ElMessage.success(response.data.msg || '登录成功')
   } else {
     ElMessage.warning(response.data.msg || '登录失败')

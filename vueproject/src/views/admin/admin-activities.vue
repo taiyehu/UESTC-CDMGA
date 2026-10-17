@@ -31,6 +31,14 @@
           <span v-else>-</span>
         </td>
         <td class="px-4 py-3 text-center">
+          <div class="mb-2 flex gap-2">
+            <select v-model.number="selectedSignCourse[activity.id]" class="max-w-36 bg-slate-900 text-cyan-50">
+              <option :value="undefined">选择签到课题</option>
+              <option v-for="course in signCourses" :key="course.id" :value="course.id">{{ course.title }}</option>
+            </select>
+            <NeonActionButton size="sm" variant="blue" @click="linkSignCourse(activity.id)">关联</NeonActionButton>
+          </div>
+          <router-link :to="`/activity/${activity.id}`" class="link mr-3">活动页</router-link>
           <NeonActionButton size="sm" variant="red" @click="deleteActivity(activity.id)">删除</NeonActionButton>
         </td>
       </tr>
@@ -49,6 +57,8 @@ import NeonActionButton from '@/components/NeonActionButton.vue'
 import AdminPagination from '@/components/AdminPagination.vue'
 
 const activities = ref<any[]>([])
+const signCourses = ref<any[]>([])
+const selectedSignCourse = ref<Record<number, number | undefined>>({})
 const pageSize = ref(5)
 const currentPage = ref(1)
 
@@ -85,6 +95,22 @@ async function fetchActivities(): Promise<void> {
   }
 }
 
+async function fetchSignCourses(): Promise<void> {
+  try {
+    const response = await axios.get('/api/course/')
+    signCourses.value = (response.data || []).filter((course: any) => course.category?.trim().toLowerCase() === 'sign' && !course.isDeleted)
+  } catch { ElMessage.error('获取签到课题失败') }
+}
+
+async function linkSignCourse(activityId: number): Promise<void> {
+  const courseId = selectedSignCourse.value[activityId]
+  if (!courseId) { ElMessage.warning('请先选择签到课题'); return }
+  try {
+    await axios.post('/api/activity/add-assoc-course', { activityId, courseId, rules: '现场扫码签到自动获得 10 分' })
+    ElMessage.success('签到课题已关联')
+  } catch { ElMessage.error('关联失败，请检查是否已关联其他签到课题') }
+}
+
 async function deleteActivity(activityId: number): Promise<void> {
   if (!window.confirm('确定删除该活动吗？')) return
 
@@ -97,7 +123,7 @@ async function deleteActivity(activityId: number): Promise<void> {
   }
 }
 
-onMounted(fetchActivities)
+onMounted(() => { fetchActivities(); fetchSignCourses() })
 </script>
 
 <style scoped>

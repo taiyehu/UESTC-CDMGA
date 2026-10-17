@@ -3,7 +3,10 @@
     <div v-if="loading" class="hud-shell p-8 text-cyan-100/80">课题加载中...</div>
     <div v-else-if="error" class="hud-shell p-8 text-rose-300">{{ error }}</div>
 
-    <component v-else-if="course" :is="renderComponent" :course="course" :category-label="String(course.category || '').trim().toLowerCase() === 'award' ? 'award' : undefined" />
+    <template v-else-if="course">
+      <component :is="renderComponent" :course="course" :show-score-action="String(course.category || '').trim().toLowerCase() !== 'sign'" :category-label="String(course.category || '').trim().toLowerCase() === 'award' ? 'award' : undefined" />
+      <p v-if="String(course.category || '').trim().toLowerCase() === 'sign'" class="hud-shell mt-4 p-5 text-cyan-100">请在活动现场扫描动态二维码签到，成功后自动获得 10 分。</p>
+    </template>
 
     <article v-else class="hud-shell p-8 text-left text-cyan-100/75">
       课题不存在或已被删除。

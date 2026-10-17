@@ -96,6 +96,9 @@ public class ScoreService {
             }
 
             String category = course.getCategory() == null ? "" : course.getCategory().trim().toLowerCase();
+            if ("sign".equals(category)) {
+                throw new IllegalArgumentException("现场签到课题只能通过活动动态二维码提交");
+            }
             if ("award".equals(category)) {
                 Award lockedAward = awardRepository.findByCourseIdForUpdate(course.getId())
                         .orElseThrow(() -> new IllegalArgumentException("奖品配置不存在"));

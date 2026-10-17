@@ -24,7 +24,7 @@
 ## 3. 后端服务 (Backend)
 
 * **框架**: Spring Boot (Maven 管理)
-* **运行时**: `Java 17`
+* **运行时**: `Java 25`
 * **数据库**: `MySQL`
 
 ## 4. 网络与跨域 (Networking)

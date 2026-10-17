@@ -117,6 +117,9 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
 
     boolean existsByIdentityIdAndCourseIdAndIsDeletedFalse(int identityId, int courseId);
 
+    @Query("SELECT COUNT(s) > 0 FROM Score s JOIN s.course c JOIN c.activityAssocs a WHERE s.identity.id = :identityId AND a.activity.id = :activityId AND s.isDeleted = false AND LOWER(TRIM(COALESCE(c.category, ''))) = 'sign'")
+    boolean existsSignByIdentityIdAndActivityId(@Param("identityId") int identityId, @Param("activityId") int activityId);
+
     boolean existsByIdentityIdAndCourseIdAndIssueIdAndIsDeletedFalse(int identityId, int courseId, Integer issueId);
 
     Score findByIdentityIdAndCourseIdAndIsDeletedFalse(Integer identityId, Integer courseId);

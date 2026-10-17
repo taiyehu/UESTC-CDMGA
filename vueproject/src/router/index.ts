@@ -31,6 +31,8 @@ const TaskBingoDetail = () => import('@/views/task/TaskBingoDetail.vue')
 const Links = () => import('@/views/pages/links.vue')
 const Activity = () => import('@/views/activity/activity.vue')
 const ActivityDetailPage = () => import('@/views/activity/ActivityDetailPage.vue')
+const SignDisplayPage = () => import('@/views/activity/SignDisplayPage.vue')
+const SignCheckinPage = () => import('@/views/activity/SignCheckinPage.vue')
 const AdminActivities = () => import('@/views/admin/admin-activities.vue')
 const ContestRanking = () => import('@/views/pages/contest-ranking.vue')
 const NotFoundPage = () => import('@/views/pages/not-found.vue')
@@ -189,6 +191,14 @@ const routes = [
     component: ActivityDetailPage,
   },
   {
+    path: '/activity/:id/sign-display',
+    component: SignDisplayPage,
+  },
+  {
+    path: '/sign/:activityId',
+    component: SignCheckinPage,
+  },
+  {
     path: '/contest-ranking',
     component: ContestRanking,
   },
@@ -215,11 +225,11 @@ router.beforeEach((to) => {
   // 未登录拦截
   if (to.path !== '/login' && to.path !== '/register' && !isAuthenticated) {
     ElMessage.warning('请先登录！')
-    return '/login'
+    return to.path.startsWith('/sign/') ? { path: '/login', query: { redirect: to.fullPath } } : '/login'
   }
 
   // 管理员权限控制
-  if (to.path.startsWith('/admin')) {
+  if (to.path.startsWith('/admin') || to.path.endsWith('/sign-display')) {
     // 更稳健地解析 role：兼容纯文本和 JSON 字符串，优先在已登录的前提下读取
     let userRole: string | null = null
     if (userInfo) {
