@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class SignTokenService {
     private static final long PERIOD_SECONDS = 30;
+    private static final long SCAN_GRACE_SECONDS = 60;
     private final byte[] secret;
     private final Clock clock;
 
@@ -50,7 +51,8 @@ public class SignTokenService {
             int signedActivityId = Integer.parseInt(parts[0]);
             long expiresAt = Long.parseLong(parts[1]);
             long now = clock.instant().getEpochSecond();
-            if (signedActivityId != activityId || expiresAt <= now || expiresAt > now + PERIOD_SECONDS) return false;
+            if (signedActivityId != activityId || expiresAt + SCAN_GRACE_SECONDS <= now
+                    || expiresAt > now + PERIOD_SECONDS) return false;
             String expected = signature(parts[0] + "." + parts[1]);
             return MessageDigest.isEqual(expected.getBytes(StandardCharsets.US_ASCII), parts[2].getBytes(StandardCharsets.US_ASCII));
         } catch (NumberFormatException e) {

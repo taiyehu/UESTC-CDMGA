@@ -58,6 +58,7 @@ public class SignCheckinService {
         score.setIdentity(identity);
         score.setCourse(course);
         score.setUploadTime(now);
+        score.setImage("");
         score.setUpdatedAt(now);
         score.setScore(POINTS);
         score.setIsScored(true);

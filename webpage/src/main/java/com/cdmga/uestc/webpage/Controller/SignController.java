@@ -31,10 +31,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/sign")
 public class SignController {
+    private static final Logger log = LoggerFactory.getLogger(SignController.class);
     private final SignCheckinService checkins;
     private final IdentityRepository identities;
 
@@ -83,6 +86,9 @@ public class SignController {
                     .body(Result.success(checkins.checkIn(user.getId(), request.activityId(), request.token())));
         } catch (IllegalArgumentException e) {
             return failure(HttpStatus.BAD_REQUEST, e.getMessage());
+        } catch (RuntimeException e) {
+            log.error("活动 {} 签到成绩写入失败", request.activityId(), e);
+            return failure(HttpStatus.INTERNAL_SERVER_ERROR, "服务器未能保存签到成绩，请联系管理员");
         }
     }
 

@@ -43,7 +43,9 @@ class SignCheckinServiceTests {
         assertTrue(issued.valid(7, token));
         assertFalse(issued.valid(8, token));
         assertFalse(issued.valid(7, token + "x"));
-        SignTokenService expired = new SignTokenService(SECRET, Clock.fixed(now.plusSeconds(30), ZoneOffset.UTC));
+        SignTokenService grace = new SignTokenService(SECRET, Clock.fixed(now.plusSeconds(60), ZoneOffset.UTC));
+        assertTrue(grace.valid(7, token));
+        SignTokenService expired = new SignTokenService(SECRET, Clock.fixed(now.plusSeconds(90), ZoneOffset.UTC));
         assertFalse(expired.valid(7, token));
     }
 
@@ -80,6 +82,7 @@ class SignCheckinServiceTests {
         assertFalse(first.alreadyCheckedIn());
         assertNotNull(saved.get());
         assertEquals(10f, saved.get().getScore());
+        assertEquals("", saved.get().getImage());
         assertTrue(saved.get().getIsScored());
         assertSame(identity, saved.get().getIdentity());
         assertSame(course, saved.get().getCourse());
@@ -141,7 +144,7 @@ class SignCheckinServiceTests {
         MockMultipartFile imageFile = new MockMultipartFile("image", "sign.png", "image/png", Base64.getDecoder().decode(imageData));
         Result decoded = controller.decode(imageFile, session).getBody();
         assertNotNull(decoded);
-        assertEquals(0, decoded.getCode());
+        assertEquals(0, decoded.getCode(), decoded.getMessage());
         assertTrue(((String) decoded.getData()).startsWith("https://example.com/sign/7?token="));
         admin.setRole("user");
         assertEquals(403, controller.qr(7, "https://example.com", session).getStatusCode().value());

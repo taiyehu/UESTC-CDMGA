@@ -65,6 +65,10 @@ nav_order: 1
 
 移动端顶部“扫码签到”可打开后置摄像头；浏览器不支持实时识别时，可点按识别当前画面或拍照识别。实时摄像头需要 HTTPS 访问站点，二维码图片通过现有 `/api` 反向代理上传识别，无需新增 Nginx 路由。
 
+当前仓库的 Nginx 配置仅监听 80 端口；通过 `http://cdmga.top` 访问时，移动浏览器不会开放实时摄像头。需为 `cdmga.top` 配置可信的 TLS 证书、开放 443 端口，并将 HTTP 跳转到 HTTPS，确认 `https://cdmga.top/scan` 可访问后再测试实时扫码。上线新后端后，拍照识别的签到成绩写入会为非空图片字段填入空字符串，无需修改表结构。
+
+在阿里云安全组与服务器防火墙放通 TCP 443 后，可按 [Certbot 的 Nginx 指南](https://certbot.eff.org/instructions?os=snap&ws=nginx) 安装证书工具，再在服务器运行 `sudo certbot --nginx -d cdmga.top`、`sudo nginx -t` 和 `sudo certbot renew --dry-run`。证书工具会修改服务器上的 Nginx 配置；后续若通过仓库工作流重新部署 `script/cdmga_nginx.conf`，需确认 HTTPS 配置仍在。
+
 生产环境建议在服务器的 `/etc/webserver.env` 中设置至少 32 字符的 `SIGN_QR_SECRET` 环境变量，`webserver.service` 会读取该文件；多实例部署时所有实例必须使用同一密钥。未设置时后端会在启动时生成临时密钥，服务重启后旧二维码会失效。设置后重启 `webserver.service`。
 
 本功能只需发布新的前后端代码，无数据库迁移。主分支的 `CD` 工作流会依次更新服务环境、部署后端 JAR 和前端静态文件；后端构建与服务器运行环境均使用 Java 25。

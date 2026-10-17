@@ -91,7 +91,9 @@ async function startCamera() {
   if (opening.value || disposed) return
   error.value = ''
   if (!navigator.mediaDevices?.getUserMedia) {
-    cameraMessage.value = '当前环境无法打开摄像头，请使用拍照识别。网站需通过 HTTPS 访问。'
+    cameraMessage.value = window.isSecureContext
+      ? '当前浏览器无法打开摄像头，请使用拍照识别。'
+      : '当前网站使用 HTTP，浏览器禁止实时摄像头；请使用拍照识别。管理员开启 HTTPS 后即可实时扫码。'
     return
   }
   try {

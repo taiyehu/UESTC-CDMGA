@@ -31,10 +31,21 @@ onMounted(async () => {
   }
   try {
     const response = await axios.post('/api/sign/checkin', { activityId, token })
+    if (response.data?.code !== 0 || !response.data?.data) {
+      throw new Error(response.data?.message || '签到接口返回了无效结果，请联系管理员')
+    }
     success.value = true
     message.value = response.data.data.alreadyCheckedIn ? '您已完成本次活动签到，无需重复签到。' : '签到成功，已自动获得 10 分！'
   } catch (e: any) {
-    message.value = e?.response?.data?.message || '签到失败，请重新扫描现场二维码'
+    const status = e?.response?.status
+    const serverMessage = e?.response?.data?.message
+    if (status === 401) message.value = '登录状态已失效，请重新登录后扫描现场二维码'
+    else if (status === 404) message.value = '服务器尚未部署签到接口，请联系管理员'
+    else if (status >= 500) message.value = serverMessage || '服务器未能保存签到成绩，请联系管理员检查服务日志'
+    else if (serverMessage) message.value = serverMessage
+    else if (!e?.isAxiosError && e?.message) message.value = e.message
+    else if (!e?.response) message.value = '无法连接签到服务，请检查网络后重新扫描'
+    else message.value = e?.message || '签到失败，请联系管理员'
   } finally {
     loading.value = false
   }
