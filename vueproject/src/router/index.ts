@@ -33,6 +33,7 @@ const Activity = () => import('@/views/activity/activity.vue')
 const ActivityDetailPage = () => import('@/views/activity/ActivityDetailPage.vue')
 const SignDisplayPage = () => import('@/views/activity/SignDisplayPage.vue')
 const SignCheckinPage = () => import('@/views/activity/SignCheckinPage.vue')
+const SignScannerPage = () => import('@/views/activity/SignScannerPage.vue')
 const AdminActivities = () => import('@/views/admin/admin-activities.vue')
 const ContestRanking = () => import('@/views/pages/contest-ranking.vue')
 const NotFoundPage = () => import('@/views/pages/not-found.vue')
@@ -197,6 +198,10 @@ const routes = [
   {
     path: '/sign/:activityId',
     component: SignCheckinPage,
+  },
+  {
+    path: '/scan',
+    component: SignScannerPage,
   },
   {
     path: '/contest-ranking',

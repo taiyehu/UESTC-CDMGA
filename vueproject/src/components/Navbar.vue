@@ -100,6 +100,7 @@
           <span aria-hidden="true" class="text-xl leading-none">{{ mobileMenuOpen ? '×' : '☰' }}</span>
           <span>菜单</span>
         </button>
+        <router-link to="/scan" class="inline-flex h-11 items-center rounded-lg border border-cyan-400/60 px-3 text-sm font-semibold text-cyan-50" @click="mobileMenuOpen = false">扫码签到</router-link>
         <button
           type="button"
           class="inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full ring-2 ring-white/40 focus-visible:outline-2 focus-visible:outline-cyan-300"

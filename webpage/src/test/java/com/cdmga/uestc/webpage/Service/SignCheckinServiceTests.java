@@ -26,7 +26,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.lang.reflect.Method;
 import java.lang.reflect.Field;
+import java.util.Base64;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.mock.web.MockMultipartFile;
 import com.cdmga.uestc.webpage.common.Result;
 import org.junit.jupiter.api.Test;
 
@@ -135,6 +137,12 @@ class SignCheckinServiceTests {
         assertNotNull(result);
         assertEquals(0, result.getCode());
         assertTrue(((SignController.QrResponse) result.getData()).image().startsWith("data:image/png;base64,"));
+        String imageData = ((SignController.QrResponse) result.getData()).image().substring("data:image/png;base64,".length());
+        MockMultipartFile imageFile = new MockMultipartFile("image", "sign.png", "image/png", Base64.getDecoder().decode(imageData));
+        Result decoded = controller.decode(imageFile, session).getBody();
+        assertNotNull(decoded);
+        assertEquals(0, decoded.getCode());
+        assertTrue(((String) decoded.getData()).startsWith("https://example.com/sign/7?token="));
         admin.setRole("user");
         assertEquals(403, controller.qr(7, "https://example.com", session).getStatusCode().value());
     }

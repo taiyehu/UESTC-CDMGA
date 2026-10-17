@@ -5,13 +5,21 @@ import com.cdmga.uestc.webpage.Repository.IdentityRepository;
 import com.cdmga.uestc.webpage.Service.SignCheckinService;
 import com.cdmga.uestc.webpage.common.Result;
 import com.google.zxing.BarcodeFormat;
+import com.google.zxing.BinaryBitmap;
+import com.google.zxing.DecodeHintType;
+import com.google.zxing.MultiFormatReader;
+import com.google.zxing.RGBLuminanceSource;
+import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.qrcode.QRCodeWriter;
 import jakarta.servlet.http.HttpSession;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.util.Base64;
+import java.util.List;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/sign")
@@ -74,6 +83,42 @@ public class SignController {
                     .body(Result.success(checkins.checkIn(user.getId(), request.activityId(), request.token())));
         } catch (IllegalArgumentException e) {
             return failure(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    }
+
+    @PostMapping("/decode")
+    public ResponseEntity<Result> decode(@RequestParam("image") MultipartFile file, HttpSession session) {
+        if (currentUser(session) == null) return failure(HttpStatus.UNAUTHORIZED, "请先登录");
+        if (file.isEmpty() || file.getSize() > 5 * 1024 * 1024) {
+            return failure(HttpStatus.BAD_REQUEST, "图片不能为空且不能超过 5 MB");
+        }
+        try (ImageInputStream input = ImageIO.createImageInputStream(file.getInputStream())) {
+            if (input == null) return failure(HttpStatus.BAD_REQUEST, "无法读取图片");
+            var readers = ImageIO.getImageReaders(input);
+            if (!readers.hasNext()) return failure(HttpStatus.BAD_REQUEST, "请上传 JPEG 或 PNG 图片");
+            ImageReader reader = readers.next();
+            try {
+                if (!List.of("JPEG", "PNG").contains(reader.getFormatName().toUpperCase(java.util.Locale.ROOT))) {
+                    return failure(HttpStatus.BAD_REQUEST, "请上传 JPEG 或 PNG 图片");
+                }
+                reader.setInput(input);
+                int width = reader.getWidth(0);
+                int height = reader.getHeight(0);
+                if (width <= 0 || height <= 0 || (long) width * height > 16_000_000) {
+                    return failure(HttpStatus.BAD_REQUEST, "图片尺寸过大");
+                }
+                BufferedImage image = reader.read(0);
+                int[] pixels = image.getRGB(0, 0, width, height, null, 0, width);
+                BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(new RGBLuminanceSource(width, height, pixels)));
+                String value = new MultiFormatReader().decode(bitmap, java.util.Map.of(
+                        DecodeHintType.POSSIBLE_FORMATS, List.of(BarcodeFormat.QR_CODE),
+                        DecodeHintType.TRY_HARDER, true)).getText();
+                return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(Result.success(value));
+            } finally {
+                reader.dispose();
+            }
+        } catch (Exception e) {
+            return failure(HttpStatus.BAD_REQUEST, "未识别到二维码，请对准现场二维码重试");
         }
     }
 

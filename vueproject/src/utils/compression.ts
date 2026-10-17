@@ -1,7 +1,7 @@
 /** Resize and encode user images before uploading them. URLs remain immutable after upload. */
 export async function optimizeImage(
   input: Blob | File,
-  { maxSide, quality }: { maxSide: number; quality: number },
+  { maxSide, quality, format = 'image/webp' }: { maxSide: number; quality: number; format?: 'image/webp' | 'image/jpeg' },
 ): Promise<File> {
   const source = input instanceof File ? input : new File([input], 'image.png', { type: input.type })
   // Animated GIFs and SVGs must retain their original behavior.
@@ -22,11 +22,11 @@ export async function optimizeImage(
     if (!context) return source
     context.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
 
-    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/webp', quality))
-    if (!blob || blob.type !== 'image/webp') return source
+    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, format, quality))
+    if (!blob || blob.type !== format) return source
     // Keep an already small image if resizing did not improve it.
     if (scale === 1 && blob.size >= source.size) return source
-    return new File([blob], `${source.name.replace(/\.[^.]+$/, '')}.webp`, { type: 'image/webp' })
+    return new File([blob], `${source.name.replace(/\.[^.]+$/, '')}.${format === 'image/jpeg' ? 'jpg' : 'webp'}`, { type: format })
   } finally {
     bitmap.close()
   }
