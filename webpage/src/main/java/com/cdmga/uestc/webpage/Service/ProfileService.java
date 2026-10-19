@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ProfileService {
@@ -31,6 +32,19 @@ public class ProfileService {
 
     public Profile saveProfile(Profile profile) {
         return profileRepository.save(profile);
+    }
+
+    @Transactional
+    public Profile submitAvatarForReview(Integer identityId, String avatarUrl) {
+        Profile profile = profileRepository.findByIdentity_Id(identityId);
+        if (profile == null) {
+            profile = new Profile();
+            profile.setIdentityId(identityId);
+        }
+        profile.setAvatar(avatarUrl);
+        profile.setStatus(0);
+        // 刷入数据库后再向前端报告成功，避免只上传了文件却没有进入审核队列。
+        return profileRepository.saveAndFlush(profile);
     }
 
     public void deleteProfile(Integer id) {

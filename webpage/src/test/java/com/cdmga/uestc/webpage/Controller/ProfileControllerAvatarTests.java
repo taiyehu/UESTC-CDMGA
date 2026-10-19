@@ -134,6 +134,8 @@ class ProfileControllerAvatarTests {
         Profile saved;
         Profile existing;
         boolean failSave;
+        Integer submittedIdentityId;
+        String submittedAvatarUrl;
 
         @Override
         public Profile getProfileByIdentityId(Integer identityId) {
@@ -141,10 +143,19 @@ class ProfileControllerAvatarTests {
         }
 
         @Override
-        public Profile saveProfile(Profile profile) {
+        public Profile submitAvatarForReview(Integer identityId, String avatarUrl) {
             if (failSave) throw new RuntimeException("database unavailable");
+            submittedIdentityId = identityId;
+            submittedAvatarUrl = avatarUrl;
+            Profile profile = existing;
+            if (profile == null) {
+                profile = new Profile();
+                profile.setIdentityId(identityId);
+            }
+            profile.setAvatar(avatarUrl);
+            profile.setStatus(0);
             saved = profile;
-            return profile;
+            return saved;
         }
     }
 }
