@@ -22,12 +22,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/profile")
 public class ProfileController {
+    private static final Logger log = LoggerFactory.getLogger(ProfileController.class);
+
     @Autowired
     private ProfileService profileService;
 
@@ -168,7 +172,7 @@ public class ProfileController {
         profileService.deleteProfile(id);
     }
 
-    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/{id}/submit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Result> submitProfile(
             @PathVariable Integer id,
             @RequestParam("description") String description,
@@ -213,6 +217,7 @@ public class ProfileController {
             profileService.saveProfile(profile);
             return ResponseEntity.ok(Result.success(profile.getAvatar()));
         } catch (Exception e) {
+            log.error("资料提交审核失败，identityId={}", userId, e);
             if (targetLocation != null) {
                 try {
                     Files.deleteIfExists(targetLocation);

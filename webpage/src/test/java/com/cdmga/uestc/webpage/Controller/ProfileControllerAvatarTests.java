@@ -100,19 +100,32 @@ class ProfileControllerAvatarTests {
     }
 
     @Test
-    void multipartPutReachesCombinedSubmission() throws Exception {
+    void multipartPostReachesCombinedSubmission() throws Exception {
         MockMvc mvc = MockMvcBuilders.standaloneSetup(controller).build();
         MockMultipartFile avatar = new MockMultipartFile("avatar", "photo.png", "image/png", new byte[] {1});
 
-        mvc.perform(MockMvcRequestBuilders.multipart("/api/profile/42")
+        mvc.perform(MockMvcRequestBuilders.multipart("/api/profile/42/submit")
                 .file(avatar)
                 .param("description", "新签名")
-                .session(session)
-                .with(request -> { request.setMethod("PUT"); return request; }))
+                .session(session))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value(0));
 
         assertEquals("新签名", profileService.saved.getDescription());
+        assertEquals(0, profileService.saved.getStatus());
+    }
+
+    @Test
+    void multipartPostWithoutAvatarSavesDescription() throws Exception {
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(controller).build();
+
+        mvc.perform(MockMvcRequestBuilders.multipart("/api/profile/42/submit")
+                .param("description", "只修改签名")
+                .session(session))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0));
+
+        assertEquals("只修改签名", profileService.saved.getDescription());
         assertEquals(0, profileService.saved.getStatus());
     }
 

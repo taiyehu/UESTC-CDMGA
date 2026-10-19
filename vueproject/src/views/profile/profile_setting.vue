@@ -191,7 +191,7 @@ async function submitEditProfile() {
     const formData = new FormData()
     formData.append('description', editProfile.description)
     if (pendingAvatar.value) formData.append('avatar', pendingAvatar.value)
-    const response = await axios.put(`/api/profile/${user.id}`, formData)
+    const response = await axios.post(`/api/profile/${user.id}/submit`, formData)
     if (response.data?.code !== 0) throw new Error(response.data?.message || '提交失败')
     pendingAvatar.value = null
     if (previewAvatarUrl.value) URL.revokeObjectURL(previewAvatarUrl.value)
