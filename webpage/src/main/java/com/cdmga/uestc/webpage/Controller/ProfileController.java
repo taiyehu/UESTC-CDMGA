@@ -20,6 +20,7 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -143,7 +144,7 @@ public class ProfileController {
         return profileService.saveProfile(profile);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public Profile updateProfile(@PathVariable Integer id, @RequestBody Profile profile) {
         Profile dbProfile = profileService.getProfileByIdentityId(profile.getIdentityId());
         if (dbProfile == null) {
@@ -167,38 +168,50 @@ public class ProfileController {
         profileService.deleteProfile(id);
     }
 
-    @PostMapping("/upload-avatar")
-    public ResponseEntity<Result> uploadAvatar(@RequestParam("avatar") MultipartFile avatar, HttpSession session) {
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Result> submitProfile(
+            @PathVariable Integer id,
+            @RequestParam("description") String description,
+            @RequestParam(value = "avatar", required = false) MultipartFile avatar,
+            HttpSession session) {
         Object identityId = session.getAttribute("identityId");
-        if (!(identityId instanceof Integer userId)) {
+        if (!(identityId instanceof Integer userId) || !userId.equals(id)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Result.error("请重新登录"));
         }
-        String extension = switch (avatar.getContentType() == null ? "" : avatar.getContentType()) {
-            case "image/png" -> "png";
-            case "image/jpeg" -> "jpg";
-            case "image/webp" -> "webp";
-            default -> null;
-        };
-        if (avatar.isEmpty() || extension == null) {
-            return ResponseEntity.badRequest().body(Result.error("请选择 PNG、JPEG 或 WebP 图片"));
+        if (description.length() > 50) {
+            return ResponseEntity.badRequest().body(Result.error("签名不能超过50字"));
+        }
+        String extension = null;
+        if (avatar != null) {
+            extension = switch (avatar.getContentType() == null ? "" : avatar.getContentType()) {
+                case "image/png" -> "png";
+                case "image/jpeg" -> "jpg";
+                case "image/webp" -> "webp";
+                default -> null;
+            };
+            if (avatar.isEmpty() || extension == null) {
+                return ResponseEntity.badRequest().body(Result.error("请选择 PNG、JPEG 或 WebP 图片"));
+            }
         }
 
         Path targetLocation = null;
         try {
-            String fileName = UUID.randomUUID() + "." + extension;
-            targetLocation = Paths.get(uploadDir, fileName);
-            Files.createDirectories(targetLocation.getParent());
-            Files.copy(avatar.getInputStream(), targetLocation);
-            String avatarUrl = "/avatars/" + fileName;
             Profile profile = profileService.getProfileByIdentityId(userId);
             if (profile == null) {
                 profile = new Profile();
                 profile.setIdentityId(userId);
             }
-            profile.setAvatar(avatarUrl);
+            if (avatar != null) {
+                String fileName = UUID.randomUUID() + "." + extension;
+                targetLocation = Paths.get(uploadDir, fileName);
+                Files.createDirectories(targetLocation.getParent());
+                Files.copy(avatar.getInputStream(), targetLocation);
+                profile.setAvatar("/avatars/" + fileName);
+            }
+            profile.setDescription(description);
             profile.setStatus(0);
             profileService.saveProfile(profile);
-            return ResponseEntity.ok(Result.success(avatarUrl));
+            return ResponseEntity.ok(Result.success(profile.getAvatar()));
         } catch (Exception e) {
             if (targetLocation != null) {
                 try {
@@ -207,7 +220,7 @@ public class ProfileController {
                     e.addSuppressed(cleanupError);
                 }
             }
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error("头像提交审核失败"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error("资料提交审核失败"));
         }
     }
 }

@@ -13,6 +13,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -31,10 +37,10 @@ class ProfileControllerAvatarTests {
     }
 
     @Test
-    void uploadCreatesPendingProfileBeforeReportingSuccess() throws Exception {
+    void combinedSubmissionCreatesPendingProfileBeforeReportingSuccess() throws Exception {
         MockMultipartFile avatar = new MockMultipartFile("avatar", "photo.png", "image/png", new byte[] {1, 2, 3});
 
-        ResponseEntity<Result> response = controller.uploadAvatar(avatar, session);
+        ResponseEntity<Result> response = controller.submitProfile(42, "新签名", avatar, session);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(0, response.getBody().getCode());
@@ -45,6 +51,7 @@ class ProfileControllerAvatarTests {
         assertEquals(42, profileService.saved.getIdentityId());
         assertEquals(0, profileService.saved.getStatus());
         assertEquals(url, profileService.saved.getAvatar());
+        assertEquals("新签名", profileService.saved.getDescription());
     }
 
     @Test
@@ -52,7 +59,7 @@ class ProfileControllerAvatarTests {
         profileService.failSave = true;
         MockMultipartFile avatar = new MockMultipartFile("avatar", "photo.webp", "image/webp", new byte[] {1});
 
-        ResponseEntity<Result> response = controller.uploadAvatar(avatar, session);
+        ResponseEntity<Result> response = controller.submitProfile(42, "新签名", avatar, session);
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertEquals(1, response.getBody().getCode());
@@ -62,7 +69,7 @@ class ProfileControllerAvatarTests {
     }
 
     @Test
-    void uploadKeepsExistingDescriptionWhilePuttingAvatarInReview() {
+    void combinedSubmissionUpdatesExistingProfile() {
         Profile existing = new Profile();
         existing.setIdentityId(42);
         existing.setDescription("原有签名");
@@ -70,11 +77,42 @@ class ProfileControllerAvatarTests {
         profileService.existing = existing;
         MockMultipartFile avatar = new MockMultipartFile("avatar", "photo.png", "image/png", new byte[] {1});
 
-        ResponseEntity<Result> response = controller.uploadAvatar(avatar, session);
+        ResponseEntity<Result> response = controller.submitProfile(42, "新签名", avatar, session);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(existing, profileService.saved);
-        assertEquals("原有签名", profileService.saved.getDescription());
+        assertEquals("新签名", profileService.saved.getDescription());
+        assertEquals(0, profileService.saved.getStatus());
+    }
+
+    @Test
+    void descriptionOnlySubmissionPreservesExistingAvatar() {
+        Profile existing = new Profile();
+        existing.setIdentityId(42);
+        existing.setAvatar("/avatars/old.png");
+        profileService.existing = existing;
+
+        ResponseEntity<Result> response = controller.submitProfile(42, "新签名", null, session);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("/avatars/old.png", profileService.saved.getAvatar());
+        assertEquals("新签名", profileService.saved.getDescription());
+    }
+
+    @Test
+    void multipartPutReachesCombinedSubmission() throws Exception {
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(controller).build();
+        MockMultipartFile avatar = new MockMultipartFile("avatar", "photo.png", "image/png", new byte[] {1});
+
+        mvc.perform(MockMvcRequestBuilders.multipart("/api/profile/42")
+                .file(avatar)
+                .param("description", "新签名")
+                .session(session)
+                .with(request -> { request.setMethod("PUT"); return request; }))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0));
+
+        assertEquals("新签名", profileService.saved.getDescription());
         assertEquals(0, profileService.saved.getStatus());
     }
 
@@ -83,7 +121,7 @@ class ProfileControllerAvatarTests {
         session.removeAttribute("identityId");
         MockMultipartFile avatar = new MockMultipartFile("avatar", "photo.png", "image/png", new byte[] {1});
 
-        ResponseEntity<Result> response = controller.uploadAvatar(avatar, session);
+        ResponseEntity<Result> response = controller.submitProfile(42, "新签名", avatar, session);
 
         assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
         assertNull(profileService.saved);

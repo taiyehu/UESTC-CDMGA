@@ -17,14 +17,6 @@
             >
               我的信息
             </button>
-            <button
-              type="button"
-              class="tab-item mt-2 w-full rounded-xl px-3 py-2 text-left"
-              :class="activeTab === 'avatar' ? 'is-active' : ''"
-              @click="activeTab = 'avatar'"
-            >
-              我的头像
-            </button>
             <button type="button" class="tab-item mt-2 w-full rounded-xl px-3 py-2 text-left" :class="activeTab === 'titles' ? 'is-active' : ''" @click="activeTab = 'titles'">
               申请称号
             </button>
@@ -35,6 +27,12 @@
           <div v-if="activeTab === 'info'" class="info-section">
             <div class="edit-card gradient-shell rounded-2xl bg-slate-900/50 p-4 backdrop-blur-xl md:p-5">
               <h3 class="text-xl font-semibold text-cyan-50">编辑个人信息</h3>
+              <label class="mt-3 block text-cyan-100/85">头像</label>
+              <img class="avatar-image mt-2" :src="previewAvatarUrl || getImageUrl(profile.avatar)" alt="头像预览" />
+              <div class="mt-3">
+                <NeonActionButton variant="blue" :disabled="saving" @click="triggerFileInput">选择并裁剪头像</NeonActionButton>
+                <input ref="fileInput" type="file" accept="image/*" style="display: none" @change="onFileChange" />
+              </div>
               <label class="mt-3 block text-cyan-100/85">签名</label>
               <NeonInput
                 v-model="editProfile.description"
@@ -45,31 +43,7 @@
                 placeholder="输入你的个性签名（50字以内）"
               />
               <div class="mt-4">
-                <NeonActionButton variant="green" @click="submitEditProfile">保存</NeonActionButton>
-              </div>
-            </div>
-          </div>
-
-          <div v-else-if="activeTab === 'avatar'" class="avatar-section">
-            <div class="edit-card gradient-shell rounded-2xl bg-slate-900/50 p-4 backdrop-blur-xl md:p-5">
-              <h3 class="text-xl font-semibold text-cyan-50">更换头像</h3>
-              <div class="mb-4">
-                <img
-                  class="avatar-image"
-                  :src="getImageUrl(editProfile.avatar || profile.avatar)"
-                  alt="头像预览"
-                  @click="activeTab = 'avatar'"
-                />
-              </div>
-              <div class="mb-4">
-                <NeonActionButton variant="blue" @click="triggerFileInput">选择头像</NeonActionButton>
-                <input
-                    ref="fileInput"
-                    type="file"
-                    accept="image/*"
-                    style="display: none"
-                    @change="onFileChange"
-                />
+                <NeonActionButton variant="green" :disabled="saving" @click="submitEditProfile">{{ saving ? '提交中...' : '保存并提交审核' }}</NeonActionButton>
               </div>
             </div>
           </div>
@@ -114,7 +88,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { useRoute } from 'vue-router'
@@ -135,8 +109,7 @@ const user = reactive<{ account: string; id: number | null; role: string }>({
   role: '',
 })
 const profile = reactive<any>({ avatar: '', description: '', status: -1 })
-const editProfile = reactive<{ avatar: string; description: string }>({
-  avatar: '',
+const editProfile = reactive<{ description: string }>({
   description: '',
 })
 const newTitleName = ref('')
@@ -146,8 +119,8 @@ const route = useRoute()
 const activeTab = ref('info')
 
 // set default tab based on query
-if (route.query.tab === 'avatar' || route.query.tab === 'titles') {
-  activeTab.value = String(route.query.tab)
+if (route.query.tab === 'titles') {
+  activeTab.value = 'titles'
 }
 
 // respond to query changes (in case user navigates back)
@@ -155,7 +128,7 @@ watch(
   () => route.query.tab,
   (newTab) => {
     if (newTab === 'avatar' || newTab === 'info' || newTab === 'titles') {
-      activeTab.value = String(newTab)
+      activeTab.value = newTab === 'avatar' ? 'info' : String(newTab)
     }
   }
 )
@@ -163,11 +136,14 @@ watch(
 const fileInput = ref<HTMLInputElement | null>(null)
 const cropperVisible = ref(false)
 const cropImgUrl = ref<string | undefined>(undefined)
+const previewAvatarUrl = ref('')
+const pendingAvatar = ref<File | null>(null)
+const saving = ref(false)
 
 // utility
 function getImageUrl(imagePath: string) {
   if (!imagePath) return defaultAvatar
-  if (/^https?:\/\//.test(imagePath)) {
+  if (/^https?:\/\//.test(imagePath) || imagePath.startsWith('blob:')) {
     return imagePath
   }
   return imagePath.startsWith('/') ? imagePath : '/' + imagePath
@@ -185,6 +161,7 @@ function onFileChange(e: Event) {
     ElMessage({ message: '只能上传 JPG/PNG 图片', type: 'error' })
     return
   }
+  if (cropImgUrl.value) URL.revokeObjectURL(cropImgUrl.value)
   cropImgUrl.value = URL.createObjectURL(file)
   cropperVisible.value = true
   input.value = ''
@@ -193,40 +170,39 @@ function onFileChange(e: Event) {
 async function handleAvatarCrop(croppedBlob: Blob) {
   cropperVisible.value = false
   try {
-    const compressedFile = await optimizeImage(croppedBlob, { maxSide: 256, quality: 0.84 })
-    const formData = new FormData()
-    formData.append('avatar', compressedFile)
-    const res = await axios.post('/api/profile/upload-avatar', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    if (res.data?.code === 0 && typeof res.data.data === 'string') {
-      editProfile.avatar = res.data.data
-      ElMessage({ message: '头像已提交审核', type: 'success' })
-    } else {
-      ElMessage({ message: res.data?.message || '头像提交审核失败', type: 'error' })
-    }
+    pendingAvatar.value = await optimizeImage(croppedBlob, { maxSide: 256, quality: 0.84 })
+    if (previewAvatarUrl.value) URL.revokeObjectURL(previewAvatarUrl.value)
+    previewAvatarUrl.value = URL.createObjectURL(pendingAvatar.value)
+    ElMessage.info('头像已裁剪，请点击保存并提交审核')
   } catch (err) {
     console.error(err)
-    ElMessage({ message: '头像提交审核失败，请重试', type: 'error' })
+    ElMessage.error('头像处理失败，请重试')
   }
 }
 
-function submitEditProfile() {
-  if (!editProfile.description || editProfile.description.length > 50) {
-    ElMessage({ message: '签名不能为空且不能超过50字', type: 'error' })
+async function submitEditProfile() {
+  if (!user.id || saving.value) return
+  if (editProfile.description.length > 50) {
+    ElMessage({ message: '签名不能超过50字', type: 'error' })
     return
   }
-  axios
-    .put(`/api/profile/${user.id}`, {
-      avatar: editProfile.avatar || profile.avatar,
-      description: editProfile.description,
-      status: 0,
-      identityId: user.id,
-    })
-    .then(() => {
-      ElMessage({ message: '资料已提交审核，请等待管理员处理', type: 'success' })
-      fetchProfile()
-    })
+  saving.value = true
+  try {
+    const formData = new FormData()
+    formData.append('description', editProfile.description)
+    if (pendingAvatar.value) formData.append('avatar', pendingAvatar.value)
+    const response = await axios.put(`/api/profile/${user.id}`, formData)
+    if (response.data?.code !== 0) throw new Error(response.data?.message || '提交失败')
+    pendingAvatar.value = null
+    if (previewAvatarUrl.value) URL.revokeObjectURL(previewAvatarUrl.value)
+    previewAvatarUrl.value = ''
+    ElMessage.success('资料已提交审核，请等待管理员处理')
+    fetchProfile()
+  } catch (error: any) {
+    ElMessage.error(error.response?.data?.message || error.message || '资料提交失败')
+  } finally {
+    saving.value = false
+  }
 }
 
 async function applyTitle(): Promise<void> {
@@ -259,8 +235,7 @@ function fetchProfile() {
     }
     Object.assign(profile, res.data)
     // initialize editProfile
-    editProfile.avatar = res.data.avatar
-    editProfile.description = res.data.description
+    editProfile.description = res.data.description || ''
   })
 }
 
@@ -275,6 +250,11 @@ onMounted(() => {
   } else {
     router.push('/login')
   }
+})
+
+onUnmounted(() => {
+  if (cropImgUrl.value) URL.revokeObjectURL(cropImgUrl.value)
+  if (previewAvatarUrl.value) URL.revokeObjectURL(previewAvatarUrl.value)
 })
 </script>
 
