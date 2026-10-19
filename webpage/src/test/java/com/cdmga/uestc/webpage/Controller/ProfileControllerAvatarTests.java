@@ -41,10 +41,8 @@ class ProfileControllerAvatarTests {
         String url = (String) response.getBody().getData();
         assertTrue(url.matches("/avatars/[0-9a-f-]+\\.png"));
         assertArrayEquals(new byte[] {1, 2, 3}, Files.readAllBytes(uploadDir.resolve(url.substring("/avatars/".length()))));
-        assertNotNull(profileService.saved);
-        assertEquals(42, profileService.saved.getIdentityId());
-        assertEquals(0, profileService.saved.getStatus());
-        assertEquals(url, profileService.saved.getAvatar());
+        assertEquals(42, profileService.submittedIdentityId);
+        assertEquals(url, profileService.submittedAvatarUrl);
     }
 
     @Test
@@ -96,6 +94,8 @@ class ProfileControllerAvatarTests {
         Profile saved;
         Profile existing;
         boolean failSave;
+        Integer submittedIdentityId;
+        String submittedAvatarUrl;
 
         @Override
         public Profile getProfileByIdentityId(Integer identityId) {
@@ -103,10 +103,19 @@ class ProfileControllerAvatarTests {
         }
 
         @Override
-        public Profile saveProfile(Profile profile) {
+        public Profile submitAvatarForReview(Integer identityId, String avatarUrl) {
             if (failSave) throw new RuntimeException("database unavailable");
+            submittedIdentityId = identityId;
+            submittedAvatarUrl = avatarUrl;
+            Profile profile = existing;
+            if (profile == null) {
+                profile = new Profile();
+                profile.setIdentityId(identityId);
+            }
+            profile.setAvatar(avatarUrl);
+            profile.setStatus(0);
             saved = profile;
-            return profile;
+            return saved;
         }
     }
 }
