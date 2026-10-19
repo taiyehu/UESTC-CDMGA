@@ -190,14 +190,7 @@ public class ProfileController {
             Files.createDirectories(targetLocation.getParent());
             Files.copy(avatar.getInputStream(), targetLocation);
             String avatarUrl = "/avatars/" + fileName;
-            Profile profile = profileService.getProfileByIdentityId(userId);
-            if (profile == null) {
-                profile = new Profile();
-                profile.setIdentityId(userId);
-            }
-            profile.setAvatar(avatarUrl);
-            profile.setStatus(0);
-            profileService.saveProfile(profile);
+            profileService.submitAvatarForReview(userId, avatarUrl);
             return ResponseEntity.ok(Result.success(avatarUrl));
         } catch (Exception e) {
             if (targetLocation != null) {

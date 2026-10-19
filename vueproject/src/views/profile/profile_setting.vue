@@ -195,12 +195,15 @@ async function handleAvatarCrop(croppedBlob: Blob) {
   try {
     const compressedFile = await optimizeImage(croppedBlob, { maxSide: 256, quality: 0.84 })
     const formData = new FormData()
-    formData.append('avatar', compressedFile)
+    formData.append('avatar', compressedFile, compressedFile.name || 'avatar.webp')
     const res = await axios.post('/api/profile/upload-avatar', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      // 交给浏览器生成带 boundary 的 Content-Type，并确保跨域开发环境携带登录 Session。
+      withCredentials: true,
     })
     if (res.data?.code === 0 && typeof res.data.data === 'string') {
       editProfile.avatar = res.data.data
+      profile.avatar = res.data.data
+      profile.status = 0
       ElMessage({ message: '头像已提交审核', type: 'success' })
     } else {
       ElMessage({ message: res.data?.message || '头像提交审核失败', type: 'error' })
