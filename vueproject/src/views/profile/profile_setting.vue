@@ -201,8 +201,11 @@ async function handleAvatarCrop(croppedBlob: Blob) {
       withCredentials: true,
     })
     if (res.data?.code === 0 && typeof res.data.data === 'string') {
-      editProfile.avatar = res.data.data
-      profile.avatar = res.data.data
+      const avatarUrl = res.data.data
+      // 头像与简介共用同一条资料审核提交路径，避免拆分面板后只上传文件却没有更新资料状态。
+      await submitProfileForReview(avatarUrl, editProfile.description || profile.description || null)
+      editProfile.avatar = avatarUrl
+      profile.avatar = avatarUrl
       profile.status = 0
       ElMessage({ message: '头像已提交审核', type: 'success' })
     } else {
@@ -214,22 +217,31 @@ async function handleAvatarCrop(croppedBlob: Blob) {
   }
 }
 
-function submitEditProfile() {
+async function submitProfileForReview(avatar: string, description: string | null): Promise<void> {
+  if (!user.id) throw new Error('请重新登录')
+  await axios.put(`/api/profile/${user.id}`, {
+    avatar,
+    description,
+    status: 0,
+    identityId: user.id,
+  }, {
+    withCredentials: true,
+  })
+}
+
+async function submitEditProfile() {
   if (!editProfile.description || editProfile.description.length > 50) {
     ElMessage({ message: '签名不能为空且不能超过50字', type: 'error' })
     return
   }
-  axios
-    .put(`/api/profile/${user.id}`, {
-      avatar: editProfile.avatar || profile.avatar,
-      description: editProfile.description,
-      status: 0,
-      identityId: user.id,
-    })
-    .then(() => {
-      ElMessage({ message: '资料已提交审核，请等待管理员处理', type: 'success' })
-      fetchProfile()
-    })
+  try {
+    await submitProfileForReview(editProfile.avatar || profile.avatar, editProfile.description)
+    ElMessage({ message: '资料已提交审核，请等待管理员处理', type: 'success' })
+    fetchProfile()
+  } catch (error) {
+    console.error(error)
+    ElMessage({ message: '资料提交审核失败，请重试', type: 'error' })
+  }
 }
 
 async function applyTitle(): Promise<void> {
