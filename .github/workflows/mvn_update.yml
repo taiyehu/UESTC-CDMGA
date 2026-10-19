@@ -57,6 +57,11 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT || 22 }}
         script: |
+          # 确保服务账号能写入头像目录，Nginx 能读取已上传头像。
+          sudo install -d -o webserver -g www-data -m 2750 /var/webserver/avatars
+          sudo -u webserver test -w /var/webserver/avatars
+          sudo -u www-data test -r /var/webserver/avatars
+
           # 停止服务
           sudo systemctl stop webserver.service
 
