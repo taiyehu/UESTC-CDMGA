@@ -13,14 +13,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -167,41 +167,47 @@ public class ProfileController {
         profileService.deleteProfile(id);
     }
 
-    // 获取文件扩展名
-    private String getFileExtension(String fileName) {
-        int index = fileName.lastIndexOf('.');
-        if (index == -1) {
-            return ""; // 没有扩展名
-        }
-        return fileName.substring(index + 1);
-    }
-
     @PostMapping("/upload-avatar")
-    public Result uploadAvatar(@RequestParam("avatar") MultipartFile avatar) {
-        try {
-            String fileName = UUID.randomUUID().toString() + "." + getFileExtension(avatar.getOriginalFilename());
-            Path targetLocation = Paths.get(uploadDir, fileName);
-            Files.createDirectories(targetLocation.getParent());
-            Files.copy(avatar.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-            String avatarUrl = "/avatars/" + fileName;
-            return Result.success(avatarUrl);
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
+    public ResponseEntity<Result> uploadAvatar(@RequestParam("avatar") MultipartFile avatar, HttpSession session) {
+        Object identityId = session.getAttribute("identityId");
+        if (!(identityId instanceof Integer userId)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Result.error("请重新登录"));
         }
-    }
+        String extension = switch (avatar.getContentType() == null ? "" : avatar.getContentType()) {
+            case "image/png" -> "png";
+            case "image/jpeg" -> "jpg";
+            case "image/webp" -> "webp";
+            default -> null;
+        };
+        if (avatar.isEmpty() || extension == null) {
+            return ResponseEntity.badRequest().body(Result.error("请选择 PNG、JPEG 或 WebP 图片"));
+        }
 
-    @PostMapping("/submit-avatar-review")
-    public Result submitAvatarReview(@RequestBody Map<String, Object> payload) {
-        Integer userId = (Integer) payload.get("userId");
-        String avatarUrl = (String) payload.get("avatar");
-        Profile profile = profileService.getProfileByIdentityId(userId);
-        if (profile == null) {
-            profile = new Profile();
-            profile.setIdentityId(userId);
+        Path targetLocation = null;
+        try {
+            String fileName = UUID.randomUUID() + "." + extension;
+            targetLocation = Paths.get(uploadDir, fileName);
+            Files.createDirectories(targetLocation.getParent());
+            Files.copy(avatar.getInputStream(), targetLocation);
+            String avatarUrl = "/avatars/" + fileName;
+            Profile profile = profileService.getProfileByIdentityId(userId);
+            if (profile == null) {
+                profile = new Profile();
+                profile.setIdentityId(userId);
+            }
+            profile.setAvatar(avatarUrl);
+            profile.setStatus(0);
+            profileService.saveProfile(profile);
+            return ResponseEntity.ok(Result.success(avatarUrl));
+        } catch (Exception e) {
+            if (targetLocation != null) {
+                try {
+                    Files.deleteIfExists(targetLocation);
+                } catch (Exception cleanupError) {
+                    e.addSuppressed(cleanupError);
+                }
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error("头像提交审核失败"));
         }
-        profile.setAvatar(avatarUrl);
-        profile.setStatus(0); // 0=审核中
-        profileService.saveProfile(profile);
-        return Result.success("已提交审核");
     }
 }

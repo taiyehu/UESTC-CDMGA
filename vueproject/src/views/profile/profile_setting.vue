@@ -196,25 +196,18 @@ async function handleAvatarCrop(croppedBlob: Blob) {
     const compressedFile = await optimizeImage(croppedBlob, { maxSide: 256, quality: 0.84 })
     const formData = new FormData()
     formData.append('avatar', compressedFile)
-    formData.append('identityId', String(user.id))
     const res = await axios.post('/api/profile/upload-avatar', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
-    if (res.data && res.data.code === 0) {
+    if (res.data?.code === 0 && typeof res.data.data === 'string') {
       editProfile.avatar = res.data.data
-      ElMessage({ message: '头像上传成功', type: 'success' })
-      // 提交审核
-      await axios.post('/api/profile/submit-avatar-review', {
-        userId: user.id,
-        avatar: res.data.data,
-      })
       ElMessage({ message: '头像已提交审核', type: 'success' })
     } else {
-      ElMessage({ message: '头像上传失败', type: 'error' })
+      ElMessage({ message: res.data?.message || '头像提交审核失败', type: 'error' })
     }
   } catch (err) {
     console.error(err)
-    ElMessage({ message: '裁剪或上传失败', type: 'error' })
+    ElMessage({ message: '头像提交审核失败，请重试', type: 'error' })
   }
 }
 
