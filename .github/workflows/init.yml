@@ -81,9 +81,11 @@ jobs:
       SSH_SUDO: ${{ secrets.SSH_SUDO }}
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       SSH_PORT: ${{ secrets.SSH_PORT }}
-  Deploy_npm:
+  Deploy_pnpm:
     needs: init-server
-    uses: ./.github/workflows/npm_update.yml
+    uses: ./.github/workflows/pnpm_update.yml
+    with:
+      channel: main
     secrets:
       SSH_HOST: ${{ secrets.SSH_HOST }}
       SSH_SUDO: ${{ secrets.SSH_SUDO }}
