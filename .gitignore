@@ -7,3 +7,7 @@ vueproject/.env
 scores/
 ref/
 server_media_backup_2026-07-30/
+/tmp/
+/output/
+/training-guide/10-新人培训讲稿.md
+/training-guide/12-技术栈图文版逐页讲稿.md
