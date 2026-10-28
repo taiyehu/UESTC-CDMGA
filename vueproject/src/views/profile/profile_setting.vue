@@ -46,6 +46,21 @@
                 <NeonActionButton variant="green" :disabled="saving" @click="submitEditProfile">{{ saving ? '提交中...' : '保存并提交审核' }}</NeonActionButton>
               </div>
             </div>
+            <div class="edit-card gradient-shell mt-5 rounded-2xl bg-slate-900/50 p-4 backdrop-blur-xl md:p-5">
+              <h3 class="text-xl font-semibold text-cyan-50">补充信息</h3>
+              <label class="mt-3 block text-cyan-100/85" for="qq-number">QQ号（选填）</label>
+              <input id="qq-number" v-model="extraProfile.qqNumber" inputmode="numeric" maxlength="20" class="mt-2 w-full rounded-lg border border-cyan-400/40 bg-slate-950/70 p-2 text-white" />
+              <label class="mt-3 block text-cyan-100/85" for="qq-email">QQ邮箱（选填）</label>
+              <input id="qq-email" v-model="extraProfile.qqEmail" type="email" maxlength="254" class="mt-2 w-full rounded-lg border border-cyan-400/40 bg-slate-950/70 p-2 text-white" />
+              <label class="mt-3 block text-cyan-100/85" for="university">学校</label>
+              <select id="university" v-model="extraProfile.university" class="mt-2 w-full rounded-lg border border-cyan-400/40 bg-slate-950 p-2 text-white">
+                <option value="" disabled>请选择学校</option>
+                <option value="UESTC">电子科技大学</option>
+                <option value="SWJTU">西南交通大学</option>
+              </select>
+              <div class="mt-4"><NeonActionButton variant="green" :disabled="savingExtra" @click="saveExtraProfile">{{ savingExtra ? '保存中...' : '保存补充信息' }}</NeonActionButton></div>
+              <p v-if="extraStatus" role="status" class="mt-3 text-sm text-cyan-100">{{ extraStatus }}</p>
+            </div>
           </div>
           <div v-else-if="activeTab === 'titles'" class="edit-card gradient-shell rounded-2xl bg-slate-900/50 p-4 backdrop-blur-xl md:p-5">
             <h3 class="text-xl font-semibold text-cyan-50">申请称号</h3>
@@ -112,6 +127,54 @@ const profile = reactive<any>({ avatar: '', description: '', status: -1 })
 const editProfile = reactive<{ description: string }>({
   description: '',
 })
+const extraProfile = reactive({ qqNumber: '', qqEmail: '', university: '' })
+const savingExtra = ref(false)
+const extraStatus = ref('')
+
+async function fetchExtraProfile() {
+  try {
+    const { data } = await axios.get('/api/identity-extra-profile/me')
+    Object.assign(extraProfile, data)
+  } catch (error: any) {
+    showExtraProfileError(error, '补充信息加载失败')
+  }
+}
+
+async function saveExtraProfile() {
+  if (savingExtra.value) return
+  if (!user.id) {
+    extraStatus.value = '请先登录后保存补充信息'
+    ElMessage.warning(extraStatus.value)
+    return
+  }
+  if ((extraProfile.qqNumber.trim() !== '' && !/^[1-9][0-9]{4,19}$/.test(extraProfile.qqNumber.trim())) || (extraProfile.qqEmail.trim() !== '' && !/^[A-Za-z0-9._+-]+@qq[.]com$/i.test(extraProfile.qqEmail.trim())) || !['UESTC', 'SWJTU'].includes(extraProfile.university)) {
+    extraStatus.value = 'QQ号须为5至20位数字，QQ邮箱须为@qq.com地址；两项均可留空，学校必须选择'
+    ElMessage.warning(extraStatus.value)
+    return
+  }
+  savingExtra.value = true
+  extraStatus.value = '正在保存补充信息...'
+  try {
+    await axios.put('/api/identity-extra-profile/me', extraProfile)
+    extraStatus.value = '补充信息已保存'
+    ElMessage.success(extraStatus.value)
+  } catch (error: any) {
+    showExtraProfileError(error, '补充信息保存失败')
+  } finally {
+    savingExtra.value = false
+  }
+}
+
+function showExtraProfileError(error: any, fallback: string) {
+  if (error.response?.status === 401) {
+    extraStatus.value = '登录会话已失效，请重新登录后保存补充信息'
+    ElMessage.error(extraStatus.value)
+    return
+  }
+  const detail = error.response?.data
+  extraStatus.value = typeof detail === 'string' && detail ? detail : fallback
+  ElMessage.error(extraStatus.value)
+}
 const newTitleName = ref('')
 const acquisitionMethod = ref('')
 
@@ -247,6 +310,7 @@ onMounted(() => {
     user.id = parsed.id
     user.role = parsed.role
     fetchProfile()
+    fetchExtraProfile()
   } else {
     router.push('/login')
   }
