@@ -42,6 +42,7 @@
               :tier="equippedTitle.tier"
               :acquisition-method="equippedTitle.acquisitionMethod"
             />
+            <span class="university-pill" :class="{ 'university-unset': !university }">{{ universityName }}</span>
           </div>
 
           <div class="profile-signature" :title="getStatusText()">
@@ -363,6 +364,8 @@ const router = useRouter()
 const user = reactive<{ account: string; id: number | null; role: string }>({ account: '', id: null, role: '' })
 const profile = reactive<any>({ avatar: '', description: '', status: -1, account: '' })
 const profileStatus = ref<number>(-1)
+const university = ref('')
+const universityName = computed(() => university.value === 'UESTC' ? '电子科技大学' : university.value === 'SWJTU' ? '西南交通大学' : '暂未设置学校')
 type TitleRecord = { id: number; name: string; tier: string; source?: string; status: string; isEquipped: boolean; acquisitionMethod?: string; reviewNote?: string; grantedAt?: string; createdAt?: string }
 const myTitles = ref<TitleRecord[]>([])
 const visibleMyTitles = computed(() => myTitles.value.filter((item) => item.status !== 'revoked'))
@@ -473,6 +476,7 @@ function loadProfile() {
       if (response.data?.code === 0) onlineStatus.value = Boolean(response.data.data)
     }).catch(() => {})
     fetchProfile()
+    fetchUniversity()
     fetchTitles()
     fetchScoredScores()
     fetchAwardRedemptions()
@@ -547,6 +551,17 @@ function previewAvatar() {
 
 
 
+async function fetchUniversity() {
+  const identityId = viewUserId.value
+  university.value = ''
+  if (!identityId) return
+  try {
+    const { data } = await axios.get(`/api/identity-extra-profile/user/${identityId}/school`)
+    if (viewUserId.value === identityId) university.value = data.university || ''
+  } catch {
+    university.value = ''
+  }
+}
 function fetchProfile() {
   if (!viewUserId.value) return
   axios.get(`/api/profile/identity/${viewUserId.value}`).then((res) => {
@@ -753,6 +768,24 @@ watch(() => route.params.id, () => {
   white-space: nowrap;
 }
 
+.university-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+  color: #a5f3fc;
+  border: 1px solid rgba(103, 232, 249, 0.4);
+  background: rgba(8, 145, 178, 0.14);
+}
+
+.university-unset {
+  color: #94a3b8;
+  border-color: rgba(148, 163, 184, 0.28);
+  background: rgba(100, 116, 139, 0.12);
+}
 .status-online {
   color: #6ee7b7;
   border-color: rgba(110, 231, 183, 0.35);
