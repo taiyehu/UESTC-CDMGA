@@ -43,8 +43,15 @@ export type ForumPost = {
   id: number
   title: string
   authorName: string
+  authorId?: number
+  content?: string
+  status?: string
   replyCount: number
   createdAt: string
+  likeCount?: number
+  liked?: boolean | number
+  images?: { id: number; url: string }[]
+  files?: { id: number; url: string; name: string }[]
 }
 
 export async function login(account: string, password: string) {
@@ -95,10 +102,13 @@ export type RankRow = {
 
 export type ForumReply = {
   id: number
+  authorId?: number
   authorName: string
   content: string
   createdAt: string
   floorNumber?: number | null
+  likeCount?: number
+  liked?: boolean | number
 }
 
 export type ForumPostDetail = ForumPost & {
@@ -189,8 +199,8 @@ export async function fetchScoredScores(identityId: number): Promise<any[]> {
   return res.data?.code === 0 ? (res.data.data ?? []) : []
 }
 
-export async function fetchForumPage(page = 0, size = 10): Promise<{ list: ForumPost[]; total: number }> {
-  const res = await api.get('/forum/posts', { params: { page, size, sort: 'latest' } })
+export async function fetchForumPage(page = 0, size = 10, sort: 'latest' | 'likes' = 'latest', mine = false): Promise<{ list: ForumPost[]; total: number }> {
+  const res = await api.get('/forum/posts', { params: { page, size, sort, mine } })
   const data = res.data?.data ?? { list: [], total: 0 }
   return { list: data.list ?? [], total: data.total ?? 0 }
 }
@@ -199,4 +209,46 @@ export async function createForumReply(postId: number, content: string): Promise
   const res = await api.post(`/forum/posts/${postId}/replies`, { content, parentReplyId: null })
   if (res.data?.code !== 0) throw new Error(res.data?.message || '回复失败')
   return res.data?.data?.id
+}
+
+
+export async function likeForumPost(id: number): Promise<boolean> {
+  const res = await api.post(`/forum/post/${id}/like`)
+  if (res.data?.code !== 0) throw new Error(res.data?.message || '点赞失败')
+  return Boolean(res.data?.data?.liked)
+}
+
+export async function reportForumPost(id: number, reason: string): Promise<void> {
+  const res = await api.post(`/forum/post/${id}/report`, { reason, detail: '' })
+  if (res.data?.code !== 0) throw new Error(res.data?.message || '举报失败')
+}
+
+export async function uploadForumImage(postId: number, file: File): Promise<void> {
+  const form = new FormData(); form.append('image', file)
+  const res = await api.post(`/forum/post/${postId}/images`, form, { timeout: 30000 })
+  if (res.data?.code !== 0) throw new Error(res.data?.message || '图片上传失败')
+}
+
+
+export async function uploadForumFile(postId: number, file: File): Promise<void> {
+  const form = new FormData(); form.append('file', file)
+  const res = await api.post(`/forum/post/${postId}/files`, form, { timeout: 30000 })
+  if (res.data?.code !== 0) throw new Error(res.data?.message || '附件上传失败')
+}
+
+
+export async function likeForumReply(id: number): Promise<boolean> {
+  const res = await api.post(`/forum/reply/${id}/like`)
+  if (res.data?.code !== 0) throw new Error(res.data?.message || '点赞失败')
+  return Boolean(res.data?.data?.liked)
+}
+
+export async function reportForumReply(id: number, reason: string): Promise<void> {
+  const res = await api.post(`/forum/reply/${id}/report`, { reason, detail: '' })
+  if (res.data?.code !== 0) throw new Error(res.data?.message || '举报失败')
+}
+
+export async function deleteForumReply(id: number): Promise<void> {
+  const res = await api.delete(`/forum/reply/${id}`)
+  if (res.data?.code !== 0) throw new Error(res.data?.message || '删除失败')
 }

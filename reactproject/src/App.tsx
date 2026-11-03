@@ -21,6 +21,7 @@ import LinksPage from './pages/LinksPage'
 import NotFoundPage from './pages/NotFoundPage'
 import AdminPendingPage from './pages/AdminPendingPage'
 import AdminUsersPage from './pages/AdminUsersPage'
+import AdminDashboardPage from './pages/AdminDashboardPage'
 import AdminCoursesPage from './pages/AdminCoursesPage'
 import AdminContentPage from './pages/AdminContentPage'
 import AdminActivitiesPage from './pages/AdminActivitiesPage'
@@ -65,7 +66,7 @@ export default function App() {
           <Route path="/links" element={<LinksPage />} />
           <Route element={<RequireAdmin />}>
             <Route path="/activity/:id/sign-display" element={<SignDisplayPage />} />
-            <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
+            <Route path="/admin" element={<AdminDashboardPage />} />
             <Route path="/admin/users" element={<AdminUsersPage />} />
             <Route path="/admin/courses" element={<AdminCoursesPage />} />
             <Route path="/admin/content-publish" element={<AdminContentPage />} />

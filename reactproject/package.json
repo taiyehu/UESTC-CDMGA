@@ -8,16 +8,19 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "mcp:migrate": "node node_modules/@jianger666/vue-to-react-mcp/dist/index.js --vue-project ../vueproject --react-project ."
   },
   "dependencies": {
     "@dsh-ui/tokens": "0.1.0",
     "axios": "^1.21.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
+    "react-easy-crop": "5.5.6",
     "react-router-dom": "^7.18.5"
   },
   "devDependencies": {
+    "@jianger666/vue-to-react-mcp": "1.0.7",
     "@playwright/test": "^1.64.1",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",

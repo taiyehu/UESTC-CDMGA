@@ -3,6 +3,7 @@ import type { ChangeEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { isAxiosError } from 'axios'
 import PageShell from '../components/PageShell'
+import AvatarCropperModal from '../components/AvatarCropperModal'
 import { api, type ProfileData } from '../api'
 
 type Notice = { kind: 'ok' | 'err' | 'info'; text: string }
@@ -98,6 +99,8 @@ export default function ProfileSettingPage() {
   const [titleStatus, setTitleStatus] = useState('')
 
   const [previewUrl, setPreviewUrl] = useState('')
+  const [cropSrc, setCropSrc] = useState('')
+  const [cropOpen, setCropOpen] = useState(false)
   const [pendingAvatar, setPendingAvatar] = useState<Blob | null>(null)
   const previewUrlRef = useRef('')
   const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -162,14 +165,23 @@ export default function ProfileSettingPage() {
       setNotice({ kind: 'err', text: '只能上传 JPG/PNG 图片' })
       return
     }
+    const src = URL.createObjectURL(file)
+    setCropSrc(src)
+    setCropOpen(true)
+  }
+
+  async function handleCrop(blob: Blob) {
     try {
-      const optimized = await optimizeImage(file)
+      const optimized = await optimizeImage(blob)
       if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
       const nextUrl = URL.createObjectURL(optimized)
       previewUrlRef.current = nextUrl
       setPreviewUrl(nextUrl)
       setPendingAvatar(optimized)
-      setNotice({ kind: 'info', text: '头像已选择，请点击「保存并提交审核」' })
+      setCropOpen(false)
+      if (cropSrc) URL.revokeObjectURL(cropSrc)
+      setCropSrc('')
+      setNotice({ kind: 'info', text: '头像已裁剪，请点击「保存并提交审核」' })
     } catch (error) {
       setNotice({ kind: 'err', text: errorMessage(error, '头像处理失败，请重试') })
     }
@@ -416,6 +428,7 @@ export default function ProfileSettingPage() {
       <div className="page-actions-row">
         <button type="button" className="page-btn" onClick={() => navigate(-1)}>返回</button>
       </div>
+      {cropOpen && cropSrc && <AvatarCropperModal src={cropSrc} onCancel={() => { setCropOpen(false); URL.revokeObjectURL(cropSrc); setCropSrc('') }} onCrop={handleCrop} />}
     </PageShell>
   )
 }
