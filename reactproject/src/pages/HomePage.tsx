@@ -34,6 +34,23 @@ export default function HomePage() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [checking, setChecking] = useState(false)
   const [ready, setReady] = useState(false)
+  const [light, setLight] = useState(() => localStorage.getItem('theme') === 'light')
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('light', light)
+    localStorage.setItem('theme', light ? 'light' : 'dark')
+  }, [light])
+
+  const isAdmin = useMemo(() => {
+    const raw = sessionStorage.getItem('role')
+    if (!raw) return false
+    try {
+      const parsed = JSON.parse(raw)
+      return (typeof parsed === 'string' ? parsed : parsed?.role) === 'admin'
+    } catch {
+      return raw === 'admin'
+    }
+  }, [])
 
   const user = useMemo(() => {
     try {
@@ -112,14 +129,16 @@ export default function HomePage() {
           ) : (
             <Link className="user-chip login-chip" to="/login">登录</Link>
           )}
-          <button className="icon-btn" type="button" aria-label="切换主题">◐</button>
+          {isAdmin && <Link className="icon-btn admin-entry" to="/admin/users" aria-label="进入后台" title="进入后台">⚙</Link>}
+          <button className="icon-btn" type="button" aria-label="切换主题" aria-pressed={light} onClick={() => setLight((v) => !v)}>{light ? '☀' : '◐'}</button>
           <button className="icon-btn" type="button" aria-label="打开菜单" onClick={() => setMenuOpen((v) => !v)}>☰</button>
           {menuOpen && (
             <nav className="menu-panel">
-              <a href="#courses" onClick={() => setMenuOpen(false)}>课题</a>
-              <a href="#activities" onClick={() => setMenuOpen(false)}>活动</a>
-              <a href="#forum" onClick={() => setMenuOpen(false)}>论坛</a>
-              <Link to="/login" onClick={() => setMenuOpen(false)}>登录 / 切换账号</Link>
+              <Link to="/task" onClick={() => setMenuOpen(false)}>课题</Link>
+              <Link to="/activity" onClick={() => setMenuOpen(false)}>活动</Link>
+              <Link to="/forum" onClick={() => setMenuOpen(false)}>论坛</Link>
+              <Link to="/profile" onClick={() => setMenuOpen(false)}>个人中心</Link>
+              <Link to="/login" onClick={() => setMenuOpen(false)}>切换账号</Link>
             </nav>
           )}
         </div>
@@ -144,15 +163,15 @@ export default function HomePage() {
       >
         <div className="ring" aria-hidden="true" />
         <div className="disc">
-          <img className="promo" src={image} alt={title || '宣传图'} />
+          <img className="promo" src={image} alt={title || '宣传图'} onError={(e) => { e.currentTarget.src = '/club-logo.jpg' }} />
           <div className="scrim" />
           <div className="disc-top">
             <div><div className="k">NOW PLAYING</div><h3>{isCourse ? 'COURSE' : 'EVENT'}</h3></div>
           </div>
           <div className="disc-info">
             <div className="tabs">
-              <button type="button" className={isCourse ? 'on' : ''} onClick={() => setActive(0)}>课题</button>
-              <button type="button" className={!isCourse ? 'on' : ''} onClick={() => setActive(1)} disabled={!activities.length}>活动</button>
+              <button type="button" aria-selected={isCourse} className={isCourse ? 'on' : ''} onClick={() => setActive(0)}>课题</button>
+              <button type="button" aria-selected={!isCourse} className={!isCourse ? 'on' : ''} onClick={() => setActive(1)} disabled={!activities.length}>活动</button>
             </div>
             <h1>{title || (ready ? '暂无可展示内容' : '正在载入…')}</h1>
             <p className="meta">{meta}</p>
@@ -174,13 +193,19 @@ export default function HomePage() {
           <div className="card-k">正在发生 · COURSE</div>
           <h3>{course?.title || '暂无课题'}</h3>
           <p>{fmt(course?.startTime)} — {fmt(course?.endTime)}</p>
-          <button className="card-link" type="button" onClick={() => setActive(0)}>在圆内查看 →</button>
+          <div className="card-actions">
+            <button className="card-link" type="button" onClick={() => setActive(0)}>在圆内查看</button>
+            <Link className="card-link" to={course ? `/task/${course.id}` : '/task'}>详情 →</Link>
+          </div>
         </section>
         <section className="card" id="activities">
           <div className="card-k">正在发生 · EVENT</div>
           <h3>{activity?.name || '暂无活动'}</h3>
           <p>{fmt(activity?.startTime)} — {fmt(activity?.endTime)}</p>
-          <button className="card-link" type="button" onClick={() => setActive(1)} disabled={!activities.length}>在圆内查看 →</button>
+          <div className="card-actions">
+            <button className="card-link" type="button" onClick={() => setActive(1)} disabled={!activities.length}>在圆内查看</button>
+            <Link className="card-link" to={activity ? `/activity/${activity.id}` : '/activity'}>详情 →</Link>
+          </div>
         </section>
         <section className="card" id="today">
           <div className="card-k">今日 · CHECK IN</div>
@@ -192,24 +217,24 @@ export default function HomePage() {
         </section>
       </aside>
 
-      <aside className="side right">
+      <aside className="side right" id="about">
         <section className="card" id="member">
           <div className="card-k">每日群友 · MEMBER</div>
-          <div className="member">
+          <Link className="member" to={daily?.identityId ? `/profile/${daily.identityId}` : '/profile'}>
             <img src={asset(daily?.avatar, '/club-logo.jpg')} alt="" />
             <div><h3>{daily?.account || '今天暂时没有群友'}</h3><p>{daily?.description || '每天认识一名群友'}</p></div>
-          </div>
+          </Link>
         </section>
         <section className="card" id="forum">
           <div className="card-k">论坛热帖 · LOBBY</div>
           {forum.length ? forum.map((post) => (
-            <div className="post" key={post.id}><b>{post.title}</b><span>{post.authorName}</span></div>
+            <Link className="post" to={`/forum/${post.id}`} key={post.id}><b>{post.title}</b><span>{post.authorName}</span></Link>
           )) : <p>暂无帖子，等你开第一贴。</p>}
         </section>
         <section className="card" id="links">
           <div className="card-k">快速入口 · LINKS</div>
           <div className="quick">
-            <a href="#courses">课题</a><a href="#activities">活动</a><a href="#forum">论坛</a><a href="#top">回到顶部</a>
+            <Link to="/task">课题</Link><Link to="/activity">活动</Link><Link to="/forum">论坛</Link><Link to="/ranking">排行</Link>
           </div>
         </section>
       </aside>
@@ -219,7 +244,7 @@ export default function HomePage() {
         <a href="#courses">课题</a>
         <a href="#activities">活动</a>
         <a href="#forum">论坛</a>
-        <Link to="/login">我的</Link>
+        <Link to={user ? `/profile/${user.id}` : '/login'}>我的</Link>
       </nav>
     </main>
   )

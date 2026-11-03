@@ -51,3 +51,12 @@ See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rule
 - 个人资料的裁剪器未迁（改为 canvas 缩放）。
 - 论坛图片/附件、点赞/举报的完整交互未全部迁。
 - 后台页面已可挂载和读写主要数据，但 Element Plus 的弹窗/批量交互被简化。
+
+## 设计规范
+
+字号采用 `@dsh-ui/tokens`（DSH Design System）的 `xxxs-11 / xxs-12 / xs-13 / s-14 / base-16 / l-20 / xl-24` 字阶与行高，正文不低于 14px；首页大标题使用 Material 3 `displaySmall 36/44`，移动端 30/36。对应实现集中在 `src/styles.css` 末尾的 Typography layer。
+
+## 本地测试数据
+
+- 公开业务数据从生产 `cdmga` 只读导出了 course/activity/activity_course_assoc/issue/rank_config/award 到本地 3307；个人数据未导出。
+- 排行榜合成数据：`sql_script/dev_seed_ranking.sql`（rank1–rank6，总分 36/30/28/24/18/12），本地已导入。

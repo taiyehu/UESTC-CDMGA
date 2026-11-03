@@ -29,8 +29,14 @@ export default function PageShell({
   try {
     user = JSON.parse(sessionStorage.getItem('userInfo') || 'null')
     const rawRole = sessionStorage.getItem('role')
-    const parsedRole = rawRole ? JSON.parse(rawRole) : null
-    role = typeof parsedRole === 'string' ? parsedRole : String(parsedRole?.role ?? '')
+    if (rawRole) {
+      try {
+        const parsedRole = JSON.parse(rawRole)
+        role = typeof parsedRole === 'string' ? parsedRole : String(parsedRole?.role ?? '')
+      } catch {
+        role = rawRole
+      }
+    }
   } catch {
     user = null
   }
@@ -63,6 +69,7 @@ export default function PageShell({
         </nav>
         <div className="page-user">
           {user ? <Link className="user-chip" to={`/profile/${user.id}`}><img src="/club-logo.jpg" alt="" /><b>{user.account || '社员'}</b></Link> : <Link className="user-chip login-chip" to="/login">登录</Link>}
+          {role === 'admin' && <Link className="icon-btn" to="/admin/users" aria-label="进入后台" title="进入后台">⚙</Link>}
           <button className="icon-btn" type="button" onClick={logout} aria-label="退出登录">↪</button>
         </div>
       </header>

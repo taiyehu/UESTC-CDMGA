@@ -36,6 +36,8 @@ test('core pages data parity', async ({ page }) => {
         ['/activity', '月面 Live 第 12 期'],
         ['/forum', '本地测试帖：UI 对照'],
         ['/profile', 'tester'],
+        ['/ranking', 'rank1'],
+        ['/ranking', '36'],
       ]
       for (const [path, text] of checks) {
         await page.goto(`${base}${path}`)

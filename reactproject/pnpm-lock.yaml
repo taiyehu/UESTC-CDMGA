@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@dsh-ui/tokens':
+        specifier: 0.1.0
+        version: 0.1.0
       axios:
         specifier: ^1.21.0
         version: 1.21.0(debug@4.4.3)
@@ -47,6 +50,10 @@ importers:
         version: 8.3.5(@types/node@24.19.2)
 
 packages:
+
+  '@dsh-ui/tokens@0.1.0':
+    resolution: {integrity: sha512-3PLxZ9pDyvTSouZ9yunyGDYB89CIaIc1kS/vQYVKcEPynMclqSl34fL3Tflr8EuAp5mjsVbO202DGWDy1ny0Eg==}
+    engines: {node: '>=18.0.0'}
 
   '@oxc-project/types@0.156.0':
     resolution: {integrity: sha512-1Duyg48TdJNdyhEB8Xn1L36bT9Pv6GUtlKjHxOys8xkaF/rQq3XJE+bAurSK/AgIz5mGFsb77cn9Pb20+WCScw==}
@@ -773,6 +780,8 @@ packages:
         optional: true
 
 snapshots:
+
+  '@dsh-ui/tokens@0.1.0': {}
 
   '@oxc-project/types@0.156.0': {}
 

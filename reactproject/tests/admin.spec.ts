@@ -9,6 +9,11 @@ test('admin pages mount with admin session', async ({ page }) => {
   await page.getByRole('button', { name: '登录', exact: true }).click()
   await page.waitForURL('**/home', { timeout: 20_000 })
 
+  await expect(page.getByRole('link', { name: '进入后台' })).toBeVisible()
+  await page.getByRole('link', { name: '进入后台' }).click()
+  await page.waitForURL('**/admin/users', { timeout: 20_000 })
+  await expect(page.getByRole('heading', { name: 'ADMIN · USERS', exact: true })).toBeVisible()
+
   const pages: [string, string][] = [
     ['/admin/users', 'ADMIN · USERS'],
     ['/admin/courses', 'ADMIN · COURSES'],

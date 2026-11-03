@@ -13,7 +13,7 @@ export default function RankingPage() {
     setLoading(true)
     setError('')
     fetchRanking(year)
-      .then(setRows)
+      .then((data) => setRows([...data].sort((a, b) => Number(b.totalScore ?? 0) - Number(a.totalScore ?? 0))))
       .catch((e) => setError(e instanceof Error ? e.message : '加载失败'))
       .finally(() => setLoading(false))
   }, [year])
