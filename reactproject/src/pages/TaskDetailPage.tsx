@@ -34,7 +34,7 @@ export default function TaskDetailPage() {
             <p className="desc">{course.description || '暂无课题描述'}</p>
             {course.award && <p className="meta">兑换积分：{course.award.cost ?? '-'} · 剩余 {course.award.remainingStock ?? 0}/{course.award.totalStock ?? 0}</p>}
             <div className="page-actions-row">
-              <button className="page-btn primary" type="button">提交成绩（迁移中）</button>
+              {String(course.category || '').toLowerCase().includes('bingo') ? <Link className="page-btn primary" to={`/task/${course.id}/bingo/1`}>进入 Bingo 网格</Link> : null}
               <Link className="page-btn" to="/task">返回列表</Link>
             </div>
           </div>

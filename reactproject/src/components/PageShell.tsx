@@ -25,11 +25,22 @@ export default function PageShell({
   const location = useLocation()
   const navigate = useNavigate()
   let user: any = null
+  let role = ''
   try {
     user = JSON.parse(sessionStorage.getItem('userInfo') || 'null')
+    const rawRole = sessionStorage.getItem('role')
+    const parsedRole = rawRole ? JSON.parse(rawRole) : null
+    role = typeof parsedRole === 'string' ? parsedRole : String(parsedRole?.role ?? '')
   } catch {
     user = null
   }
+  const adminLinks = [
+    ['/admin/users', '用户'], ['/admin/courses', '课题'], ['/admin/content-publish', '发布'],
+    ['/admin/activities', '活动'], ['/admin/profiles', '资料'], ['/admin/titles', '称号'],
+    ['/admin/forum', '论坛'], ['/admin/scores', '成绩'], ['/admin/rank-configs', '排行配置'],
+    ['/admin/score-logs', '日志'], ['/admin/bingo-submissions', 'Bingo 审核'],
+    ['/admin/bingo-tips', 'Tips'], ['/admin/issues', '题目'], ['/admin/teams', '队伍'],
+  ] as const
 
   function logout() {
     sessionStorage.removeItem('userInfo')
@@ -55,6 +66,11 @@ export default function PageShell({
           <button className="icon-btn" type="button" onClick={logout} aria-label="退出登录">↪</button>
         </div>
       </header>
+      {role === 'admin' && location.pathname.startsWith('/admin') && (
+        <nav className="admin-nav" aria-label="后台导航">
+          {adminLinks.map(([to, label]) => <Link key={to} to={to} className={location.pathname.startsWith(to) ? 'on' : ''}>{label}</Link>)}
+        </nav>
+      )}
       <main className="page-main">
         <div className="page-head">
           <div>

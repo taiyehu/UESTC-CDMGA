@@ -42,7 +42,7 @@ export default function ActivityDetailPage() {
             <h2>{activity.name}</h2>
             <p className="meta">{fmt(activity.startTime)} — {fmt(activity.endTime)}</p>
             <p className="desc">{activity.description || '暂无活动描述'}</p>
-            <div className="page-actions-row"><button className="page-btn primary" type="button">报名（迁移中）</button></div>
+            <div className="page-actions-row"><Link className="page-btn primary" to={`/sign/${activity.id}`}>活动签到</Link><Link className="page-btn" to={`/activity/${activity.id}/sign-display`}>签到展示</Link></div>
           </div>
         </div>
       )}

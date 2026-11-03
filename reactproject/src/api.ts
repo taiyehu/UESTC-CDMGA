@@ -113,6 +113,13 @@ export async function register(account: string, password: string) {
   return res.data.data
 }
 
+export async function fetchCourseCatalog(): Promise<Course[]> {
+  const res = await api.get('/course/')
+  const data = res.data?.data ?? res.data
+  if (Array.isArray(data)) return data as Course[]
+  return Array.isArray(data?.list) ? data.list as Course[] : []
+}
+
 export async function fetchCourseById(id: number): Promise<Course | null> {
   try {
     const res = await api.get(`/course/${id}`)

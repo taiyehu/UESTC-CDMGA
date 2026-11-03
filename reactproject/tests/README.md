@@ -7,6 +7,10 @@
 | `login structure + session parity` | 两端登录页都有 用户名/密码/登录/重置/立即注册；请求体相同；响应 `code=0`；`sessionStorage.userInfo` 存在；跳转 `/home` |
 | `home data parity` | 两端首页都能看到同一课程「夜航星」与活动「月面 Live 第 12 期」 |
 | `home API payload parity` | 两端请求的 `/api/course/standalone`、`/api/activity/list` 返回 JSON 深度相等 |
+| `register structure parity` | 注册页字段/占位符/按钮一致 |
+| `core pages data parity` | 两端 `/task`、`/activity`、`/forum`、`/profile` 都能看到同一测试数据 |
+| `admin route guard parity` | 普通用户访问 `/admin/users` 都被送回 `/home` |
+| `admin pages mount` | React 后台 12 个主页面挂载、无 pageerror，用户/课题/论坛/活动读到测试数据 |
 
 截图保留在 `ref/local/shots/parity-{vue,react}-{login,home}.png`，供人工对比视觉。
 

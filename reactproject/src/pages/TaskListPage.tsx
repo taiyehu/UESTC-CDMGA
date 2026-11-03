@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PageShell from '../components/PageShell'
-import { fetchCourses, type Course } from '../api'
+import { fetchCourseCatalog, fetchCourses, type Course } from '../api'
 
 const PAGE_SIZE = 6
 
@@ -18,8 +18,8 @@ export default function TaskListPage({ awardMode = false }: { awardMode?: boolea
   const [page, setPage] = useState(1)
 
   useEffect(() => {
-    let cancelled = false
-    fetchCourses()
+    let cancelled = false;
+    (awardMode ? fetchCourseCatalog() : fetchCourses())
       .then((data) => {
         if (cancelled) return
         setItems([...data].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()))
@@ -27,7 +27,7 @@ export default function TaskListPage({ awardMode = false }: { awardMode?: boolea
       .catch((e) => !cancelled && setError(e instanceof Error ? e.message : '加载失败'))
       .finally(() => !cancelled && setLoading(false))
     return () => { cancelled = true }
-  }, [])
+  }, [awardMode])
 
   const filtered = useMemo(
     () => items.filter((c) => (String(c.category || '').toLowerCase() === 'award') === awardMode),
