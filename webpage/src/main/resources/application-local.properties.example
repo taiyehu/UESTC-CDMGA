@@ -1,0 +1,24 @@
+# Copy to application-local.properties (ignored) and adjust.
+# NEVER use port 3306 here: 3306 may be an SSH tunnel to production.
+spring.datasource.url=jdbc:mysql://127.0.0.1:3307/CDMGA_LOCAL?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=%2B08:00&forceConnectionTimeZoneToSession=true&characterEncoding=utf8
+spring.datasource.username=${LOCAL_DB_USER:cdmga}
+spring.datasource.password=${LOCAL_DB_PASSWORD:change-me}
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+spring.jpa.properties.hibernate.jdbc.time_zone=+08:00
+spring.jackson.time-zone=Asia/Shanghai
+
+cors.allowed-origins=http://localhost:5173,http://localhost:5174,http://localhost:8081
+
+course.upload.directory=${LOCAL_DATA_DIR:/tmp/cdmga-local}/images/
+score.upload.directory=${LOCAL_DATA_DIR:/tmp/cdmga-local}/scores/
+avatar.upload.directory=${LOCAL_DATA_DIR:/tmp/cdmga-local}/avatars/
+activity.upload.banner-directory=${LOCAL_DATA_DIR:/tmp/cdmga-local}/banners/
+activity.upload.file-directory=${LOCAL_DATA_DIR:/tmp/cdmga-local}/files/
+forum.upload.directory=${LOCAL_DATA_DIR:/tmp/cdmga-local}/forum/
+
+sign.qr-secret=
+logging.level.org.springframework.security=INFO
