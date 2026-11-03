@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   fetchActivities, fetchCheckin, fetchCourses, fetchDailyMember, fetchForum, submitCheckin,
   type Activity, type Checkin, type Course, type DailyMember, type ForumPost,
@@ -23,6 +23,7 @@ function asset(value: string | null | undefined, fallback: string) {
 }
 
 export default function HomePage() {
+  const navigate = useNavigate()
   const [courses, setCourses] = useState<Course[]>([])
   const [activities, setActivities] = useState<Activity[]>([])
   const [daily, setDaily] = useState<DailyMember | null>(null)
@@ -107,7 +108,7 @@ export default function HomePage() {
         </Link>
         <div className="userbar">
           {user ? (
-            <span className="user-chip"><img src={avatar} alt="" /><b>{user.account || user.name || '社员'}</b></span>
+            <Link className="user-chip" to={`/profile/${user.id}`}><img src={avatar} alt="" /><b>{user.account || user.name || '社员'}</b></Link>
           ) : (
             <Link className="user-chip login-chip" to="/login">登录</Link>
           )}
@@ -156,7 +157,7 @@ export default function HomePage() {
             <h1>{title || (ready ? '暂无可展示内容' : '正在载入…')}</h1>
             <p className="meta">{meta}</p>
             <div className="disc-row">
-              <button className="go" type="button">{isCourse ? '进入课题' : '查看活动'} <span>→</span></button>
+              <button className="go" type="button" onClick={() => navigate(isCourse ? (course ? `/task/${course.id}` : '/task') : (activity ? `/activity/${activity.id}` : '/activity'))}>{isCourse ? '进入课题' : '查看活动'} <span>→</span></button>
               <div className="progress"><span>8s</span></div>
             </div>
             <div className="dots">

@@ -155,3 +155,81 @@ button{cursor:pointer}
   .login-card h1{font-size:26px}
   .login-chips span{display:none}
 }
+
+/* ---------- inner pages ---------- */
+.page-shell{position:relative;min-height:100vh;isolation:isolate;padding-bottom:40px}
+.page-top{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-content:space-between;gap:16px;margin:16px 24px 0;padding:10px 16px;border:1px solid rgba(255,255,255,.24);border-radius:999px;background:rgba(7,16,28,.66);backdrop-filter:blur(22px);box-shadow:0 18px 40px rgba(0,0,0,.22)}
+.page-nav{display:flex;gap:3px;flex-wrap:wrap}
+.page-nav a{font-size:9px;letter-spacing:.06em;color:#B9C8D8;padding:6px 9px;border-radius:999px}
+.page-nav a:hover{color:#fff;background:rgba(255,255,255,.08)}
+.page-nav a.on{background:#fff;color:#04121E;font-weight:700}
+.page-user{display:flex;align-items:center;gap:6px}
+.page-main{max-width:1200px;margin:0 auto;padding:28px 24px 60px}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin:18px 0 22px}
+.page-head h1{margin:0;font-size:clamp(28px,4vw,44px);letter-spacing:.02em}
+.page-head p{margin:6px 0 0;font-size:9px;letter-spacing:.12em;color:#B9C8D8}
+.page-actions{display:flex;gap:8px;align-items:center}
+.page-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.page-card{position:relative;display:block;border:1px solid rgba(255,255,255,.22);border-radius:16px;background:rgba(8,18,30,.78);backdrop-filter:blur(18px);padding:16px;color:var(--ink);box-shadow:0 18px 40px rgba(0,0,0,.18)}
+a.page-card{transition:transform .18s ease,border-color .18s ease}
+a.page-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.45)}
+.page-card h2,.page-card h3{margin:6px 0 0;line-height:1.35}
+.page-card .card-k{font-size:7px;letter-spacing:.2em;color:#B9E8FF}
+.page-card .meta{margin:6px 0 0;font-size:8px;color:#B9C8D8;letter-spacing:.03em}
+.page-card .desc{margin:8px 0 0;font-size:9px;line-height:1.7;color:#C9D9E6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.page-card .thumb{aspect-ratio:16/9;border-radius:10px;background-size:cover;background-position:center;border:1px solid rgba(255,255,255,.18);margin-bottom:12px}
+.page-card.error{color:#FF8FA3;border-color:rgba(255,143,163,.4)}
+.course-card .page-btn{margin-top:12px}
+.page-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.06);color:#E6F9FF;border-radius:8px;padding:8px 12px;font-size:9px;letter-spacing:.06em;text-decoration:none}
+.page-btn:hover{border-color:rgba(255,255,255,.55)}
+.page-btn.primary{background:linear-gradient(135deg,var(--cyan),var(--violet));color:#04121E;border-color:transparent;font-weight:700}
+.page-btn.small{padding:6px 10px}
+.page-btn:disabled{opacity:.45;cursor:not-allowed}
+.page-pager{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:22px;font-size:9px;color:#B9C8D8}
+.page-actions-row{display:flex;gap:8px;align-items:center;margin:12px 0}
+.detail-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px;align-items:start}
+.detail-cover{aspect-ratio:4/3;background-size:cover;background-position:center;min-height:260px}
+.detail-grid h2{margin:8px 0 0;font-size:24px}
+.section-block{margin-top:24px}
+.section-block h2{font-size:14px;letter-spacing:.12em;color:#B9E8FF;margin:0 0 12px}
+.page-table{width:100%;border-collapse:collapse;font-size:10px}
+.page-table th{text-align:left;font-size:8px;letter-spacing:.1em;color:#8FB4C6;font-weight:500;padding:9px 8px;border-bottom:1px solid rgba(255,255,255,.16)}
+.page-table td{padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.08)}
+.page-table a{color:var(--cyan)}
+.page-table .rank{font-family:"JetBrains Mono",monospace;color:#B9C8D8}
+.page-table .rank-1{color:var(--gold)}.page-table .rank-2{color:#DCE6F5}.page-table .rank-3{color:#E8B07A}
+.page-select,.page-input{border:1px solid rgba(255,255,255,.26);border-radius:8px;background:rgba(255,255,255,.07);color:#F4F7FB;padding:8px 10px;font-size:10px;outline:none}
+.page-select option{background:#07101C;color:#fff}
+.page-input{width:100%;margin-top:8px}
+.page-input.area{min-height:96px;resize:vertical}
+.editor{margin-bottom:14px}
+.forum-list{display:flex;flex-direction:column;gap:10px}
+.forum-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px}
+.forum-row h3{margin:0;font-size:12px}
+.forum-row .meta{margin-top:4px}
+.forum-row span{color:var(--cyan)}
+.post-detail h2{font-size:24px;margin:8px 0 0}
+.post-content{margin:12px 0 0;white-space:pre-wrap;font-size:10px;line-height:1.8;color:#DCE8F2}
+.profile-layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;align-items:start}
+.profile-card{text-align:center}
+.profile-avatar{width:96px;height:96px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.5);margin:8px auto 0;display:block}
+.profile-card h2{margin:10px 0 0;font-size:18px}
+.score-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:9px;color:#DCE8F2}
+.score-row b{font-family:"JetBrains Mono",monospace;color:var(--cyan)}
+.mono{font-family:"JetBrains Mono",monospace}
+.notfound{text-align:center}
+.notfound-code{font-family:"JetBrains Mono",monospace;font-size:72px;line-height:1;color:var(--cyan);text-shadow:0 0 30px rgba(77,225,255,.35)}
+.notfound .login-actions a{display:flex;align-items:center;justify-content:center;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--cyan),var(--violet));color:#04121E;font-size:10px;font-weight:700;flex:1}
+@media (max-width:1000px){
+  .page-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .detail-grid,.profile-layout{grid-template-columns:1fr}
+}
+@media (max-width:700px){
+  .page-top{margin:10px 10px 0;padding:8px 10px;border-radius:16px;flex-wrap:wrap}
+  .page-nav{order:3;width:100%;overflow-x:auto;flex-wrap:nowrap;padding-top:4px}
+  .page-nav a{white-space:nowrap}
+  .page-main{padding:18px 14px 50px}
+  .page-grid{grid-template-columns:1fr}
+  .page-head{align-items:flex-start;flex-direction:column}
+  .page-user .user-chip b{display:none}
+}
