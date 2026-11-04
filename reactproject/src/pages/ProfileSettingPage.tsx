@@ -101,7 +101,6 @@ export default function ProfileSettingPage() {
   const [previewUrl, setPreviewUrl] = useState('')
   const [cropSrc, setCropSrc] = useState('')
   const [cropOpen, setCropOpen] = useState(false)
-  const [pendingAvatar, setPendingAvatar] = useState<Blob | null>(null)
   const previewUrlRef = useRef('')
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -177,13 +176,17 @@ export default function ProfileSettingPage() {
       const nextUrl = URL.createObjectURL(optimized)
       previewUrlRef.current = nextUrl
       setPreviewUrl(nextUrl)
-      setPendingAvatar(optimized)
       setCropOpen(false)
       if (cropSrc) URL.revokeObjectURL(cropSrc)
       setCropSrc('')
-      setNotice({ kind: 'info', text: '头像已裁剪，请点击「保存并提交审核」' })
+      const formData = new FormData()
+      formData.append('avatar', optimized, 'avatar.jpg')
+      const res = await api.post(`/profile/${identityId}/submit`, formData)
+      if (res.data?.code !== 0) throw new Error(res.data?.message || '头像提交失败')
+      setNotice({ kind: 'ok', text: '头像已提交审核，管理员审核通过后生效' })
+      await loadProfile()
     } catch (error) {
-      setNotice({ kind: 'err', text: errorMessage(error, '头像处理失败，请重试') })
+      setNotice({ kind: 'err', text: errorMessage(error, '头像提交失败，请重试') })
     }
   }
 
@@ -197,10 +200,8 @@ export default function ProfileSettingPage() {
     try {
       const formData = new FormData()
       formData.append('description', description)
-      if (pendingAvatar) formData.append('avatar', pendingAvatar, 'avatar.jpg')
       const res = await api.post(`/profile/${identityId}/submit`, formData)
       if (res.data?.code !== 0) throw new Error(res.data?.message || '提交失败')
-      setPendingAvatar(null)
       if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
       previewUrlRef.current = ''
       setPreviewUrl('')
@@ -332,7 +333,7 @@ export default function ProfileSettingPage() {
                   style={{ display: 'none' }}
                   onChange={onFileChange}
                 />
-                <span className="meta">提交后需管理员审核</span>
+                <span className="meta">裁剪完成后会自动提交审核，管理员审核通过后生效</span>
               </div>
 
               <label className="meta" htmlFor="profile-description" style={{ display: 'block', marginTop: 8 }}>

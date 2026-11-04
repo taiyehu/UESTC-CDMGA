@@ -17,11 +17,8 @@ const post = {
 }
 
 test('own forum post can be edited and deleted', async ({ page }) => {
-  await page.route('**/api/forum/posts/1', (route) => {
+  await page.route('**/api/forum/posts/1*', (route) => {
     if (route.request().method() === 'GET') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ code: 0, message: 'ok', data: post }) })
-    return route.continue()
-  })
-  await page.route('**/api/forum/posts/1', (route) => {
     if (route.request().method() === 'PATCH') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ code: 0, message: 'ok', data: null }) })
     return route.continue()
   })
@@ -55,7 +52,7 @@ test('reply like, report and delete are wired', async ({ page }) => {
     ...post,
     replies: [{ id: 10, authorId: 1, authorName: 'tester', content: '回复内容', createdAt: '2026-11-03T12:00:00', likeCount: 0, liked: false }],
   }
-  await page.route('**/api/forum/posts/1', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ code: 0, message: 'ok', data }) }))
+  await page.route('**/api/forum/posts/1*', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ code: 0, message: 'ok', data }) }))
   await page.route('**/api/forum/reply/10/like', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ code: 0, data: { liked: true } }) }))
   await page.route('**/api/forum/reply/10/report', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ code: 0, data: null }) }))
   await page.route('**/api/forum/reply/10', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ code: 0, data: null }) }))

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { api } from '../api'
 import PageShell from '../components/PageShell'
+import TaskBingoOverview from '../components/TaskBingoOverview'
 import { fetchCourseById, type Course } from '../api'
 
 type ScoreHistory = { id: number; uploadTime?: string; image?: string; remark?: string; isScored?: boolean; score?: number }
@@ -105,7 +106,7 @@ export default function TaskDetailPage() {
   }
 
   const category = String(course?.category || '').trim().toLowerCase()
-  if (course && category === 'bingo') return <Navigate to={`/task/${course.id}/bingo/1`} replace />
+  if (course && category === 'bingo') return <PageShell title="TASK DETAIL" subtitle={course.title}><TaskBingoOverview course={course} /></PageShell>
   const typicalItems = course && category === 'typical' ? parseTypicalItems(course).map((item) => {
     const issue = issues.get(item.id)
     return { ...item, title: issue?.songName?.trim() ? issue.songName : item.title, description: issue?.text?.trim() ? issue.text : item.description, image: issue?.image || item.image || '', file: issue?.file || '' }

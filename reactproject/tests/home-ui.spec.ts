@@ -26,8 +26,8 @@ test('home controls are wired', async ({ page }) => {
   await page.goBack()
 
   // forum post link
-  await page.getByRole('link', { name: /本地测试帖：UI 对照/ }).click()
-  await page.waitForURL('**/forum/1', { timeout: 15_000 })
+  await page.getByRole('link', { name: /今日曲目推荐推荐/ }).click()
+  await page.waitForURL('**/forum/24', { timeout: 15_000 })
   await page.goBack()
 
   // quick links

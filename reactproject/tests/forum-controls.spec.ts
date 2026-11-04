@@ -12,7 +12,7 @@ test('forum sort, like, report and image picker are wired', async ({ page }) => 
   await expect(page.getByRole('button', { name: '我的帖子', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: '最新', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: '最多点赞', exact: true })).toBeVisible()
-  await expect(page.getByText('本地测试帖：UI 对照', { exact: true })).toBeVisible()
+  await expect(page.getByText(/今日曲目推荐推荐/) ).toBeVisible()
   await expect(page.getByRole('button', { name: '举报', exact: true }).first()).toBeVisible()
   const like = page.locator('.forum-actions button').first()
   await expect(like).toBeVisible()

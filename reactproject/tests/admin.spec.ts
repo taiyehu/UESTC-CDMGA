@@ -44,7 +44,7 @@ test('admin pages mount with admin session', async ({ page }) => {
   await expect(page.locator('table input').first()).toHaveValue('夜航星', { timeout: 20_000 })
   await page.goto(`${REACT}/admin/forum`)
   await page.getByRole('button', { name: '全部帖子', exact: true }).click()
-  await expect(page.locator('body')).toContainText('本地测试帖：UI 对照', { timeout: 20_000 })
+  await expect(page.locator('body')).toContainText('今日曲目推荐推荐', { timeout: 20_000 })
   await page.goto(`${REACT}/admin/activities`)
   await expect(page.locator('body')).toContainText('月面 Live 第 12 期', { timeout: 20_000 })
 

@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import type { ChangeEvent, CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageShell from '../components/PageShell'
+import BingoGrid from '../components/BingoGrid'
+import '../components/TaskBingoOverview.css'
 import { api, fetchCourseById, type Course } from '../api'
 
 type BingoItem = { id: number; title: string; description: string }
@@ -14,7 +16,6 @@ type Feedback = { type: 'ok' | 'error'; message: string }
 type SelectedItem = BingoItem & { image?: string; file?: string; songName?: string }
 type PentagonNode = { id: number; url: string; position?: string }
 
-const CELL_IDS = Array.from({ length: 25 }, (_, index) => index + 1)
 const TEAM_STYLES: CSSProperties[] = [
   {
     color: '#f8fafc',
@@ -164,12 +165,6 @@ function teamBadgeStyle(teamId?: number, teamName?: string): CSSProperties {
   }
 }
 
-function scoreColor(level: number): string {
-  if (level === 2) return '#86efac'
-  if (level === 3) return '#f9a8d4'
-  if (level === 10) return '#a5f3fc'
-  return '#fbbf24'
-}
 
 function normalizeScoreRow(item: any): ScoreRow {
   return {
@@ -243,61 +238,6 @@ async function optimizeImage(
   }
 }
 
-function BingoGrid({
-  activeCell,
-  boardState,
-  issueMarks,
-  onSelect,
-}: {
-  activeCell: number
-  boardState: Map<number, BoardCell>
-  issueMarks: Map<number, string>
-  onSelect: (cell: number) => void
-}) {
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 6 }}>
-      {CELL_IDS.map((cell) => {
-        const state = boardState.get(cell)
-        const myScore = Number(state?.myScore || 0)
-        const completed = Boolean(state?.myCompleted)
-        const level = completed && [2, 3, 5, 10, 15].includes(myScore)
-          ? myScore
-          : Number(state?.maxScore || 5)
-        const mark = completed ? String(issueMarks.get(cell) || '').trim() : ''
-        const color = scoreColor(level)
-        return (
-          <button
-            key={cell}
-            type="button"
-            title={`第 ${cell} 题`}
-            onClick={() => onSelect(cell)}
-            style={{
-              aspectRatio: '1 / 1',
-              minWidth: 0,
-              borderRadius: 9,
-              border: `2px solid ${cell === activeCell ? '#f0abfc' : color}`,
-              background: cell === activeCell ? 'rgba(88,28,135,.72)' : 'rgba(8,47,73,.6)',
-              color,
-              padding: 2,
-              display: 'grid',
-              placeItems: 'center',
-              overflow: 'hidden',
-              fontSize: mark ? 9 : 15,
-              fontWeight: 800,
-              lineHeight: 1.1,
-              cursor: 'pointer',
-              boxShadow: cell === activeCell ? '0 0 14px rgba(240,171,252,.4)' : 'none',
-            }}
-          >
-            <span style={{ maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {mark || String(level || 5)}
-            </span>
-          </button>
-        )
-      })}
-    </div>
-  )
-}
 
 /**
  * Bingo issue detail. Loads the course, its 25 issue attachments, the current
@@ -959,6 +899,7 @@ export default function TaskBingoDetailPage() {
                 activeCell={cellId}
                 boardState={boardState}
                 issueMarks={issueMarks}
+                compact
                 onSelect={jumpTo}
               />
             </div>

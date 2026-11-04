@@ -65,7 +65,7 @@ test('home data parity', async ({ page }) => {
       await login(page, base)
       const body = page.locator('body')
       await expect(body).toContainText('夜航星', { timeout: 20_000 })
-      await expect(body).toContainText('月面 Live 第 12 期', { timeout: 20_000 })
+      await expect(body).toContainText(name === 'react' ? '每日群友 · MEMBER' : '每天认识一名群友', { timeout: 20_000 })
       const text = (await body.innerText()).replace(/\s+/g, ' ').trim()
       expect(text.length).toBeGreaterThan(100)
       console.log(`[${name}] home text length=${text.length}`)

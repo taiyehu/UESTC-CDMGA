@@ -34,7 +34,7 @@ test('core pages data parity', async ({ page }) => {
       const checks: [string, string][] = [
         ['/task', '夜航星'],
         ['/activity', '月面 Live 第 12 期'],
-        ['/forum', '本地测试帖：UI 对照'],
+        ['/forum', '今日曲目推荐推荐'],
         ['/profile', 'tester'],
         ['/ranking', 'rank1'],
         ['/ranking', '36'],

@@ -1,5 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import type { ReactNode } from 'react'
+import AdminSidebar from './AdminSidebar'
+import ThemeToggle from './ThemeToggle'
 
 const links = [
   ['/home', '首页'],
@@ -40,13 +42,7 @@ export default function PageShell({
   } catch {
     user = null
   }
-  const adminLinks = [
-    ['/admin', '总览'], ['/admin/users', '用户'], ['/admin/courses', '课题'], ['/admin/content-publish', '发布'],
-    ['/admin/activities', '活动'], ['/admin/profiles', '资料'], ['/admin/titles', '称号'],
-    ['/admin/forum', '论坛'], ['/admin/scores', '成绩'], ['/admin/rank-configs', '排行配置'],
-    ['/admin/score-logs', '日志'], ['/admin/bingo-submissions', 'Bingo 审核'],
-    ['/admin/bingo-tips', 'Tips'], ['/admin/issues', '题目'], ['/admin/teams', '队伍'],
-  ] as const
+  const isAdminArea = role === 'admin' && location.pathname.startsWith('/admin')
 
   function logout() {
     sessionStorage.removeItem('userInfo')
@@ -68,17 +64,13 @@ export default function PageShell({
           ))}
         </nav>
         <div className="page-user">
+          <ThemeToggle />
           {user ? <Link className="user-chip" to={`/profile/${user.id}`}><img src="/club-logo.jpg" alt="" /><b>{user.account || '社员'}</b></Link> : <Link className="user-chip login-chip" to="/login">登录</Link>}
           {role === 'admin' && <Link className="icon-btn" to="/admin" aria-label="进入后台" title="进入后台">⚙</Link>}
           <button className="icon-btn" type="button" onClick={logout} aria-label="退出登录">↪</button>
         </div>
       </header>
-      {role === 'admin' && location.pathname.startsWith('/admin') && (
-        <nav className="admin-nav" aria-label="后台导航">
-          {adminLinks.map(([to, label]) => <Link key={to} to={to} className={to === '/admin' ? (location.pathname === '/admin' ? 'on' : '') : location.pathname.startsWith(to) ? 'on' : ''}>{label}</Link>)}
-        </nav>
-      )}
-      <main className="page-main">
+      {isAdminArea ? <div className="admin-page-body"><AdminSidebar /><main className="page-main">
         <div className="page-head">
           <div>
             <h1>{title}</h1>
@@ -87,7 +79,13 @@ export default function PageShell({
           {actions && <div className="page-actions">{actions}</div>}
         </div>
         {children}
-      </main>
+      </main></div> : <main className="page-main">
+        <div className="page-head">
+          <div><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>
+          {actions && <div className="page-actions">{actions}</div>}
+        </div>
+        {children}
+      </main>}
     </div>
   )
 }
