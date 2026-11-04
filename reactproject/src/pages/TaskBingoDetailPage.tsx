@@ -462,9 +462,12 @@ export default function TaskBingoDetailPage() {
       }
 
       try {
-        const response = await api.get('/score/history', {
-          params: { identity_id: identityId, course_id: courseId, issue_id: cellId },
-        })
+        let response
+        try {
+          response = await api.get('/score/history/bingo-issue', { params: { identity_id: identityId, course_id: courseId, issue_id: cellId } })
+        } catch {
+          response = await api.get('/score/history', { params: { identity_id: identityId, course_id: courseId, issue_id: cellId } })
+        }
         if (cancelled) return
         const payload = response.data?.data ?? response.data
         const rows = Array.isArray(payload?.list) ? payload.list : Array.isArray(payload) ? payload : []

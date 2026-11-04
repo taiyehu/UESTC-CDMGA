@@ -9,6 +9,9 @@ export default function ProfilePage() {
   const [online, setOnline] = useState<boolean | null>(null)
   const [scores, setScores] = useState<any[]>([])
   const [titles, setTitles] = useState<any[]>([])
+  const [awardRedemptions, setAwardRedemptions] = useState<any[]>([])
+  const [ratedActivities, setRatedActivities] = useState<any[]>([])
+  const [school, setSchool] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [tierFilter, setTierFilter] = useState('all')
@@ -21,12 +24,20 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!Number.isFinite(identityId)) { setError('用户编号无效'); setLoading(false); return }
-    Promise.allSettled([fetchProfile(identityId), fetchOnline(identityId), fetchScoredScores(identityId), api.get(isSelf ? '/title/mine' : `/title/user/${identityId}`)])
-      .then(([p, o, s, t]) => {
+    Promise.allSettled([
+      fetchProfile(identityId), fetchOnline(identityId), fetchScoredScores(identityId),
+      api.get(isSelf ? '/title/mine' : `/title/user/${identityId}`),
+      api.get(`/activity/rated-activities/${identityId}`),
+      api.get('/score/user-award-redemptions', { params: { identityId } }),
+      api.get(`/identity-extra-profile/user/${identityId}/school`),
+    ]).then(([p, o, s, t, a, r, sc]) => {
         if (p.status === 'fulfilled') setProfile(p.value)
         if (o.status === 'fulfilled') setOnline(o.value)
         if (s.status === 'fulfilled') setScores(s.value)
         if (t.status === 'fulfilled') setTitles(Array.isArray(t.value.data?.data) ? t.value.data.data : [])
+        if (a.status === 'fulfilled') { const d = a.value.data?.data ?? a.value.data; setRatedActivities(Array.isArray(d) ? d : []) }
+        if (r.status === 'fulfilled') { const d = r.value.data?.data ?? r.value.data; setAwardRedemptions(Array.isArray(d) ? d : []) }
+        if (sc.status === 'fulfilled') setSchool(String(sc.value.data?.data ?? sc.value.data?.school ?? ''))
       })
       .catch((e) => setError(e instanceof Error ? e.message : '加载失败'))
       .finally(() => setLoading(false))
@@ -58,13 +69,15 @@ export default function ProfilePage() {
             <h2>{profile?.account || user?.account || `社员 ${identityId}`}</h2>
             <p className="meta">{online === null ? '在线状态未知' : online ? '在线' : '离线'} · {profile?.status === 1 ? '资料已通过' : '资料未完善'}</p>
             <p className="desc">{profile?.description || '暂无个性签名'}</p>
-            <p className="meta">{profile?.university || '未填写学校'}</p>
+            <p className="meta">{school || profile?.university || '未填写学校'}</p>
             {isSelf && <div className="page-actions-row"><Link className="page-btn small" to="/profile-setting">修改头像 / 签名 / 补充信息</Link></div>}
           </section>
           <section className="page-card">
             <h3>成绩记录</h3>
             {scores.length ? <div style={{ overflowX: 'auto' }}><table className="page-table"><thead><tr><th>课题</th><th>成绩</th><th>状态</th></tr></thead><tbody>{scores.map((s, i) => <tr key={s.id ?? i}><td>{s.course?.title || s.courseTitle || s.title || `记录 ${i + 1}`}</td><td className="mono" style={{ textAlign: 'center' }}>{s.score ?? s.totalScore ?? '—'}</td><td>{s.isScored === false ? '审核中' : s.isScored ? '已评分' : '—'}</td></tr>)}</tbody></table></div> : <p className="meta">暂无成绩记录</p>}
           </section>
+          {awardRedemptions.length > 0 && <section className="page-card" style={{ gridColumn: '1 / -1' }}><h3>兑换记录</h3><div style={{ overflowX: 'auto' }}><table className="page-table"><thead><tr><th>奖品名称</th><th>消耗积分</th><th>申请时间</th><th>备注</th></tr></thead><tbody>{awardRedemptions.map((row) => <tr key={row.id}><td>{row.course?.title || '-'}</td><td className="mono" style={{ textAlign: 'center' }}>{Math.abs(Number(row.score || 0))}</td><td>{row.uploadTime ? new Date(row.uploadTime).toLocaleString('zh-CN') : '-'}</td><td>{row.remark || '-'}</td></tr>)}</tbody></table></div></section>}
+          {ratedActivities.length > 0 && <section className="page-card" style={{ gridColumn: '1 / -1' }}><h3>已参与的活动与分数</h3><div style={{ overflowX: 'auto' }}><table className="page-table"><thead><tr><th>活动</th><th>时间</th></tr></thead><tbody>{ratedActivities.map((a) => <tr key={a.id || a.activityId}><td>{a.title || a.name || '-'}</td><td>{a.startTime ? new Date(a.startTime).toLocaleString('zh-CN') : '-'}</td></tr>)}</tbody></table></div></section>}
           <section className="page-card" style={{ gridColumn: '1 / -1' }}>
             <div className="page-actions-row" style={{ justifyContent: 'space-between' }}><h3>{isSelf ? '我的称号' : '获得的称号'}</h3>{isSelf && <Link className="page-btn small" to="/profile-setting?tab=titles">申请称号</Link>}</div>
             <div className="title-filters">

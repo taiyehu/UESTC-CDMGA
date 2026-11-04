@@ -1,0 +1,37 @@
+/*
+ * Visual/motion reference: https://www.cho-kaguyahime.com/
+ * Source inspected locally in ref/kaguyahime (HTML/CSS/JS).
+ * Only design language is borrowed: pastel accents and slow floating motion.
+ * No external images/fonts/assets are copied.
+ */
+:root{
+  --kagu-pink:#f5babf;
+  --kagu-lavender:#cbc4f8;
+  --kagu-blue:#6ccfee;
+  --kagu-gold:#ffe48f;
+}
+.home::before{
+  content:"";position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:
+    radial-gradient(36% 34% at 18% 24%, rgba(245,186,191,.14), transparent 70%),
+    radial-gradient(30% 30% at 82% 18%, rgba(203,196,248,.16), transparent 72%),
+    radial-gradient(36% 38% at 50% 82%, rgba(108,207,238,.12), transparent 72%);
+  mix-blend-mode:screen;
+}
+.side .card{animation:kagu-float-x 8s ease-in-out infinite}
+.side .card:nth-child(2){animation-delay:-2.6s}
+.side .card:nth-child(3){animation-delay:-4.8s}
+.side.right .card{animation-name:kagu-float-y;animation-duration:7.9s}
+.side.right .card:nth-child(2){animation-delay:-3.2s}
+@keyframes kagu-float-x{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(5px,-7px,0)}}
+@keyframes kagu-float-y{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(-5px,7px,0)}}
+.page-main{animation:kagu-page-in .45s ease-out both}
+@keyframes kagu-page-in{from{opacity:0}to{opacity:1}}
+.page-head h1{background-image:linear-gradient(110deg,#fff 0%,var(--kagu-pink) 36%,var(--kagu-lavender) 66%,var(--kagu-blue) 100%);-webkit-background-clip:text;background-clip:text;color:transparent!important}
+html.light .page-head h1{background-image:linear-gradient(110deg,#0b1a2a 0%,#9d174d 38%,#6d28d9 68%,#0e7490 100%)}
+.page-card{border-color:color-mix(in srgb,var(--kagu-lavender) 24%,var(--ui-line))}
+.page-btn.primary{background-image:linear-gradient(115deg,var(--kagu-blue),var(--kagu-lavender) 58%,var(--kagu-pink));color:#0b1a2a}
+html.light .page-btn.primary{color:#fff}
+@media (prefers-reduced-motion:reduce){
+  .side .card,.page-main{animation:none!important}
+}

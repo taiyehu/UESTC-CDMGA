@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PageShell from '../components/PageShell'
+import { api } from '../api'
 
 const sections = [
   { to: '/admin/users', title: '用户', desc: '账号列表、分页与删除' },
@@ -20,12 +22,15 @@ const sections = [
 ] as const
 
 export default function AdminDashboardPage() {
+  const [userCount, setUserCount] = useState<number | null>(null)
+  useEffect(() => { api.get('/identity/allaccount', { params: { page: 0, size: 1 } }).then((res) => { const d = res.data?.data ?? res.data; setUserCount(Number(d?.total ?? d?.list?.length ?? 0)) }).catch(() => setUserCount(null)) }, [])
   return (
     <PageShell title="ADMIN" subtitle="后台总览 · 所有管理模块">
       <div className="page-card" style={{ marginBottom: 16 }}>
         <div className="card-k">CONTROL ROOM</div>
         <h2 style={{ marginTop: 6 }}>后台管理</h2>
         <p className="desc">从这里进入全部管理页面；顶部后台导航也会一直显示。</p>
+        {userCount !== null && <p className="meta">注册用户：{userCount}</p>}
       </div>
       <div className="admin-grid">
         {sections.map((item) => <Link className="page-card admin-card" to={item.to} key={item.to}><div className="card-k">{item.to.replace('/admin/', '').toUpperCase()}</div><h3>{item.title}</h3><p className="desc">{item.desc}</p><span className="admin-go">进入 →</span></Link>)}
