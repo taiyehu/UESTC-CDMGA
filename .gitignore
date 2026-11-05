@@ -20,3 +20,4 @@ reactproject/playwright-report/
 reactproject/blob-report/
 reactproject/coverage/
 reactproject/.env*
+.playwright-mcp/
