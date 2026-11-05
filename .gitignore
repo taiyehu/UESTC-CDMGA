@@ -13,8 +13,6 @@ server_media_backup_2026-07-30/
 
 # local-only DB profile and assets (never commit credentials / uploaded media)
 webpage/src/main/resources/application-local.properties
-reactproject/public/maimai-og.jpg
-reactproject/public/activity-banner.jpg
 reactproject/test-results/
 reactproject/playwright-report/
 reactproject/blob-report/
