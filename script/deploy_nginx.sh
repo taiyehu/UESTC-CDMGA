@@ -6,6 +6,8 @@ email=${2:-}
 source_dir=/opt/webserver/script
 config_path=/etc/nginx/sites-available/cdmga_nginx.conf
 certificate_dir="/etc/letsencrypt/live/$domain"
+dev_domain="dev.$domain"
+dev_certificate_dir="/etc/letsencrypt/live/$dev_domain"
 
 if [[ ! $domain =~ ^[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$ ]] || [[ $domain =~ ^[0-9.]+$ ]]; then
     echo "A DNS domain is required for HTTPS: $domain" >&2
@@ -19,6 +21,7 @@ sudo ln -sfn "$config_path" /etc/nginx/sites-enabled/cdmga_nginx.conf
 
 apply_config() {
     local template=$1
+    local omit_dev_tls=${2:-false}
     local rendered backup
     rendered=$(mktemp)
     backup=$(mktemp)
@@ -26,7 +29,12 @@ apply_config() {
     sed -e "s/server_name localhost;/server_name $domain;/" \
         -e "s/server_name dev.localhost;/server_name dev.$domain;/" \
         -e "s@/live/localhost/@/live/$domain/@g" \
+        -e "s@/live/dev.localhost/@/live/dev.$domain/@g" \
         "$template" > "$rendered"
+
+    if [[ "$omit_dev_tls" == "true" ]]; then
+        sed -i '/# DEV TLS BEGIN/,/# DEV TLS END/d' "$rendered"
+    fi
 
     if sudo test -f "$config_path"; then
         sudo cp "$config_path" "$backup"
@@ -76,9 +84,27 @@ if ! sudo test -s "$certificate_dir/fullchain.pem" || ! sudo test -s "$certifica
         --non-interactive --agree-tos --email "$email" --keep-until-expiring
 fi
 
+if ! sudo test -s "$dev_certificate_dir/fullchain.pem" || ! sudo test -s "$dev_certificate_dir/privkey.pem"; then
+    if [[ -z $email ]]; then
+        echo "CERTBOT_EMAIL must be configured before requesting the dev certificate" >&2
+        exit 1
+    fi
+    if [[ ! $email =~ ^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$ ]]; then
+        echo "CERTBOT_EMAIL is not a valid email address" >&2
+        exit 1
+    fi
+
+    # Keep production HTTPS live while the dev certificate is issued over HTTP-01.
+    apply_config "$source_dir/cdmga_nginx_https.conf" true
+    sudo "$certbot_bin" certonly --webroot \
+        --webroot-path /var/www/letsencrypt \
+        --cert-name "$dev_domain" -d "$dev_domain" \
+        --non-interactive --agree-tos --email "$email" --keep-until-expiring
+fi
+
 apply_config "$source_dir/cdmga_nginx_https.conf"
 sudo install -d -m 755 /etc/letsencrypt/renewal-hooks/deploy
 sudo install -m 755 "$source_dir/reload_nginx_after_renewal.sh" \
     /etc/letsencrypt/renewal-hooks/deploy/reload_nginx_after_renewal.sh
 
-echo "HTTPS configured for $domain; Certbot will renew the certificate automatically"
+echo "HTTPS configured for $domain and $dev_domain; Certbot will renew the certificates automatically"
