@@ -9,11 +9,15 @@ export default function PageShell({
   subtitle,
   children,
   actions,
+  wide = false,
+  hideHead = false,
 }: {
-  title: string
+  title?: string
   subtitle?: string
   children: ReactNode
   actions?: ReactNode
+  wide?: boolean
+  hideHead?: boolean
 }) {
   const location = useLocation()
   let role = ''
@@ -34,19 +38,19 @@ export default function PageShell({
       <div className="bg" aria-hidden="true" />
       <TopBar />
       {isAdminArea ? <div className="admin-page-body"><AdminSidebar /><main className="page-main">
-        <div className="page-head">
+        {!hideHead && <div className="page-head">
           <div>
             <h1>{title}</h1>
             {subtitle && <p>{subtitle}</p>}
           </div>
           {actions && <div className="page-actions">{actions}</div>}
-        </div>
+        </div>}
         {children}
-      </main></div> : <main className="page-main">
-        <div className="page-head">
+      </main></div> : <main className={`page-main${wide ? ' page-main-wide' : ''}`}>
+        {!hideHead && <div className="page-head">
           <div><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>
           {actions && <div className="page-actions">{actions}</div>}
-        </div>
+        </div>}
         {children}
       </main>}
       <MobileTabBar />

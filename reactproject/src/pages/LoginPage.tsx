@@ -45,10 +45,7 @@ export default function LoginPage() {
           <img src="/club-logo.jpg" alt="" className="brand-mark" />
           <span><b>UESTC CDMGA</b><em>MAIMAI CLUB · 2026</em></span>
         </Link>
-        <div className="login-chips">
-          <span>◐ 跟随系统</span>
-          <Link to="/">返回首页</Link>
-        </div>
+        <div className="login-chips"><Link to="/">返回首页</Link></div>
       </header>
 
       <section className="login-card">
@@ -57,7 +54,6 @@ export default function LoginPage() {
           <div><b>UESTC CDMGA</b><span>ARCADE STAGE · 2026</span></div>
         </div>
         <h1>登录</h1>
-        <p className="login-sub">用社团账号进入街机舞台。课题、活动、排行、论坛，都在同一个圆里。</p>
         <form onSubmit={onSubmit} className="login-form">
           <label htmlFor="account">用户名</label>
           <input
@@ -84,7 +80,7 @@ export default function LoginPage() {
             <button className="secondary" type="button" onClick={reset} disabled={loading}>重置</button>
           </div>
         </form>
-        <p className="login-alt">没有账号？<Link to="/login">立即注册</Link></p>
+        <p className="login-alt">没有账号？<Link to="/register">立即注册</Link></p>
       </section>
     </main>
   )

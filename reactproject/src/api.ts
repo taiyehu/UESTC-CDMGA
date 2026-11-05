@@ -44,6 +44,10 @@ export type ForumPost = {
   title: string
   authorName: string
   authorId?: number
+  avatar?: string | null
+  titleName?: string | null
+  titleTier?: string | null
+  titleAcquisitionMethod?: string | null
   content?: string
   status?: string
   replyCount: number
@@ -104,6 +108,7 @@ export type ForumReply = {
   id: number
   authorId?: number
   authorName: string
+  avatar?: string | null
   content: string
   createdAt: string
   floorNumber?: number | null
@@ -115,6 +120,7 @@ export type ForumPostDetail = ForumPost & {
   content: string
   replies: ForumReply[]
   images?: { id: number; url: string }[]
+  files?: { id: number; url: string; name: string }[]
 }
 
 export async function register(account: string, password: string) {

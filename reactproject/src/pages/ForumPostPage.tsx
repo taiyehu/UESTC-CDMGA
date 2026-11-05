@@ -18,11 +18,13 @@ export default function ForumPostPage() {
   const [editContent, setEditContent] = useState('')
   const [saving, setSaving] = useState(false)
   const [replyNotice, setReplyNotice] = useState('')
+  const [replyPage, setReplyPage] = useState(0)
   const isOwn = Boolean(post && user && Number(post.authorId) === Number(user.id))
 
   async function load() {
     const postId = Number(id)
     if (!Number.isFinite(postId)) { setError('帖子编号无效'); setLoading(false); return }
+    setReplyPage(0)
     setLoading(true)
     try { setPost(await fetchForumPost(postId)) }
     catch (e) { setError(e instanceof Error ? e.message : '加载失败') }
@@ -58,7 +60,7 @@ export default function ForumPostPage() {
   }
 
   return (
-    <PageShell title="POST" subtitle={post?.title}>
+    <PageShell hideHead>
       <div className="page-actions-row"><Link className="page-btn" to="/forum">← 返回论坛</Link></div>
       {loading && <div className="page-card">载入中…</div>}
       {error && <div className="page-card error">{error}</div>}
@@ -81,7 +83,7 @@ export default function ForumPostPage() {
           <section className="section-block">
             <h2>回复 {post.replies?.length ?? 0}</h2>
             <div className="forum-list">
-              {(post.replies ?? []).map((r) => <div className="page-card forum-row" key={r.id}>
+              {(post.replies ?? []).slice(replyPage * 10, replyPage * 10 + 10).map((r) => <div className="page-card forum-row" key={r.id}>
                 <div className="forum-main"><h3>{r.authorName}</h3><p className="post-content">{r.content}</p><div className="forum-actions">
                   <button className="page-btn small" type="button" onClick={async () => { try { const liked = await likeForumReply(r.id); setPost({ ...post, replies: post.replies.map((x) => x.id === r.id ? { ...x, liked, likeCount: Math.max(0, Number(x.likeCount || 0) + (liked ? 1 : -1)) } : x) }) } catch (e) { setReplyNotice(e instanceof Error ? e.message : '点赞失败') } }}>{r.liked ? '♥' : '♡'} {r.likeCount ?? 0} 点赞</button>
                   <button className="page-btn small" type="button" onClick={async () => { const reason = window.prompt('请输入举报原因', ''); if (reason === null) return; try { await reportForumReply(r.id, reason.trim() || '未填写原因'); setReplyNotice('举报已提交') } catch (e) { setReplyNotice(e instanceof Error ? e.message : '举报失败') } }}>举报</button>
@@ -91,6 +93,7 @@ export default function ForumPostPage() {
               </div>)}
               {replyNotice && <p className="meta">{replyNotice}</p>}
             </div>
+            {(post.replies?.length ?? 0) > 10 && <div className="page-pager"><button className="page-btn" type="button" disabled={replyPage === 0} onClick={() => setReplyPage((v) => v - 1)}>上一页</button><span>{replyPage + 1} / {Math.ceil((post.replies?.length ?? 0) / 10)}</span><button className="page-btn" type="button" disabled={(replyPage + 1) * 10 >= (post.replies?.length ?? 0)} onClick={() => setReplyPage((v) => v + 1)}>下一页</button></div>}
             <div className="page-card editor"><textarea className="page-input area" placeholder="写回复…" value={reply} onChange={(e) => setReply(e.target.value)} /><div className="page-actions-row"><button className="page-btn primary" type="button" disabled={sending} onClick={sendReply}>{sending ? '发送中…' : '回复'}</button></div></div>
           </section>
         </>
