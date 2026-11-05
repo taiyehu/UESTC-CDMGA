@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import '@dsh-ui/tokens/index.css'
+import './styles/color-tokens.css'
 import './styles.css'
 import './styles/unified-theme.css'
 import './styles/kaguyahime-motion.css'

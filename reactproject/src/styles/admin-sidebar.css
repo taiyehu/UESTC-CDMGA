@@ -4,5 +4,5 @@
 .admin-left a{padding:8px 10px;border-radius:8px;font-size:12px;color:#b9c8d8;text-decoration:none}
 .admin-left a:hover{background:rgba(255,255,255,.06);color:#fff}.admin-left a.on{background:rgba(77,225,255,.16);color:#8fe8ff;font-weight:700}
 .admin-page-body>.page-main{flex:1;min-width:0;max-width:none;padding:0}
-html.light .admin-left{background:rgba(255,255,255,.5);border-color:rgba(10,30,50,.16)}html.light .admin-left a{color:#466176}html.light .admin-left a.on{background:rgba(8,145,178,.12);color:#0b6b88}
+html.light .admin-left{background:var(--surface);border-color:var(--line);backdrop-filter:blur(var(--glass-blur));box-shadow:var(--shadow-glass)}html.light .admin-left a{color:var(--text-secondary)}html.light .admin-left a.on{background:color-mix(in srgb,var(--cyan) 12%,transparent);color:var(--text-link)}
 @media(max-width:900px){.admin-page-body{display:block;padding:10px 12px 30px}.admin-left{width:auto;position:static;max-height:none;margin-bottom:12px}.admin-page-body>.page-main{padding:0}}

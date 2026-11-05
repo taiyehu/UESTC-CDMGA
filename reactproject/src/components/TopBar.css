@@ -8,8 +8,8 @@
 .site-center a.on{background:#fff;color:#04121e;font-weight:800}
 .site-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px}
 .site-logo img,.site-actions{filter:drop-shadow(0 6px 16px rgba(0,0,0,.2))}
-html.light .site-center{background:rgba(255,255,255,.64);border-color:rgba(12,60,80,.18)}
-html.light .site-center a{color:#25475a}
-html.light .site-center a.on{background:#0b1a2a;color:#fff}
+html.light .site-center{background:var(--surface);border-color:var(--line);box-shadow:var(--shadow-glass);backdrop-filter:blur(var(--glass-blur)) saturate(1.2)}
+html.light .site-center a{color:var(--text-secondary)}
+html.light .site-center a.on{background:var(--cyan);color:var(--text-on-accent)}
 @media(max-width:1100px){.site-center{gap:2px;padding:7px 8px}.site-center a{font-size:16px;line-height:23px;padding:6px 11px}.site-logo img{width:52px;height:52px}}
 @media(max-width:900px){.site-top{grid-template-columns:auto 1fr auto;padding:10px 12px;align-items:center}.site-center{display:none}.site-logo img{width:48px;height:48px}.site-actions{gap:6px}}

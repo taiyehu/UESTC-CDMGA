@@ -28,10 +28,10 @@
 .page-main{animation:kagu-page-in .45s ease-out both}
 @keyframes kagu-page-in{from{opacity:0}to{opacity:1}}
 .page-head h1{background-image:linear-gradient(110deg,#fff 0%,var(--kagu-pink) 36%,var(--kagu-lavender) 66%,var(--kagu-blue) 100%);-webkit-background-clip:text;background-clip:text;color:transparent!important}
-html.light .page-head h1{background-image:linear-gradient(110deg,#0b1a2a 0%,#9d174d 38%,#6d28d9 68%,#0e7490 100%)}
+html.light .page-head h1{background-image:linear-gradient(110deg,var(--text-primary) 0%,var(--pink) 38%,var(--violet) 68%,var(--cyan) 100%)}
 .page-card{border-color:color-mix(in srgb,var(--kagu-lavender) 24%,var(--ui-line))}
 .page-btn.primary{background-image:linear-gradient(115deg,var(--kagu-blue),var(--kagu-lavender) 58%,var(--kagu-pink));color:#0b1a2a}
-html.light .page-btn.primary{color:#fff}
+html.light .page-btn.primary{color:var(--text-on-accent)}
 @media (prefers-reduced-motion:reduce){
   .side .card,.page-main{animation:none!important}
 }

@@ -1,12 +1,10 @@
-:root{--ui-line:rgba(148,197,224,.22);--ui-card:rgba(6,15,28,.66)}
+:root{--ui-line:var(--line);--ui-card:var(--glass)}
 .page-main{max-width:1680px}
 .page-card,.neon-card,.task-panel,.surface-panel,.hud-card{border-radius:14px;border-color:var(--ui-line);background:var(--ui-card);box-shadow:0 18px 46px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.06)}
 .page-shell .page-main{padding-left:30px;padding-right:30px}
 .faithful-main{max-width:none}
 @media(max-width:900px){.page-shell .page-main{padding-left:16px;padding-right:16px}}
-html.light{--ui-line:rgba(12,42,62,.16);--ui-card:rgba(255,255,255,.52)}
-html.light body{background:#e8f0f8}
-html.light .page-card,html.light .neon-card,html.light .task-panel,html.light .surface-panel,html.light .hud-card{background:var(--ui-card)!important;border-color:var(--ui-line)!important;backdrop-filter:blur(18px) saturate(1.2)}
+html.light .page-card,html.light .neon-card,html.light .task-panel,html.light .surface-panel,html.light .hud-card{background:var(--ui-card)!important;border-color:var(--ui-line)!important;backdrop-filter:blur(var(--glass-blur)) saturate(1.2)}
 
 /* typography readability: no body copy below 14px, micro-labels >= 12px */
 :root{
@@ -29,22 +27,24 @@ body{font-size:16px;line-height:1.6}
 .bingo-tip p,.bingo-desc,.bingo-time,.bingo-muted{font-size:14px;line-height:22px}
 .forum-post-content{font-size:15px;line-height:26px}
 /* bright glass: same material as dark, only brighter */
-html.light{--ui-card:rgba(255,255,255,.44);--ui-line:rgba(12,60,80,.18)}
-html.light body{background:#e8f1f8;color:#0b1a2a}
-html.light .bg{opacity:.42!important;filter:blur(18px) brightness(1.55) saturate(.8)!important}
+html.light body{background:var(--bg);color:var(--text-primary)}
+html.light .bg{opacity:1!important;filter:none!important}
+html.light .bg{inset:0!important;background-size:contain!important;transform:none!important;background-color:var(--bg)!important}
+html.light .bg::before{opacity:.42!important}
+html.light .bg::after{background:var(--page-bg-glass)!important;backdrop-filter:blur(var(--page-bg-glass-blur))!important;-webkit-backdrop-filter:blur(var(--page-bg-glass-blur))!important}
 html.light .page-shell,html.light .home{background:transparent!important}
 html.light .page-card,html.light .neon-card,html.light .task-panel,html.light .surface-panel,html.light .hud-card,html.light .forum-rich-card,html.light .forum-toolbar,html.light .bingo-hero,html.light .bingo-board,html.light .bingo-tips,html.light .admin-left{
-  background:rgba(255,255,255,.42)!important;border-color:rgba(12,60,80,.18)!important;backdrop-filter:blur(22px) saturate(1.25)!important;-webkit-backdrop-filter:blur(22px) saturate(1.25)!important;box-shadow:0 14px 38px rgba(21,70,95,.10),inset 0 1px 0 rgba(255,255,255,.72)!important;color:#0b1a2a
+  background:var(--surface)!important;border-color:var(--line)!important;backdrop-filter:blur(var(--glass-blur)) saturate(1.2)!important;-webkit-backdrop-filter:blur(var(--glass-blur)) saturate(1.2)!important;box-shadow:var(--shadow-glass)!important;color:var(--text-primary)
 }
-html.light .page-top,html.light .faithful-navbar>div:first-child{background:rgba(255,255,255,.46)!important;border-color:rgba(12,60,80,.14)!important;backdrop-filter:blur(22px)!important}
-html.light .page-head h1,html.light h1,html.light h2,html.light h3{color:#0b1a2a!important}
-html.light .meta,html.light .desc,html.light .card p,html.light .page-head p{color:#35566a!important}
-html.light .page-input,html.light .page-select{background:rgba(255,255,255,.55)!important;border-color:rgba(12,60,80,.2)!important;color:#0b1a2a!important}
-html.light .page-btn{background:rgba(255,255,255,.45)!important;color:#0b1a2a!important;border-color:rgba(12,60,80,.2)!important}
-html.light .page-btn.primary{background:linear-gradient(135deg,#4bc4dd,#8b7cf6)!important;color:#fff!important}
-html.light .home .home-btn,html.light .go{background:linear-gradient(135deg,#4bc4dd,#8b7cf6)!important;color:#fff!important;border-color:transparent!important}
-html.light .bingo-cell{background:rgba(255,255,255,.58)!important}
-html.light .bingo-cell.score-2{border-color:#16a34a!important;color:#166534!important}html.light .bingo-cell.score-3{border-color:#db2777!important;color:#9d174d!important}html.light .bingo-cell.score-5{border-color:#ca8a04!important;color:#713f12!important}html.light .bingo-cell.score-10{border-color:#7c3aed!important;color:#5b21b6!important}html.light .bingo-cell.score-15{border-color:#0891b2!important;color:#155e75!important}
+html.light .page-top,html.light .faithful-navbar>div:first-child{background:var(--surface)!important;border-color:var(--line)!important;backdrop-filter:blur(var(--glass-blur))!important}
+html.light .page-head h1,html.light h1,html.light h2,html.light h3{color:var(--text-primary)!important}
+html.light .meta,html.light .desc,html.light .card p,html.light .page-head p{color:var(--text-secondary)!important}
+html.light .page-input,html.light .page-select{background:var(--surface-input)!important;border-color:var(--line)!important;color:var(--text-primary)!important}
+html.light .page-btn{background:var(--surface)!important;color:var(--text-primary)!important;border-color:var(--line)!important}
+html.light .page-btn.primary{background:linear-gradient(135deg,var(--cyan),var(--violet))!important;color:var(--text-on-accent)!important}
+html.light .home .home-btn,html.light .go{background:linear-gradient(135deg,var(--cyan),var(--violet))!important;color:var(--text-on-accent)!important;border-color:transparent!important}
+html.light .bingo-cell{background:var(--surface)!important}
+html.light .bingo-cell.score-2{border-color:var(--state-success)!important;color:var(--state-success)!important}html.light .bingo-cell.score-3{border-color:var(--pink)!important;color:var(--pink)!important}html.light .bingo-cell.score-5{border-color:var(--state-warning)!important;color:var(--state-warning)!important}html.light .bingo-cell.score-10{border-color:var(--state-special)!important;color:var(--state-special)!important}html.light .bingo-cell.score-15{border-color:var(--cyan)!important;color:var(--cyan)!important}
 
 /* hard readability layer: final override */
 :root{--fs-11:14px;--lh-11:20px;--fs-12:14px;--lh-12:20px;--fs-13:15px;--lh-13:22px;--fs-14:16px;--lh-14:24px}
@@ -65,15 +65,15 @@ body,.page-shell,.faithful-main{font-size:16px!important;line-height:1.6!importa
 .bingo-tip p,.bingo-desc,.bingo-time,.bingo-muted{font-size:15px!important;line-height:23px!important}
 .forum-tabs button{font-size:16px!important}
 /* admin light contrast */
-html.light .admin-page-body,html.light .admin-main{color:#07131f!important}
-html.light .admin-page-body h1,html.light .admin-page-body h2,html.light .admin-page-body h3,html.light .admin-page-body h4,html.light .admin-page-body p,html.light .admin-page-body td,html.light .admin-page-body th,html.light .admin-page-body label,html.light .admin-page-body span,html.light .admin-page-body a,html.light .admin-page-body li{color:#0b1a2a!important}
-html.light .admin-page-body .card-k,html.light .admin-page-body .meta,html.light .admin-page-body .desc{color:#35566a!important}
-html.light .admin-left a{color:#25475a!important}html.light .admin-left a.on{color:#075985!important}
+html.light .admin-page-body,html.light .admin-main{color:var(--text-primary)!important}
+html.light .admin-page-body h1,html.light .admin-page-body h2,html.light .admin-page-body h3,html.light .admin-page-body h4,html.light .admin-page-body td,html.light .admin-page-body label,html.light .admin-page-body span,html.light .admin-page-body a,html.light .admin-page-body li{color:var(--text-primary)!important}
+html.light .admin-page-body p,html.light .admin-page-body th,html.light .admin-page-body .card-k,html.light .admin-page-body .meta,html.light .admin-page-body .desc{color:var(--text-secondary)!important}
+html.light .admin-left a{color:var(--text-secondary)!important}html.light .admin-left a.on{color:var(--text-link)!important}
 html.light .admin-main .page-card,html.light .admin-main .page-card *{text-shadow:none!important}
 
 /* page headers must stay readable over the photographic background */
 .page-head{padding:14px 16px;border-radius:12px;background:rgba(4,10,18,.58);border:1px solid rgba(148,197,224,.18);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .page-head h1{color:#f4f7fb!important;text-shadow:0 2px 10px rgba(0,0,0,.45)}
 .page-head p{color:#b9c8d8!important}
-html.light .page-head{background:rgba(255,255,255,.46)!important;border-color:rgba(12,60,80,.16)!important}
-html.light .page-head h1{color:#0b1a2a!important}html.light .page-head p{color:#35566a!important}
+html.light .page-head{background:var(--surface)!important;border-color:var(--line)!important}
+html.light .page-head h1{color:var(--text-primary)!important}html.light .page-head p{color:var(--text-secondary)!important}

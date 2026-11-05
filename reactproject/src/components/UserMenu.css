@@ -5,7 +5,7 @@
 .user-menu-panel{position:absolute;right:0;top:66px;z-index:90;min-width:150px;padding:7px;border-radius:13px;border:1px solid rgba(255,255,255,.22);background:rgba(6,14,26,.94);backdrop-filter:blur(20px);box-shadow:0 20px 50px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:2px}
 .user-menu-panel a,.user-menu-panel button{display:block;width:100%;text-align:left;padding:10px 12px;border:0;border-radius:8px;background:transparent;color:#e6f9ff;font-size:15px;text-decoration:none;cursor:pointer}
 .user-menu-panel a:hover,.user-menu-panel button:hover{background:rgba(77,225,255,.14)}
-html.light .user-menu-btn{background:rgba(255,255,255,.6);border-color:rgba(10,30,50,.2)}
-html.light .user-menu-panel{background:rgba(255,255,255,.95);border-color:rgba(10,30,50,.16)}
-html.light .user-menu-panel a,html.light .user-menu-panel button{color:#0b1a2a}
+html.light .user-menu-btn{background:var(--surface);border-color:var(--line);box-shadow:var(--shadow-glass)}
+html.light .user-menu-panel{background:var(--surface-raised);border-color:var(--line);box-shadow:var(--shadow-glass);backdrop-filter:blur(var(--glass-blur))}
+html.light .user-menu-panel a,html.light .user-menu-panel button{color:var(--text-primary)}
 @media(max-width:900px){.user-menu-btn{width:46px;height:46px}.user-menu-panel{top:54px}}
