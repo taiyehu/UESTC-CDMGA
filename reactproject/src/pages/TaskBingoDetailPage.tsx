@@ -462,12 +462,13 @@ export default function TaskBingoDetailPage() {
       }
 
       try {
-        let response
-        try {
-          response = await api.get('/score/history/bingo-issue', { params: { identity_id: identityId, course_id: courseId, issue_id: cellId } })
-        } catch {
-          response = await api.get('/score/history', { params: { identity_id: identityId, course_id: courseId, issue_id: cellId } })
-        }
+        const historyParams = { identity_id: identityId, course_id: courseId, issue_id: cellId }
+        const [bingoResponse, generalResponse] = await Promise.allSettled([
+          api.get('/score/history/bingo-issue', { params: historyParams }),
+          api.get('/score/history', { params: historyParams }),
+        ])
+        const response = bingoResponse.status === 'fulfilled' ? bingoResponse.value : generalResponse.status === 'fulfilled' ? generalResponse.value : null
+        if (!response) throw new Error('history unavailable')
         if (cancelled) return
         const payload = response.data?.data ?? response.data
         const rows = Array.isArray(payload?.list) ? payload.list : Array.isArray(payload) ? payload : []

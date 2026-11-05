@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import MobileTabBar from '../components/MobileTabBar'
+import TopBar from '../components/TopBar'
 import {
   fetchActivities, fetchCheckin, fetchCourses, fetchDailyMember, fetchForum, submitCheckin,
   type Activity, type Checkin, type Course, type DailyMember, type ForumPost,
@@ -30,36 +32,9 @@ export default function HomePage() {
   const [checkin, setCheckin] = useState<Checkin | null>(null)
   const [forum, setForum] = useState<ForumPost[]>([])
   const [active, setActive] = useState(0)
-  const [paused, setPaused] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
   const [checking, setChecking] = useState(false)
   const [ready, setReady] = useState(false)
-  const [light, setLight] = useState(() => localStorage.getItem('theme') === 'light')
 
-  useEffect(() => {
-    document.documentElement.classList.toggle('light', light)
-    localStorage.setItem('theme', light ? 'light' : 'dark')
-  }, [light])
-
-  const isAdmin = useMemo(() => {
-    const raw = sessionStorage.getItem('role')
-    if (!raw) return false
-    try {
-      const parsed = JSON.parse(raw)
-      return (typeof parsed === 'string' ? parsed : parsed?.role) === 'admin'
-    } catch {
-      return raw === 'admin'
-    }
-  }, [])
-
-  const user = useMemo(() => {
-    try {
-      const raw = sessionStorage.getItem('userInfo')
-      return raw ? JSON.parse(raw) : null
-    } catch {
-      return null
-    }
-  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -80,26 +55,25 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
-    if (paused || !courses.length || !activities.length) return
+    if (!courses.length || !activities.length) return
     const id = window.setInterval(() => setActive((v) => (v === 0 ? 1 : 0)), 8000)
     return () => window.clearInterval(id)
-  }, [paused, courses.length, activities.length])
+  }, [courses.length, activities.length])
 
   useEffect(() => {
     if (!activities.length && active === 1) setActive(0)
   }, [activities.length, active])
 
-  const course = courses[0]
-  const activity = activities[0]
+  const latestCourses = useMemo(() => [...courses].sort((a, b) => new Date(b.startTime || 0).getTime() - new Date(a.startTime || 0).getTime()), [courses])
+  const latestActivities = useMemo(() => [...activities].sort((a, b) => new Date(b.startTime || 0).getTime() - new Date(a.startTime || 0).getTime()), [activities])
+  const course = latestCourses[0]
+  const activity = latestActivities[0]
   const isCourse = active === 0
   const title = isCourse ? course?.title : activity?.name
-  const meta = isCourse
-    ? `${fmt(course?.startTime)} — ${fmt(course?.endTime)} · ${course?.category || '课题'} · 进行中`
-    : `${fmt(activity?.startTime)} — ${fmt(activity?.endTime)} · 活动 · 报名中`
+
   const image = isCourse
     ? asset(course?.image, '/maimai-og.jpg')
     : asset(activity?.activityBanner, '/activity-banner.jpg')
-  const avatar = asset(user?.avatar, '/club-logo.jpg')
 
   async function onCheckin() {
     if (!checkin || checkin.checkedIn || checking) return
@@ -118,53 +92,22 @@ export default function HomePage() {
     <main className="home" id="top">
       <div className="bg" aria-hidden="true" />
 
-      <header className="top">
-        <Link to="/" className="brand">
-          <img src="/club-logo.jpg" alt="" className="brand-mark" />
-          <span><b>UESTC CDMGA</b><em>MAIMAI CLUB · 街机舞台</em></span>
-        </Link>
-        <div className="userbar">
-          {user ? (
-            <Link className="user-chip" to={`/profile/${user.id}`}><img src={avatar} alt="" /><b>{user.account || user.name || '社员'}</b></Link>
-          ) : (
-            <Link className="user-chip login-chip" to="/login">登录</Link>
-          )}
-          {isAdmin && <Link className="icon-btn admin-entry" to="/admin/users" aria-label="进入后台" title="进入后台">⚙</Link>}
-          <button className="icon-btn" type="button" aria-label="切换主题" aria-pressed={light} onClick={() => setLight((v) => !v)}>{light ? '☀' : '◐'}</button>
-          <button className="icon-btn" type="button" aria-label="打开菜单" onClick={() => setMenuOpen((v) => !v)}>☰</button>
-          {menuOpen && (
-            <nav className="menu-panel">
-              <Link to="/task" onClick={() => setMenuOpen(false)}>课题</Link>
-              <Link to="/activity" onClick={() => setMenuOpen(false)}>活动</Link>
-              <Link to="/forum" onClick={() => setMenuOpen(false)}>论坛</Link>
-              <Link to="/profile" onClick={() => setMenuOpen(false)}>个人中心</Link>
-              <Link to="/login" onClick={() => setMenuOpen(false)}>切换账号</Link>
-            </nav>
-          )}
-        </div>
-      </header>
+      <TopBar />
 
-      <nav className="rail left" aria-label="主导航">
-        <a href="#courses"><b>01</b><span>课题</span></a>
-        <a href="#activities"><b>02</b><span>活动</span></a>
-        <a href="#forum"><b>03</b><span>论坛</span></a>
-        <a href="#links"><b>04</b><span>更多</span></a>
-      </nav>
-      <nav className="rail right" aria-label="次导航">
-        <a href="#today"><b>05</b><span>今日</span></a>
-        <a href="#about"><b>06</b><span>关于</span></a>
-      </nav>
 
       <section
         className="stage"
-        onMouseEnter={() => setPaused(true)}
-        onMouseLeave={() => setPaused(false)}
         aria-label="正在发生"
       >
-        <div className="ring" aria-hidden="true" />
         <div className="disc">
           <img className="promo" src={image} alt={title || '宣传图'} onError={(e) => { e.currentTarget.src = '/club-logo.jpg' }} />
-          <div className="scrim" />
+          <svg className="disc-orbit" viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="50" r="46.5" />
+            {Array.from({ length: 8 }, (_, i) => {
+              const angle = (i * 45 + 22.5 - 90) * (Math.PI / 180)
+              return <circle key={i} cx={50 + 46.5 * Math.cos(angle)} cy={50 + 46.5 * Math.sin(angle)} r="1.35" className="disc-dot" />
+            })}
+          </svg>
           <div className="disc-top">
             <div><div className="k">NOW PLAYING</div><h3>{isCourse ? 'COURSE' : 'EVENT'}</h3></div>
           </div>
@@ -174,48 +117,13 @@ export default function HomePage() {
               <button type="button" aria-selected={!isCourse} className={!isCourse ? 'on' : ''} onClick={() => setActive(1)} disabled={!activities.length}>活动</button>
             </div>
             <h1>{title || (ready ? '暂无可展示内容' : '正在载入…')}</h1>
-            <p className="meta">{meta}</p>
             <div className="disc-row">
               <button className="go" type="button" onClick={() => navigate(isCourse ? (course ? `/task/${course.id}` : '/task') : (activity ? `/activity/${activity.id}` : '/activity'))}>{isCourse ? '进入课题' : '查看活动'} <span>→</span></button>
-              <div className="progress"><span>8s</span></div>
-            </div>
-            <div className="dots">
-              <i className={isCourse ? 'on' : ''} />
-              <i className={!isCourse ? 'on' : ''} />
-              <span>{paused ? '已暂停 · ' : ''}课题 ↔ 活动 · 8s</span>
             </div>
           </div>
         </div>
       </section>
 
-      <aside className="side left">
-        <section className="card" id="courses">
-          <div className="card-k">正在发生 · COURSE</div>
-          <h3>{course?.title || '暂无课题'}</h3>
-          <p>{fmt(course?.startTime)} — {fmt(course?.endTime)}</p>
-          <div className="card-actions">
-            <button className="card-link" type="button" onClick={() => setActive(0)}>在圆内查看</button>
-            <Link className="card-link" to={course ? `/task/${course.id}` : '/task'}>详情 →</Link>
-          </div>
-        </section>
-        <section className="card" id="activities">
-          <div className="card-k">正在发生 · EVENT</div>
-          <h3>{activity?.name || '暂无活动'}</h3>
-          <p>{fmt(activity?.startTime)} — {fmt(activity?.endTime)}</p>
-          <div className="card-actions">
-            <button className="card-link" type="button" onClick={() => setActive(1)} disabled={!activities.length}>在圆内查看</button>
-            <Link className="card-link" to={activity ? `/activity/${activity.id}` : '/activity'}>详情 →</Link>
-          </div>
-        </section>
-        <section className="card" id="today">
-          <div className="card-k">今日 · CHECK IN</div>
-          <h3>{checkin?.checkedIn ? '今天已签到' : '抽取今日运势'}</h3>
-          <p>{checkin?.fortune?.fortuneText || `日期 ${checkin?.date || '—'}`}</p>
-          <button className="card-link" type="button" onClick={onCheckin} disabled={!checkin || checkin.checkedIn || checking}>
-            {checking ? '签到中…' : checkin?.checkedIn ? '明天再来' : '立即签到 →'}
-          </button>
-        </section>
-      </aside>
 
       <aside className="side right" id="about">
         <section className="card" id="member">
@@ -225,27 +133,49 @@ export default function HomePage() {
             <div><h3>{daily?.account || '今天暂时没有群友'}</h3><p>{daily?.description || '每天认识一名群友'}</p></div>
           </Link>
         </section>
+        <section className="card" id="today">
+          <div className="card-k">今日 · CHECK IN</div>
+          <h3>{checkin?.checkedIn ? '今天已签到' : '抽取今日运势'}</h3>
+          <p>{checkin?.fortune?.fortuneText || `日期 ${checkin?.date || '—'}`}</p>
+          <button className="card-link" type="button" onClick={onCheckin} disabled={!checkin || checkin.checkedIn || checking}>
+            {checking ? '签到中…' : checkin?.checkedIn ? '明天再来' : '立即签到 →'}
+          </button>
+        </section>
         <section className="card" id="forum">
           <div className="card-k">论坛热帖 · LOBBY</div>
           {forum.length ? forum.map((post) => (
             <Link className="post" to={`/forum/${post.id}`} key={post.id}><b>{post.title}</b><span>{post.authorName}</span></Link>
           )) : <p>暂无帖子，等你开第一贴。</p>}
         </section>
-        <section className="card" id="links">
-          <div className="card-k">快速入口 · LINKS</div>
-          <div className="quick">
-            <Link to="/task">课题</Link><Link to="/activity">活动</Link><Link to="/forum">论坛</Link><Link to="/ranking">排行</Link>
-          </div>
-        </section>
       </aside>
 
-      <nav className="mobile-tab" aria-label="移动导航">
-        <a href="#top" className="on">首页</a>
-        <a href="#courses">课题</a>
-        <a href="#activities">活动</a>
-        <a href="#forum">论坛</a>
-        <Link to={user ? `/profile/${user.id}` : '/login'}>我的</Link>
-      </nav>
+      <section className="home-details" aria-label="首页更多内容">
+        <div className="home-details-inner">
+          <section className="card detail-card announce">
+            <div className="card-k">公告 · NOTICE</div>
+            <h2>社团公告</h2>
+            <p>欢迎来到 UESTC CDMGA 街机舞台。课题、活动、签到与论坛都在这里汇总，向下滚动查看更多内容。</p>
+            <Link className="card-link" to="/links">查看网站功能 →</Link>
+          </section>
+          <section className="card detail-card">
+            <div className="card-k">课题 · COURSE</div>
+            <h2>最新课题</h2>
+            {latestCourses.slice(0, 3).map((c) => <Link className="detail-row" to={`/task/${c.id}`} key={c.id}><b>{c.title}</b><span>{fmt(c.startTime)}</span></Link>)}
+          </section>
+          <section className="card detail-card">
+            <div className="card-k">活动 · EVENT</div>
+            <h2>近期活动</h2>
+            {latestActivities.slice(0, 3).map((a) => <Link className="detail-row" to={`/activity/${a.id}`} key={a.id}><b>{a.name}</b><span>{fmt(a.startTime)}</span></Link>)}
+          </section>
+          <section className="card detail-card">
+            <div className="card-k">社区 · LOBBY</div>
+            <h2>论坛热帖</h2>
+            {forum.slice(0, 4).map((post) => <Link className="detail-row" to={`/forum/${post.id}`} key={post.id}><b>{post.title}</b><span>{post.authorName}</span></Link>)}
+          </section>
+        </div>
+      </section>
+
+      <MobileTabBar />
     </main>
   )
 }

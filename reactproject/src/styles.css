@@ -534,3 +534,156 @@ html.light .notfound-code{color:#0b6b88}
 html.light .title-meta{color:#35566a}html.light .profile-title-item{background:rgba(255,255,255,.4);border-color:rgba(12,60,80,.14)}
 html.light .profile-title.normal{background:rgba(255,255,255,.5);color:#0b1a2a}
 @media(max-width:800px){.title-grid{grid-template-columns:1fr}}
+
+/* home: image disc oversized, inner orbit with solid points; no outer maimai ring */
+@media (min-width:901px){
+  .stage{width:145vh;height:145vh;min-width:1050px;min-height:1050px}
+  .disc{inset:5.5%;border-width:5px}
+}
+.disc-orbit{position:absolute;inset:1.4%;z-index:3;width:97.2%;height:97.2%;pointer-events:none;overflow:visible}
+.disc-orbit>circle:first-child{fill:none;stroke:rgba(255,255,255,.62);stroke-width:.5;filter:drop-shadow(0 0 2px rgba(255,255,255,.35))}
+.disc-orbit .disc-dot{fill:#fff;stroke:none;filter:drop-shadow(0 0 2px rgba(255,255,255,.7))}
+@media (max-width:900px){
+  .stage{width:100vw;height:100vw;margin:64px 0 0}
+  .disc{inset:0;border-width:0;border-radius:50%}
+  .disc-orbit{inset:3%;width:94%;height:94%}
+}
+
+/* home mobile: edge-to-edge image disc, no duplicated overlay title */
+@media (max-width:900px){
+  .top{padding:12px 14px}
+  .userbar{gap:5px}
+  .user-chip.login-chip{white-space:nowrap;font-size:13px!important;padding:0 10px;height:34px}
+  .user-chip{height:34px;padding:0 5px}
+  .icon-btn{width:34px;height:34px}
+  .brand b{font-size:13px!important}.brand em{font-size:9px!important}
+  .stage{width:100vw!important;height:100vw!important;min-width:0;min-height:0;margin:64px 0 0!important}
+  .disc{inset:0!important;border-width:0!important}
+  .disc-orbit{inset:3%!important;width:94%!important;height:94%!important}
+  .disc-info{left:14px!important;right:14px!important;bottom:18px!important}
+  .disc-info h1,.disc-info .meta{display:none!important}
+  .disc-info .tabs{margin-bottom:10px}
+  .disc-info .tabs button{font-size:13px!important;line-height:18px!important;padding:6px 13px!important;min-height:32px}
+  .disc-info .disc-row{margin-top:10px}
+  .disc-info .go{font-size:14px!important;line-height:20px!important;padding:10px 16px!important;min-height:40px}
+  .disc-top{top:56px!important}
+  .disc-top .k{font-size:11px!important;line-height:16px!important}
+  .disc-top h3{font-size:18px!important;line-height:24px!important}
+  .progress{width:46px;height:46px}
+}
+
+@media (max-width:900px){
+  .disc-info{padding:18px 12px 12px;border-radius:12px;background:linear-gradient(180deg,transparent,rgba(3,9,16,.82) 38%,rgba(3,9,16,.94))}
+}
+
+/* phones: no black edge, orbit closer to the photo edge (incl. 1080x1920 portrait) */
+@media (max-width:900px){
+  .disc{border:0!important;box-shadow:none!important;background:#020812!important}
+  .promo{border-radius:50%}
+  .disc-orbit{inset:.5%!important;width:99%!important;height:99%!important}
+}
+@media (min-width:901px) and (max-width:1100px) and (orientation:portrait){
+  .home{overflow:visible;padding-bottom:72px}
+  .home-details{margin-top:20px!important;padding-left:16px!important;padding-right:16px!important}
+  .stage{position:relative!important;left:50%!important;top:auto!important;transform:translateX(-50%)!important}
+  .side{position:relative!important;top:auto!important;left:auto!important;right:auto!important;width:auto!important;margin:14px 16px 0!important;display:flex!important;gap:10px}
+  .side.right{margin-top:10px!important}
+  .rail{display:none!important}
+  .mobile-tab{display:flex!important;position:fixed;left:0;right:0;bottom:0;height:56px;z-index:50;align-items:center;justify-content:space-around;background:rgba(4,10,18,.92);border-top:1px solid rgba(255,255,255,.12);font-size:12px;color:#8FB4C6;backdrop-filter:blur(18px)}
+  .mobile-tab a{display:flex;flex-direction:column;align-items:center;gap:3px;color:inherit}
+  .top{padding:12px 14px}
+  .userbar{gap:5px}
+  .user-chip.login-chip{white-space:nowrap;font-size:13px!important;padding:0 10px;height:34px}
+  .stage{width:100vw!important;height:100vw!important;min-width:0;min-height:0;margin:64px 0 0!important}
+  .disc{inset:0!important;border:0!important;box-shadow:none!important;background:#020812!important}
+  .promo{border-radius:50%}
+  .disc-orbit{inset:.5%!important;width:99%!important;height:99%!important}
+  .disc-info{left:14px!important;right:14px!important;bottom:18px!important;padding:18px 12px 12px;border-radius:12px;background:linear-gradient(180deg,transparent,rgba(3,9,16,.82) 38%,rgba(3,9,16,.94))}
+  .disc-info h1,.disc-info .meta{display:none!important}
+  .disc-info .tabs button{font-size:13px!important;line-height:18px!important;padding:6px 13px!important;min-height:32px}
+  .disc-info .go{font-size:14px!important;line-height:20px!important;padding:10px 16px!important;min-height:40px}
+}
+
+/* no black rim around the home image disc on any viewport */
+.disc{border:0!important;box-shadow:none!important;background:transparent!important}
+
+/* all mobile pages: bottom navigation is the only primary navigation */
+@media (max-width:900px){
+  .page-shell{padding-bottom:72px}
+  .page-nav{display:none!important}
+  .mobile-tab{display:flex!important;position:fixed;left:0;right:0;bottom:0;height:60px;z-index:80;align-items:center;justify-content:space-around;background:rgba(4,10,18,.94);border-top:1px solid rgba(255,255,255,.12);font-size:13px;color:#8FB4C6;backdrop-filter:blur(18px)}
+  .mobile-tab a{display:flex;flex-direction:column;align-items:center;gap:3px;color:inherit;min-width:56px;padding:6px 4px;text-decoration:none}
+  .mobile-tab a.on{color:#67e8f9;font-weight:700}
+}
+@media (min-width:901px) and (max-width:1100px) and (orientation:portrait){
+  .page-shell{padding-bottom:72px}
+  .page-nav{display:none!important}
+  .mobile-tab a{min-width:64px;padding:6px 6px;text-decoration:none}
+}
+
+@media (max-width:900px){.home-menu-btn{display:none!important}}
+@media (min-width:901px) and (max-width:1100px) and (orientation:portrait){.home-menu-btn{display:none!important}}
+
+/* explicit: dots are pure solid white, no outline/shadow */
+.disc-orbit .disc-dot{stroke:none!important;filter:none!important}
+
+/* show full promo/banner images instead of cropping (home, course, activity, 6 subtasks) */
+.promo{object-fit:contain!important;object-position:center!important;background:#06101d}
+.detail-cover{background-size:contain!important;background-position:center!important;background-repeat:no-repeat!important;background-color:#06101d}
+.page-card .thumb{background-size:contain!important;background-position:center!important;background-repeat:no-repeat!important;background-color:#06101d}
+.subtask-cover{background-size:contain!important;background-position:center!important;background-repeat:no-repeat!important;background-color:#06101d}
+/* admin content breathing room and horizontal scroll for wide tables */
+.admin-main{padding:28px 34px}
+.admin-page-body .page-main{padding-left:22px;padding-right:22px}
+.admin-main .page-card,.admin-page-body .page-card{overflow-x:auto}
+.admin-main h1,.admin-main h2,.admin-main h3{overflow-wrap:anywhere}
+@media (max-width:900px){.admin-main{padding:16px 14px}.admin-page-body .page-main{padding-left:0;padding-right:0}}
+
+/* home: center content inside disc, no paused/countdown/outer status */
+@media (min-width:901px){
+  .disc-info{left:50%!important;right:auto!important;top:50%!important;bottom:auto!important;width:min(600px,56%)!important;transform:translate(-50%,-50%)!important;text-align:center}
+  .disc-info .tabs{justify-content:center}
+  .disc-info .disc-row{justify-content:center}
+}
+.disc-info .meta,.disc-info .progress,.disc-info .dots{display:none!important}
+
+/* homepage scroll content below the disc */
+.home{overflow-x:hidden!important;overflow-y:visible!important;min-height:100vh}
+.home-details{position:relative;z-index:20;max-width:1200px;margin:8vh auto 0;padding:0 24px 80px}
+.home-details-inner{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.detail-card{display:flex;flex-direction:column;gap:9px;background:rgba(6,15,28,.82)!important;backdrop-filter:blur(18px)}
+.detail-card h2{margin:0 0 4px;font-size:26px}
+.detail-row{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-top:1px solid rgba(255,255,255,.1);color:#dce8f2;text-decoration:none}
+.detail-row b{font-size:15px;line-height:22px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.detail-row span{font-size:13px;color:#a9c1d3;white-space:nowrap}
+.announce{grid-column:1/-1}
+html.light .detail-card{background:rgba(255,255,255,.5)!important;border-color:rgba(12,60,80,.16)!important}
+html.light .detail-row{color:#0b1a2a;border-color:rgba(12,60,80,.12)}html.light .detail-row span{color:#35566a}
+@media (min-width:901px){.home-details{margin-top:100vh}}
+@media (max-width:900px){.home-details{margin-top:20px!important;padding-left:14px!important;padding-right:14px!important}.home{padding-bottom:80px!important}}
+
+@media (min-width:901px){.stage{top:50vh!important}}
+
+/* reference-site behavior: promo image covers the circular stage, centered, no letterbox bars */
+.promo{object-fit:cover!important;object-position:center center!important;background:transparent!important;width:100%!important;height:100%!important}
+
+/* admin: use the full available canvas; no artificial narrow max-width */
+.admin-page-body{max-width:none!important;width:100%!important;padding:16px 30px 44px!important}
+.admin-page-body>.page-main{max-width:none!important;width:100%!important;padding-left:14px!important;padding-right:0!important}
+.admin-layout-wrap{max-width:none!important;width:100%!important;padding:0 28px 24px!important}
+.admin-main{padding:28px 34px!important}
+.admin-left{width:210px!important;flex-basis:210px!important}
+/* right home rail: check-in now sits between member and forum; keep it scrollable */
+.side.right{max-height:calc(100vh - 130px);overflow-y:auto;overscroll-behavior:contain;padding-right:2px}
+.admin-entry{white-space:nowrap}
+@media(max-width:900px){.admin-page-body{padding:10px 12px 30px!important}.admin-page-body>.page-main{padding-left:0!important}.admin-main{padding:16px 14px!important}}
+
+/* quick links as a separate Apple-style dock island */
+.quick-dock{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:70;display:flex;gap:8px;padding:9px 12px;border-radius:22px;border:1px solid rgba(255,255,255,.25);background:rgba(6,15,28,.6);backdrop-filter:blur(22px) saturate(1.2);box-shadow:0 16px 40px rgba(0,0,0,.35)}
+.quick-dock a{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:58px;padding:6px 10px;border-radius:14px;color:#dff6ff;text-decoration:none;transition:transform .16s ease,background .16s ease}
+.quick-dock a:hover{background:rgba(255,255,255,.12);transform:translateY(-3px)}
+.quick-dock span{font-size:20px;line-height:1}.quick-dock b{font-size:12px;font-weight:600}
+html.light .quick-dock{background:rgba(255,255,255,.55);border-color:rgba(12,60,80,.18)}html.light .quick-dock a{color:#0b1a2a}
+@media(max-width:900px){.quick-dock{display:none}}
+/* no lower mask on circular promo */
+.scrim{display:none!important}

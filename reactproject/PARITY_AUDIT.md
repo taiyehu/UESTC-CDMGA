@@ -30,19 +30,12 @@ VUE_URL=http://localhost:8081 node scripts/parity-audit.mjs
 ## 最近一次审计（32 路由）
 
 - React 新增错误：0
-- API 缺口：5
+- API 缺口：0（本轮已补齐）
 - 控件缺口：25（包含部分仅文案差异）
 
-### 真实 API 缺口
+### API 结果
 
-- `/task/:id/bingo/:cellId`
-  - 缺 `/api/score/history/bingo-issue`
-- `/profile/:id`
-  - 缺 `/api/activity/rated-activities/:id`
-  - 缺 `/api/identity-extra-profile/user/:id/school`
-  - 缺 `/api/score/user-award-redemptions`
-- `/admin`
-  - 缺 `/api/identity/allaccount`（后台总览没有用户统计）
+本轮审计 API 缺口为 0。Bingo、个人主页、后台用户统计缺失的接口已补齐。
 
 ### 需要人工确认的控件差异
 
