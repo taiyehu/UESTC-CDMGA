@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 
@@ -31,6 +32,7 @@ public class Identity {
 
     @NotEmpty(message = "密码不能为空")
     @Size(min = 6, message = "密码长度必须至少为6个字符")
+    @JsonIgnore
     private String password;
 
     /**

@@ -55,11 +55,15 @@ public class IdentityController {
     }
 
     @PostMapping("/reset")
-    public Result resetPassword(@RequestBody RegisterRequest registerRequest) {
+    public Result resetPassword(@RequestBody RegisterRequest registerRequest, HttpSession session) {
         try {
-            // 调用服务层注册，获取注册成功的用户信息（可选，根据业务需求）
+            Object sessionIdentityId = session.getAttribute("identityId");
+            if (!(sessionIdentityId instanceof Integer identityId)) return Result.error("请先登录");
+            Identity currentIdentity = identityService.getIdentityById(identityId);
+            if (currentIdentity == null || !currentIdentity.getAccount().equals(registerRequest.getAccount()))
+                return Result.error("只能修改当前登录账号的密码");
             Identity updatedIdentity = identityService.resetPassword(
-                    registerRequest.getAccount(),
+                    currentIdentity.getAccount(),
                     registerRequest.getPassword());
             // 成功时返回 code=0，携带用户信息（或成功提示）
             return Result.success(updatedIdentity); // 若无需用户信息，可改为 Result.success("注册成功")
@@ -110,6 +114,19 @@ public class IdentityController {
         if (!(identityId instanceof Integer)) return Result.error("请重新登录");
         identitySessionService.heartbeat(session);
         return Result.success("在线");
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<Result> currentIdentity(HttpSession session) {
+        Object sessionIdentityId = session.getAttribute("identityId");
+        if (!(sessionIdentityId instanceof Integer identityId))
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Result.error("请先登录"));
+        Identity identity = identityService.getIdentityById(identityId);
+        if (identity == null || Boolean.TRUE.equals(identity.getIsDeleted())) {
+            session.invalidate();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Result.error("登录状态已失效"));
+        }
+        return ResponseEntity.ok(Result.success(identity));
     }
 
     @GetMapping("/online/{id}")

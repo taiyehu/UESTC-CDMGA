@@ -79,13 +79,6 @@
 			<artifactId>jackson-databind</artifactId>
 		</dependency>
 
-		<!-- Spring Security JWT (用于用户认证的 JWT) -->
-		<dependency>
-			<groupId>io.jsonwebtoken</groupId>
-			<artifactId>jjwt</artifactId>
-			<version>0.9.1</version>
-		</dependency>
-
 		<!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-security -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

@@ -33,9 +33,10 @@ public class SecurityConfig {
         }
         // ======================= 修改部分结束 =======================
 
-        // 配置请求授权规则
+        // API authorization is enforced by ApiAuthorizationInterceptor, which validates the existing
+        // server session and reloads roles from the database for each protected request.
         http.authorizeHttpRequests(authz -> authz
-            .requestMatchers("/**").permitAll() // 允许所有路径无需认证
+            .requestMatchers("/**").permitAll()
             .anyRequest().authenticated()
         );
 

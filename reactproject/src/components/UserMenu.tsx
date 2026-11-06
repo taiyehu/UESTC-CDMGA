@@ -26,7 +26,8 @@ export default function UserMenu() {
     localStorage.setItem('theme', next ? 'light' : 'dark')
     document.documentElement.classList.toggle('light', next)
   }
-  function logout() {
+  async function logout() {
+    try { await api.post('/identity/logout') } catch { /* clear local state even if the server session expired */ }
     sessionStorage.removeItem('userInfo')
     sessionStorage.removeItem('role')
     setOpen(false)
