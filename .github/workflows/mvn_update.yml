@@ -19,7 +19,7 @@ jobs:
       run:
         working-directory: webpage
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     
     - name: Set up JDK
       uses: actions/setup-java@v3
@@ -50,7 +50,7 @@ jobs:
         strip_components: 2
 
     - name: Deploy and restart service
-      uses: appleboy/ssh-action@master
+      uses: appleboy/ssh-action@v1.2.5
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_SUDO }}
