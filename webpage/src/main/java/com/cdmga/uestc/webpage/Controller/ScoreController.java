@@ -20,8 +20,11 @@ import com.cdmga.uestc.webpage.common.Result;
 import com.cdmga.uestc.webpage.common.ScoreRequest;
 import com.cdmga.uestc.webpage.Dto.BingoSubmissionDto;
 import com.cdmga.uestc.webpage.Dto.UserScoreDto;
+import com.cdmga.uestc.webpage.Entity.Identity;
 import com.cdmga.uestc.webpage.Entity.Score;
 import com.cdmga.uestc.webpage.Service.ScoreService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 
 @RestController
@@ -54,10 +57,11 @@ public class ScoreController {
 
 
     @PostMapping("/post")
-    public ResponseEntity<Result> postScore(@RequestBody ScoreRequest scoreRequest) {
+    public ResponseEntity<Result> postScore(@RequestBody ScoreRequest scoreRequest, HttpSession session) {
         try {
+            Integer identityId = sessionIdentityId(session);
             Score newScore = scoreService.postNewScore(
-                    scoreRequest.getCourse_id(), scoreRequest.getIdentity_id(),
+                    scoreRequest.getCourse_id(), identityId,
                     scoreRequest.getIssue_id(), scoreRequest.getImage(),
                     0, false, scoreRequest.getRemark());
             return ResponseEntity.ok(Result.success(newScore));
@@ -137,7 +141,9 @@ public class ScoreController {
     public ResponseEntity<Long> findScoreId(
             @RequestParam Integer identity_id,
             @RequestParam Integer course_id,
-            @RequestParam(required = false) Integer issue_id) {
+            @RequestParam(required = false) Integer issue_id,
+            HttpSession session) {
+        if (!identity_id.equals(sessionIdentityId(session))) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         Score score = scoreService.getScoreByIdentityIdAndCourseId(identity_id, course_id, issue_id);
         if (score != null) {
             return ResponseEntity.ok(score.getId());
@@ -150,7 +156,9 @@ public class ScoreController {
     public ResponseEntity<Object> getScoreHistory(
             @RequestParam Integer identity_id,
             @RequestParam Integer course_id,
-            @RequestParam(required = false) Integer issue_id) {
+            @RequestParam(required = false) Integer issue_id,
+            HttpSession session) {
+        if (!identity_id.equals(sessionIdentityId(session))) return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Result.error("不能访问其他用户的成绩"));
         return ResponseEntity.ok(scoreService.getScoreHistoryByIdentityIdAndCourseId(identity_id, course_id, issue_id));
     }
 
@@ -158,7 +166,9 @@ public class ScoreController {
     public ResponseEntity<Object> getBingoIssueHistory(
             @RequestParam Integer identity_id,
             @RequestParam Integer course_id,
-            @RequestParam Integer issue_id) {
+            @RequestParam Integer issue_id,
+            HttpSession session) {
+        if (!identity_id.equals(sessionIdentityId(session))) return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Result.error("不能访问其他用户的成绩"));
         return ResponseEntity.ok(scoreService.getBingoIssueHistoryByCourseId(identity_id, course_id, issue_id));
     }
 
@@ -171,11 +181,15 @@ public class ScoreController {
             @RequestParam(required = false) Integer issue_id,
             @RequestParam(required = false) Boolean is_scored,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            jakarta.servlet.http.HttpServletRequest request
     ) {
         try {
+            Object principal = request.getAttribute("authenticatedIdentity");
+            if (!(principal instanceof com.cdmga.uestc.webpage.Entity.Identity identity))
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Result.error("请先登录"));
             return ResponseEntity.ok(scoreService.getAdminScoreLogs(
-                    adminIdentityId,
+                    identity.getId(),
                     category,
                     course_id,
                     identity_id,
@@ -191,6 +205,12 @@ public class ScoreController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(e.getMessage()));
         }
+    }
+
+    private Integer sessionIdentityId(HttpSession session) {
+        Object identityId = session.getAttribute("identityId");
+        if (identityId instanceof Integer id) return id;
+        throw new SecurityException("请先登录");
     }
 
     // 获取文件扩展名
@@ -236,14 +256,21 @@ public class ScoreController {
 
     // 根据id查找Score
     @GetMapping("/{id:\\d+}")
-    public ResponseEntity<Score> getScoreById(@PathVariable Long id) {
-        return ResponseEntity.ok(scoreService.getScoreById(id));
+    public ResponseEntity<?> getScoreById(@PathVariable Long id, HttpSession session, HttpServletRequest request) {
+        Score score = scoreService.getScoreById(id);
+        Integer ownerId = score == null || score.getIdentity() == null ? null : score.getIdentity().getId();
+        if (score != null && !canAccessIdentity(ownerId, session, request)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Result.error("不能访问其他用户的成绩"));
+        }
+        return ResponseEntity.ok(score);
     }
 
     @GetMapping("/byIdentity/{identityId}")
-    public ResponseEntity<List<Score>> getScoreByIdentityId(@PathVariable Integer identityId) {
+    public ResponseEntity<?> getScoreByIdentityId(@PathVariable Integer identityId, HttpSession session, HttpServletRequest request) {
+        if (!canAccessIdentity(identityId, session, request)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Result.error("不能访问其他用户的成绩"));
+        }
         List<Score> scores = scoreService.getScoredScoresByIdentityId(identityId);
-        Long total = scoreService.getScoreCount();
         return ResponseEntity.ok(scores);
     }
 
@@ -288,11 +315,23 @@ public class ScoreController {
         public ResponseEntity<?> checkScoreExists(
                 @RequestParam("identityId") Integer identityId,
                 @RequestParam("courseId") Integer courseId,
-                @RequestParam(value = "issueId", required = false) Integer issueId) {
+                @RequestParam(value = "issueId", required = false) Integer issueId,
+                HttpSession session,
+                HttpServletRequest request) {
+
+            if (!canAccessIdentity(identityId, session, request)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Result.error("不能访问其他用户的成绩"));
+            }
 
             boolean exists = scoreService.existsByIdentityIdAndCourseId(identityId, courseId, issueId);
             return ResponseEntity.ok(exists);
         }
+
+    private boolean canAccessIdentity(Integer identityId, HttpSession session, HttpServletRequest request) {
+        if (identityId != null && identityId.equals(sessionIdentityId(session))) return true;
+        Object principal = request.getAttribute("authenticatedIdentity");
+        return principal instanceof Identity identity && "admin".equalsIgnoreCase(identity.getRole());
+    }
     @GetMapping("/unscored")
     public ResponseEntity<Object> getUnscoredScores(
             @RequestParam(defaultValue = "0") int page,

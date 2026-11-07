@@ -8,11 +8,20 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Arrays;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
+
+    @Autowired
+    private ApiAuthorizationInterceptor apiAuthorizationInterceptor;
+
+    @Override
+    public void addInterceptors(org.springframework.web.servlet.config.annotation.InterceptorRegistry registry) {
+        registry.addInterceptor(apiAuthorizationInterceptor).addPathPatterns("/api/**");
+    }
 
     // 1. 保留从配置文件读取允许源的逻辑
     @Value("${cors.allowed-origins:}")

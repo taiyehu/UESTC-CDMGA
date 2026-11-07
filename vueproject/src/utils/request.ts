@@ -4,6 +4,7 @@ import axios from 'axios'
 const service = axios.create({
   baseURL: '/', // 保持根路径
   timeout: 5000,
+  withCredentials: true,
 })
 
 // 请求拦截器 - 统一添加 /api 前缀

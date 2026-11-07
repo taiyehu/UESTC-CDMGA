@@ -1,0 +1,8 @@
+.admin-page-body{display:flex;gap:16px;align-items:flex-start;max-width:1680px;margin:0 auto;padding:16px 30px 44px}
+.admin-left{width:220px;flex:0 0 220px;position:sticky;top:92px;display:flex;flex-direction:column;padding:10px;border:1px solid var(--line);border-radius:14px;background:rgba(6,15,28,.66);backdrop-filter:blur(18px);max-height:calc(100vh - 110px);overflow:auto}
+.admin-left-title{padding:8px 10px 12px;font-size:15px;font-weight:800;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:6px}
+.admin-left a{padding:8px 10px;border-radius:8px;font-size:12px;color:#b9c8d8;text-decoration:none}
+.admin-left a:hover{background:rgba(255,255,255,.06);color:#fff}.admin-left a.on{background:rgba(77,225,255,.16);color:#8fe8ff;font-weight:700}
+.admin-page-body>.page-main{flex:1;min-width:0;max-width:none;padding:0}
+html.light .admin-left{background:var(--surface);border-color:var(--line);backdrop-filter:blur(var(--glass-blur));box-shadow:var(--shadow-glass)}html.light .admin-left a{color:var(--text-secondary)}html.light .admin-left a.on{background:color-mix(in srgb,var(--cyan) 12%,transparent);color:var(--text-link)}
+@media(max-width:900px){.admin-page-body{display:block;padding:10px 12px 30px}.admin-left{width:auto;position:static;max-height:none;margin-bottom:12px}.admin-page-body>.page-main{padding:0}}

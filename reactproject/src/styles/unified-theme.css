@@ -1,0 +1,79 @@
+:root{--ui-line:var(--line);--ui-card:var(--glass)}
+.page-main{max-width:1680px}
+.page-card,.neon-card,.task-panel,.surface-panel,.hud-card{border-radius:14px;border-color:var(--ui-line);background:var(--ui-card);box-shadow:0 18px 46px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.06)}
+.page-shell .page-main{padding-left:30px;padding-right:30px}
+.faithful-main{max-width:none}
+@media(max-width:900px){.page-shell .page-main{padding-left:16px;padding-right:16px}}
+html.light .page-card,html.light .neon-card,html.light .task-panel,html.light .surface-panel,html.light .hud-card{background:var(--ui-card)!important;border-color:var(--ui-line)!important;backdrop-filter:blur(var(--glass-blur)) saturate(1.2)}
+
+/* typography readability: no body copy below 14px, micro-labels >= 12px */
+:root{
+  --fs-11:12px; --lh-11:16px;
+  --fs-12:13px; --lh-12:19px;
+  --fs-13:14px; --lh-13:21px;
+  --fs-14:15px; --lh-14:23px;
+  --fs-16:16px; --lh-16:24px;
+  --fs-20:20px; --lh-20:28px;
+  --fs-24:24px; --lh-24:32px;
+}
+body{font-size:16px;line-height:1.6}
+.page-card .card-k,.card-k,.page-head p{font-size:13px;line-height:19px}
+.page-card .meta,.page-card .desc,.card p,.meta,.desc{font-size:14px;line-height:22px}
+.page-btn,.page-nav a,.page-select,.page-input{font-size:14px}
+.page-table{font-size:14px}.page-table th{font-size:13px}
+.admin-left a{font-size:14px;line-height:20px;padding:9px 10px}.admin-left-title{font-size:17px}
+.admin-main,.admin-main table,.admin-main .page-input,.admin-main .page-select{font-size:14px}
+.login-sub,.login-form label,.login-alt{font-size:14px;line-height:22px}
+.bingo-tip p,.bingo-desc,.bingo-time,.bingo-muted{font-size:14px;line-height:22px}
+.forum-post-content{font-size:15px;line-height:26px}
+/* bright glass: same material as dark, only brighter */
+html.light body{background:var(--bg);color:var(--text-primary)}
+html.light .bg{opacity:1!important;filter:none!important}
+html.light .bg{inset:0!important;background-size:contain!important;transform:none!important;background-color:var(--bg)!important}
+html.light .bg::before{opacity:.42!important}
+html.light .bg::after{background:var(--page-bg-glass)!important;backdrop-filter:blur(var(--page-bg-glass-blur))!important;-webkit-backdrop-filter:blur(var(--page-bg-glass-blur))!important}
+html.light .page-shell,html.light .home{background:transparent!important}
+html.light .page-card,html.light .neon-card,html.light .task-panel,html.light .surface-panel,html.light .hud-card,html.light .forum-rich-card,html.light .forum-toolbar,html.light .bingo-hero,html.light .bingo-board,html.light .bingo-tips,html.light .admin-left{
+  background:var(--surface)!important;border-color:var(--line)!important;backdrop-filter:blur(var(--glass-blur)) saturate(1.2)!important;-webkit-backdrop-filter:blur(var(--glass-blur)) saturate(1.2)!important;box-shadow:var(--shadow-glass)!important;color:var(--text-primary)
+}
+html.light .page-top,html.light .faithful-navbar>div:first-child{background:var(--surface)!important;border-color:var(--line)!important;backdrop-filter:blur(var(--glass-blur))!important}
+html.light .page-head h1,html.light h1,html.light h2,html.light h3{color:var(--text-primary)!important}
+html.light .meta,html.light .desc,html.light .card p,html.light .page-head p{color:var(--text-secondary)!important}
+html.light .page-input,html.light .page-select{background:var(--surface-input)!important;border-color:var(--line)!important;color:var(--text-primary)!important}
+html.light .page-btn{background:var(--surface)!important;color:var(--text-primary)!important;border-color:var(--line)!important}
+html.light .page-btn.primary{background:linear-gradient(135deg,var(--cyan),var(--violet))!important;color:var(--text-on-accent)!important}
+html.light .home .home-btn,html.light .go{background:linear-gradient(135deg,var(--cyan),var(--violet))!important;color:var(--text-on-accent)!important;border-color:transparent!important}
+html.light .bingo-cell{background:var(--surface)!important}
+html.light .bingo-cell.score-2{border-color:var(--state-success)!important;color:var(--state-success)!important}html.light .bingo-cell.score-3{border-color:var(--pink)!important;color:var(--pink)!important}html.light .bingo-cell.score-5{border-color:var(--state-warning)!important;color:var(--state-warning)!important}html.light .bingo-cell.score-10{border-color:var(--state-special)!important;color:var(--state-special)!important}html.light .bingo-cell.score-15{border-color:var(--cyan)!important;color:var(--cyan)!important}
+
+/* hard readability layer: final override */
+:root{--fs-11:14px;--lh-11:20px;--fs-12:14px;--lh-12:20px;--fs-13:15px;--lh-13:22px;--fs-14:16px;--lh-14:24px}
+body,.page-shell,.faithful-main{font-size:16px!important;line-height:1.6!important}
+.page-head h1{font-size:36px!important;line-height:44px!important}
+.page-card h2,.section-block h2{font-size:28px!important;line-height:36px!important}
+.page-card h3{font-size:24px!important;line-height:32px!important}
+.card h3{font-size:24px!important;line-height:32px!important}
+.page-nav a,.faithful-navbar .desktop-nav a,.faithful-navbar .mobile-nav a,.admin-left a,.rail a,.mobile-tab a{font-size:22px!important;line-height:30px!important}
+.page-btn,.go,.home-btn,.bingo-btn{font-size:16px!important;line-height:24px!important}
+.page-input,.page-select,input,select,textarea{font-size:16px!important;line-height:24px!important}
+.page-card .meta,.page-card .desc,.card p,.card .meta,.page-head p,.meta,.desc{font-size:15px!important;line-height:23px!important}
+.card-k,.page-card .card-k{font-size:14px!important;line-height:20px!important}
+.page-table{font-size:15px!important;line-height:23px!important}
+.page-table th{font-size:14px!important;line-height:20px!important}
+.admin-left-title{font-size:22px!important;line-height:30px!important}
+.post-content,.forum-post-content{font-size:16px!important;line-height:26px!important}
+.bingo-tip p,.bingo-desc,.bingo-time,.bingo-muted{font-size:15px!important;line-height:23px!important}
+.forum-tabs button{font-size:16px!important}
+/* admin light contrast */
+html.light .admin-page-body,html.light .admin-main{color:var(--text-primary)!important}
+html.light .admin-page-body h1,html.light .admin-page-body h2,html.light .admin-page-body h3,html.light .admin-page-body h4,html.light .admin-page-body td,html.light .admin-page-body label,html.light .admin-page-body span,html.light .admin-page-body a,html.light .admin-page-body li{color:var(--text-primary)!important}
+html.light .admin-page-body p,html.light .admin-page-body th,html.light .admin-page-body .card-k,html.light .admin-page-body .meta,html.light .admin-page-body .desc{color:var(--text-secondary)!important}
+html.light .admin-left a{color:var(--text-secondary)!important}html.light .admin-left a.on{color:var(--text-link)!important}
+html.light .admin-main .page-card,html.light .admin-main .page-card *{text-shadow:none!important}
+
+/* page headers must stay readable over the photographic background */
+.page-head{padding:14px 16px;border-radius:12px;background:rgba(4,10,18,.58);border:1px solid rgba(148,197,224,.18);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.page-head h1{color:#f4f7fb!important;text-shadow:0 2px 10px rgba(0,0,0,.45)}
+.page-head p{color:#b9c8d8!important}
+html.light .page-head{background:var(--surface)!important;border-color:var(--line)!important}
+html.light .page-head h1{color:var(--text-primary)!important}html.light .page-head p{color:var(--text-secondary)!important}

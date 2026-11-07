@@ -13,7 +13,7 @@
 浏览器
   ↓ 访问 80/443
 Nginx（网页、静态上传文件、/api 反向代理）
-  ├─ /              → Vue 3 构建产物
+  ├─ /              → React 构建产物
   ├─ /api/*         → Spring Boot :8080
   └─ /images 等     → /var/webserver 下的上传文件
                          ↓
@@ -30,20 +30,20 @@ Nginx（网页、静态上传文件、/api 反向代理）
 6. 出错时查 [06-日常维护与故障排查.md](06-日常维护与故障排查.md)。
 7. 每次上线前执行 [09-检查清单.md](09-检查清单.md)。
 8. 培训讲师可直接使用 [10-新人培训讲稿.md](10-新人培训讲稿.md)，内含生活类比、流程图、现场演示和判断题。
-9. 讲解具体技术如何协作时，可使用 [11-登录功能技术栈实例.md](11-登录功能技术栈实例.md)，沿真实登录代码串起 Vue、Element Plus、CSS、Java、Spring Boot、Maven 和 Nginx。
+9. 讲解具体技术如何协作时，可使用 [11-登录功能技术栈实例.md](11-登录功能技术栈实例.md)，沿真实登录代码串起 React、服务端 Session、Java、Spring Boot、Maven 和 Nginx。
 10. 配合 25 页图文版 PDF 授课时，使用 [12-技术栈图文版逐页讲稿.md](12-技术栈图文版逐页讲稿.md)。这份讲稿按当前代码讲解，并提醒首次初始化脚本的 Java 版本仍需修正。
 
 ## 一页速查
 
 | 目标 | 目录 | 命令 |
 |---|---|---|
-| 启动前端 | `vueproject` | `pnpm install`，然后 `pnpm dev` |
-| 构建前端 | `vueproject` | `pnpm build` |
+| 启动前端 | `reactproject` | `pnpm install --frozen-lockfile`，然后 `pnpm dev` |
+| 构建前端 | `reactproject` | `pnpm build` |
 | 启动后端 | `webpage` | Windows：`.\mvnw.cmd spring-boot:run`；Linux：`./mvnw spring-boot:run` |
 | 测试后端 | `webpage` | `.\mvnw.cmd test` 或 `./mvnw test` |
 | 构建生产后端 | `webpage` | `.\mvnw.cmd clean package -P prod` 或 `./mvnw clean package -P prod` |
 | 查看改动 | 仓库根目录 | `git status`、`git diff` |
-| 前端地址 | 浏览器 | `http://localhost:8081` |
+| 前端地址 | 浏览器 | `http://localhost:5174` |
 | 后端地址 | 浏览器/接口工具 | `http://localhost:8080` |
 
 正常本地运行需要三个服务：MySQL、Spring Boot 后端、Vite 前端。只启动前端通常只能看到登录页，不能完成业务操作。
@@ -53,7 +53,7 @@ Nginx（网页、静态上传文件、/api 反向代理）
 以下是基于代码审查得到的事实，不应把当前配置直接视为安全的生产模板：
 
 1. `webpage/src/main/resources/application.properties` 中出现公网数据库地址和明文凭据。应立即轮换密码，将凭据移到 `/etc/webserver.env` 或本机不入库配置，并检查 Git 历史；仅添加 `.gitignore` 不能抹掉历史泄露。
-2. `SecurityConfig` 对 `/**` 执行 `permitAll()`；前端路由的管理员判断不是安全边界，用户可绕过网页直接调用接口。生产使用前必须在后端实现身份认证和管理员接口授权。
+2. 前端路由守卫只改善导航体验；后端通过 Session 和 `ApiAuthorizationInterceptor` 校验登录身份、管理员角色及数据归属，用户不能绕过页面直接获得接口权限。
 3. `sql_script/CDMGA.sql` 是含实际记录的完整导出，不适合作为新人本地样例库或公开提交。应改用脱敏测试数据，并限制该文件访问。
 4. `spring.jpa.hibernate.ddl-auto=update` 会自动变更表结构。生产库应改用版本化迁移（Flyway/Liquibase），至少先备份再部署。
 5. 配置中后端允许 10 MB 上传，而 Nginx 只允许 5 MB，超过 5 MB 会先被 Nginx 拒绝，应统一限制。

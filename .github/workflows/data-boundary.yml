@@ -1,0 +1,16 @@
+name: Check local data boundary
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node script/check-test-data.mjs
+      - run: node --test script/check-test-data.test.mjs
