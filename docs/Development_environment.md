@@ -10,20 +10,22 @@ parent: 开发
 
 ## ubuntu-22.04-LTS下的开发环境
 
-在ubuntu22.04下默认软件仓库的Node版本为已经不提供支持的12版本，因此需要引入Node 20的软件源，开发相关的软件环境可以使用下面的命令完成安装。
+当前前端主线使用 React、TypeScript、Vite 和 pnpm 10.30.0；后端使用 Java 25 和 Maven Wrapper。工具版本以 `reactproject/package.json` 与 `webpage/pom.xml` 为准。
+
+JDK 25 的完整安装步骤见 [新人运行教程](../training-guide/02-第一次在本地运行.md)；Ubuntu 22.04 的默认软件源未必提供该版本。Node 安装在系统目录时，全局 pnpm 安装可能需要 sudo；使用 nvm 时不需要。
 
 ```Bash
 sudo apt update -y #更新软件源
-sudo apt install openjdk-17-jdk -y #安装java17
-sudo apt install maven -y #安装maven
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - # 添加 NodeSource 仓库
-sudo apt install nodejs -y #安装node和npm
+# 按新人教程第 3 节配置 JDK 25；Ubuntu 22.04 默认包可能没有此版本
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash - #添加 NodeSource 仓库
+sudo apt install nodejs -y #安装 Node.js 和 npm
+npm install --global pnpm@10.30.0
 
 
-java -version #验证java
-mvn -version #验证maven
+java -version #验证 Java
+cd webpage && ./mvnw -version #验证 Maven Wrapper 和 JDK
 node --version
-npm --version #验证npn和Node
+pnpm --version #验证 pnpm
 
 
 ```
@@ -43,6 +45,8 @@ nginx --version
 >```
 >直接调用了，非常方便。
 
-## Windows下的开发环境
+## Windows 下的开发环境
 
-在windows下需要配置多个项目的依赖软件，需要为前端配置npm, node.js, element, axios, Vue CLI等软件，为后端配置maven, springboot, junittest等软件，当软件运行报错时，根据报错信息补上对应的软件即可。相关软件的下载均可用搜索引擎搜到官网直接下载安装包并使用。
+推荐在 Windows 上使用 WSL2 Ubuntu，并按上面的 Linux 步骤安装工具。前端日常工程为 `reactproject/`，使用 `pnpm install --frozen-lockfile`、`pnpm dev` 和 `pnpm build`；后端在 `webpage/` 使用 `./mvnw`。只有维护旧版时才需要安装 `vueproject/` 的依赖。
+
+本地开发数据库必须使用本机数据库和独立账号。仓库示例 `application-local.properties.example` 指向 `127.0.0.1:3307/CDMGA_LOCAL`；不要把 3306 当作本地开发端口，因为它可能是连接生产环境的 SSH 隧道。

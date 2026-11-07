@@ -1,5 +1,11 @@
 # Vue ↔ React 等价性测试
 
+## 当前本地数据入口
+
+真实账号验证使用 [合成测试数据生成器](../../docs/Local_Test_Data.md)。在根目录执行 `bash script/synthetic-db.sh verify`，再启动 `bash script/synthetic-db.sh serve` 和 React 开发服务器。数据和密码全部在仓库外，禁止将抓取数据、数据库导出或已登录浏览器状态作为测试夹具提交。
+
+生成器对应回归为 `synthetic-accounts.spec.ts`（桌面/手机登录、他人公开成绩、管理员守卫）和 `admin-forum-local.spec.ts`（合成管理员读取论坛）。通过 `DSH_SYNTHETIC_ACCOUNT_PASSWORD` 传入本机生成的密码，未提供时这些用例跳过。下面的 Vue/React 对照用例是历史套件，包含旧账号、旧页面文案和样例标题，需要维护后才能用于新数据集。
+
 `parity.spec.ts` 证明迁移后的 **结构 / 行为 / 数据** 等价；首页是刻意重写，因此**不做像素相等断言**。
 
 | 用例 | 断言 |

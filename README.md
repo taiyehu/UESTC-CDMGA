@@ -2,7 +2,7 @@
 
 本项目是一个全栈 Web 应用，采用前后端分离架构，并集成了基于 GitHub Actions 的自动化 CI/CD 流程。
 
-📖 **[点击此处查看项目在线文档手册](https://www.google.com/search?q=https://%3C%E4%BD%A0%E7%9A%84%E7%94%A8%E6%88%B7%E5%90%8D%3E.github.io/%3C%E9%A1%B9%E7%9B%AE%E5%90%8D%3E/)**
+项目指南见仓库的 [`docs/`](docs/) 和 [`training-guide/`](training-guide/) 目录。
 
 ---
 
@@ -17,9 +17,10 @@
 
 ## 2. 前端服务 (Frontend)
 
-* **框架**: Vue 3 + vite
-* **运行时**: `Node 20`
-* **部署**: 由 **Nginx** 托管构建后的静态文件。
+* **当前主线**: `reactproject/`，React + TypeScript + Vite，由 pnpm 10.30.0 管理依赖。
+* **旧版工程**: `vueproject/` 保留用于参考和维护，不作为当前主线构建目录。
+* **运行时**: Node.js 24。
+* **部署**: GitHub Actions 构建当前 React 工程，由 **Nginx** 托管静态文件。
 
 ## 3. 后端服务 (Backend)
 
@@ -38,8 +39,9 @@
 
 为了保持根目录整洁，详细的技术细节已移至 `docs` 目录：
 
-* **[开发环境搭建](https://www.google.com/search?q=./docs/Development_environment.md)**：包含 Arch Linux/WSL2 及 Ubuntu 下的具体配置步骤。
-* **[部署手册](https://www.google.com/search?q=./docs/Deployment.md)**：Nginx 反向代理配置及 GitHub Actions 脚本。
-* **[前端开发](https://www.google.com/search?q=./docs/Frontend.md)**：Vibe Coding 风格指南、Tailwind CSS 及 Shadcn-vue 使用说明。
-* **[开发日志](https://www.google.com/search?q=./docs/Development.md)**：项目迭代与功能变更记录。
+* **[开发环境搭建](docs/Development_environment.md)**：Ubuntu/WSL 开发工具与本地运行说明。
+* **[部署手册](docs/Deployment.md)**：Nginx 反向代理配置及 GitHub Actions 工作流。
+* **[前端开发](docs/Frontend.md)**：React 主线、pnpm 命令和前后端鉴权边界。
+* **[新人运行与维护手册](training-guide/README.md)**：本地启动、开发和验证流程。
+* **[开发日志](docs/Development.md)**：项目历史记录。
 

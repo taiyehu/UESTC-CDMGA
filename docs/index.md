@@ -16,15 +16,16 @@ CDMGA 项目平台，用于提交与展示音乐游戏相关课题，并提供�
 
 ## 快速开始
 
-- [环境配置](getting-started)
-- [项目结构](architecture)
-- [开发指南](development)
+- [环境配置](Development_environment.md)
+- [项目结构与词汇表](../training-guide/01-项目全景与词汇表.md)
+- [本地合成测试数据](Local_Test_Data.md)
+- [开发指南](../training-guide/README.md)
 
 ## 主要模块
 
-- [前端系统](frontend)
-- [后端系统](backend)
-- [数据库设计](database)
+- [React 前端](Frontend.md)
+- [后端开发](Backend.md)
+- [部署流程](Deployment.md)
 
 ## 相关链接
 

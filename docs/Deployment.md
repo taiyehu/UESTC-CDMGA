@@ -8,7 +8,7 @@ nav_order: 1
 
 网站的前后端部署采用了Gihub免费提供的Github Action进行CI/CD的自动化部署，数据库由于已经完成部署，暂时不考虑部署。Github对公共仓库提供免费的action服务器，因此部署中项目的打包均在github服务器上完成，打包的程序通过scp上传到云服务器，使用ssh基于一定的脚本完成项目的备份和服务重启。
 
-网站的部署共包含3个工作流，工作流的具体描述下面，在使用工作流前，需要先在项目仓库配置相关的加密变量以便于工作流使用ssh连接。涉及到的变量有：
+当前主线使用 `CD.yml` 和 `CD-dev.yml` 两个入口，调用环境更新、Java 后端和 pnpm React 构建的可复用工作流。在使用前，需要先在仓库配置连接服务器的加密变量。涉及到的变量有：
 
 1. **SSH_HOST** : 网站部署服务器的对应公网IP地址，为了避免公网IP暴露，所有工作流中涉及公网IP的均使用改变量代替，项目代码中的可以采用域名保护
 2. **SSH_SUDO** : 具有sudo的管理员账户
@@ -40,24 +40,24 @@ nav_order: 1
 
 ## mvn-update 
 
-后端的部署工作流，存储在mvn-update.yml中，完成后端程序的打包、上传、部署、将旧的版本存到备份中、清楚7天前的备份文件、重启为后端写的systemd守护服务webserver。
+后端部署工作流为 `.github/workflows/mvn_update.yml`，完成打包、上传、备份和重启 systemd 服务 `webserver`。
 
-该工作流在main分支发生推送（push）和合并（merge）事件且后端项目文件夹webpage发生变化时会自动触发，也可以手动触发，如果初次部署且没有发生推送和合并事件时，可以手动触发工作流。
+`main` 推送触发 `CD.yml`，环境更新后部署后端；当前入口没有按 `webpage/` 路径过滤。`dev` 入口不部署后端，开发站前端与生产站共用服务端，不能将 dev 前端部署成功当作新后端已经发布。
 
 ```
- Action(顶部导航栏) -> mvn-update（侧边导航栏） -> Run Workflow(主界面右上角) -> Run Workflow(弹窗) 
+ Actions -> CD -> Run workflow -> main
 ```
 
 ## pnpm-update
 
-前端的部署工作流，存储在pnpm-update.yml中，完成前端程序的构建、上传、部署、将旧的版本存到备份中、清楚7天前的备份文件、重启前端部署的nginx。
+前端可复用工作流为 `.github/workflows/pnpm_update.yml`，在 `reactproject/` 执行 `pnpm install --frozen-lockfile` 和 `pnpm run build`，发布 `dist/`；旧 `vueproject/` 不是当前构建目录。
 
-该工作流在main分支发生推送（push）和合并（merge）事件且前端项目文件夹vueproject发生变化时会会自动触发，也可以手动触发，如果初次部署且没有发生推送和合并事件时，可以手动触发工作流。
+`main` 推送由 `CD.yml` 以 `channel: main` 调用；`dev` 推送由 `CD-dev.yml` 以 `channel: dev` 调用。两个入口当前都没有按前端文件路径过滤，文档提交也可能触发部署。
 
-该工作流新增dev分支推送到dev网址
+当前前端发布使用 Node.js 24 和 pnpm 10.30.0，网站由 Nginx 托管。
 
 ```
- Action(顶部导航栏) -> pnpm-update（侧边导航栏） -> Run Workflow(主界面右上角) -> Run Workflow(弹窗) 
+ Actions -> CD（生产）或 CD-dev（开发前端）-> Run workflow -> 对应分支
 ```
 
 ## 现场签到配置
@@ -70,7 +70,7 @@ nav_order: 1
 
 首次部署 HTTPS 前，在 GitHub Actions 的 Repository secrets 中设置 `CERTBOT_EMAIL`，确认 `SSH_DOMIAN` 为实际域名 `cdmga.top`，并在阿里云安全组与服务器防火墙放通 TCP 80 和 443；域名的 DNS 解析必须指向该服务器。随后推送主分支或手动运行 `CD` 工作流。`env_update` 会调用 `script/deploy_nginx.sh`：若无证书，则自动安装 Certbot，先部署 HTTP 验证入口，用 webroot 模式申请证书，再部署仓库维护的 HTTPS 配置并将 HTTP 跳转至 HTTPS；已有证书时会跳过申请并直接部署 HTTPS 配置。Certbot 自带的定时任务负责续期，续期成功后脚本会重新加载 Nginx。申请失败时工作流报错，HTTP 配置仍可供排查；检查 80 端口、DNS 和工作流日志后重新运行即可。[Certbot 官方安装说明](https://certbot.eff.org/instructions?os=snap&ws=nginx)
 
-部署后在服务器执行 `sudo nginx -t`、`sudo certbot renew --dry-run`，并从手机确认 `https://cdmga.top/scan` 可以打开、`http://cdmga.top/sign/11` 会跳转到 HTTPS。续期测试及部署钩子的行为见 [Certbot 官方文档](https://eff-certbot.readthedocs.io/en/stable/using.html#renewing-certificates)。证书仅覆盖主站 `cdmga.top`；开发站 `dev.cdmga.top` 仍使用 HTTP。
+部署后确认 `sudo nginx -t` 通过，并从手机检查 HTTPS 页面。主站和开发站使用各自域名的证书：`cdmga.top` 与 `dev.cdmga.top`。部署脚本分别检查服务器上的证书和私钥；已有文件时跳过签发，保留 Certbot 正常续期。证书和私钥仅保存在服务器，不进入 Git。
 
 生产环境建议在服务器的 `/etc/webserver.env` 中设置至少 32 字符的 `SIGN_QR_SECRET` 环境变量，`webserver.service` 会读取该文件；多实例部署时所有实例必须使用同一密钥。未设置时后端会在启动时生成临时密钥，服务重启后旧二维码会失效。设置后重启 `webserver.service`。
 

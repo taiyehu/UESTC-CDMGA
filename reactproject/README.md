@@ -43,14 +43,11 @@ See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rule
 
 ## 测试
 
-`pnpm test:e2e` 目前 7 个用例：登录结构/接口/会话、首页数据、首页 API 载荷、注册结构、核心页数据、后台守卫、后台页面挂载与数据。后台冒烟使用本地账号 `admin / test123456`（仅测试库）。
+`pnpm test:e2e` 运行 Playwright；部分用例是历史 Vue/React 对照，需启动两套前端。真实账号测试使用生成器提供的 `synthetic_admin` 和 `synthetic_member`，密码随机生成并保存在仓库外，见 [本地合成测试数据](../docs/Local_Test_Data.md)。
 
-## 已知功能差距（不是路由缺口）
+## 验证边界
 
-- 普通课题的成绩提交/审核完整流程仍偏简化；Bingo 详情已有提交入口。
-- 个人资料的裁剪器未迁（改为 canvas 缩放）。
-- 论坛图片/附件、点赞/举报的完整交互未全部迁。
-- 后台页面已可挂载和读写主要数据，但 Element Plus 的弹窗/批量交互被简化。
+当前 React 页面包括成绩提交、资料裁剪、论坛图片/附件与点赞举报等流程。历史迁移测试中的旧文案和固定数据断言不能代表当前全量功能已通过；以具体构建、自动化结果及真实账号回归报告为准。
 
 ## 设计规范
 
@@ -58,5 +55,4 @@ See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rule
 
 ## 本地测试数据
 
-- 公开业务数据从生产 `cdmga` 只读导出了 course/activity/activity_course_assoc/issue/rank_config/award 到本地 3307；个人数据未导出。
-- 排行榜合成数据：`sql_script/dev_seed_ranking.sql`（rank1–rank6，总分 36/30/28/24/18/12），本地已导入。
+在仓库根目录运行 `bash script/synthetic-db.sh verify`，自动初始化 `127.0.0.1:13307/CDMGA_SYNTHETIC` 并生成纯虚构数据，再执行真实 HTTP 回归。此方案不导入任何生产或抓取的用户数据，且可重复运行。数据库、随机凭据和日志存放在仓库外；旧的依赖现存课题 ID 和用户密码的排名 SQL 已移除。

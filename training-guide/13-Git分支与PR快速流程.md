@@ -101,13 +101,13 @@ git commit -m "feat: 增加课题筛选"
 
 ### 3. 测试
 
-改前端（`vueproject`）：
+改当前前端（`reactproject`）：
 
 ```powershell
-cd vueproject
-pnpm install
+cd reactproject
+pnpm install --frozen-lockfile
 pnpm build
-pnpm dev            # 浏览器打开 http://localhost:8081 手测
+pnpm dev            # 浏览器打开 http://localhost:5174 手测
 ```
 
 改后端（`webpage`）：
