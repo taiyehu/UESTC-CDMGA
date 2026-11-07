@@ -19,3 +19,20 @@ reactproject/blob-report/
 reactproject/coverage/
 reactproject/.env*
 .playwright-mcp/
+
+# Generated local databases, browser captures and exports.
+*.sql.gz
+*.sql.zip
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.har
+*.log
+*.csv
+*.tsv
+**/storage-state*.json
+**/storageState*.json
+/backups/
+/dumps/
+/.local-data/
