@@ -1,4 +1,4 @@
-name: pnpm-dual-deploy
+name: pnpm-react-deploy
 
 on:
   workflow_call:
@@ -15,7 +15,7 @@ on:
       SSH_PORT: {}
 
 env:
-  PROJECT_DIR: vueproject
+  PROJECT_DIR: reactproject
   TARGET_DIR: /var/www/CDMGA-vue
   CHANNEL: dev
 
@@ -32,7 +32,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ inputs.channel }}
 
@@ -42,7 +42,7 @@ jobs:
           echo "Current Channel: ${{ inputs.channel }}"
           echo "Env Channel: $CHANNEL"
 
-      - name: List json file  # 帮助确认JAR包的位置和名称
+      - name: Verify pnpm lockfile
         run: ls -la pnpm-lock.yaml
 
       - name: Setup pnpm
@@ -64,8 +64,8 @@ jobs:
       - name: Build project
         run: pnpm run build
 
-      - name: List build output  # 帮助确认构建产物的位置
-        run: ls -la dist/  # 通常Vue项目构建输出到dist目录
+      - name: List React build output
+        run: ls -la dist/
 
       - name: Upload dist
         uses: appleboy/scp-action@v1.0.0
@@ -80,7 +80,7 @@ jobs:
 
 
       - name: Deploy on server (atomic)
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_SUDO }}

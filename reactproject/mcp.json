@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "vue-to-react": {
+      "command": "node",
+      "args": [
+        "node_modules/@jianger666/vue-to-react-mcp/dist/index.js",
+        "--vue-project",
+        "../vueproject",
+        "--react-project",
+        "."
+      ]
+    }
+  }
+}

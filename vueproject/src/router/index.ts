@@ -1,6 +1,7 @@
 // src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import request from '@/utils/request'
 
 // 页面组件（懒加载，降低首包体积）
 const Login = () => import('@/views/auth/Login.vue')
@@ -223,12 +224,24 @@ const router = createRouter({
 /**
  * 全局前置守卫
  */
-router.beforeEach((to) => {
-  const userInfo = sessionStorage.getItem('userInfo')
-  const isAuthenticated = !!userInfo
+router.beforeEach(async (to) => {
+  const publicRoute = to.path === '/login' || to.path === '/register'
+  let serverUser: any = null
 
-  // 未登录拦截
-  if (to.path !== '/login' && to.path !== '/register' && !isAuthenticated) {
+  if (!publicRoute) {
+    try {
+      const response = await request.get('/identity/me')
+      serverUser = response.data?.data ?? response.data
+      if (!serverUser?.id) throw new Error('Invalid session')
+      sessionStorage.setItem('userInfo', JSON.stringify(serverUser))
+      sessionStorage.setItem('role', JSON.stringify(serverUser.role ?? 'user'))
+    } catch {
+      sessionStorage.removeItem('userInfo')
+      sessionStorage.removeItem('role')
+    }
+  }
+
+  if (!publicRoute && !serverUser) {
     ElMessage.warning('请先登录！')
     return to.path.startsWith('/sign/') ? { path: '/login', query: { redirect: to.fullPath } } : '/login'
   }
@@ -236,30 +249,7 @@ router.beforeEach((to) => {
   // 管理员权限控制
   if (to.path.startsWith('/admin') || to.path.endsWith('/sign-display')) {
     // 更稳健地解析 role：兼容纯文本和 JSON 字符串，优先在已登录的前提下读取
-    let userRole: string | null = null
-    if (userInfo) {
-      const roleRaw = sessionStorage.getItem('role')
-      if (roleRaw) {
-        try {
-          const parsed = JSON.parse(roleRaw)
-          if (typeof parsed === 'string') {
-            userRole = parsed
-          } else if (parsed && typeof parsed === 'object') {
-            // 如果存的是对象，尝试取字段 'role' 或 'name'
-            userRole = String(
-              parsed.role ?? parsed.name ?? JSON.stringify(parsed)
-            )
-          } else {
-            userRole = String(parsed)
-          }
-        } catch (e) {
-          // 不是合法 JSON，直接使用原始字符串
-          userRole = roleRaw
-        }
-      }
-    }
-
-    if (userRole !== 'admin') {
+    if (serverUser?.role !== 'admin') {
       ElMessage.warning('需要管理员权限')
       return '/home'
     }

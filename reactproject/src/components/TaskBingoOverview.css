@@ -1,0 +1,44 @@
+:root{--bingo-surface:#07111f;--bingo-surface-2:#0a1a2e;--bingo-line:rgba(148,197,224,.34);--bingo-accent:#8fe8ff;--bingo-cell:#0b2036;--bingo-cell-done:#2a1740}
+.bingo-overview{display:flex;flex-direction:column;gap:18px;color:#e0f2fe;text-align:left;isolation:isolate}
+.bingo-back{align-self:flex-start;color:#67e8f9;text-decoration:none;font-size:13px}
+.bingo-hero{display:flex;justify-content:space-between;gap:20px;padding:20px;border:1px solid var(--bingo-line);border-radius:14px;background:var(--bingo-surface);box-shadow:none}
+.bingo-cat{font-size:12px;letter-spacing:.18em;color:#22d3ee;display:flex;align-items:center;gap:8px}
+.bingo-score-legend{display:inline-flex;gap:4px}.bingo-score-legend i{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:10px;font-style:normal;background:linear-gradient(135deg,#06b6d4,#a21caf)}
+.bingo-hero h1{font-size:clamp(24px,3vw,38px);margin:8px 0 0;color:#fff;text-shadow:0 0 16px rgba(34,211,238,.35)}
+.bingo-time,.bingo-desc{color:rgba(207,250,254,.78);font-size:13px;line-height:1.7;margin:8px 0 0}
+.bingo-team{width:280px;flex:none;border-left:1px solid rgba(34,211,238,.25);padding-left:18px}
+.bingo-team-head{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#a5f3fc;margin-bottom:10px}
+.bingo-members{display:flex;gap:6px}
+.bingo-member{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:rgba(8,47,73,.55);border:1px solid rgba(34,211,238,.3);border-radius:10px;padding:8px 4px;color:#e0f2fe;font-size:10px}
+.bingo-member.empty{border-style:dashed;color:#67e8f9}
+.bingo-member img,.member-avatar{width:34px;height:34px;border-radius:50%;object-fit:cover;display:grid;place-items:center;background:rgba(34,211,238,.18)}
+.bingo-member b{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bingo-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.bingo-btn{border:1px solid rgba(34,211,238,.5);border-radius:8px;padding:7px 12px;background:rgba(8,47,73,.65);color:#cffafe;font-size:12px;cursor:pointer}
+.bingo-btn:disabled{opacity:.45;cursor:not-allowed}
+.bingo-btn.create{border-color:rgba(52,211,153,.65);color:#d1fae5}.bingo-btn.join{border-color:rgba(103,232,249,.7);color:#cffafe}.bingo-btn.leave{border-color:rgba(248,113,113,.55);color:#fecaca;margin-top:10px;width:100%}
+.bingo-notice{padding:9px 12px;border:1px solid rgba(52,211,153,.35);border-radius:9px;color:#a7f3d0;font-size:12px}
+.bingo-board{padding:18px;border:1px solid var(--bingo-line);border-radius:14px;background:var(--bingo-surface-2);box-shadow:none}
+.bingo-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;width:min(100%,min(68vh,520px));max-width:520px;margin:0 auto}
+.bingo-cell{position:relative;aspect-ratio:1/1;min-height:0;border-radius:10px;border:2px solid rgba(34,211,238,.5);background:linear-gradient(145deg,rgba(5,46,70,.78),rgba(88,28,135,.5));color:#cffafe;font-size:clamp(22px,3.2vw,38px);font-weight:800;cursor:pointer;transition:border-color .15s ease,box-shadow .15s ease;box-shadow:none;display:inline-flex;align-items:center;justify-content:center}
+.bingo-cell b{font-weight:800;line-height:1}.bingo-cell.score-2{border-color:rgba(134,239,172,.8);color:#dcfce7}.bingo-cell.score-3{border-color:rgba(249,168,212,.8);color:#fce7f3}.bingo-cell.score-5{border-color:rgba(253,230,138,.9);color:#fef9c3}.bingo-cell.score-10{border-color:rgba(216,180,254,.9);color:#f3e8ff}.bingo-cell.score-15{border-color:rgba(255,255,255,.95);color:#fff;background:linear-gradient(145deg,rgba(8,145,178,.9),rgba(126,34,206,.8))}
+.bingo-cell.active{border-color:#f0abfc;background:rgba(88,28,135,.72);box-shadow:0 0 14px rgba(240,171,252,.4)}
+.bingo-cell:hover{border-color:#fff;box-shadow:0 0 12px rgba(34,211,238,.25)}
+.bingo-cell.done{border-color:rgba(240,171,252,.72);background:var(--bingo-cell-done)}
+.bingo-cell span{position:absolute;right:7px;top:5px;font-size:13px;color:#86efac}
+.bingo-tips{padding:18px;border:1px solid var(--bingo-line);border-radius:14px;background:var(--bingo-surface);box-shadow:none}
+.bingo-tips-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.bingo-tips-head h3{margin:0}.bingo-tips-head span{font-size:12px;color:#a5f3fc}
+.bingo-tip-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:12px;align-items:start}
+.bingo-tip{border:1px solid rgba(148,197,224,.22);border-radius:8px;padding:10px;background:var(--bingo-surface-2)}.bingo-tip p{margin:0;font-size:12px;line-height:1.6}.bingo-tip time{display:block;margin-top:6px;font-size:10px;color:#93c5fd}.bingo-tip-id{color:#67e8f9}
+.bingo-team-dot{display:inline-block;border-radius:999px;padding:1px 6px;font-size:10px}.bingo-team-dot.team-a{background:rgba(34,211,238,.22);color:#a5f3fc}.bingo-team-dot.team-b{background:rgba(244,114,182,.22);color:#fbcfe8}.bingo-team-dot.team-c{background:rgba(250,204,21,.2);color:#fef08a}
+.bingo-muted{font-size:12px;color:rgba(207,250,254,.7)}
+.bingo-modal-mask{position:fixed;inset:0;z-index:150;background:rgba(2,6,23,.78);backdrop-filter:blur(8px);display:grid;place-items:center;padding:18px}
+.bingo-modal{width:min(520px,100%);max-height:85vh;overflow:auto;border:1px solid rgba(34,211,238,.45);border-radius:16px;padding:20px;background:#071528;color:#e0f2fe;display:flex;flex-direction:column;gap:10px}
+.bingo-modal h3{margin:0}.bingo-search{display:flex;gap:8px}.bingo-join-list{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow:auto}.bingo-join-list button{text-align:left;border:1px solid rgba(34,211,238,.25);border-radius:8px;background:rgba(8,47,73,.5);color:#cffafe;padding:8px 10px;display:flex;justify-content:space-between;gap:8px;font-size:12px}.bingo-join-list button.selected{border-color:#f0abfc;background:rgba(88,28,135,.5)}
+@media (max-width:800px){.bingo-hero{flex-direction:column}.bingo-team{width:auto;border-left:0;border-top:1px solid rgba(34,211,238,.25);padding:14px 0 0}.bingo-grid{gap:6px}.bingo-cell{font-size:16px}}
+
+.bingo-detail-grid .bingo-cell{font-size:14px;border-width:1px;border-radius:7px;box-shadow:none}
+.bingo-detail-grid .bingo-cell b{font-size:14px}
+.bingo-detail-grid .bingo-cell span{font-size:8px;right:3px;top:1px}
+
+.bingo-detail-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;width:100%}

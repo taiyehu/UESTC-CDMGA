@@ -1,0 +1,7 @@
+.crop-mask{position:fixed;inset:0;z-index:130;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(2,8,18,.78);backdrop-filter:blur(10px)}
+.crop-modal{width:min(620px,100%);border:1px solid rgba(255,255,255,.28);border-radius:20px;padding:20px;background:rgba(7,16,28,.96);box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.crop-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.crop-head h2{margin:4px 0 0;font-size:24px}
+.crop-area{position:relative;height:min(58vh,420px);margin-top:16px;border-radius:12px;overflow:hidden;background:#020812}
+.crop-range{width:100%;margin-top:14px}
+.crop-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:16px}
