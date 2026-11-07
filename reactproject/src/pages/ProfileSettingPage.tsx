@@ -180,6 +180,7 @@ export default function ProfileSettingPage() {
       if (cropSrc) URL.revokeObjectURL(cropSrc)
       setCropSrc('')
       const formData = new FormData()
+      formData.append('description', description)
       formData.append('avatar', optimized, 'avatar.jpg')
       const res = await api.post(`/profile/${identityId}/submit`, formData)
       if (res.data?.code !== 0) throw new Error(res.data?.message || '头像提交失败')
