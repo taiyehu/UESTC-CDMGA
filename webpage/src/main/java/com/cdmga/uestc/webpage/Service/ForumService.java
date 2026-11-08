@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ForumService {
+    @Autowired private MailService mail;
     @Autowired
     private JdbcTemplate jdbc;
 
@@ -175,7 +176,16 @@ public class ForumService {
             statement.setString(4, cleanContent);
             return statement;
         }, key);
-        return key.getKey().longValue();
+        long replyId = key.getKey().longValue();
+        Map<String, Object> post = one("SELECT author_id AS authorId, title FROM forum_post WHERE id = ?", postId);
+        int author = ((Number) post.get("authorId")).intValue();
+        if (author != userId) mail.send(author, "forum_reply", "帖子收到新回复", (String) post.get("title"), "forum", postId, "forum_reply", replyId);
+        if (parentReplyId != null) {
+            Map<String, Object> parent = one("SELECT author_id AS authorId FROM forum_reply WHERE id = ?", parentReplyId);
+            int parentAuthor = ((Number) parent.get("authorId")).intValue();
+            if (parentAuthor != userId && parentAuthor != author) mail.send(parentAuthor, "forum_reply", "你的回复收到新回复", (String) post.get("title"), "forum", postId, "forum_parent_reply", replyId);
+        }
+        return replyId;
     }
 
     @Transactional
@@ -247,9 +257,19 @@ public class ForumService {
         if ("reply".equals(type)) one("SELECT p.id FROM forum_reply r JOIN forum_post p ON p.id = r.post_id WHERE r.id = ? AND p.status = 'visible'", id);
         String likeTable = "forum_" + type + "_like";
         String column = targetColumn(type);
+        String sourceType = likeTable + ":" + userId;
         int removed = jdbc.update("DELETE FROM " + likeTable + " WHERE " + column + " = ? AND identity_id = ?", id, userId);
-        if (removed > 0) return false;
+        if (removed > 0) { mail.retractLike(sourceType, id); return false; }
         jdbc.update("INSERT IGNORE INTO " + likeTable + " (" + column + ", identity_id) VALUES (?, ?)", id, userId);
+        Map<String, Object> target = "post".equals(type)
+                ? one("SELECT author_id AS authorId, title FROM forum_post WHERE id = ?", id)
+                : one("SELECT r.author_id AS authorId, r.post_id AS postId, p.title FROM forum_reply r JOIN forum_post p ON p.id = r.post_id WHERE r.id = ?", id);
+        int authorId = ((Number) target.get("authorId")).intValue();
+        if (authorId != userId) {
+            long postId = "post".equals(type) ? id : ((Number) target.get("postId")).longValue();
+            mail.send(authorId, "forum_like", "reply".equals(type) ? "你的回复收到点赞" : "你的帖子收到点赞",
+                    (String) target.get("title"), "forum", postId, sourceType, id);
+        }
         return true;
     }
 
@@ -266,6 +286,10 @@ public class ForumService {
         Integer existing = jdbc.queryForObject("SELECT COUNT(*) FROM forum_report WHERE " + column + " = ? AND reporter_id = ?", Integer.class, id, userId);
         if (existing != null && existing > 0) throw new IllegalArgumentException("你已举报过此内容");
         jdbc.update("INSERT INTO forum_report (" + column + ", reporter_id, reason, detail) VALUES (?, ?, ?, ?)", id, userId, cleanReason, detail);
+        Long reportId = jdbc.queryForObject("SELECT id FROM forum_report WHERE " + column + " = ? AND reporter_id = ?", Long.class, id, userId);
+        long postId = "post".equals(type) ? id : ((Number) one("SELECT post_id AS postId FROM forum_reply WHERE id = ?", id).get("postId")).longValue();
+        mail.admins("forum_report", "论坛内容被举报", cleanReason, "forum", postId, "forum_report", reportId);
+        mail.send(((Number) target.get("authorId")).intValue(), "forum_reported", "你的论坛内容被举报", cleanReason, "forum", postId, "forum_reported", reportId);
         jdbc.update("UPDATE " + table(type) + " SET status = 'hidden' WHERE id = ?", id);
         action(type, id, null, "auto_hide", cleanReason, "visible", "hidden");
     }
@@ -304,7 +328,7 @@ public class ForumService {
     public void moderate(Integer adminId, String type, long id, String decision, String reason) {
         requireAdmin(adminId);
         if (!"retain".equals(decision) && !"delete".equals(decision)) throw new IllegalArgumentException("处理决定无效");
-        Map<String, Object> target = one("SELECT status FROM " + table(type) + " WHERE id = ? FOR UPDATE", id);
+        Map<String, Object> target = one("SELECT status, author_id AS authorId FROM " + table(type) + " WHERE id = ? FOR UPDATE", id);
         String previous = (String) target.get("status");
         if ("deleted".equals(previous)) throw new IllegalArgumentException("已删除内容不能恢复");
         String next = "retain".equals(decision) ? "visible" : "deleted";
@@ -312,5 +336,13 @@ public class ForumService {
         else jdbc.update("UPDATE " + table(type) + " SET status = ? WHERE id = ?", next, id);
         jdbc.update("UPDATE forum_report SET status = ?, handled_by = ?, handled_at = CURRENT_TIMESTAMP WHERE " + targetColumn(type) + " = ? AND status = 'pending'", "retain".equals(decision) ? "retained" : "deleted", adminId, id);
         action(type, id, adminId, decision, reason, previous, next);
+        Long actionId = jdbc.queryForObject("SELECT MAX(id) FROM forum_moderation_action WHERE " + targetColumn(type) + " = ?", Long.class, id);
+        long postId = "post".equals(type) ? id : ((Number) one("SELECT post_id AS postId FROM forum_reply WHERE id = ?", id).get("postId")).longValue();
+        String detail = "retain".equals(decision) ? "内容已恢复" : "内容已删除";
+        if (reason != null && !reason.isBlank()) detail += "：" + reason.trim();
+        mail.send(((Number) target.get("authorId")).intValue(), "forum_moderated", "论坛内容处理结果", detail, "forum", postId, "forum_moderation", actionId);
+        for (Map<String, Object> row : jdbc.queryForList("SELECT DISTINCT reporter_id FROM forum_report WHERE " + targetColumn(type) + " = ?", id)) {
+            mail.send(((Number) row.get("reporter_id")).intValue(), "forum_report_handled", "举报处理结果", detail, "forum", postId, "forum_report_result", actionId);
+        }
     }
 }

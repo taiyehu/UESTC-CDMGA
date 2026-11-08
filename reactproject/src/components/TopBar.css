@@ -7,6 +7,11 @@
 .site-center a:hover{color:#fff;background:rgba(255,255,255,.1)}
 .site-center a.on{background:#fff;color:#04121e;font-weight:800}
 .site-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px}
+.mail-action{position:relative;display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;flex:none;border-radius:50%;border:1px solid rgba(255,255,255,.34);background:rgba(8,18,30,.58);color:#e6f9ff;box-shadow:0 8px 20px rgba(0,0,0,.26);backdrop-filter:blur(16px);text-decoration:none}
+.mail-action:hover,.mail-action.on{border-color:rgba(255,255,255,.7);background:rgba(18,34,52,.78)}
+.mail-action svg{width:23px;height:23px}
+.mail-action .mail-badge{position:absolute;top:-5px;right:-7px;margin:0}
+html.light .mail-action{background:var(--surface);border-color:var(--line);color:var(--text-primary);box-shadow:var(--shadow-glass)}
 .site-logo img,.site-actions{filter:drop-shadow(0 6px 16px rgba(0,0,0,.2))}
 html.light .site-center{background:var(--surface);border-color:var(--line);box-shadow:var(--shadow-glass);backdrop-filter:blur(var(--glass-blur)) saturate(1.2)}
 html.light .site-center a{color:var(--text-secondary)}

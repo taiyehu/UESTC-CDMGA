@@ -147,7 +147,7 @@ public class ApiAuthorizationInterceptor implements HandlerInterceptor {
         return (path.matches("/api/identity/\\d+") && "DELETE".equals(method))
                 || (path.matches("/api/profile/\\d+") && ("PUT".equals(method) || "DELETE".equals(method)))
                 || path.matches("/api/team/course/\\d+/save")
-                || path.matches("/api/score/(update/\\d+|delete/\\d+|award/\\d+/reject)");
+                || path.matches("/api/score/(update/\\d+|delete/\\d+|award/\\d+/reject|\\d+/reject)");
     }
 
     private void writeError(HttpServletResponse response, int status, String message) throws IOException {

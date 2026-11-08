@@ -9,6 +9,7 @@ import com.cdmga.uestc.webpage.Repository.CourseRepository;
 import com.cdmga.uestc.webpage.Repository.IdentityRepository;
 import com.cdmga.uestc.webpage.Repository.ScoreRepository;
 import com.cdmga.uestc.webpage.Service.ScoreService;
+import com.cdmga.uestc.webpage.Service.MailService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -42,6 +43,9 @@ class ScoreAwardServiceTests {
 
     @Mock
     private IdentityRepository identityRepository;
+
+    @Mock
+    private MailService mailService;
 
     @InjectMocks
     private ScoreService scoreService;

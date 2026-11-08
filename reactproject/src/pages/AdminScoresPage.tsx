@@ -151,6 +151,23 @@ export default function AdminScoresPage() {
     }
   }
 
+  async function rejectScore(score: ScoreRow): Promise<void> {
+    const reason = window.prompt('请输入未通过理由', '')
+    if (reason === null) return
+    if (!reason.trim()) { setNotice({ type: 'error', text: '请填写未通过理由' }); return }
+    setNotice(null)
+    setBusyId(score.id)
+    try {
+      const res = await api.put(`/score/${score.id}/reject`, { reason: reason.trim() })
+      if (res.data?.code !== 0) throw new Error(res.data?.message || '驳回失败')
+      setNotice({ type: 'ok', text: '已驳回并通知用户' })
+      await loadScores()
+    } catch (e) {
+      const message = (e as { response?: { data?: { message?: string } } })?.response?.data?.message
+      setNotice({ type: 'error', text: message || (e instanceof Error ? e.message : '驳回失败') })
+    } finally { setBusyId(null) }
+  }
+
   async function deleteScore(scoreId: number): Promise<void> {
     if (!window.confirm('确定删除成绩？删除后用户需重新提交')) return
 
@@ -253,6 +270,7 @@ export default function AdminScoresPage() {
                             驳回
                           </button>
                         )}
+                        {!isAward && <button className="page-btn small" type="button" disabled={busy} onClick={() => void rejectScore(score)}>驳回</button>}
                         <button className="page-btn small" type="button" disabled={busy} onClick={() => void deleteScore(score.id)}>
                           删除
                         </button>

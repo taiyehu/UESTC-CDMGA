@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PageShell from '../components/PageShell'
+import { api } from '../api'
+import { readForumPost } from '../mail'
 import { createForumPost, fetchForumPage, fetchForumPost, likeForumPost, reportForumPost, uploadForumFile, uploadForumImage, type ForumPost, type ForumPostDetail } from '../api'
 
 function fmt(value?: string) { if (!value) return ''; const d = new Date(value); return Number.isNaN(d.getTime()) ? '' : d.toLocaleString('zh-CN') }
 
 export default function ForumPage() {
   const [posts, setPosts] = useState<ForumPost[]>([])
+  const [unreadPosts, setUnreadPosts] = useState<Record<number, number>>({})
+  useEffect(() => { void api.get('/mail/forum-unread').then((res) => { const counts: Record<number, number> = {}; for (const row of res.data?.data ?? []) counts[Number(row.postId)] = Number(row.unread); setUnreadPosts(counts) }).catch(() => {}) }, [])
   const [hotPosts, setHotPosts] = useState<ForumPost[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(0)
@@ -31,7 +35,7 @@ export default function ForumPage() {
   async function toggleDetails(post: ForumPost) {
     if (expandedId === post.id) { setExpandedId(null); setExpandedPost(null); return }
     setExpandedId(post.id); setExpandedPost(null); setExpandedLoading(true); setCommentPage(0)
-    try { setExpandedPost(await fetchForumPost(post.id)) }
+    try { setExpandedPost(await fetchForumPost(post.id)); if (unreadPosts[post.id]) { void readForumPost(post.id).then(() => setUnreadPosts((current) => { const next = { ...current }; delete next[post.id]; return next })).catch(() => {}) } }
     catch (e) { setNotice(e instanceof Error ? e.message : '动态详情加载失败') }
     finally { setExpandedLoading(false) }
   }
@@ -145,7 +149,7 @@ export default function ForumPage() {
               <button className="feed-report" type="button" onClick={() => void report(post)}>举报</button>
             </header>
             <div className="feed-content-toggle">
-              <Link to={`/forum/${post.id}`}><strong>{post.title}</strong></Link>
+              <Link to={`/forum/${post.id}`}><strong>{post.title}</strong>{unreadPosts[post.id] > 0 && <span className="mail-badge">{unreadPosts[post.id]}</span>}</Link>
               <div className={expandedId === post.id ? 'feed-preview expanded' : 'feed-preview'}>
                 <p className="feed-content">{post.content || '查看这条动态的正文和评论'}</p>
                 <div className="feed-expand-row">
@@ -165,9 +169,9 @@ export default function ForumPage() {
             {expandedId === post.id && <section className="feed-comments" aria-label={`${post.title} 评论`}>
               {expandedLoading && <p className="meta">正在加载评论…</p>}
               {!expandedLoading && expandedPost && <>
-                {expandedPost.replies.length === 0 ? <p className="meta">还没有评论</p> : expandedPost.replies.slice(commentPage * 10, commentPage * 10 + 10).map((reply) => <article className="feed-comment" key={reply.id}>
+                {expandedPost.replies.length === 0 ? <p className="meta">还没有评论</p> : expandedPost.replies.slice(commentPage * 10, commentPage * 10 + 10).map((reply) => <article className={`feed-comment${reply.parentReplyId ? ' forum-preview-nested' : ''}`} key={reply.id}>
                   <Link to={reply.authorId ? `/profile/${reply.authorId}` : '/profile'} className="feed-comment-avatar"><img src={reply.avatar || '/club-logo.jpg'} alt="" /></Link>
-                  <div className="feed-comment-body"><div><Link to={reply.authorId ? `/profile/${reply.authorId}` : '/profile'} className="feed-comment-name">{reply.authorName}</Link><time className="meta" dateTime={reply.createdAt}>{fmt(reply.createdAt)}</time></div><p>{reply.content}</p></div>
+                  <div className="feed-comment-body"><div><Link to={reply.authorId ? `/profile/${reply.authorId}` : '/profile'} className="feed-comment-name">{reply.authorName}</Link>{reply.parentReplyId && reply.parentAuthorName && <span className="meta"> 回复 @{reply.parentAuthorName}</span>}<time className="meta" dateTime={reply.createdAt}>{fmt(reply.createdAt)}</time></div><p>{reply.content}</p></div>
                 </article>)}
                 {expandedPost.replies.length > 10 && <div className="feed-comment-pager"><button className="page-btn small" type="button" disabled={commentPage === 0} onClick={() => setCommentPage((v) => v - 1)}>上一页</button><span>{commentPage + 1} / {Math.ceil(expandedPost.replies.length / 10)}</span><button className="page-btn small" type="button" disabled={(commentPage + 1) * 10 >= expandedPost.replies.length} onClick={() => setCommentPage((v) => v + 1)}>下一页</button></div>}
                 <Link className="feed-all-comments" to={`/forum/${post.id}`}>查看全部动态与评论 →</Link>

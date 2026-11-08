@@ -16,11 +16,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
 @Service
 public class ActivityService {
+    @Autowired private MailService mail;
 
     @Autowired
     private ActivityRepository activityRepository;
@@ -43,8 +45,12 @@ public class ActivityService {
         return activityRepository.findById(id);
     }
 
+    @Transactional
     public Activity save(Activity activity) {
-        return activityRepository.save(activity);
+        boolean created = activity.getId() == null;
+        Activity saved = activityRepository.save(activity);
+        if (created) mail.broadcast("activity_published", "新活动发布", saved.getName(), "activity", saved.getId());
+        return saved;
     }
 
     public void deleteById(Integer id) {

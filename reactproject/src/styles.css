@@ -207,6 +207,7 @@ a.page-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.45)}
 .forum-row h3{margin:0;font-size:12px}
 .forum-row .meta{margin-top:4px}
 .forum-row span{color:var(--cyan)}
+.forum-preview-nested{margin-left:32px;padding-left:12px;border-left:2px solid rgba(56,189,248,.25)}
 .post-detail h2{font-size:24px;margin:8px 0 0}
 .post-content{margin:12px 0 0;white-space:pre-wrap;font-size:10px;line-height:1.8;color:#DCE8F2}
 .profile-layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;align-items:start}
