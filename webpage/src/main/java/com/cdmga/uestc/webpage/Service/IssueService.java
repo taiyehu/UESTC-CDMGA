@@ -50,6 +50,7 @@ public class IssueService {
                 item.setImage("");
                 item.setFile("");
                 item.setSongName(source.getSongName());
+                item.setDifficulty(source.getDifficulty());
                 masked.add(item);
             }
             return new PageImpl<>(masked, issuePage.getPageable(), issuePage.getTotalElements());
@@ -58,7 +59,7 @@ public class IssueService {
         return issuePage;
     }
 
-    public Issue upsertIssue(Integer courseId, Integer issueId, String image, String text, String file, String songName) {
+    public Issue upsertIssue(Integer courseId, Integer issueId, String image, String text, String file, String songName, String difficulty) {
         if (issueId == null || issueId <= 0) {
             throw new IllegalArgumentException("issue_id 必须是正整数");
         }
@@ -83,7 +84,14 @@ public class IssueService {
                 throw new IllegalArgumentException("typical 课题必须填写 song_name");
             }
             songName = normalizedSongName;
+            if (difficulty == null || difficulty.isBlank()) {
+                difficulty = existing.map(Issue::getDifficulty).filter(value -> !value.isBlank())
+                        .orElseGet(() -> issueId <= 2 ? "简单" : issueId <= 4 ? "一般" : "困难");
+            } else if (!List.of("简单", "一般", "困难").contains(difficulty)) {
+                throw new IllegalArgumentException("typical 课题难度必须是简单、一般或困难");
+            }
         } else if ("bingo".equals(category)) {
+            difficulty = null;
             if (normalizedSongName == null || normalizedSongName.isEmpty()) {
                 songName = null;
             } else {
@@ -94,6 +102,7 @@ public class IssueService {
             }
         } else {
             songName = null;
+            difficulty = null;
         }
 
         Issue issue = existing.orElseGet(Issue::new);
@@ -104,6 +113,7 @@ public class IssueService {
         issue.setText(text == null ? "" : text);
         issue.setFile(file);
         issue.setSongName(songName);
+        issue.setDifficulty(difficulty);
 
         return issueRepository.save(issue);
     }

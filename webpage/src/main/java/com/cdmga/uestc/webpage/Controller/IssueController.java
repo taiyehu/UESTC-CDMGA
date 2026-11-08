@@ -60,7 +60,8 @@ public class IssueController {
                     request.getImage(),
                     request.getText(),
                     request.getFile(),
-                    request.getSong_name()
+                    request.getSong_name(),
+                    request.getDifficulty()
             );
             return ResponseEntity.ok(Result.success(issue));
         } catch (IllegalArgumentException e) {

@@ -30,6 +30,9 @@ public class Issue {
     @Column(name = "file")
     private String file;
 
+    @Column(name = "difficulty", length = 8)
+    private String difficulty;
+
     @Column(name = "song_name")
     private String songName;
 
@@ -86,6 +89,10 @@ public class Issue {
     public void setSongName(String songName) {
         this.songName = songName;
     }
+
+    public String getDifficulty() { return difficulty; }
+
+    public void setDifficulty(String difficulty) { this.difficulty = difficulty; }
 
     public Course getCourse() {
         return course;
