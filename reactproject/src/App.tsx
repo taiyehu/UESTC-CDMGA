@@ -15,6 +15,7 @@ import RankingNewPage from './pages/RankingNewPage'
 import ContestRankingPage from './pages/ContestRankingPage'
 import ForumPage from './pages/ForumPage'
 import ForumPostPage from './pages/ForumPostPage'
+import MailPage from './pages/MailPage'
 import ProfilePage from './pages/ProfilePage'
 import ProfileSettingPage from './pages/ProfileSettingPage'
 import LinksPage from './pages/LinksPage'
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="/ranking-new" element={<RankingNewPage />} />
           <Route path="/contest-ranking" element={<ContestRankingPage />} />
           <Route path="/forum" element={<ForumPage />} />
+          <Route path="/mail" element={<MailPage />} />
           <Route path="/forum/:id" element={<ForumPostPage />} />
           <Route path="/profile/:id?" element={<ProfilePage />} />
           <Route path="/profile-setting" element={<ProfileSettingPage />} />

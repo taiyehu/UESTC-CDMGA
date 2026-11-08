@@ -19,6 +19,7 @@ import com.cdmga.uestc.webpage.Repository.CourseRepository;
 
 @Service
 public class CourseService {
+    @Autowired private MailService mail;
 
     @Autowired
     private CourseRepository courseRepository;
@@ -94,6 +95,9 @@ public class CourseService {
             awardRepository.save(award);
             savedCourse.setAward(award);
         }
+        mail.broadcast("award".equalsIgnoreCase(category) ? "award_published" : "course_published",
+                "award".equalsIgnoreCase(category) ? "新奖品发布" : "新课题发布", title,
+                "course", savedCourse.getId());
         return savedCourse;
     }
 

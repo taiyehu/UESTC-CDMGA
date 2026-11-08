@@ -106,6 +106,9 @@ export type RankRow = {
 
 export type ForumReply = {
   id: number
+  parentReplyId?: number | null
+  rootReplyId?: number | null
+  parentAuthorName?: string | null
   authorId?: number
   authorName: string
   avatar?: string | null
@@ -114,6 +117,8 @@ export type ForumReply = {
   floorNumber?: number | null
   likeCount?: number
   liked?: boolean | number
+  status?: string
+  images?: { id: number; url: string }[]
 }
 
 export type ForumPostDetail = ForumPost & {
@@ -165,8 +170,8 @@ export async function fetchRanking(startYear = new Date().getFullYear()): Promis
   return Array.isArray(data) ? data : []
 }
 
-export async function fetchForumPost(id: number): Promise<ForumPostDetail | null> {
-  const res = await api.get(`/forum/posts/${id}`)
+export async function fetchForumPost(id: number, replySort: 'latest' | 'likes' = 'latest'): Promise<ForumPostDetail | null> {
+  const res = await api.get(`/forum/posts/${id}`, { params: { replySort } })
   const data = res.data?.data ?? null
   return data as ForumPostDetail | null
 }
@@ -211,8 +216,8 @@ export async function fetchForumPage(page = 0, size = 10, sort: 'latest' | 'like
   return { list: data.list ?? [], total: data.total ?? 0 }
 }
 
-export async function createForumReply(postId: number, content: string): Promise<number> {
-  const res = await api.post(`/forum/posts/${postId}/replies`, { content, parentReplyId: null })
+export async function createForumReply(postId: number, content: string, parentReplyId: number | null = null): Promise<number> {
+  const res = await api.post(`/forum/posts/${postId}/replies`, { content, parentReplyId })
   if (res.data?.code !== 0) throw new Error(res.data?.message || '回复失败')
   return res.data?.data?.id
 }
@@ -233,6 +238,12 @@ export async function uploadForumImage(postId: number, file: File): Promise<void
   const form = new FormData(); form.append('image', file)
   const res = await api.post(`/forum/post/${postId}/images`, form, { timeout: 30000 })
   if (res.data?.code !== 0) throw new Error(res.data?.message || '图片上传失败')
+}
+
+export async function uploadForumReplyImage(replyId: number, file: File): Promise<void> {
+  const form = new FormData(); form.append('image', file)
+  const res = await api.post(`/forum/reply/${replyId}/images`, form, { timeout: 30000 })
+  if (res.data?.code !== 0) throw new Error(res.data?.message || '回复图片上传失败')
 }
 
 

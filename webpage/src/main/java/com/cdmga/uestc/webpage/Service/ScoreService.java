@@ -31,6 +31,7 @@ import java.util.Set;
 
 @Service
 public class ScoreService {
+    @Autowired private MailService mail;
 
     private static final LocalDateTime REDEMPTION_CUTOFF =
             LocalDateTime.of(2026, Month.OCTOBER, 1, 0, 0);
@@ -153,7 +154,11 @@ public class ScoreService {
             score.setRemark(remark);
             score.setUpdatedAt(now);
 
-            return scoreRepository.save(score);
+            Score saved = scoreRepository.save(score);
+            if (!Boolean.TRUE.equals(is_scored)) mail.admins("score_submitted", "新成绩待评分", course.getTitle(),
+                    "bingo".equalsIgnoreCase(course.getCategory()) ? "bingo_score_admin" : "score_admin",
+                    course.getId(), "score_submission", saved.getId());
+            return saved;
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -331,6 +336,13 @@ public class ScoreService {
             LocalDateTime updatedAt = LocalDateTime.now();
             score.setUpdatedAt(updatedAt);
             Score savedScore = scoreRepository.save(score);
+            if (Boolean.TRUE.equals(is_scored)) mail.readScoreForAdmins(scoreId);
+            if (Boolean.TRUE.equals(is_scored) && scoreCourse != null && "bingo".equalsIgnoreCase(scoreCourse.getCategory())
+                    && (Float.compare(finalPoint, -1f) == 0 || Float.compare(finalPoint, -2f) == 0)) {
+                String reason = Float.compare(finalPoint, -2f) == 0 ? "曲目不对" : "游玩方式不对";
+                mail.send(score.getIdentity().getId(), "score_rejected", "Bingo 成绩未通过", reason,
+                        "course", scoreCourse.getId(), "score_rejection", scoreId);
+            }
 
             if (award && Boolean.TRUE.equals(is_scored)) {
                 int remaining = lockedAward.getRemainingStock() - 1;
@@ -340,8 +352,18 @@ public class ScoreService {
                 awardRepository.save(lockedAward);
 
                 if (remaining == 0) {
+                    List<Score> pendingAwards = scoreRepository.findByCourse_Id(scoreCourse.getId()).stream()
+                            .filter(item -> !item.getId().equals(scoreId)
+                                    && !Boolean.TRUE.equals(item.getIsScored())
+                                    && !Boolean.TRUE.equals(item.getIsDeleted()))
+                            .toList();
                     scoreRepository.rejectOtherPendingAwardScores(
                             scoreCourse.getId(), scoreId, "奖品已售罄", updatedAt);
+                    for (Score pending : pendingAwards) {
+                        mail.readScoreForAdmins(pending.getId());
+                        mail.send(pending.getIdentity().getId(), "score_rejected", "奖品申请未通过",
+                                "奖品已售罄", "course", scoreCourse.getId(), "score_rejection", pending.getId());
+                    }
                 }
             }
 
@@ -365,7 +387,31 @@ public class ScoreService {
         score.setScore(0f);
         score.setRemark(reason == null || reason.isBlank() ? "兑换申请未通过" : reason.trim());
         score.setUpdatedAt(LocalDateTime.now());
-        return scoreRepository.save(score);
+        Score rejected = scoreRepository.save(score);
+        mail.readScoreForAdmins(scoreId);
+        mail.send(score.getIdentity().getId(), "score_rejected", "奖品申请未通过", score.getRemark(), "course", score.getCourse().getId(), "score_rejection", scoreId);
+        return rejected;
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public Score rejectScore(Long scoreId, String reason) {
+        Score score = scoreRepository.findByIdForUpdate(scoreId)
+                .orElseThrow(() -> new IllegalArgumentException("成绩不存在"));
+        if (Boolean.TRUE.equals(score.getIsDeleted()) || Boolean.TRUE.equals(score.getIsScored()))
+            throw new IllegalArgumentException("成绩已经处理或删除");
+        if (score.getCourse() == null || "award".equalsIgnoreCase(score.getCourse().getCategory()))
+            throw new IllegalArgumentException("奖品申请请使用奖品驳回接口");
+        if (reason == null || reason.isBlank() || reason.trim().length() > 500)
+            throw new IllegalArgumentException("请填写不超过500字的未通过理由");
+        score.setIsScored(true);
+        score.setScore(0f);
+        score.setRemark(reason.trim());
+        score.setUpdatedAt(LocalDateTime.now());
+        Score rejected = scoreRepository.save(score);
+        mail.readScoreForAdmins(scoreId);
+        mail.send(score.getIdentity().getId(), "score_rejected", "课题成绩未通过", reason.trim(),
+                "course", score.getCourse().getId(), "score_rejection", scoreId);
+        return rejected;
     }
 
 

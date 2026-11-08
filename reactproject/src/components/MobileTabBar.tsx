@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
+import MailBadge from './MailBadge'
 
 function sessionUser(): any { try { return JSON.parse(sessionStorage.getItem('userInfo') || 'null') } catch { return null } }
 
@@ -13,5 +14,5 @@ export default function MobileTabBar() {
     ['/scan', '扫码'],
     [user?.id ? `/profile/${user.id}` : '/login', '我的'],
   ] as const
-  return <nav className="mobile-tab" aria-label="移动导航">{items.map(([to, label]) => <Link key={label} to={to} className={pathname === to || (to !== '/home' && pathname.startsWith(`${to}/`)) ? 'on' : ''}>{label}</Link>)}</nav>
+  return <nav className="mobile-tab" aria-label="移动导航">{items.map(([to, label]) => <Link key={label} to={to} className={pathname === to || (to !== '/home' && pathname.startsWith(`${to}/`)) ? 'on' : ''}>{label}{to === '/forum' && <MailBadge forum />}</Link>)}</nav>
 }
