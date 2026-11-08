@@ -7,9 +7,9 @@ import { fetchCourseById, type Course } from '../api'
 
 type ScoreHistory = { id: number; uploadTime?: string; image?: string; remark?: string; isScored?: boolean; score?: number }
 type TypicalItem = { id: number; title: string; description: string; image?: string; file?: string; level: string }
-type IssueItem = { issueId: number; image?: string; text?: string; file?: string; songName?: string }
+type IssueItem = { issueId: number; image?: string; text?: string; file?: string; songName?: string; difficulty?: string }
 
-const LEVELS = ['简单', '一般', '困难']
+const LEVELS = ['简单', '简单', '一般', '一般', '困难', '困难']
 
 function parseTypicalItems(course: Course): TypicalItem[] {
   const raw = String(course.description ?? '').trim()
@@ -52,7 +52,7 @@ export default function TaskDetailPage() {
       const res = await api.get(`/issue/course/${courseId}`, { params: { page: 0, size: 6 } })
       const list = Array.isArray(res.data?.list) ? res.data.list : Array.isArray(res.data?.data?.list) ? res.data.data.list : []
       const next = new Map<number, IssueItem>()
-      for (const item of list) { const id = Number(item?.issueId); if (Number.isFinite(id)) next.set(id, { issueId: id, image: item?.image || '', text: item?.text || '', file: item?.file || '', songName: item?.songName || '' }) }
+      for (const item of list) { const id = Number(item?.issueId); if (Number.isFinite(id)) next.set(id, { issueId: id, image: item?.image || '', text: item?.text || '', file: item?.file || '', songName: item?.songName || '', difficulty: item?.difficulty || '' }) }
       setIssues(next)
     } catch { setIssues(new Map()) }
   }
@@ -109,7 +109,7 @@ export default function TaskDetailPage() {
   if (course && category === 'bingo') return <PageShell title="TASK DETAIL" subtitle={course.title}><TaskBingoOverview course={course} /></PageShell>
   const typicalItems = course && category === 'typical' ? parseTypicalItems(course).map((item) => {
     const issue = issues.get(item.id)
-    return { ...item, title: issue?.songName?.trim() ? issue.songName : item.title, description: issue?.text?.trim() ? issue.text : item.description, image: issue?.image || item.image || '', file: issue?.file || '' }
+    return { ...item, title: issue?.songName?.trim() ? issue.songName : item.title, description: issue?.text?.trim() ? issue.text : item.description, image: issue?.image || item.image || '', file: issue?.file || '', level: issue?.difficulty || item.level }
   }) : []
 
   return (

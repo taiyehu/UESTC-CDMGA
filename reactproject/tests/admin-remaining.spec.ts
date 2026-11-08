@@ -78,6 +78,20 @@ test('issue row saves through upsert', async ({ page }) => {
   expect(req.postDataJSON()).toMatchObject({ issue_id: 1 })
 })
 
+test('typical issue saves its selected difficulty', async ({ page }) => {
+  await page.route('**/api/course/', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ code: 0, data: [{ id: 95, title: 'Typical 测试', category: 'typical' }] }) }))
+  await page.route('**/api/issue/course/95*', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ list: [{ issueId: 1, songName: '曲目一', difficulty: '一般' }], total: 1 }) }))
+  await page.route('**/api/issue/course/95/upsert', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ code: 0, data: null }) }))
+  await loginAdmin(page)
+  await page.goto('http://localhost:5174/admin/issues/95')
+  const difficulty = page.getByRole('combobox', { name: 'Issue #1 难度' })
+  await expect(difficulty).toHaveValue('一般')
+  await difficulty.selectOption('困难')
+  const save = page.waitForRequest((request) => request.url().endsWith('/api/issue/course/95/upsert') && request.method() === 'POST')
+  await page.getByRole('button', { name: '保存', exact: true }).first().click()
+  expect((await save).postDataJSON()).toMatchObject({ issue_id: 1, difficulty: '困难' })
+})
+
 test('team row saves member ids', async ({ page }) => {
   await page.route('**/api/course/', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ code: 0, data: [bingoCourse] }) }))
   await page.route('**/api/team/course/83*', (route) => {

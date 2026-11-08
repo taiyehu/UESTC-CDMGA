@@ -5,7 +5,7 @@ import PageShell from '../components/PageShell'
 import { api } from '../api'
 
 type CourseLite = { id: number; title?: string; category?: string | null }
-type IssueRow = { issueId: number; image: string; text: string; file: string; songName: string }
+type IssueRow = { issueId: number; image: string; text: string; file: string; songName: string; difficulty: string }
 type Notice = { type: 'ok' | 'error'; text: string }
 
 function unwrap(res: any): any {
@@ -89,6 +89,7 @@ export default function AdminIssuesPage() {
           text: String(existing?.text || ''),
           file: String(existing?.file || ''),
           songName: String(existing?.songName || ''),
+          difficulty: String(existing?.difficulty || (issueId <= 2 ? '简单' : issueId <= 4 ? '一般' : '困难')),
         })
       }
       setRows(next)
@@ -211,6 +212,7 @@ export default function AdminIssuesPage() {
         text: row.text,
         file: row.file,
         song_name: songName || undefined,
+        difficulty: category === 'typical' ? row.difficulty : undefined,
       })
       patchRow(row.issueId, { songName })
       setNotice({ type: 'ok', text: `Issue #${row.issueId} 保存成功` })
@@ -297,6 +299,7 @@ export default function AdminIssuesPage() {
                     <th>文本描述</th>
                     <th>文件</th>
                     <th>{category === 'bingo' ? '标记字符' : 'song_name'}</th>
+                    {category === 'typical' && <th>难度</th>}
                     <th>操作</th>
                   </tr>
                 </thead>
@@ -355,6 +358,15 @@ export default function AdminIssuesPage() {
                           onChange={(e) => patchRow(row.issueId, { songName: e.target.value })}
                         />
                       </td>
+                      {category === 'typical' && (
+                        <td>
+                          <select className="page-select" aria-label={`Issue #${row.issueId} 难度`} value={row.difficulty} onChange={(e) => patchRow(row.issueId, { difficulty: e.target.value })}>
+                            <option value="简单">简单</option>
+                            <option value="一般">一般</option>
+                            <option value="困难">困难</option>
+                          </select>
+                        </td>
+                      )}
                       <td>
                         <button
                           className="page-btn primary"

@@ -6,6 +6,11 @@ public class IssueRequest {
     private String text;
     private String file;
     private String song_name;
+    private String difficulty;
+
+    public String getDifficulty() { return difficulty; }
+
+    public void setDifficulty(String difficulty) { this.difficulty = difficulty; }
 
     public Integer getIssue_id() {
         return issue_id;
