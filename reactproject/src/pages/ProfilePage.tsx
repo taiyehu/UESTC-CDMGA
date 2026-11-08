@@ -37,7 +37,10 @@ export default function ProfilePage() {
         if (t.status === 'fulfilled') setTitles(Array.isArray(t.value.data?.data) ? t.value.data.data : [])
         if (a.status === 'fulfilled') { const d = a.value.data?.data ?? a.value.data; setRatedActivities(Array.isArray(d) ? d : []) }
         if (r.status === 'fulfilled') { const d = r.value.data?.data ?? r.value.data; setAwardRedemptions(Array.isArray(d) ? d : []) }
-        if (sc.status === 'fulfilled') setSchool(String(sc.value.data?.data ?? sc.value.data?.school ?? ''))
+        if (sc.status === 'fulfilled') {
+          const data = sc.value.data?.data ?? sc.value.data
+          setSchool(typeof data === 'string' ? data : typeof data?.university === 'string' ? data.university : '')
+        }
       })
       .catch((e) => setError(e instanceof Error ? e.message : '加载失败'))
       .finally(() => setLoading(false))
@@ -53,6 +56,8 @@ export default function ProfilePage() {
   }, [titles, tierFilter, sourceFilter, titleOrder])
   const titlePages = Math.max(1, Math.ceil(visibleTitles.length / 4))
   const pagedTitles = visibleTitles.slice((Math.min(titlePage, titlePages) - 1) * 4, Math.min(titlePage, titlePages) * 4)
+  const schoolCode = school || profile?.university || ''
+  const schoolName = ({ UESTC: '电子科技大学', SWJTU: '西南交通大学' } as Record<string, string>)[schoolCode] || schoolCode || '未填写学校'
   function titleStatusText(status: string) { return status === 'pending' ? '审核中' : status === 'approved' ? '已发放' : status === 'revoked' ? '已撤销' : '已驳回' }
   function titleSourceText(source: string) { return source === 'registration' ? '注册获得' : source === 'admin_created' ? '管理员颁发' : source === 'user_application' ? '用户申请' : '其他' }
   async function equipTitle(id: number) { try { await api.post(`/title/equip/${id}`); const res = await api.get(isSelf ? '/title/mine' : `/title/user/${identityId}`); setTitles(res.data?.data || []) } catch { /* keep UI */ } }
@@ -67,9 +72,9 @@ export default function ProfilePage() {
           <section className="page-card profile-card">
             <img className="profile-avatar" src={profile?.avatar || '/club-logo.jpg'} alt="" />
             <h2>{profile?.account || user?.account || `社员 ${identityId}`}</h2>
-            <p className="meta">{online === null ? '在线状态未知' : online ? '在线' : '离线'} · {profile?.status === 1 ? '资料已通过' : '资料未完善'}</p>
+            <p className="meta"><span className="profile-presence"><span className={online === true ? 'profile-presence-dot online' : 'profile-presence-dot offline'} aria-hidden="true" />{online === null ? '在线状态未知' : online ? '在线' : '离线'}</span> · {profile?.status === 1 ? '资料已通过' : '资料未完善'}</p>
             <p className="desc">{profile?.description || '暂无个性签名'}</p>
-            <p className="meta">{school || profile?.university || '未填写学校'}</p>
+            <p className="meta">{schoolName}</p>
             {isSelf && <div className="page-actions-row"><Link className="page-btn small" to="/profile-setting">修改头像 / 签名 / 补充信息</Link></div>}
           </section>
           <section className="page-card">

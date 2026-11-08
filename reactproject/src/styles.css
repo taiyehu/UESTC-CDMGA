@@ -213,6 +213,9 @@ a.page-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.45)}
 .profile-card{text-align:center}
 .profile-avatar{width:96px;height:96px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.5);margin:8px auto 0;display:block}
 .profile-card h2{margin:10px 0 0;font-size:18px}
+.profile-presence{display:inline-flex;align-items:center;gap:6px}
+.profile-presence-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#9299a5;flex:none}
+.profile-presence-dot.online{background:#35c76f}
 .score-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:9px;color:#DCE8F2}
 .score-row b{font-family:"JetBrains Mono",monospace;color:var(--cyan)}
 .mono{font-family:"JetBrains Mono",monospace}
