@@ -4,12 +4,13 @@ import PageShell from '../components/PageShell'
 import { api } from '../api'
 
 type PublishType = 'course' | 'activity'
-type CourseCategory = 'typical' | 'bingo' | 'legacy' | 'contest' | 'ranking' | 'award' | 'sign'
+type CourseCategory = 'typical' | 'bingo' | 'board_game' | 'legacy' | 'contest' | 'ranking' | 'award' | 'sign'
 type Status = { type: 'ok' | 'error'; text: string }
 
 const CATEGORY_OPTIONS: { value: CourseCategory; label: string }[] = [
   { value: 'typical', label: 'typical' },
   { value: 'bingo', label: 'bingo' },
+  { value: 'board_game', label: 'board_game（桌游）' },
   { value: 'legacy', label: 'legacy' },
   { value: 'contest', label: 'contest' },
   { value: 'ranking', label: 'ranking' },
@@ -65,6 +66,9 @@ export default function AdminContentPage() {
   const [publishType, setPublishType] = useState<PublishType>('course')
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState<CourseCategory>('typical')
+  const [refereeIdentityId, setRefereeIdentityId] = useState(0)
+  const [referees, setReferees] = useState<{ id: number; account: string }[]>([])
+  const [refereeError, setRefereeError] = useState('')
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
   const [description, setDescription] = useState('')
@@ -87,11 +91,20 @@ export default function AdminContentPage() {
 
   const isCourse = publishType === 'course'
   const isAward = isCourse && category === 'award'
+  useEffect(() => {
+    if (!isCourse || category !== 'board_game') return
+    let active = true
+    api.get('/course/board-game-referees').then(res => {
+      if (active) { setReferees(res.data || []); setRefereeError('') }
+    }).catch(err => { if (active) setRefereeError(errorMessage(err, '管理员列表加载失败')) })
+    return () => { active = false }
+  }, [isCourse, category])
   const preview = imagePreview || resolveUrl(imageUrl)
 
   function resetForm(keepStatus = false) {
     setTitle('')
     setCategory('typical')
+    setRefereeIdentityId(0)
     setStartTime('')
     setEndTime('')
     setDescription('')
@@ -113,6 +126,7 @@ export default function AdminContentPage() {
 
   function changeCategory(next: CourseCategory) {
     setCategory(next)
+    setRefereeIdentityId(0)
     if (publishType === 'course') {
       setTitle('')
       setAwardCost('')
@@ -185,6 +199,10 @@ export default function AdminContentPage() {
       setStatus({ type: 'error', text: '请填写所有必填项' })
       return
     }
+    if (isCourse && category === 'board_game' && !refereeIdentityId) {
+      setStatus({ type: 'error', text: '请选择管理员裁判' })
+      return
+    }
 
     setSubmitting(true)
     try {
@@ -226,6 +244,7 @@ export default function AdminContentPage() {
           image: finalImage,
           awardCost: category === 'award' ? cost : null,
           awardStock: category === 'award' ? stock : null,
+          refereeIdentityId: category === 'board_game' ? refereeIdentityId : null,
           createTime: nowStamp(),
           updateTime: nowStamp(),
         })
@@ -312,6 +331,17 @@ export default function AdminContentPage() {
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
+            </Field>
+          )}
+
+          {isCourse && category === 'board_game' && (
+            <Field label="裁判（管理员）">
+              <select className="page-select" style={{ width: '100%' }} value={refereeIdentityId}
+                disabled={submitting} onChange={event => setRefereeIdentityId(Number(event.target.value))}>
+                <option value={0}>请选择管理员裁判</option>
+                {referees.map(referee => <option key={referee.id} value={referee.id}>{referee.account} (#{referee.id})</option>)}
+              </select>
+              {refereeError && <p role="alert">{refereeError}</p>}
             </Field>
           )}
 

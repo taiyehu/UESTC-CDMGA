@@ -1,0 +1,120 @@
+name: Board game deploy
+
+on:
+  workflow_call:
+    secrets:
+      SSH_HOST: { required: true }
+      SSH_SUDO: { required: true }
+      SSH_PRIVATE_KEY: { required: true }
+      SSH_PORT: { required: false }
+  workflow_dispatch:
+
+concurrency:
+  group: board-game-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: game-service/package-lock.json
+
+      - name: Check board game rules
+        working-directory: game-service
+        run: |
+          npm ci
+          npm test
+
+      - name: Package service and card assets
+        run: tar -czf board-game.tar.gz -C game-service package.json package-lock.json server.js game.js catalog.js map-data.js node-types.csv public content
+
+      - name: Upload release
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_SUDO }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          source: board-game.tar.gz,script/board-game.service
+          target: /opt/webserver/upload/
+
+      - name: Install and restart board game service
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_SUDO }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            set -eu
+            SHA=${{ github.sha }}
+            APP_BASE=/opt/webserver/game-service
+            CARD_BASE=/var/webserver/game
+            APP_RELEASE="$APP_BASE/releases/$SHA"
+            CARD_RELEASE="$CARD_BASE/releases/$SHA"
+
+            test -x /usr/bin/node
+            test -x /usr/bin/npm
+            case "$(/usr/bin/node --version)" in v24.*) ;; *) echo 'Node.js 24 is required' >&2; exit 1 ;; esac
+            command -v curl >/dev/null
+            sudo test -r /etc/webserver.env
+            sudo -u webserver test -r /etc/webserver.env
+            sudo -u webserver test -w "$CARD_BASE"
+            sudo test -s /opt/webserver/upload/board-game.tar.gz
+            sudo test -s /opt/webserver/upload/script/board-game.service
+
+            sudo install -d -o webserver -g webserver -m 750 "$APP_BASE" "$APP_BASE/releases" "$CARD_BASE/releases"
+            sudo install -d -o webserver -g webserver -m 750 "$APP_RELEASE" "$CARD_RELEASE"
+            sudo tar -xzf /opt/webserver/upload/board-game.tar.gz -C "$APP_RELEASE"
+            sudo chown -R webserver:webserver "$APP_RELEASE"
+            sudo -u webserver /usr/bin/npm ci --omit=dev --cache /tmp/cdmga-game-npm-cache --prefix "$APP_RELEASE"
+            sudo cp -a "$APP_RELEASE/content/." "$CARD_RELEASE/"
+            sudo chown -R webserver:webserver "$CARD_RELEASE"
+            sudo rm -rf -- "$APP_RELEASE/content"
+
+            OLD_APP=
+            OLD_CARDS=
+            if [ -L "$APP_BASE/current" ]; then OLD_APP=$(readlink -f "$APP_BASE/current"); fi
+            if [ -L "$CARD_BASE/current" ]; then OLD_CARDS=$(readlink -f "$CARD_BASE/current"); fi
+            sudo install -m 644 /opt/webserver/upload/script/board-game.service /etc/systemd/system/board-game.service
+            sudo systemctl daemon-reload
+            sudo ln -sfnT "$APP_RELEASE" "$APP_BASE/current"
+            sudo ln -sfnT "$CARD_RELEASE" "$CARD_BASE/current"
+            sudo systemctl enable board-game.service
+
+            HEALTHY=false
+            if sudo systemctl restart board-game.service; then
+              for i in $(seq 1 20); do
+                if curl --fail --silent --show-error --max-time 3 http://127.0.0.1:3001/game-api/health >/dev/null; then
+                  HEALTHY=true
+                  break
+                fi
+                sleep 3
+              done
+            fi
+            if [ "$HEALTHY" != true ]; then
+              sudo journalctl -u board-game.service -n 50 --no-pager
+              if [ -n "$OLD_APP" ] && [ -n "$OLD_CARDS" ]; then
+                sudo ln -sfnT "$OLD_APP" "$APP_BASE/current"
+                sudo ln -sfnT "$OLD_CARDS" "$CARD_BASE/current"
+                sudo systemctl restart board-game.service
+              else
+                sudo systemctl stop board-game.service
+              fi
+              exit 1
+            fi
+            for BASE in "$APP_BASE" "$CARD_BASE"; do
+              ls -1dt "$BASE/releases/"* 2>/dev/null | tail -n +7 | while IFS= read -r OLD_RELEASE; do
+                if [ "$OLD_RELEASE" != "$APP_RELEASE" ] && [ "$OLD_RELEASE" != "$CARD_RELEASE" ] && [ -d "$OLD_RELEASE" ]; then
+                  sudo rm -rf -- "$OLD_RELEASE"
+                fi
+              done
+            done
+            sudo rm -f /opt/webserver/upload/board-game.tar.gz /opt/webserver/upload/script/board-game.service
+            echo "Board game service healthy at $SHA"

@@ -25,6 +25,8 @@ public interface IdentityRepository extends JpaRepository<Identity, Integer> {
 
     List<Identity> findByIsDeletedFalseOrderByIdAsc();
 
+    List<Identity> findByRoleAndIsDeletedFalseOrderByIdAsc(String role);
+
     // 可以定义一些自定义查询方法
     Identity findByAccount(String account);
 

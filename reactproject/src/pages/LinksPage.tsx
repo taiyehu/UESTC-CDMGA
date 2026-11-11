@@ -1,4 +1,5 @@
 import PageShell from '../components/PageShell'
+import { Link } from 'react-router-dom'
 
 const links = [
   ['抽卡 Debuff 对决', 'https://qglint.github.io/cdmga_links/card_one/card_one.html', '体验抽卡对决玩法。'],
@@ -12,6 +13,12 @@ export default function LinksPage() {
   return (
     <PageShell title="LINKS" subtitle="社团功能组件">
       <div className="page-grid">
+        <Link className="page-card" to="/game">
+          <div className="card-k">BOARD GAME</div>
+          <h3>桌游课题</h3>
+          <p className="desc">查看所有桌游课题并进入房间。</p>
+          <span className="page-btn small">查看课题 →</span>
+        </Link>
         {links.map(([title, href, desc]) => (
           <a className="page-card" key={href} href={href} target="_blank" rel="noreferrer">
             <div className="card-k">TOOL</div>

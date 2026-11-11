@@ -43,7 +43,7 @@ export default function HomePage() {
         fetchCourses(), fetchActivities(), fetchDailyMember(), fetchCheckin(), fetchForum(),
       ])
       if (cancelled) return
-      if (courseRes.status === 'fulfilled') setCourses(courseRes.value)
+      if (courseRes.status === 'fulfilled') setCourses(courseRes.value.filter(c => String(c.category || '').toLowerCase() !== 'board_game'))
       if (activityRes.status === 'fulfilled') setActivities(activityRes.value)
       if (dailyRes.status === 'fulfilled') setDaily(dailyRes.value)
       if (checkinRes.status === 'fulfilled') setCheckin(checkinRes.value)

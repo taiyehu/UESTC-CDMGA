@@ -40,6 +40,24 @@ public class TeamService {
     @Autowired
     private ScoreRepository scoreRepository;
 
+    private Course validateTeamCourse(Integer courseId) {
+        Course course = courseRepository.findById(courseId).orElse(null);
+        if (course == null || Boolean.TRUE.equals(course.getIsDeleted())) {
+            throw new IllegalArgumentException("课题不存在");
+        }
+        String category = course.getCategory() == null ? "" : course.getCategory().trim().toLowerCase();
+        if (!"bingo".equals(category) && !"board_game".equals(category)) {
+            throw new IllegalArgumentException("仅 bingo 或 board_game 课题支持队伍管理");
+        }
+        return course;
+    }
+
+    private void requireBingoTeamMutation(Integer courseId) {
+        Course course = validateTeamCourse(courseId);
+        if ("board_game".equalsIgnoreCase(course.getCategory()))
+            throw new IllegalArgumentException("请在桌游房间内管理队伍");
+    }
+
     private Course validateBingoCourse(Integer courseId) {
         Course course = courseRepository.findById(courseId).orElse(null);
         if (course == null || Boolean.TRUE.equals(course.getIsDeleted())) {
@@ -70,7 +88,7 @@ public class TeamService {
     }
 
     public Map<String, Object> getCourseTeams(Integer courseId, int page, int size) {
-        validateBingoCourse(courseId);
+        validateTeamCourse(courseId);
 
         int safePage = Math.max(0, page);
         int safeSize = Math.max(1, size);
@@ -109,7 +127,7 @@ public class TeamService {
     }
 
     public TeamPanelDto getMyTeamPanel(Integer courseId, Integer identityId) {
-        validateBingoCourse(courseId);
+        validateTeamCourse(courseId);
         if (identityId == null || identityId <= 0) {
             throw new IllegalArgumentException("identity_id 无效");
         }
@@ -323,7 +341,7 @@ public class TeamService {
     }
 
     public List<TeamJoinOptionDto> searchJoinOptions(Integer courseId, Integer identityId, String keyword) {
-        validateBingoCourse(courseId);
+        validateTeamCourse(courseId);
         if (identityId == null || identityId <= 0) {
             throw new IllegalArgumentException("identity_id 无效");
         }
@@ -365,7 +383,7 @@ public class TeamService {
 
     @Transactional
     public Integer createTeam(Integer courseId, Integer identityId) {
-        validateBingoCourse(courseId);
+        requireBingoTeamMutation(courseId);
         if (identityId == null || identityId <= 0) {
             throw new IllegalArgumentException("identity_id 无效");
         }
@@ -381,7 +399,7 @@ public class TeamService {
 
     @Transactional
     public void joinTeam(Integer courseId, Integer identityId, Integer teamId) {
-        validateBingoCourse(courseId);
+        requireBingoTeamMutation(courseId);
         if (identityId == null || identityId <= 0 || teamId == null || teamId <= 0) {
             throw new IllegalArgumentException("参数无效");
         }
@@ -402,7 +420,7 @@ public class TeamService {
 
     @Transactional
     public void inviteMember(Integer courseId, Integer ownerIdentityId, Integer targetIdentityId) {
-        validateBingoCourse(courseId);
+        requireBingoTeamMutation(courseId);
         if (ownerIdentityId == null || ownerIdentityId <= 0 || targetIdentityId == null || targetIdentityId <= 0) {
             throw new IllegalArgumentException("参数无效");
         }
@@ -425,7 +443,8 @@ public class TeamService {
 
     @Transactional
     public void leaveTeam(Integer courseId, Integer identityId) {
-        Course course = validateBingoCourse(courseId);
+        requireBingoTeamMutation(courseId);
+        Course course = validateTeamCourse(courseId);
         if (identityId == null || identityId <= 0) {
             throw new IllegalArgumentException("identity_id 无效");
         }
@@ -472,7 +491,7 @@ public class TeamService {
         teamRepository.save(team);
     }
     public List<TeamMemberDto> searchMemberOptions(Integer courseId, String keyword, int size) {
-        validateBingoCourse(courseId);
+        validateTeamCourse(courseId);
 
         String key = keyword == null ? "" : keyword.trim();
         if (key.isEmpty()) {
@@ -491,7 +510,8 @@ public class TeamService {
 
     @Transactional
     public void saveTeamMembers(Integer courseId, Integer teamId, List<Integer> memberIds, Integer adminIdentityId) {
-        validateBingoCourse(courseId);
+        requireBingoTeamMutation(courseId);
+        validateTeamCourse(courseId);
         validateAdminIdentity(adminIdentityId);
 
         if (teamId == null || teamId <= 0) {

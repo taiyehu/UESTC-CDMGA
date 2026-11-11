@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 public class CourseRequest {
     private String title;
     private String category;
+    private Integer refereeIdentityId;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startTime;
@@ -46,6 +47,9 @@ public class CourseRequest {
         this.category = category;
         update();
     }
+
+    public Integer getRefereeIdentityId() { return refereeIdentityId; }
+    public void setRefereeIdentityId(Integer refereeIdentityId) { this.refereeIdentityId = refereeIdentityId; }
 
     public LocalDateTime getEndTime() {
         return endTime;

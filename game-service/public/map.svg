@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1640" height="1510" viewBox="0 0 1640 1510" role="img" aria-labelledby="title desc">
+<title id="title">圆环地图</title>
+<desc id="desc">中央十二节点大环，R8位于正上方，R2位于正下方。R2与R8通过厄运B连接。三个外侧路线分别经过Arcaea银行、Phigros市场和范式起源藏宝阁，其中F2直接连接R10。箭头表示可移动方向。加号是收入格，减号是收税格，感叹号是事件格，斜杠是空白格。节点名称对照见node-types.csv。</desc>
+<defs>
+  <marker id="arr-main" markerWidth="24" markerHeight="24" refX="12" refY="12" orient="auto" markerUnits="userSpaceOnUse"><path d="M 2 2 L 22 12 L 2 22 Z" fill="#2866c5" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></marker>
+  <marker id="arr-bank" markerWidth="24" markerHeight="24" refX="12" refY="12" orient="auto" markerUnits="userSpaceOnUse"><path d="M 2 2 L 22 12 L 2 22 Z" fill="#189b87" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></marker>
+  <marker id="arr-ph" markerWidth="24" markerHeight="24" refX="12" refY="12" orient="auto" markerUnits="userSpaceOnUse"><path d="M 2 2 L 22 12 L 2 22 Z" fill="#c87927" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></marker>
+  <marker id="arr-fan" markerWidth="24" markerHeight="24" refX="12" refY="12" orient="auto" markerUnits="userSpaceOnUse"><path d="M 2 2 L 22 12 L 2 22 Z" fill="#8c5ac8" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></marker>
+</defs>
+<rect width="100%" height="100%" fill="#f8fafc"/>
+<g font-family="'Microsoft YaHei','Noto Sans CJK SC',Arial,sans-serif">
+<text x="800" y="50" text-anchor="middle" font-size="34" font-weight="700" fill="#182438">圆环地图</text>
+<text x="800" y="86" text-anchor="middle" font-size="18" fill="#607086">箭头表示可移动方向</text>
+
+<path d="M 926.79 961.89 A 300.00 300.00 0 0 1 877.65 979.78 A 300.00 300.00 0 0 1 826.15 988.86" fill="none" stroke="#2866c5" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-main)"/>
+<path d="M 773.85 988.86 A 300.00 300.00 0 0 1 722.35 979.78 A 300.00 300.00 0 0 1 673.21 961.89" fill="none" stroke="#2866c5" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-main)"/>
+<path d="M 627.93 935.75 A 300.00 300.00 0 0 1 587.87 902.13 A 300.00 300.00 0 0 1 554.25 862.07" fill="none" stroke="#2866c5" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-main)"/>
+<path d="M 528.11 816.79 A 300.00 300.00 0 0 1 510.22 767.65 A 300.00 300.00 0 0 1 501.14 716.15" fill="none" stroke="#2866c5" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-main)"/>
+<path d="M 501.14 663.85 A 300.00 300.00 0 0 1 510.22 612.35 A 300.00 300.00 0 0 1 528.11 563.21" fill="none" stroke="#2866c5" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-main)"/>
+<path d="M 554.25 517.93 A 300.00 300.00 0 0 1 587.87 477.87 A 300.00 300.00 0 0 1 627.93 444.25" fill="none" stroke="#2866c5" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-main)"/>
+<path d="M 673.21 418.11 A 300.00 300.00 0 0 1 722.35 400.22 A 300.00 300.00 0 0 1 773.85 391.14" fill="none" stroke="#2866c5" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-main)"/>
+<path d="M 826.15 391.14 A 300.00 300.00 0 0 1 877.65 400.22 A 300.00 300.00 0 0 1 926.79 418.11" fill="none" stroke="#2866c5" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-main)"/>
+<path d="M 972.07 444.25 A 300.00 300.00 0 0 1 1012.13 477.87 A 300.00 300.00 0 0 1 1045.75 517.93" fill="none" stroke="#2866c5" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-main)"/>
+<path d="M 1071.89 563.21 A 300.00 300.00 0 0 1 1089.78 612.35 A 300.00 300.00 0 0 1 1098.86 663.85" fill="none" stroke="#2866c5" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-main)"/>
+<path d="M 1098.86 716.15 A 300.00 300.00 0 0 1 1089.78 767.65 A 300.00 300.00 0 0 1 1071.89 816.79" fill="none" stroke="#2866c5" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-main)"/>
+<path d="M 1045.75 862.07 A 300.00 300.00 0 0 1 1012.13 902.13 A 300.00 300.00 0 0 1 972.07 935.75" fill="none" stroke="#2866c5" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-main)"/>
+<path d="M 1417.94 1388.41 A 327.67 327.67 0 0 1 1173.10 1442.69 A 327.67 327.67 0 0 1 961.59 1307.94" fill="none" stroke="#189b87" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-bank)"/>
+<path d="M 933.03 1258.48 A 327.67 327.67 0 0 1 902.35 1116.30 A 327.67 327.67 0 0 1 936.23 974.86" fill="none" stroke="#189b87" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-bank)"/>
+<path d="M 1084.86 826.23 A 327.67 327.67 0 0 1 1226.30 792.35 A 327.67 327.67 0 0 1 1368.48 823.03" fill="none" stroke="#189b87" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-bank)"/>
+<path d="M 1417.94 851.59 A 327.67 327.67 0 0 1 1556.42 1091.44 A 327.67 327.67 0 0 1 1461.70 1351.70" fill="none" stroke="#189b87" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-bank)"/>
+<path d="M 121.43 998.57 A 245.46 245.46 0 0 1 64.34 741.05 A 245.46 245.46 0 0 1 273.61 580.48" fill="none" stroke="#c87927" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-ph)"/>
+<path d="M 316.39 580.48 A 245.46 245.46 0 0 1 411.43 608.91 A 245.46 245.46 0 0 1 487.45 672.65" fill="none" stroke="#c87927" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-ph)"/>
+<path d="M 537.76 861.28 A 245.46 245.46 0 0 1 463.18 1003.79 A 245.46 245.46 0 0 1 316.39 1069.52" fill="none" stroke="#c87927" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-ph)"/>
+<path d="M 273.61 1069.52 A 245.46 245.46 0 0 1 211.05 1055.66 A 245.46 245.46 0 0 1 154.21 1026.07" fill="none" stroke="#c87927" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-ph)"/>
+<path d="M 1203.20 128.45 A 199.99 199.99 0 0 1 1245.25 213.71 A 199.99 199.99 0 0 1 1243.17 308.76" fill="none" stroke="#8c5ac8" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-fan)"/>
+<path d="M 1231.25 341.52 A 199.99 199.99 0 0 1 1185.11 404.45 A 199.99 199.99 0 0 1 1118.40 444.93" fill="none" stroke="#8c5ac8" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-fan)"/>
+<path d="M 935.29 420.82 A 199.99 199.99 0 0 1 886.18 371.71 A 199.99 199.99 0 0 1 856.83 308.76" fill="none" stroke="#8c5ac8" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-fan)"/>
+<path d="M 850.77 274.43 A 199.99 199.99 0 0 1 859.27 196.86 A 199.99 199.99 0 0 1 896.80 128.45" fill="none" stroke="#8c5ac8" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-fan)"/>
+<path d="M 921.45 103.80 A 199.99 199.99 0 0 1 1050.00 57.01 A 199.99 199.99 0 0 1 1178.55 103.80" fill="none" stroke="#8c5ac8" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-fan)"/>
+<path d="M 1089.49 476.45 L 1080.78 495.09 L 1072.08 513.72" fill="none" stroke="#8c5ac8" stroke-width="5" stroke-linecap="round" marker-mid="url(#arr-fan)"/>
+<path d="M 800 412 L 800 665" stroke="#d64b59" stroke-width="5" stroke-dasharray="12 10" fill="none"/>
+<path d="M 800 715 L 800 968" stroke="#d64b59" stroke-width="5" stroke-dasharray="12 10" fill="none"/>
+<g class="node"><rect x="921.00" y="927.81" width="58" height="44" rx="18" fill="#f3f6fa" stroke="#718096" stroke-width="2.5"/><text x="950.0" y="956.81" text-anchor="middle" font-size="26" font-weight="700" fill="#182438">/</text></g>
+<g class="node"><rect x="771.00" y="968.00" width="58" height="44" rx="18" fill="#fff0e9" stroke="#c75534" stroke-width="2.5"/><text x="800.0" y="997.0" text-anchor="middle" font-size="26" font-weight="700" fill="#182438">-</text></g>
+<g class="node"><rect x="621.00" y="927.81" width="58" height="44" rx="18" fill="#f3f6fa" stroke="#718096" stroke-width="2.5"/><text x="650.0" y="956.81" text-anchor="middle" font-size="26" font-weight="700" fill="#182438">/</text></g>
+<g class="node"><rect x="511.19" y="818.00" width="58" height="44" rx="18" fill="#fff0e9" stroke="#c75534" stroke-width="2.5"/><text x="540.19" y="847.0" text-anchor="middle" font-size="26" font-weight="700" fill="#182438">-</text></g>
+<g class="node"><rect x="471.00" y="668.00" width="58" height="44" rx="18" fill="#e6f7ed" stroke="#218654" stroke-width="2.5"/><text x="500.0" y="697.0" text-anchor="middle" font-size="26" font-weight="700" fill="#182438">+</text></g>
+<g class="node"><rect x="511.19" y="518.00" width="58" height="44" rx="18" fill="#fff0e9" stroke="#c75534" stroke-width="2.5"/><text x="540.19" y="547.0" text-anchor="middle" font-size="26" font-weight="700" fill="#182438">-</text></g>
+<g class="node"><rect x="621.00" y="408.19" width="58" height="44" rx="18" fill="#f3f6fa" stroke="#718096" stroke-width="2.5"/><text x="650.0" y="437.19" text-anchor="middle" font-size="26" font-weight="700" fill="#182438">/</text></g>
+<g class="node"><rect x="771.00" y="368.00" width="58" height="44" rx="18" fill="#fff0e9" stroke="#c75534" stroke-width="2.5"/><text x="800.0" y="397.0" text-anchor="middle" font-size="26" font-weight="700" fill="#182438">-</text></g>
+<g class="node"><rect x="921.00" y="408.19" width="58" height="44" rx="18" fill="#f3f6fa" stroke="#718096" stroke-width="2.5"/><text x="950.0" y="437.19" text-anchor="middle" font-size="26" font-weight="700" fill="#182438">/</text></g>
+<g class="node"><rect x="1030.81" y="518.00" width="58" height="44" rx="18" fill="#fff0e9" stroke="#c75534" stroke-width="2.5"/><text x="1059.81" y="547.0" text-anchor="middle" font-size="26" font-weight="700" fill="#182438">-</text></g>
+<g class="node"><rect x="1071.00" y="668.00" width="58" height="44" rx="18" fill="#fff0e9" stroke="#c75534" stroke-width="2.5"/><text x="1100.0" y="697.0" text-anchor="middle" font-size="26" font-weight="700" fill="#182438">-</text></g>
+<g class="node"><rect x="1030.81" y="818.00" width="58" height="44" rx="18" fill="#e6f7ed" stroke="#218654" stroke-width="2.5"/><text x="1059.81" y="847.0" text-anchor="middle" font-size="26" font-weight="700" fill="#182438">+</text></g>
+<g class="node"><rect x="742.00" y="663.00" width="116" height="54" rx="18" fill="#ffe9ec" stroke="#d64b59" stroke-width="2.5"/><text x="800" y="697" text-anchor="middle" font-size="21" font-weight="700" fill="#182438">厄运 B</text></g>
+<g class="node"><rect x="1355.62" y="1344.01" width="170" height="54" rx="18" fill="#e3f8f1" stroke="#189b87" stroke-width="2.5"/><text x="1440.62" y="1378.01" text-anchor="middle" font-size="20" font-weight="700" fill="#182438">Arcaea 银行</text></g>
+<g class="node"><rect x="917.23" y="1261.83" width="58" height="44" rx="18" fill="#f1eaff" stroke="#8c5ac8" stroke-width="2.5"/><text x="946.23" y="1290.83" text-anchor="middle" font-size="26" font-weight="700" fill="#182438">!</text></g>
+<g class="node"><rect x="1364.83" y="814.23" width="58" height="44" rx="18" fill="#fff0e9" stroke="#c75534" stroke-width="2.5"/><text x="1393.83" y="843.23" text-anchor="middle" font-size="26" font-weight="700" fill="#182438">-</text></g>
+<g class="node"><rect x="50.22" y="986.03" width="174" height="54" rx="18" fill="#fff0dd" stroke="#c87927" stroke-width="2.5"/><text x="137.22" y="1020.03" text-anchor="middle" font-size="20" font-weight="700" fill="#182438">Phigros 市场</text></g>
+<g class="node"><rect x="266.00" y="557.54" width="58" height="44" rx="18" fill="#f3f6fa" stroke="#718096" stroke-width="2.5"/><text x="295.0" y="586.54" text-anchor="middle" font-size="26" font-weight="700" fill="#182438">/</text></g>
+<g class="node"><rect x="266.00" y="1048.46" width="58" height="44" rx="18" fill="#f1eaff" stroke="#8c5ac8" stroke-width="2.5"/><text x="295.0" y="1077.46" text-anchor="middle" font-size="26" font-weight="700" fill="#182438">!</text></g>
+<g class="node"><rect x="1083.41" y="88.59" width="216" height="54" rx="18" fill="#f1eaff" stroke="#8c5ac8" stroke-width="2.5"/><text x="1191.41" y="122.59" text-anchor="middle" font-size="19" font-weight="700" fill="#182438">范式起源藏宝阁</text></g>
+<g class="node"><rect x="1208.93" y="303.40" width="58" height="44" rx="18" fill="#f1eaff" stroke="#8c5ac8" stroke-width="2.5"/><text x="1237.93" y="332.4" text-anchor="middle" font-size="26" font-weight="700" fill="#182438">!</text></g>
+<g class="node"><rect x="1072.76" y="428.17" width="58" height="44" rx="18" fill="#fff0e9" stroke="#c75534" stroke-width="2.5"/><text x="1101.76" y="457.17" text-anchor="middle" font-size="26" font-weight="700" fill="#182438">-</text></g>
+<g class="node"><rect x="824.05" y="269.73" width="58" height="44" rx="18" fill="#f3f6fa" stroke="#718096" stroke-width="2.5"/><text x="853.05" y="298.73" text-anchor="middle" font-size="26" font-weight="700" fill="#182438">/</text></g>
+<g class="node"><rect x="879.59" y="93.59" width="58" height="44" rx="18" fill="#fff0e9" stroke="#c75534" stroke-width="2.5"/><text x="908.59" y="122.59" text-anchor="middle" font-size="26" font-weight="700" fill="#182438">-</text></g>
+<g aria-label="图例"><rect x="90" y="1335" width="515" height="105" rx="18" fill="#ffffff" stroke="#d5dde8" stroke-width="2"/>
+<text x="115" y="1374" font-size="20" font-weight="700" fill="#182438">图例</text>
+<text x="115" y="1412" font-size="20" fill="#218654">+ 收入</text>
+<text x="230" y="1412" font-size="20" fill="#c75534">- 收税</text>
+<text x="350" y="1412" font-size="20" fill="#8c5ac8">! 事件</text>
+<text x="470" y="1412" font-size="20" fill="#718096">/ 空白</text></g>
+</g></svg>

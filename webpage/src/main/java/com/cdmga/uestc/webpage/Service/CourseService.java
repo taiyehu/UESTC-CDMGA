@@ -13,9 +13,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cdmga.uestc.webpage.Repository.CourseRepository;
+import com.cdmga.uestc.webpage.Repository.IdentityRepository;
 
 @Service
 public class CourseService {
@@ -23,6 +25,32 @@ public class CourseService {
 
     @Autowired
     private CourseRepository courseRepository;
+    @Autowired private IdentityRepository identityRepository;
+    @Autowired private JdbcTemplate jdbcTemplate;
+
+    public List<java.util.Map<String, Object>> getBoardGameReferees() {
+        return identityRepository.findByRoleAndIsDeletedFalseOrderByIdAsc("admin").stream()
+                .map(identity -> java.util.Map.<String, Object>of("id", identity.getId(), "account", identity.getAccount()))
+                .toList();
+    }
+
+    public List<java.util.Map<String, Object>> getBoardGameRooms() {
+        return jdbcTemplate.queryForList("SELECT r.code, r.course_id, r.status FROM game_room r " +
+                "JOIN course c ON c.id=r.course_id WHERE c.category='board_game' AND c.is_deleted=0 ORDER BY r.id DESC");
+    }
+
+    private void setBoardGameReferee(Course course, String category, Integer refereeIdentityId) {
+        if (!"board_game".equalsIgnoreCase(category)) {
+            course.setRefereeIdentityId(null);
+            return;
+        }
+        if (refereeIdentityId == null || identityRepository.findById(refereeIdentityId)
+                .filter(identity -> !Boolean.TRUE.equals(identity.getIsDeleted()) && "admin".equals(identity.getRole()))
+                .isEmpty()) {
+            throw new IllegalArgumentException("桌游课题必须指定一位管理员作为裁判");
+        }
+        course.setRefereeIdentityId(refereeIdentityId);
+    }
 
     @Autowired
     private AwardRepository awardRepository;
@@ -70,7 +98,7 @@ public class CourseService {
     @Transactional
     public Course postNewCourse(String title, String category,
         LocalDateTime startTime, LocalDateTime endTime,
-        String description, String image, Integer awardCost, Integer awardStock
+        String description, String image, Integer awardCost, Integer awardStock, Integer refereeIdentityId, Integer creatorIdentityId
     ){
         validateAwardCost(category, awardCost);
         int stock = validateAwardStock(category, awardStock);
@@ -78,12 +106,18 @@ public class CourseService {
         Course course = new Course(now);
         course.setTitle(title);
         course.setCategory(category);
+        setBoardGameReferee(course, category, refereeIdentityId);
         course.setStartTime(startTime);
         course.setEndTime(endTime);
         course.setDescription(description);
         course.setImage(image);
         course.setUpdatedAt(now);
         Course savedCourse = courseRepository.save(course);
+        if ("board_game".equalsIgnoreCase(category)) {
+            String code = java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+            jdbcTemplate.update("INSERT INTO game_room(code,course_id,created_by_identity_id,referee_identity_id) VALUES(?,?,?,?)",
+                    code, savedCourse.getId(), creatorIdentityId, refereeIdentityId);
+        }
         if (isAwardCategory(category)) {
             Award award = new Award();
             award.setCourse(savedCourse);
@@ -111,11 +145,14 @@ public class CourseService {
         String description,
         String image,
         Integer awardCost,
-        Integer awardStock
+        Integer awardStock, Integer refereeIdentityId
     ) {
         Course course = courseRepository.findById(courseId).orElse(null);
         if (course == null || Boolean.TRUE.equals(course.getIsDeleted())) {
             return null;
+        }
+        if ("board_game".equalsIgnoreCase(course.getCategory()) != "board_game".equalsIgnoreCase(category)) {
+            throw new IllegalArgumentException("桌游课题类别不可转换，请通过发布内容创建新的桌游课题");
         }
 
         validateAwardCost(category, awardCost);
@@ -131,14 +168,28 @@ public class CourseService {
             throw new IllegalArgumentException("已有提交记录的奖品课题不能修改名称、类别或兑换积分");
         }
 
+        Integer previousRefereeId = course.getRefereeIdentityId();
         course.setTitle(title);
         course.setCategory(category);
+        setBoardGameReferee(course, category, refereeIdentityId);
         course.setStartTime(startTime);
         course.setEndTime(endTime);
         course.setDescription(description);
         course.setImage(image);
         course.setUpdatedAt(LocalDateTime.now());
         Course savedCourse = courseRepository.save(course);
+        if ("board_game".equalsIgnoreCase(category) && !java.util.Objects.equals(previousRefereeId, refereeIdentityId)) {
+            int changed = jdbcTemplate.update("UPDATE game_room SET referee_identity_id=? WHERE course_id=? AND status='waiting'",
+                    refereeIdentityId, courseId);
+            if (changed == 0) {
+                Integer roomCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM game_room WHERE course_id=?", Integer.class, courseId);
+                if (roomCount != null && roomCount > 0)
+                    throw new IllegalArgumentException("游戏开始后不能更换裁判");
+                String code = java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+                jdbcTemplate.update("INSERT INTO game_room(code,course_id,created_by_identity_id,referee_identity_id) VALUES(?,?,?,?)",
+                        code, courseId, refereeIdentityId, refereeIdentityId);
+            }
+        }
 
         if (isAward) {
             LocalDateTime now = LocalDateTime.now();

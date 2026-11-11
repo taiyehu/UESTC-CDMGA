@@ -31,6 +31,9 @@ public class Course {
     @Column(name = "category")
     private String category;
 
+    @Column(name = "referee_identity_id")
+    private Integer refereeIdentityId;
+
     /**
      * Start Time (开始时间)
      */
@@ -124,6 +127,9 @@ public class Course {
     public void setCategory(String category) {
         this.category = category;
     }
+
+    public Integer getRefereeIdentityId() { return refereeIdentityId; }
+    public void setRefereeIdentityId(Integer refereeIdentityId) { this.refereeIdentityId = refereeIdentityId; }
 
     public LocalDateTime getStartTime() {
         return startTime;

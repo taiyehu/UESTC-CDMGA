@@ -259,7 +259,7 @@ export default function AdminTeamsPage() {
 
         if (!course || String(course.category || '').trim().toLowerCase() !== 'bingo') {
           setSelected(null)
-          setNotice({ type: 'error', text: '仅 bingo 课题支持队伍管理' })
+          setNotice({ type: 'error', text: '仅 bingo 课题支持此处的队伍管理' })
           navigate('/admin/teams', { replace: true })
           return
         }
@@ -386,9 +386,9 @@ export default function AdminTeamsPage() {
       {!booting && !error && !selected && (
         <div className="section-block">
           <h2>选择课题</h2>
-          <p className="desc">请选择一个 bingo 课题进行队伍管理：</p>
+          <p className="desc">请选择一个 bingo 课题进行队伍管理；桌游队伍请在房间中管理。</p>
           {!courses.length ? (
-            <div className="page-card">暂无可管理队伍的 bingo 课题</div>
+            <div className="page-card">暂无可管理队伍的课题</div>
           ) : (
             <div className="page-card" style={{ overflowX: 'auto' }}>
               <table className="page-table">
