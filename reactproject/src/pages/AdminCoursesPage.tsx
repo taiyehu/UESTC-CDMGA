@@ -7,6 +7,7 @@ type CourseRow = {
   id: number
   title: string
   category: string
+  refereeIdentityId: number | null
   startTime: string | null
   endTime: string | null
   description: string
@@ -19,7 +20,7 @@ type CourseRow = {
 type Notice = { type: 'ok' | 'error'; text: string }
 
 const PAGE_SIZE = 5
-const CATEGORY_OPTIONS = ['typical', 'bingo', 'legacy', 'award', 'sign'] as const
+const CATEGORY_OPTIONS = ['typical', 'bingo', 'board_game', 'legacy', 'award', 'sign'] as const
 const center = { textAlign: 'center' } as const
 const cellInput: CSSProperties = { width: '100%', marginTop: 0 }
 
@@ -47,6 +48,7 @@ function toCourseRow(course: any): CourseRow {
     id: Number(course?.id ?? 0),
     title: String(course?.title || ''),
     category: String(course?.category || 'typical'),
+    refereeIdentityId: course?.refereeIdentityId == null ? null : Number(course.refereeIdentityId),
     startTime: normalizeDateTime(course?.start_time || course?.startTime),
     endTime: normalizeDateTime(course?.end_time || course?.endTime),
     description: String(course?.description || ''),
@@ -75,6 +77,11 @@ export default function AdminCoursesPage() {
   const [uploadingMap, setUploadingMap] = useState<Record<number, boolean>>({})
   const [preview, setPreview] = useState('')
   const [jump, setJump] = useState('')
+  const [referees, setReferees] = useState<{ id: number; account: string }[]>([])
+
+  useEffect(() => {
+    api.get('/course/board-game-referees').then(res => setReferees(res.data || [])).catch(() => setReferees([]))
+  }, [])
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
@@ -168,6 +175,7 @@ export default function AdminCoursesPage() {
       image: course.image.trim(),
       awardCost: category === 'award' ? course.awardCost : null,
       awardStock: category === 'award' ? course.awardStock : null,
+      refereeIdentityId: category === 'board_game' ? course.refereeIdentityId : null,
     }
 
     if (!payload.id || !payload.title || !payload.category || !payload.startTime || !payload.endTime || !payload.description || !payload.image) {
@@ -182,6 +190,10 @@ export default function AdminCoursesPage() {
       setNotice({ type: 'error', text: '奖品数量必须是大于 0 的整数' })
       return
     }
+    if (payload.category === 'board_game' && !payload.refereeIdentityId) {
+      setNotice({ type: 'error', text: '请选择管理员裁判' })
+      return
+    }
 
     setSavingMap((prev) => ({ ...prev, [course.id]: true }))
     try {
@@ -194,6 +206,7 @@ export default function AdminCoursesPage() {
         image: payload.image,
         awardCost: payload.awardCost,
         awardStock: payload.awardStock,
+        refereeIdentityId: payload.refereeIdentityId,
       })
 
       if (res.data?.code === 0) {
@@ -272,6 +285,7 @@ export default function AdminCoursesPage() {
                 <th style={center}>兑换积分</th>
                 <th style={center}>奖品数量</th>
                 <th style={center}>类别</th>
+                <th style={center}>裁判</th>
                 <th style={center}>开始时间</th>
                 <th style={center}>结束时间</th>
                 <th style={{ ...center, width: '36rem' }}>描述</th>
@@ -334,6 +348,14 @@ export default function AdminCoursesPage() {
                         <option key={option} value={option}>{option}</option>
                       ))}
                     </select>
+                  </td>
+                  <td style={{ minWidth: 150 }}>
+                    {course.category === 'board_game' ? <select className="page-select" value={course.refereeIdentityId ?? 0}
+                      aria-label={`课题 ${course.id} 裁判`}
+                      onChange={e => updateRow(course.id, { refereeIdentityId: Number(e.target.value) || null })}>
+                      <option value={0}>请选择管理员</option>
+                      {referees.map(referee => <option key={referee.id} value={referee.id}>{referee.account} (#{referee.id})</option>)}
+                    </select> : <span>-</span>}
                   </td>
                   <td style={{ minWidth: 176 }}>
                     <input

@@ -104,7 +104,7 @@ public class ApiAuthorizationInterceptor implements HandlerInterceptor {
 
     private boolean isPublicRead(String method, String path) {
         if (!"GET".equals(method) && !"HEAD".equals(method)) return false;
-        if (path.startsWith("/api/course/")) return !path.equals("/api/course/allcourse");
+        if (path.startsWith("/api/course/")) return !path.equals("/api/course/allcourse") && !path.equals("/api/course/board-game-referees");
         if (path.equals("/api/activity/list") || path.equals("/api/activity/search")
                 || path.equals("/api/activity/all")
                 || path.equals("/api/activity/rule") || path.matches("/api/activity/\\d+")) return true;
@@ -131,7 +131,7 @@ public class ApiAuthorizationInterceptor implements HandlerInterceptor {
     private boolean requiresAdmin(String method, String path) {
         boolean write = isWriteMethod(method);
         if (path.equals("/api/identity/allaccount") || path.equals("/api/profile/all")
-                || path.equals("/api/profile/all-passed") || path.equals("/api/course/allcourse")
+                || path.equals("/api/profile/all-passed") || path.equals("/api/course/allcourse") || path.equals("/api/course/board-game-referees")
                 || path.equals("/api/rank/configs") || path.startsWith("/api/forum/admin/")
                 || path.startsWith("/api/title/admin/") || path.equals("/api/score/admin/logs")
                 || path.startsWith("/api/score/unscored") || path.equals("/api/score/")) return true;

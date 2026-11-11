@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PutMapping;
+import jakarta.servlet.http.HttpSession;
 
 
 
@@ -63,6 +64,16 @@ public class CourseController {
         return ResponseEntity.ok(courseService.getStandaloneCourses());
     }
 
+    @GetMapping("/board-game-referees")
+    public ResponseEntity<List<Map<String, Object>>> getBoardGameReferees() {
+        return ResponseEntity.ok(courseService.getBoardGameReferees());
+    }
+
+    @GetMapping("/board-game-rooms")
+    public ResponseEntity<List<Map<String, Object>>> getBoardGameRooms() {
+        return ResponseEntity.ok(courseService.getBoardGameRooms());
+    }
+
     @GetMapping("/{id:\\d+}")
     public ResponseEntity<Course> getCourseById(@PathVariable Integer id) {
         Course course = courseService.getCourseById(id);
@@ -74,14 +85,14 @@ public class CourseController {
 
     //上传课题
     @PostMapping("/post")
-    public Result postCourse(@RequestBody CourseRequest courseRequest) {
+    public Result postCourse(@RequestBody CourseRequest courseRequest, HttpSession session) {
         //上传课题，包括title, category, end_time, image
         try{
             Course newCourse = courseService.postNewCourse(
             courseRequest.getTitle(), courseRequest.getCategory(),
             courseRequest.getStartTime(), courseRequest.getEndTime(),
             courseRequest.getDescription(), courseRequest.getImage(),
-            courseRequest.getAwardCost(), courseRequest.getAwardStock());
+            courseRequest.getAwardCost(), courseRequest.getAwardStock(), courseRequest.getRefereeIdentityId(), (Integer) session.getAttribute("identityId"));
             return Result.success(newCourse);
         } catch (Exception e){
             return Result.error(e.getMessage());
@@ -99,7 +110,7 @@ public class CourseController {
                 courseRequest.getEndTime(),
                 courseRequest.getDescription(),
                 courseRequest.getImage(),
-                courseRequest.getAwardCost(), courseRequest.getAwardStock()
+                courseRequest.getAwardCost(), courseRequest.getAwardStock(), courseRequest.getRefereeIdentityId()
             );
             if (updatedCourse != null) {
                 return ResponseEntity.ok(Result.success(updatedCourse));

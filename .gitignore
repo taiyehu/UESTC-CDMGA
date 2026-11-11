@@ -30,6 +30,9 @@ reactproject/.env*
 *.har
 *.log
 *.csv
+!game-service/content/hand.csv
+!game-service/content/events.csv
+!game-service/content/misfortunes.csv
 *.tsv
 **/storage-state*.json
 **/storageState*.json

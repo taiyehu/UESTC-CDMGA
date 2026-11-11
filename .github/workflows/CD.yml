@@ -23,8 +23,16 @@ jobs:
       SSH_SUDO: ${{ secrets.SSH_SUDO }}
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       SSH_PORT: ${{ secrets.SSH_PORT }}
+  update_game:
+    needs: update_mvn
+    uses: ./.github/workflows/game_update.yml
+    secrets:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_SUDO: ${{ secrets.SSH_SUDO }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
   update_pnpm:
-    needs: update_env
+    needs: update_game
     uses: ./.github/workflows/pnpm_update.yml
     with:
       channel: main

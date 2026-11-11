@@ -30,7 +30,7 @@ export default function TaskListPage({ awardMode = false }: { awardMode?: boolea
   }, [awardMode])
 
   const filtered = useMemo(
-    () => items.filter((c) => (String(c.category || '').toLowerCase() === 'award') === awardMode),
+    () => items.filter((c) => String(c.category || '').toLowerCase() !== 'board_game' && (String(c.category || '').toLowerCase() === 'award') === awardMode),
     [items, awardMode],
   )
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))

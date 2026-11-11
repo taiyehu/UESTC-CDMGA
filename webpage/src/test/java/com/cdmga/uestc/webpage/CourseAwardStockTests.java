@@ -38,7 +38,7 @@ class CourseAwardStockTests {
         when(courseRepository.save(course)).thenReturn(course);
 
         courseService.updateCourse(3, "奖品", "award", course.getStartTime(), course.getEndTime(),
-                "描述", "image", 40, 5);
+                "描述", "image", 40, 5, null);
 
         assertEquals(5, course.getAward().getTotalStock());
         assertEquals(3, course.getAward().getRemainingStock());
@@ -51,7 +51,7 @@ class CourseAwardStockTests {
         when(awardRepository.findByCourseIdForUpdate(3)).thenReturn(Optional.of(course.getAward()));
 
         assertThrows(IllegalArgumentException.class, () -> courseService.updateCourse(3,
-                "奖品", "award", course.getStartTime(), course.getEndTime(), "描述", "image", 40, 1));
+                "奖品", "award", course.getStartTime(), course.getEndTime(), "描述", "image", 40, 1, null));
     }
 
     @Test
@@ -62,7 +62,7 @@ class CourseAwardStockTests {
         when(courseRepository.save(course)).thenReturn(course);
 
         courseService.updateCourse(3, "奖品", "award", course.getStartTime(), course.getEndTime(),
-                "描述", "image", 40, 2);
+                "描述", "image", 40, 2, null);
 
         assertEquals(0, course.getAward().getRemainingStock());
         verify(scoreRepository).rejectOtherPendingAwardScores(eq(3), eq(-1L), eq("奖品已售罄"), any());

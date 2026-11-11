@@ -1,0 +1,7 @@
+id,name,effect,art_path,art_fit,art_focus_x,art_focus_y,effect_type,effect_value,quantity
+event1,社团赞助,本队+200金钱,art/event1.jpg,cover,0.5,0.5,money,200,1
+event2,冷场,本队-2积分,art/event2.jpg,cover,0.5,0.2,score,-2,1
+event3,手感火热,抵消下一次获得的debuff，如果已有debuff，则抵消最近一次获得的debuff,art/event3.jpg,cover,0.5,0.1,debuff_shield,1,1
+event4,亲友助威,当前积分最低的队伍 +1 积分,art/event4.jpg,cover,0.5,0.5,lowest_score,1,1
+event5,发现宝藏,触发一次范式起源建筑效果,art/event5.jpg,cover,0.5,0.5,fanshi_roll,0,1
+event6,对手阴招,本队伍下次战斗-1积分,art/event6.jpg,cover,0.5,0.9,battle_modifier,-1,1

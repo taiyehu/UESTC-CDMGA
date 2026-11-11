@@ -1,7 +1,7 @@
 CREATE TABLE `team` (
   `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
   `course_id` INT NOT NULL COMMENT '所属课题ID',
-  `team_id` INT NOT NULL COMMENT '队伍编号',
+  `team_id` INT NULL COMMENT '队伍编号，退出或解散后为空',
   `identity_id` INT NOT NULL COMMENT '成员用户ID',
   `is_touched` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '后续使用标记，默认0',
   CONSTRAINT `fk_team_course` FOREIGN KEY (`course_id`) REFERENCES `course`(`id`) ON DELETE CASCADE,

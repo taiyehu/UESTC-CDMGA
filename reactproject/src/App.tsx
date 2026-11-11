@@ -37,6 +37,8 @@ import AdminScoreLogsPage from './pages/AdminScoreLogsPage'
 import AdminBingoTipsPage from './pages/AdminBingoTipsPage'
 import AdminIssuesPage from './pages/AdminIssuesPage'
 import AdminTeamsPage from './pages/AdminTeamsPage'
+import GameLobbyPage from './pages/GameLobbyPage'
+import GameRoomPage from './pages/GameRoomPage'
 import RequireAuth from './components/RequireAuth'
 import RequireAdmin from './components/RequireAdmin'
 
@@ -66,6 +68,8 @@ export default function App() {
           <Route path="/profile/:id?" element={<ProfilePage />} />
           <Route path="/profile-setting" element={<ProfileSettingPage />} />
           <Route path="/links" element={<LinksPage />} />
+          <Route path="/game" element={<GameLobbyPage />} />
+          <Route path="/game/rooms/:code" element={<GameRoomPage />} />
           <Route element={<RequireAdmin />}>
             <Route path="/activity/:id/sign-display" element={<SignDisplayPage />} />
             <Route path="/admin" element={<AdminDashboardPage />} />
