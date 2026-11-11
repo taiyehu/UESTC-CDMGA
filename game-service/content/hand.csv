@@ -1,0 +1,17 @@
+id,name,move,cost,game_type,effect,condition,art_path,art_fit,art_focus_x,art_focus_y,effect_type,effect_value,effect_aux,quantity
+card1,回收机,1,300,Phigros,获得4点积分,游玩Rubbish Sorting IN难度达到1000000分,art/hand1.png,cover,0.5,0.5,score,4,0,1
+card2,遗产,6,0,Arcaea,收入格永久收入+10,游玩Lost Civilization BYD难度，lost数小于等于2,art/hand2.png,cover,0.5,0.5,income,10,0,1
+card3,巧夺先机,3,100,Phigros,瞬移至任意站点或建筑,游玩Temporal Shifting IN难度达到full combo,art/hand3.png,cover,0.5,0.5,teleport,0,0,1
+card4,幸运药水,3,0,fanshi,当你必须获得厄运时抵挡一次厄运,游玩Blessed Bleath MSV难度达到full combo,art/hand4.png,cover,0.5,0.5,shield_misfortune,1,0,1
+card5,言而无信,4,40,Arcaea,获得1点积分，额外移动一次,游玩Breach of Faith BYD难度达到990w分,art/hand5.png,cover,0.5,0.5,score_extra_move,1,0,1
+card6,机械帮手,2,700,fanshi,获得9点积分，到达站点或建筑但无法使用卡牌时可以选择丢弃一张手牌,游玩Turning Point MSV难度达到inf+,art/hand6.png,cover,0.5,0.5,score_optional_discard,9,0,1
+card7,装腔作势,7,0,random,抵消一次事件格的事件,（骰子决定）走X步或获得X分+70X块钱,art/hand7.jpg,cover,0.5,0.5,event_cancel_random,1,0,1
+card8,诈骗交易,1,0,Arcaea,选择任意其他队伍，该队伍给你100金钱并且收入-5，你的队伍收入+5,游玩Tr!cK Ma?tEr ETR难度达到990w分,art/hand8.jpg,cover,0.5,0.5,transfer_income,100,5,1
+card9,魔幻饰品,2,0,fanshi,触发范式建筑效果，你可以再扔一个骰子，只有最后一次骰子算数,游玩爆裂魔法 MSV难度达到1005000分,art/hand9.png,cover,0.5,0.5,fanshi_reroll,0,0,1
+card10,快速贷款,3,0,Arcaea,获得400金钱，并获得永久效果：每次走牌开始时，-25金钱，如果不能付清，则-3积分并消除此效果,游玩Garakuta Doll Play FTR难度达到990w分,art/example.png,cover,0.5,0.5,loan,400,25,1
+card11,加速器,4,900,Arcaea,获得9点积分，并获得永久效果：你的队伍每回合可以使用的卡牌张数变为2张,游玩Linear Accelerator FTR难度达到990w分,art/hand10.jpg,cover,0.5,0.5,score_double_use,9,2,1
+card12,小玩偶,3,50,Phigros,获得1点积分,游玩dB doll AT难度达到满分,art/hand11.jpg,cover,0.5,0.5,score,1,0,1
+card13,稀世珍宝,3,150,Phigros,获得2点积分,游玩黄金之城 IN难度达到fc,art/hand12.jpg,cover,0.5,0.5,score,2,0,1
+card14,机器会计,5,400,Arcaea,获得4点积分，收入+20,游玩XTREME FTR难度达到995w分,art/hand13.jpg,cover,0.5,0.5,score_income,4,20,1
+card15,颁奖典礼,4,300,Arcaea,获得3点积分，收入+10，并获得永久效果：你造访Arcaea时，获得一次收入,游玩Last Celebration FTR难度达到995w分,art/hand14.jpg,cover,0.5,0.5,score_income_arcaea_visit,3,10,1
+card16,萨满的魔杖,4,400,fanshi,获得6点积分，并获得永久效果：你造访范式时，获得70金钱,游玩MAGICAL RENDA STADIUM MSV难度达到1005000分,art/hand15.png,cover,0.5,0.5,score_fanshi_visit,6,70,1

@@ -1,0 +1,6 @@
+id,name,effect,art_path,art_fit,art_focus_x,art_focus_y,effect_type,effect_value,quantity
+mis1,社长造访,所有队伍出价竞标并失去等价金钱，出价最低的队失去2点积分,art/mis1.png,contain,0.5,0.5,auction_lowest_score,-2,1
+mis2,风沙入眼,本队获得debuff:下一次战斗或挑战时，需要闭上一只眼睛,art/mis2.jpg,contain,0.5,0.5,debuff_eye,1,1
+mis3,感冒失声,本队-2积分,art/mis3.png,contain,0.5,0.5,score,-2,1
+mis4,摊主讹诈,所有队伍失去50%的金钱,art/mis4.jpg,contain,0.5,0.5,half_money,50,1
+mis5,偏差认知,获得debuff:下一次战斗或挑战时，偏移量+200,art/mis5.png,contain,0.5,0.5,debuff_offset,200,1

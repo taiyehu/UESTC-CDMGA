@@ -4,6 +4,11 @@ import { execFileSync } from 'node:child_process'
 const paths = execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean)
 const rejected = []
 for (const path of paths) {
+  // Published game cards are versioned assets, even though their directory is named output.
+  // Keep this exception limited to the three card catalogs and their numbered PNGs.
+  const publishedCardAsset = /^game-service\/content\/(?:hand|events|misfortunes)\.csv$/.test(path)
+    || /^game-service\/content\/output\/(?:card|event|mis)[1-9][0-9]*\.png$/.test(path)
+  if (publishedCardAsset) continue
   const localArtifact = /(^|\/)(ref|output|tmp|\.local-data|test-results|playwright-report|blob-report|coverage|uploads|backups?|dumps?)(\/|$)/i.test(path)
   const databaseFile = /\.(sql\.(gz|zip)|sqlite3?|db|har|log|dump|csv|tsv)$/i.test(path) || /(^|\/)(CDMGA|database|backup|dump)[^/]*\.sql$/i.test(path)
   const credentials = /(^|\/)(\.env($|\.)|application-local\.properties$|db-password$|account-password$|storage-?state[^/]*\.json$)/i.test(path)
