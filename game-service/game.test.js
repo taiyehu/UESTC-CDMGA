@@ -192,7 +192,7 @@ test('新手牌按 CSV 执行转移、重掷、贷款和双牌效果',()=>{
   g.resolveChallenge(double.room,host,'A',true);
   assert.equal(double.t.maxCardUses,2);
   assert.equal(double.t.cardActionDone,false);
-  const second=double.t.hand.find(c=>c.game_type==='Arcaea'||c.game_type==='random')||double.t.deck.find(c=>c.game_type==='Arcaea'||c.game_type==='random');
+  const second=double.t.hand.find(c=>g.canUse(double.t,c))||double.t.deck.find(c=>c.game_type==='Arcaea'||c.game_type==='random'&&c.effect_type!=='event_cancel_random');
   if(!double.t.hand.includes(second)){const old=double.t.hand[0];double.t.hand[0]=second;double.t.deck[double.t.deck.indexOf(second)]=old;}
   g.useCard(double.room,double.who,second.id);
   if(double.t.pendingChallenge)g.resolveChallenge(double.room,host,'A',false);
@@ -226,7 +226,7 @@ test('队伍地图按自身当前回合显示领先队伍快照，未行动队�
   b.position='R1';
   for(const node of ['R2','R3','R4']){
     b.hand[0].move=1;g.move(room,whoB,b.hand[0].id,[node]);
-    if(node!=='R4')g.endTurn(room,whoB);
+    if(node!=='R4'){if(b.pendingEvent)g.skipUse(room,whoB);g.endTurn(room,whoB);}
   }
   const aView=g.state(room,{role:'team',id:'A'});
   assert.deepEqual(aView.mapView.B,{node:'R2',ghost:false,actualRound:3});
@@ -236,6 +236,7 @@ test('队伍地图按自身当前回合显示领先队伍快照，未行动队�
   const hostView=g.state(room,{role:'host'});
   assert.equal(hostView.mapView.B.node,'R4');
   const a=room.teams.A;a.hand[0].move=1;g.move(room,{role:'team',id:'A'},a.hand[0].id,[g.GRAPH[a.position][0]]);
+  if(!a.cardActionDone)g.skipUse(room,{role:'team',id:'A'});
   g.endTurn(room,{role:'team',id:'A'});
   assert.equal(g.state(room,{role:'team',id:'A'}).mapView.B.node,'R3');
 });
@@ -431,20 +432,22 @@ test('成品手牌按 CSV 点数移动，问号牌由服务器掷骰',()=>{
   assert.equal(t.pendingRoll,null);
 });
 
-test('问号牌可在建筑领取掷骰奖励，并抵消下一次事件',()=>{
+test('装腔作势仅在事件格可用，并抵消当前事件',()=>{
   const room=g.createRoom({seed:'question-reward',initialMoney:100}),t=room.teams.A,who={role:'team',id:'A'};
   const card7=t.hand.find(c=>c.sourceId==='card7')||t.deck.find(c=>c.sourceId==='card7');
   if(!t.hand.includes(card7)){const old=t.hand[0];t.hand[0]=card7;t.deck[t.deck.indexOf(card7)]=old;}
   t.position='R12';const mover=t.hand.find(c=>c.id!==card7.id&&c.move!==7);mover.move=2;
   g.move(room,who,mover.id,['A2','Arcaea']);
+  assert.throws(()=>g.useCard(room,who,card7.id),/使用地点/);
+  g.skipUse(room,who);g.endTurn(room,who);
+  t.position='R4';const next=t.hand.find(c=>c.id!==card7.id&&c.move!==7);next.move=1;
+  const record=g.move(room,who,next.id,['P2']);
+  assert.equal(record.pendingEvent,true);assert.equal(record.event,undefined);
   const before=t.money;g.useCard(room,who,card7.id);
   const points=t.score;
-  assert.ok(points>=1&&points<=6);assert.equal(t.money,before+points*70);assert.equal(t.eventShield,1);
-  g.endTurn(room,who);
-  t.position='R4';const card=t.hand.find(c=>c.move!==7);card.move=1;
-  const record=g.move(room,who,card.id,['P2']);
+  assert.ok(points>=1&&points<=6);assert.equal(t.money,before+points*70);assert.equal(t.eventShield,0);
   assert.equal(record.event.name,'事件已抵消');
-  assert.equal(t.money,before+points*70);assert.equal(t.eventShield,0);
+  assert.equal(record.pendingEvent,false);
 });
 
 test('事件格抽成品事件卡并加钱，厄运格触发三队竞标',()=>{
@@ -453,6 +456,7 @@ test('事件格抽成品事件卡并加钱，厄运格触发三队竞标',()=>{
   room.misfortuneDeck=[MISFORTUNES.find(c=>c.id==='mis1'),MISFORTUNES.find(c=>c.id==='mis3')];
   const a=room.teams.A;a.position='R4';a.hand[0].move=1;
   const event=g.move(room,{role:'team',id:'A'},a.hand[0].id,['P2']);
+  if(a.pendingEvent)g.skipUse(room,{role:'team',id:'A'});
   assert.equal(event.event.name,'社团赞助');assert.equal(a.money,300);
   g.endTurn(room,{role:'team',id:'A'});
   a.position='R2';a.hand[0].move=1;a.score=3;
@@ -478,6 +482,7 @@ test('新事件牌结算积分、debuff 防护、范式奖励与战斗修正',()
     setup(room,t);
     t.position='R4';t.hand[0].move=1;
     g.move(room,{role:'team',id:'A'},t.hand[0].id,['P2']);
+    if(t.pendingEvent)g.skipUse(room,{role:'team',id:'A'});
     return {room,t};
   };
   assert.equal(trigger('event2',(_,t)=>{t.score=5;}).t.score,3);
@@ -612,4 +617,85 @@ test('MySQL JSON 恢复后继续使用同一随机序列',()=>{
   assert.equal(second.randomInt(6),first.randomInt(6));
   assert.equal(second.randomInt(6),first.randomInt(6));
   assert.equal(second.randomCounter,first.randomCounter);
+});
+
+test('非房屋格预定队员受三轮分组限制，战斗展示头像并在占用时待战',()=>{
+  const room=g.createRoom({seed:'reserved-members'}),host={role:'host'};
+  for(const id of 'AB'){
+    const t=room.teams[id];t.position='R1';t.members=[1,2,3].map(n=>({id:`${id}-${n}`,account:`${id} 队员 ${n}`,avatar:`/${id}${n}.png`}));t.hand[0].move=1;
+  }
+  const a={role:'team',id:'A'},b={role:'team',id:'B'};
+  g.move(room,a,room.teams.A.hand[0].id,['R2']);
+  assert.throws(()=>g.endTurn(room,a),/选择一名队员/);
+  g.reserveMember(room,a,'A-1');g.endTurn(room,a);
+  room.teams.A.position='R1';room.teams.A.hand[0].move=1;
+  g.move(room,a,room.teams.A.hand[0].id,['R2']);
+  assert.throws(()=>g.reserveMember(room,a,'A-1'),/本组三轮/);
+  g.reserveMember(room,a,'A-2');
+  g.move(room,b,room.teams.B.hand[0].id,['R2']);
+  assert.equal(room.battles[0].status,'待选人');
+  g.reserveMember(room,b,'B-1');
+  assert.equal(room.battles[0].status,'待结算');
+  assert.equal(g.state(room,host).records[0].defender.avatar,'/A1.png');
+  for(const id of 'AB'){
+    const t=room.teams[id];t.round=4;t.awaitingEnd=false;t.position='R1';t.hand[0].move=1;
+    g.move(room,{role:'team',id},t.hand[0].id,['R2']);
+    g.reserveMember(room,{role:'team',id},`${id}-1`);
+  }
+  assert.equal(room.battles[1].status,'待战');
+  g.battle(room,host,room.battles[0].id,'A');
+  assert.equal(room.battles[1].status,'待结算');
+});
+
+test('首次达到 20 分只产生一次 EX time 事件，并保持免战',()=>{
+  const room=g.createRoom({seed:'ex-time'}),host={role:'host'};
+  for(const id of 'AB'){
+    const t=room.teams[id];t.round=5;t.position='R1';t.members=[{id:`${id}-1`,account:`${id} 队员`}];t.hand[0].move=1;
+    g.move(room,{role:'team',id},t.hand[0].id,['R2']);
+  }
+  assert.equal(room.battles[0].status,'待选人');
+  g.score(room,host,'A',20);
+  assert.equal(room.battles.length,0);
+  assert.equal(room.exTimeEvents.length,1);
+  assert.equal(g.state(room,{role:'team',id:'A'}).teams.A.exTime,true);
+  g.score(room,host,'A',-2);room.teams.A.round=7;g.score(room,host,'A',2);
+  assert.equal(room.exTimeEvents.length,1);
+  assert.equal(room.teams.A.immuneFromRound,5);
+  assert.equal(room.teams.A.qualifyingRound,7);
+});
+
+test('一人队伍每轮由同一人留守，且仍能参与新战斗',()=>{
+  const room=g.createRoom({seed:'one-member'}),a={role:'team',id:'A'},b={role:'team',id:'B'};
+  room.teams.A.members=[{id:'A-1',account:'A 队员'}];
+  room.teams.B.members=[{id:'B-1',account:'B 队员'}];
+  room.teams.A.position='R1';room.teams.A.hand[0].move=1;
+  g.move(room,a,room.teams.A.hand[0].id,['R2']);g.reserveMember(room,a,'A-1');g.endTurn(room,a);
+  room.teams.A.position='R1';room.teams.A.hand[0].move=1;
+  const record=g.move(room,a,room.teams.A.hand[0].id,['R2']);
+  assert.deepEqual(g.eligibleMembers(room,room.teams.A).map(m=>m.id),['A-1']);
+  assert.throws(()=>g.endTurn(room,a),/选择一名队员/);
+  g.reserveMember(room,a,'A-1');
+  assert.equal(record.defender.id,'A-1');
+  g.endTurn(room,a);
+  room.teams.B.round=2;room.teams.B.position='R1';room.teams.B.hand[0].move=1;
+  g.move(room,b,room.teams.B.hand[0].id,['R2']);
+  assert.equal(room.battles[0].status,'待选人');
+  g.reserveMember(room,b,'B-1');
+  assert.equal(room.battles[0].status,'待结算');
+  room.teams.A.position='R1';room.teams.A.hand[0].move=1;
+  g.move(room,a,room.teams.A.hand[0].id,['R2']);
+  assert.equal(g.eligibleMembers(room,room.teams.A)[0].id,'A-1');
+});
+
+test('两人队伍先轮换，第三轮才允许重复留守',()=>{
+  const room=g.createRoom({seed:'two-members'}),t=room.teams.A,who={role:'team',id:'A'};
+  t.members=[{id:'A-1',account:'队员 1'},{id:'A-2',account:'队员 2'}];
+  for(const [round,expected] of [[1,'A-1'],[2,'A-2'],[3,'A-1']]){
+    t.position='R1';t.hand[0].move=1;
+    g.move(room,who,t.hand[0].id,['R2']);
+    if(round===2)assert.throws(()=>g.reserveMember(room,who,'A-1'),/未留守/);
+    assert.equal(g.eligibleMembers(room,t).some(m=>m.id===expected),true);
+    g.reserveMember(room,who,expected);
+    if(round<3)g.endTurn(room,who);
+  }
 });

@@ -27,14 +27,25 @@ test('人机最多领先真人一回合，竞标仍可在等待期间响应', ()
   assert.equal(bot.choose(room, 'A', 'steady', ['B']).type, 'bid');
 });
 
-test('挑战和待判战斗交给裁判', () => {
+test('挑战交给裁判，待判战斗期间队伍继续行动', () => {
   const room = game.createRoom({ seed: 'bot-referee' });
   room.teams.A.pendingChallenge = { card: { name: '挑战' } };
   assert.equal(bot.choose(room, 'A', 'aggressive', ['B']), null);
   room.teams.A.pendingChallenge = null;
   room.records.push({ id: 'a', team: 'A', round: 1, node: 'R5' }, { id: 'b', team: 'B', round: 1, node: 'R5' });
   room.battles.push({ first: 'a', second: 'b', status: '待结算' });
-  assert.equal(bot.choose(room, 'A', 'aggressive', ['B']), null);
+  assert.equal(bot.choose(room, 'A', 'aggressive', ['B'])?.type,'move');
+});
+
+test('人机抵达普通格后选择本组三轮尚未预定的队员',()=>{
+  const room=game.createRoom({seed:'bot-defender'}),team=room.teams.A;
+  team.members=[1,2,3].map(n=>({id:`bot-A-${n}`,account:`人机 ${n}`}));
+  team.position='R1';team.hand[0].move=1;
+  game.move(room,{role:'team',id:'A'},team.hand[0].id,['R2']);
+  const choice=bot.choose(room,'A','steady',['B']);
+  assert.deepEqual(choice,{type:'reserve-member',payload:{memberId:'bot-A-1'}});
+  game.reserveMember(room,{role:'team',id:'A'},choice.payload.memberId);
+  assert.equal(room.records[0].defender.account,'人机 1');
 });
 
 test('人机获得机械帮手后会在普通站点弃一张不能使用的牌', () => {
