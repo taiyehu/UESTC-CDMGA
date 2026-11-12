@@ -4,12 +4,15 @@ const path = require('node:path');
 const mysql = require('mysql2/promise');
 const game = require('./game');
 
+const springJdbcUrl = process.env.SPRING_DATASOURCE_URL || '';
+const springDatabase = /^jdbc:mysql:\/\/[^/]+\/([^?]+)/.exec(springJdbcUrl)?.[1];
+
 const pool = mysql.createPool({
   host: process.env.GAME_DB_HOST || '127.0.0.1',
   port: Number(process.env.GAME_DB_PORT || 3306),
   user: process.env.GAME_DB_USER || process.env.SPRING_DATASOURCE_USERNAME,
   password: process.env.GAME_DB_PASSWORD || process.env.SPRING_DATASOURCE_PASSWORD,
-  database: process.env.GAME_DB_NAME || 'CDMGA',
+  database: process.env.GAME_DB_NAME || springDatabase || 'CDMGA',
   waitForConnections: true,
   connectionLimit: 10,
   timezone: '+08:00',

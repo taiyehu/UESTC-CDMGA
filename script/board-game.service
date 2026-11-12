@@ -12,7 +12,6 @@ EnvironmentFile=/etc/webserver.env
 Environment=NODE_ENV=production
 Environment=GAME_HOST=127.0.0.1
 Environment=GAME_PORT=3001
-Environment=GAME_DB_NAME=CDMGA
 Environment=GAME_IDENTITY_URL=http://127.0.0.1:8080/api/identity/me
 Environment=GAME_CONTENT_DIR=/var/webserver/game/current
 ExecStart=/usr/bin/node /opt/webserver/game-service/current/server.js
