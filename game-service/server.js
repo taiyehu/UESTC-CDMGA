@@ -104,6 +104,7 @@ const operations={roll:(r,w,b)=>game.roll(r,w,b.cardId),
   'misfortune-target':(r,w,b)=>game.misfortuneTarget(r,w,b.target),
   'misfortune-pick':(r,w,b)=>game.misfortunePick(r,w,b.index),
   move:(r,w,b)=>game.move(r,w,b.cardId,b.route),
+  'reserve-member':(r,w,b)=>game.reserveMember(r,w,b.memberId),
   'end-turn':(r,w)=>game.endTurn(r,w),
   score:(r,w,b)=>game.score(r,w,b.team,b.value),
   battle:(r,w,b)=>game.battle(r,w,b.id,b.winner),
@@ -233,6 +234,7 @@ const server=http.createServer(async(req,res)=>{
           const seat='ABC'[index];
           await db.query('INSERT INTO game_room_seat(room_id,seat,team_id,operator_identity_id) VALUES(?,?,?,?)',[room.id,seat,team.teamId,team.botStrategy?null:team.members[0].id]);
           state.teams[seat].joined=true;
+          state.teams[seat].members=team.botStrategy?Array.from({length:3},(_,i)=>({id:`bot-${seat}-${i+1}`,account:`${team.botStrategy==='steady'?'稳健':'进攻'}人机 ${i+1}`,avatar:null})):team.members.map(m=>({id:m.id,account:m.account,avatar:m.avatar}));
         }
         await db.query('INSERT INTO game_room_state(room_id,version,state_json) VALUES(?,?,?)',[room.id,state.version,JSON.stringify(state)]);
         await db.query("UPDATE game_room SET status='active',started_at=NOW() WHERE id=?",[room.id]);

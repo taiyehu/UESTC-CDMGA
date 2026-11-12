@@ -81,19 +81,24 @@ function choose(room, seat, strategy, humanSeats) {
     if (room.pendingAuction.bids[seat] !== undefined) return null;
     return act('bid', { amount: Math.min(team.money, Math.min(strategy === 'aggressive' ? 60 : 25, Math.floor(team.money * (strategy === 'aggressive' ? .14 : .06)))) });
   }
-  if (team.pendingChallenge || room.battles.some(b => b.status === '待结算' && [b.first, b.second].some(id => room.records.find(r => r.id === id)?.team === seat))) return null;
+  if (team.pendingChallenge) return null;
   if (team.pendingTarget) return act('card-target', { target: leader });
   if (team.pendingReroll) return act('card-reroll', { again: team.pendingReroll.firstRoll <= 3 });
   if (team.pendingTeleport) return act('teleport', { node: strategy === 'steady' ? 'Arcaea' : 'Phigros' });
   if (team.pendingExtraMove) return bestMovement(room, seat, strategy, true);
   if (team.awaitingEnd) {
+    const record=room.records.findLast(r=>r.team===seat&&r.round===team.round);
+    if(record&&!HOUSES.has(record.node)&&!record.defender){
+      const member=game.eligibleMembers(room,team)[0];
+      if(member)return act('reserve-member',{memberId:member.id});
+    }
     if (!team.cardActionDone) {
-      const usable = team.hand.filter(card => (card.game_type === 'random' || houseFor(card) === team.position) && team.money >= card.cost);
+      const usable = team.hand.filter(card => game.canUse(team,card));
       usable.sort((a, b) => cardValue(b, strategy) - cardValue(a, strategy));
       return usable.length ? act('use-card', { cardId: usable[0].id }) : act('skip-use');
     }
     if (team.discardAbility && team.discardedRound !== team.round &&
-        !team.hand.some(card => HOUSES.has(team.position) && (card.game_type === 'random' || houseFor(card) === team.position) && team.money >= card.cost)) {
+        !team.hand.some(card => game.canUse(team,card))) {
       const discard = [...team.hand].sort((a, b) => cardValue(a, strategy) - cardValue(b, strategy))[0];
       if (discard) return act('discard-card', { cardId: discard.id });
     }
