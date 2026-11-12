@@ -179,6 +179,11 @@ a.page-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.45)}
 .page-card .thumb{aspect-ratio:16/9;border-radius:10px;background-size:cover;background-position:center;border:1px solid rgba(255,255,255,.18);margin-bottom:12px}
 .page-card.error{color:#FF8FA3;border-color:rgba(255,143,163,.4)}
 .course-card .page-btn{margin-top:12px}
+.game-course-section{margin-top:26px}
+.game-course-section h2{margin:0 0 14px}
+.game-course-cover{position:relative}
+.game-team-count{position:absolute;right:10px;bottom:10px;padding:5px 10px;border-radius:999px;background:rgba(4,18,30,.88);border:1px solid rgba(255,255,255,.5);color:#fff;font-size:13px;font-weight:700;line-height:1.2}
+.game-team-members{display:grid;gap:12px;margin:14px 0}
 .page-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.06);color:#E6F9FF;border-radius:8px;padding:8px 12px;font-size:9px;letter-spacing:.06em;text-decoration:none}
 .page-btn:hover{border-color:rgba(255,255,255,.55)}
 .page-btn.primary{background:linear-gradient(135deg,var(--cyan),var(--violet));color:#04121E;border-color:transparent;font-weight:700}

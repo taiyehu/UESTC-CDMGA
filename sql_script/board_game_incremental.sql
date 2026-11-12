@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS game_room_seat (
   room_id BIGINT UNSIGNED NOT NULL,
   seat CHAR(1) NOT NULL,
   team_id INT NOT NULL,
-  operator_identity_id INT NOT NULL,
+  operator_identity_id INT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (room_id, seat),
   UNIQUE KEY uk_game_room_team (room_id, team_id),
@@ -99,7 +99,8 @@ CREATE TABLE IF NOT EXISTS game_action_log (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   room_id BIGINT UNSIGNED NOT NULL,
   seq BIGINT UNSIGNED NOT NULL,
-  actor_identity_id INT NOT NULL,
+  actor_identity_id INT NULL,
+  actor_type ENUM('human','bot') NOT NULL DEFAULT 'human',
   seat CHAR(1) NULL,
   action_type VARCHAR(40) NOT NULL,
   payload_json JSON NOT NULL,
@@ -108,6 +109,29 @@ CREATE TABLE IF NOT EXISTS game_action_log (
   UNIQUE KEY uk_game_action_seq (room_id, seq),
   CONSTRAINT fk_game_action_room FOREIGN KEY (room_id) REFERENCES game_room(id) ON DELETE CASCADE,
   CONSTRAINT fk_game_action_actor FOREIGN KEY (actor_identity_id) REFERENCES identity(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 人机不使用可登录的 identity；席位和操作日志允许空身份，操作类型单独记录。
+ALTER TABLE game_room_seat MODIFY COLUMN operator_identity_id INT NULL;
+ALTER TABLE game_action_log MODIFY COLUMN actor_identity_id INT NULL;
+SET @has_actor_type = (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'game_action_log' AND COLUMN_NAME = 'actor_type'
+);
+SET @ddl = IF(@has_actor_type = 0,
+  'ALTER TABLE game_action_log ADD COLUMN actor_type ENUM(''human'',''bot'') NOT NULL DEFAULT ''human'' AFTER actor_identity_id',
+  'SELECT 1');
+PREPARE migration_stmt FROM @ddl;
+EXECUTE migration_stmt;
+DEALLOCATE PREPARE migration_stmt;
+
+CREATE TABLE IF NOT EXISTS game_room_bot (
+  room_id BIGINT UNSIGNED NOT NULL,
+  team_id INT NOT NULL,
+  strategy ENUM('steady','aggressive') NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (room_id,team_id),
+  CONSTRAINT fk_game_bot_room FOREIGN KEY (room_id) REFERENCES game_room(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 仅补建已有桌游课题中尚无房间、且裁判仍为有效管理员的房间。

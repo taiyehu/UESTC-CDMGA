@@ -44,7 +44,7 @@ jobs:
           npm test
 
       - name: Package service and card assets
-        run: tar -czf board-game.tar.gz -C game-service package.json package-lock.json server.js game.js catalog.js map-data.js node-types.csv public content
+        run: tar -czf board-game.tar.gz -C game-service package.json package-lock.json server.js game.js bot.js catalog.js map-data.js node-types.csv public content
 
       - name: Upload release
         uses: appleboy/scp-action@v1.0.0

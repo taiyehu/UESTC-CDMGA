@@ -178,7 +178,7 @@ function activeBattle(id){
 }
 function renderSummary(){
   const ranked=[...'ABC'].sort((a,b)=>snapshot.teams[b].score-snapshot.teams[a].score||a.localeCompare(b));
-  $('teamRoster').innerHTML=[...'ABC'].map(id=>{const t=snapshot.teams[id],rank=ranked.indexOf(id)+1,battle=activeBattle(id);return `<button class="rosterTeam ${id===snapshot.teamId?'own':''} ${battle?'inBattle':''}" data-roster-team="${id}" aria-label="查看 ${id} 队信息"><span class="rosterHeading"><strong class="${id.toLowerCase()}">${id} 队</strong><b>${t.score} 分</b></span><span><em class="rankBadge">${['1st','2nd','3rd'][rank-1]}</em> 第 ${t.round} 回合 · ${esc(t.position)}</span>${battle?'<span class="battleFlag">⚔ 对战中</span>':''}<small>Buff：${esc(buffs(t))}</small></button>`;}).join('');
+  $('teamRoster').innerHTML=[...'ABC'].map(id=>{const t=snapshot.teams[id],rank=ranked.indexOf(id)+1,battle=activeBattle(id),bot=snapshot.botSeats?.[id];return `<button class="rosterTeam ${id===snapshot.teamId?'own':''} ${battle?'inBattle':''}" data-roster-team="${id}" aria-label="查看 ${id} 队信息"><span class="rosterHeading"><strong class="${id.toLowerCase()}">${id} 队${bot?` · ${bot==='steady'?'稳健人机':'进攻人机'}`:''}</strong><b>${t.score} 分</b></span><span><em class="rankBadge">${['1st','2nd','3rd'][rank-1]}</em> 第 ${t.round} 回合 · ${esc(t.position)}</span>${battle?'<span class="battleFlag">⚔ 对战中</span>':''}<small>Buff：${esc(buffs(t))}</small></button>`;}).join('');
   document.querySelectorAll('[data-roster-team]').forEach(el=>el.onclick=()=>showTeamInfo(el.dataset.rosterTeam));
 }
 function renderResourceStatus(){
