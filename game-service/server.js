@@ -37,12 +37,31 @@ async function identity(req) {
 }
 const json = value => typeof value==='string'?JSON.parse(value):value;
 async function readRoom(code, db=pool) {
-  const [rows]=await db.query('SELECT r.*, c.title AS course_title, c.category AS course_category FROM game_room r JOIN course c ON c.id=r.course_id WHERE r.code=?',[code]);
+  const [rows]=await db.query('SELECT r.*, c.title AS course_title, c.category AS course_category, c.end_time AS course_end_time FROM game_room r JOIN course c ON c.id=r.course_id WHERE r.code=?',[code]);
   if(!rows.length)throw fail(404,'房间不存在');
   const room=rows[0];
   const [seats]=await db.query('SELECT s.seat,s.team_id,s.operator_identity_id,i.account AS operator_account,b.strategy AS bot_strategy FROM game_room_seat s LEFT JOIN identity i ON i.id=s.operator_identity_id LEFT JOIN game_room_bot b ON b.room_id=s.room_id AND b.team_id=s.team_id WHERE s.room_id=? ORDER BY s.seat',[room.id]);
   room.seats=seats;
   return room;
+}
+async function settleExpired(room){
+  if(room.status!=='active'||!room.course_end_time||new Date(room.course_end_time).getTime()>Date.now())return;
+  const db=await pool.getConnection();
+  try{
+    await db.beginTransaction();
+    const [locked]=await db.query('SELECT status FROM game_room WHERE id=? FOR UPDATE',[room.id]);
+    if(locked[0]?.status!=='active'){await db.rollback();room.status='ended';return;}
+    const [rows]=await db.query('SELECT version,state_json FROM game_room_state WHERE room_id=? FOR UPDATE',[room.id]);
+    if(!rows.length)throw Error('房间状态缺失');
+    const state=game.hydrate(json(rows[0].state_json));
+    state.deadlineAt=new Date(room.course_end_time).getTime();
+    game.evaluateEnd(state);
+    if(!state.result){await db.rollback();return;}
+    const version=Number(rows[0].version)+1;
+    await db.query('UPDATE game_room_state SET version=?,state_json=? WHERE room_id=?',[version,JSON.stringify(state),room.id]);
+    await db.query("UPDATE game_room SET status='ended',ended_at=NOW() WHERE id=?",[room.id]);
+    await db.commit();room.status='ended';
+  }catch(error){await db.rollback();throw error;}finally{db.release();}
 }
 async function access(room, user, db=pool) {
   if(user.role==='admin'&&user.id===room.referee_identity_id) return {role:'host',canAct:true};
@@ -127,6 +146,7 @@ const server=http.createServer(async(req,res)=>{
     if(!match)throw fail(404,'接口不存在');
     const room=await readRoom(match[1]);
     const who=await access(room,user);
+    await settleExpired(room);
     if(req.method==='GET'&&match[2]==='details'){
       const other=await membership(user.id);
       if(other&&other!==room.code&&who.role!=='host')throw fail(409,`已于房间${other}中存在队伍`);
@@ -208,7 +228,7 @@ const server=http.createServer(async(req,res)=>{
         const teams=await waitingTeams(room.course_id,db);
         if(teams.length!==3||teams.every(t=>t.botStrategy))throw fail(409,'需要三支队伍，且至少一支真人队伍才能开始游戏');
         if(teams.some(t=>t.members.some(m=>m.id===room.referee_identity_id)))throw fail(409,'裁判不能属于参赛队伍');
-        const state=game.createRoom({initialMoney:room.initial_money,initialIncome:room.initial_income});state.code=room.code;
+        const state=game.createRoom({initialMoney:room.initial_money,initialIncome:room.initial_income,deadlineAt:room.course_end_time?new Date(room.course_end_time).getTime():null});state.code=room.code;
         for(const [index,team] of teams.entries()){
           const seat='ABC'[index];
           await db.query('INSERT INTO game_room_seat(room_id,seat,team_id,operator_identity_id) VALUES(?,?,?,?)',[room.id,seat,team.teamId,team.botStrategy?null:team.members[0].id]);
@@ -225,7 +245,7 @@ const server=http.createServer(async(req,res)=>{
       try {await db.beginTransaction();const [locked]=await db.query('SELECT status FROM game_room WHERE id=? FOR UPDATE',[room.id]);
         if(locked[0].status!=='active')throw fail(409,'房间不在进行中');
         const [states]=await db.query('SELECT version,state_json FROM game_room_state WHERE room_id=? FOR UPDATE',[room.id]);
-        const state=json(states[0].state_json);state.version++;
+        const state=game.hydrate(json(states[0].state_json));game.finishByScores(state,'manual');
         const version=Number(states[0].version)+1;
         await db.query('UPDATE game_room_state SET version=?,state_json=? WHERE room_id=?',[version,JSON.stringify(state),room.id]);
         await db.query('INSERT INTO game_action_log(room_id,seq,actor_identity_id,seat,action_type,payload_json,result_version) VALUES(?,?,?,NULL,?,?,?)',[room.id,version,user.id,'end','{}',version]);
@@ -248,11 +268,13 @@ const server=http.createServer(async(req,res)=>{
         const [rows]=await db.query('SELECT version,state_json FROM game_room_state WHERE room_id=? FOR UPDATE',[room.id]);
         if(!rows.length)throw fail(500,'房间状态缺失');
         const state=game.hydrate(json(rows[0].state_json));
-        try {operations[match[2]](state,who,b);} catch(e){throw fail(400,e.message);}
+        state.deadlineAt=room.course_end_time?new Date(room.course_end_time).getTime():null;
+        try {operations[match[2]](state,who,b);game.evaluateEnd(state);} catch(e){throw fail(400,e.message);}
         const version=Number(rows[0].version)+1;
         await db.query('UPDATE game_room_state SET version=?,state_json=? WHERE room_id=?',[version,JSON.stringify(state),room.id]);
         await db.query('INSERT INTO game_action_log(room_id,seq,actor_identity_id,seat,action_type,payload_json,result_version) VALUES(?,?,?,?,?,?,?)',[room.id,version,user.id,who.id||null,match[2],JSON.stringify(b),version]);
-        await db.commit();return send(res,200,{...game.state(state,who),botSeats:Object.fromEntries(room.seats.filter(s=>s.bot_strategy).map(s=>[s.seat,s.bot_strategy])),canAct:who.canAct});
+        if(state.result)await db.query("UPDATE game_room SET status='ended',ended_at=NOW() WHERE id=?",[room.id]);
+        await db.commit();return send(res,200,{...game.state(state,who),botSeats:Object.fromEntries(room.seats.filter(s=>s.bot_strategy).map(s=>[s.seat,s.bot_strategy])),canAct:who.canAct&&!state.result});
       } catch(e){await db.rollback();throw e;} finally {db.release();}
     }
     throw fail(404,'接口不存在');
@@ -263,7 +285,9 @@ async function advanceBots(){
   if(botTickRunning)return;
   botTickRunning=true;
   try{
-    const [rooms]=await pool.query("SELECT DISTINCT r.id FROM game_room r JOIN game_room_bot b ON b.room_id=r.id WHERE r.status='active'");
+    const [expired]=await pool.query("SELECT r.id,c.end_time AS course_end_time,r.status FROM game_room r JOIN course c ON c.id=r.course_id WHERE r.status='active' AND c.end_time<=NOW()");
+    for(const room of expired)await settleExpired(room);
+    const [rooms]=await pool.query("SELECT DISTINCT r.id,c.end_time AS course_end_time FROM game_room r JOIN game_room_bot b ON b.room_id=r.id JOIN course c ON c.id=r.course_id WHERE r.status='active'");
     for(const room of rooms){
       const db=await pool.getConnection();
       try{await db.beginTransaction();
@@ -273,6 +297,7 @@ async function advanceBots(){
         if(status[0]?.status!=='active'){await db.rollback();continue;}
         const [seats]=await db.query('SELECT s.seat,s.operator_identity_id,b.strategy FROM game_room_seat s LEFT JOIN game_room_bot b ON b.room_id=s.room_id AND b.team_id=s.team_id WHERE s.room_id=? ORDER BY s.seat',[room.id]);
         const state=game.hydrate(json(states[0].state_json));
+        state.deadlineAt=room.course_end_time?new Date(room.course_end_time).getTime():null;
         const humanSeats=seats.filter(s=>s.operator_identity_id!==null).map(s=>s.seat);
         let action,seat;
         for(const candidate of seats.filter(s=>s.strategy)){
@@ -281,9 +306,11 @@ async function advanceBots(){
         }
         if(!action){await db.rollback();continue;}
         operations[action.type](state,{role:'team',id:seat},action.payload);
+        game.evaluateEnd(state);
         const version=Number(states[0].version)+1;
         await db.query('UPDATE game_room_state SET version=?,state_json=? WHERE room_id=?',[version,JSON.stringify(state),room.id]);
         await db.query("INSERT INTO game_action_log(room_id,seq,actor_identity_id,actor_type,seat,action_type,payload_json,result_version) VALUES(?,?,NULL,'bot',?,?,?,?)",[room.id,version,seat,action.type,JSON.stringify(action.payload),version]);
+        if(state.result)await db.query("UPDATE game_room SET status='ended',ended_at=NOW() WHERE id=?",[room.id]);
         await db.commit();
       }catch(error){await db.rollback();console.error('Bot action failed for room',room.id,error);}finally{db.release();}
     }

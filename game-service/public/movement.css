@@ -170,3 +170,42 @@ body.playing #game[hidden]{display:none}
 #judgePanel .log{max-height:none}
 @media(max-width:650px){.mapStatus{left:4px;top:4px;max-width:60%}#resourceStatus,.mapStatus #roundStatus{padding:4px 5px;font-size:10px}.resourceRow b{font-size:11px}.resourceDelta{font-size:10px}.rankBadge{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.resourceDelta,#battleIntro.show{animation:none;opacity:1}}
+
+.endgameBanner{width:100%;padding:10px 12px;border:1px solid #e7b657;border-radius:10px;background:#43351d;color:#fff0c7;font-weight:700;text-align:center}
+.endgameBanner[hidden]{display:none}
+.mobileGameTabs,.mobileMapZoom{display:none}
+@media(max-width:700px), (max-width:950px) and (max-height:520px){
+  body.playing{height:100dvh;overflow:hidden}
+  body.playing header{padding:6px 10px;min-height:42px}
+  body.playing header h1{font-size:14px}
+  body.playing header h1 span,body.playing header p{display:none}
+  body.playing #roomLabel{font-size:11px;text-align:right}
+  body.playing #game{display:flex;flex-direction:column;padding:0;overflow:hidden}
+  .gameShell{display:block;flex:1;height:auto;min-height:0;width:100%;overflow:hidden}
+  .rosterPanel,.handPanel,.mapPanel{display:none;height:100%;max-height:none;min-height:0;border-radius:0}
+  body[data-game-view="map"] .mapPanel{display:flex;flex-direction:column;padding:4px}
+  body[data-game-view="teams"] .rosterPanel{display:flex;flex-direction:column;overflow:auto}
+  body[data-game-view="hand"] .handPanel,body[data-game-view="judge"] .handPanel{display:flex;flex-direction:column;overflow:auto}
+  .mapViewport{position:relative;display:block;flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;touch-action:pan-x pan-y}
+  .mapViewport .mapWrap{max-width:none;max-height:none}
+  .mapStatus{max-width:55%}
+  .actionDock{max-height:38dvh;min-height:0;overflow:auto;padding:8px}
+  .actionDock button,.mobileGameTabs button,.mobileMapZoom button{min-height:44px}
+  .handPanel .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:none;grid-auto-rows:min-content;gap:8px;overflow:auto;align-content:start}
+  .handPanel .card{height:auto;aspect-ratio:94/132;min-height:0}
+  .handPanel .card img{min-height:0}
+  .rosterPanel #teamRoster{display:flex;flex-direction:column}
+  .historyPanel{min-height:220px}
+  .mobileGameTabs{display:flex;flex:none;align-items:stretch;gap:4px;min-height:54px;padding:4px 6px calc(4px + env(safe-area-inset-bottom));border-top:1px solid #455a80;background:#121e34}
+  .mobileGameTabs button{flex:1;padding:7px 4px;background:#263a5b;font-size:13px}
+  .mobileGameTabs button[aria-current="page"]{background:#628cf0;color:#071324}
+  .mobileGameTabs button[hidden]{display:none}
+  .mobileMapZoom{display:flex;position:absolute;right:8px;top:8px;z-index:8;gap:4px}
+  .mobileMapZoom button{padding:6px 9px;border:1px solid #9aadd3;background:#1b2941e8;font-size:14px}
+  .battleModalBody,.handHelpBody{width:100%;max-height:calc(100dvh - 20px);padding:14px}
+  #battleModal,#handHelp{padding:10px}
+  #cardPreview,#teamInfo{padding:10px}
+  .previewBody,.teamInfoBody{max-height:calc(100dvh - 20px);overflow:auto;padding:14px}
+  .previewBody>img{height:min(42dvh,300px)}
+  .previewActions button,.teamInfoBody button{min-height:44px}
+}

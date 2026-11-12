@@ -264,6 +264,94 @@ test('队伍资源只显示不晚于本队当前回合的变化，裁判始终�
   assert.equal(caughtUp.teams.B.income,40);
 });
 
+test('其他队伍后续回合的积分在本队追上前不可见',()=>{
+  const room=g.createRoom({seed:'score-rounds'}),a=room.teams.A,b=room.teams.B;
+  g.score(room,{role:'host'},'B',2);
+  assert.equal(g.state(room,{role:'team',id:'A'}).teams.B.score,2);
+  b.position='R1';b.hand[0].move=1;
+  g.move(room,{role:'team',id:'B'},b.hand[0].id,['R2']);
+  g.endTurn(room,{role:'team',id:'B'});
+  g.score(room,{role:'host'},'B',4);
+  assert.equal(b.score,6);
+  assert.equal(g.state(room,{role:'team',id:'A'}).teams.B.score,2);
+  assert.equal(g.state(room,{role:'host'}).teams.B.score,6);
+  assert.equal(g.state(room,{role:'team',id:'B'}).teams.B.score,6);
+  a.position='R1';a.hand[0].move=1;
+  g.move(room,{role:'team',id:'A'},a.hand[0].id,['R2']);
+  g.endTurn(room,{role:'team',id:'A'});
+  assert.equal(g.state(room,{role:'team',id:'A'}).teams.B.score,6);
+  const restored=g.hydrate(JSON.parse(JSON.stringify(room)));
+  assert.equal(g.state(restored,{role:'team',id:'A'}).teams.B.score,6);
+  const legacy=g.createRoom({seed:'legacy-score'});
+  legacy.teams.B.round=3;legacy.teams.B.score=7;delete legacy.scoreChanges;
+  g.hydrate(legacy);
+  assert.equal(g.state(legacy,{role:'team',id:'A'}).teams.B.score,0);
+  assert.equal(g.state(legacy,{role:'host'}).teams.B.score,7);
+});
+
+test('20 分暂定达标后免战，早期战斗可使其跌落并在再次达标时确认',()=>{
+  const room=g.createRoom({seed:'endgame-requalify'}),host={role:'host'};
+  room.teams.A.round=5;
+  g.score(room,host,'A',20);
+  assert.equal(room.teams.A.immuneFromRound,5);
+  assert.equal(room.teams.A.qualifyingRound,5);
+  assert.equal(room.result,null);
+  assert.equal(g.state(room,{role:'team',id:'B'}).endgame.provisional.length,0);
+  assert.equal(g.state(room,{role:'host'}).endgame.provisional.length,1);
+  room.records.push({id:'old-a',team:'A',round:4,node:'R2'},{id:'old-b',team:'B',round:4,node:'R2'});
+  room.battles.push({id:'old-battle',round:4,node:'R2',first:'old-a',second:'old-b',status:'待结算',winner:null});
+  for(const team of Object.values(room.teams))team.round=6;
+  g.evaluateEnd(room);
+  assert.equal(room.result,null);
+  g.battle(room,host,'old-battle','B');
+  assert.equal(room.teams.A.score,18);
+  assert.equal(room.teams.A.qualifyingRound,null);
+  assert.equal(room.teams.A.immuneFromRound,5);
+  for(const id of 'AB'){
+    const team=room.teams[id];team.position='R1';team.hand[0].move=1;
+    g.move(room,{role:'team',id},team.hand[0].id,['R2']);
+  }
+  assert.equal(room.battles.length,1);
+  room.teams.A.round=7;
+  g.score(room,host,'A',2);
+  assert.equal(room.teams.A.qualifyingRound,7);
+  for(const team of Object.values(room.teams))team.round=8;
+  g.evaluateEnd(room);
+  assert.equal(room.result?.winner,'A');
+  assert.equal(room.result?.qualifyingRound,7);
+});
+
+test('三队完成达标轮次后自动确认胜者，免战队不触发新战斗',()=>{
+  const room=g.createRoom({seed:'endgame-auto'});
+  g.score(room,{role:'host'},'A',20);
+  for(const id of 'ABC'){
+    const team=room.teams[id];team.position='R1';team.hand[0].move=1;
+    g.move(room,{role:'team',id},team.hand[0].id,['R2']);
+    g.endTurn(room,{role:'team',id});
+  }
+  assert.equal(room.battles.length,0);
+  assert.equal(room.result?.winner,'A');
+  assert.equal(g.hydrate(JSON.parse(JSON.stringify(room))).result?.winner,'A');
+});
+
+test('同轮达标按时间顺序决胜，时间上限按积分并列排名',()=>{
+  const room=g.createRoom({seed:'endgame-tie'}),host={role:'host'};
+  for(const team of Object.values(room.teams))team.round=2;
+  g.score(room,host,'A',20);g.score(room,host,'B',20);
+  for(const team of Object.values(room.teams))team.round=3;
+  g.evaluateEnd(room);
+  assert.equal(room.result?.winner,'A');
+  const deadlineAt=Date.now()+3600000,limited=g.createRoom({seed:'endgame-deadline',deadlineAt});
+  g.score(limited,host,'A',3);g.score(limited,host,'B',5);g.score(limited,host,'C',5);
+  g.evaluateEnd(limited,deadlineAt);
+  assert.deepEqual(limited.result?.winners,['B','C']);
+  assert.deepEqual(limited.result?.ranking.map(row=>row.rank),[1,1,3]);
+  const manual=g.createRoom({seed:'endgame-manual'});
+  g.score(manual,host,'A',3);g.finishByScores(manual,'manual');
+  assert.equal(manual.result?.reason,'manual');
+  assert.deepEqual(manual.result?.winners,['A']);
+});
+
 test('战斗只在可见回合出现，双方与第三队进入该回合后均可看到对战状态',()=>{
   const room=g.createRoom({seed:'battle-visibility'});
   for(const id of 'AB'){
@@ -276,10 +364,13 @@ test('战斗只在可见回合出现，双方与第三队进入该回合后均�
   const battle=room.battles.find(b=>b.round===2);
   assert.equal(battle.status,'待结算');
   assert.equal(g.state(room,{role:'team',id:'C'}).battles.some(b=>b.id===battle.id),false);
+  g.battle(room,{role:'host'},battle.id,'A');
+  assert.equal(g.state(room,{role:'team',id:'C'}).teams.A.score,0);
   const c=room.teams.C;c.position='R1';c.hand[0].move=1;
   g.move(room,{role:'team',id:'C'},c.hand[0].id,['R2']);
   g.endTurn(room,{role:'team',id:'C'});
   assert.equal(g.state(room,{role:'team',id:'C'}).battles.some(b=>b.id===battle.id),true);
+  assert.equal(g.state(room,{role:'team',id:'C'}).teams.A.score,2);
   for(const id of 'AB')assert.equal(g.state(room,{role:'team',id}).battles.some(b=>b.id===battle.id),true);
 });
 
