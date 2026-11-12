@@ -10,6 +10,14 @@ export default function BoardGameCourseOverview({ course }: { course: Course }) 
   const [otherRoomCode, setOtherRoomCode] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [mobile, setMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width:700px), (max-width:950px) and (max-height:520px)').matches)
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width:700px), (max-width:950px) and (max-height:520px)')
+    const update = () => setMobile(media.matches)
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -42,6 +50,6 @@ export default function BoardGameCourseOverview({ course }: { course: Course }) 
     {error && <p className="page-card error" role="alert">{error}。棋盘预览仍可查看，请确认桌游服务已启动。</p>}
     {!loading && !error && !roomCode && <p className="page-card error">此课题尚无房间，请检查房间迁移。</p>}
     {blocked && <p className="page-card" role="alert">已于房间{otherRoomCode}中存在队伍</p>}
-    {roomCode && !blocked ? <GameRoomPage roomCode={roomCode} embedded /> : <div className="page-card" style={{ textAlign: 'center' }}><img src="/board-game-map.svg" alt="桌游棋盘" style={{ display: 'block', width: '100%', maxWidth: 900, margin: '0 auto' }} /></div>}
+    {roomCode && !blocked ? mobile ? <Link className="page-btn primary" to={`/game/rooms/${roomCode}`}>进入桌游房间 →</Link> : <GameRoomPage roomCode={roomCode} embedded /> : <div className="page-card" style={{ textAlign: 'center' }}><img src="/board-game-map.svg" alt="桌游棋盘" style={{ display: 'block', width: '100%', maxWidth: 900, margin: '0 auto' }} /></div>}
   </>
 }

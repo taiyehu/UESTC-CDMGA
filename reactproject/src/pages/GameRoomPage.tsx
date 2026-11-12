@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import PageShell from '../components/PageShell'
 
@@ -27,6 +27,14 @@ export default function GameRoomPage({ roomCode, embedded = false }: { roomCode?
   const [busy, setBusy] = useState(false)
   const [money, setMoney] = useState(200)
   const [income, setIncome] = useState(30)
+  const gameShellRef = useRef<HTMLDivElement>(null)
+  const [fullscreen, setFullscreen] = useState(false)
+
+  useEffect(() => {
+    const update = () => setFullscreen(document.fullscreenElement === gameShellRef.current)
+    document.addEventListener('fullscreenchange', update)
+    return () => document.removeEventListener('fullscreenchange', update)
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -52,15 +60,23 @@ export default function GameRoomPage({ roomCode, embedded = false }: { roomCode?
     await act('end')
   }
 
-  if (details?.status === 'active' || details?.status === 'ended') return <div style={{ height: embedded ? '75dvh' : '100dvh', minHeight: 520, display: 'flex', flexDirection: 'column' }}>
-    <div style={{ padding: '5px 12px', background: '#20212b', color: 'white', display: 'flex', gap: 16 }}>
+  async function toggleFullscreen() {
+    try {
+      if (document.fullscreenElement === gameShellRef.current) await document.exitFullscreen()
+      else await gameShellRef.current?.requestFullscreen()
+    } catch { setError('浏览器无法进入全屏模式') }
+  }
+
+  if (details?.status === 'active' || details?.status === 'ended') return <div ref={gameShellRef} className={`game-room-shell${embedded ? ' embedded' : ''}`}>
+    <div className="game-room-toolbar">
       <Link to="/game" style={{ color: 'white' }}>← 房间列表</Link>
       <span>{details.courseTitle} · {details.code}</span>
       <span>{details.status === 'ended' ? '已结束 · 只读' : details.role === 'host' ? '裁判' : `${details.teamId} 队${details.canAct ? '操作者' : '观战'}`}</span>
       {details.status === 'active' && details.role === 'host' && <button disabled={busy} onClick={() => void end()}>结束房间</button>}
+      <button type="button" onClick={() => void toggleFullscreen()}>{fullscreen ? '退出全屏' : '全屏'}</button>
       {error && <span role="alert">{error}</span>}
     </div>
-    <iframe key={details.status} title="桌游" src={`/game-client/?room=${details.code}`} style={{ flex: 1, width: '100%', border: 0 }} />
+    <iframe className="game-room-frame" key={details.status} title="桌游" src={`/game-client/?room=${details.code}`} allowFullScreen />
   </div>
 
   const content = <>

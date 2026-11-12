@@ -6,6 +6,7 @@ let resourceQueue=[],resourceActive=false,resourceTimer=null,ghostRevealTeam=nul
 let seenBattles=null,battleQueue=[],battleActive=false,battleTimer=null;
 let cardFlowQueue=[],cardFlowBusy=false,cardFlowEpoch=0;const drawingCardIds=new Set();
 let bidDraft='0',bidAuctionId=null;
+let mapZoom=1;
 const animations={},animationTimers={};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -17,13 +18,27 @@ async function api(method,path,data){
 function fail(e){alert(e.message||String(e));}
 function save(){}
 function showLobby(error=''){document.body.classList.remove('playing');$('battleModal').classList.remove('show');$('handHelp').classList.remove('show');$('lobby').hidden=false;$('game').hidden=true;$('lobbyError').textContent=error;}
-function showGame(){const opening=$('game').hidden;document.body.classList.add('playing');$('lobby').hidden=true;$('game').hidden=false;$('roomLabel').textContent=`房间 ${session.code} · ${snapshot.role==='host'?'裁判':snapshot.teamId+' 队'}${snapshot.canAct?'':' · 观战'}`;if(opening)requestAnimationFrame(fitMap);}
+function showGame(){const opening=$('game').hidden;document.body.classList.add('playing');document.body.dataset.gameView||='map';$('lobby').hidden=true;$('game').hidden=false;$('roomLabel').textContent=`房间 ${session.code} · ${snapshot.role==='host'?'裁判':snapshot.teamId+' 队'}${snapshot.canAct?'':' · 观战'}`;if(opening)requestAnimationFrame(fitMap);}
 function fitMap(){
   const viewport=document.querySelector('.mapViewport'),map=viewport.querySelector('.mapWrap');
   const availableWidth=viewport.clientWidth,availableHeight=viewport.clientHeight;
   if(!availableWidth||!availableHeight)return;
-  const width=Math.floor(Math.min(availableWidth,availableHeight*1640/1510));
+  const mobile=matchMedia('(max-width:700px), (max-width:950px) and (max-height:520px)').matches;
+  const width=Math.floor(mobile?availableWidth*mapZoom:Math.min(availableWidth,availableHeight*1640/1510));
   map.style.width=width+'px';map.style.height=Math.floor(width*1510/1640)+'px';
+}
+function setGameView(view){
+  document.body.dataset.gameView=view;
+  document.querySelectorAll('[data-game-view]').forEach(button=>button.setAttribute('aria-current',button.dataset.gameView===view?'page':'false'));
+  requestAnimationFrame(fitMap);
+}
+function changeMapZoom(next){
+  const viewport=document.querySelector('.mapViewport');
+  const x=(viewport.scrollLeft+viewport.clientWidth/2)/Math.max(1,viewport.scrollWidth);
+  const y=(viewport.scrollTop+viewport.clientHeight/2)/Math.max(1,viewport.scrollHeight);
+  mapZoom=Math.max(1,Math.min(2.5,next));fitMap();
+  viewport.scrollLeft=x*viewport.scrollWidth-viewport.clientWidth/2;
+  viewport.scrollTop=y*viewport.scrollHeight-viewport.clientHeight/2;
 }
 async function refresh(){
   if(!session)return;
@@ -170,7 +185,15 @@ function animate(record,done,holdAtEnd=false){
   animationTimers[id]=setTimeout(step,120);
 }
 async function action(path,data){try{const next=await api('POST',`/rooms/${session.code}/${path}`,data);ingest(next);return true;}catch(e){fail(e);return false;}}
-function render(){showGame();$('judgePanel').hidden=snapshot.role!=='host';$('cards').hidden=snapshot.role==='host';$('rightTitle').textContent=snapshot.role==='host'?'裁判控制':'手牌';$('openHandHelp').hidden=snapshot.role==='host';renderSummary();renderMap();renderTurnControls();renderCards();renderPiles();renderPreview();renderPending();$('actionDock').hidden=snapshot.role==='host'&&!snapshot.pendingAuction&&!snapshot.pendingMisfortuneChoice;renderHistory();renderTable();renderTestTools();renderLog();if(!snapshot.canAct)document.querySelectorAll('#actionDock button, #cards button, #judgePanel button').forEach(el=>{el.disabled=true;el.title='本队仅指定操作者可操作';});}
+function render(){showGame();$('judgePanel').hidden=snapshot.role!=='host';$('cards').hidden=snapshot.role==='host';$('rightTitle').textContent=snapshot.role==='host'?'裁判控制':'手牌';$('openHandHelp').hidden=snapshot.role==='host';document.querySelector('[data-game-view="judge"]').hidden=snapshot.role!=='host';document.querySelector('[data-game-view="hand"]').hidden=snapshot.role==='host';if(snapshot.role==='host'&&document.body.dataset.gameView==='hand'||snapshot.role!=='host'&&document.body.dataset.gameView==='judge')setGameView('map');renderSummary();renderMap();renderEndgame();renderTurnControls();renderCards();renderPiles();renderPreview();renderPending();$('actionDock').hidden=snapshot.role==='host'&&!snapshot.pendingAuction&&!snapshot.pendingMisfortuneChoice;renderHistory();renderTable();renderTestTools();renderLog();if(!snapshot.canAct)document.querySelectorAll('#actionDock button, #cards button, #judgePanel button').forEach(el=>{el.disabled=true;el.title='本队仅指定操作者可操作';});}
+function renderEndgame(){
+  const banner=$('endgameBanner'),endgame=snapshot.endgame;
+  if(!endgame?.result&&!endgame?.provisional?.length){banner.hidden=true;return;}
+  banner.hidden=false;
+  if(endgame.result?.reason==='goal')banner.textContent=`比赛结束 · ${endgame.result.winner} 队第 ${endgame.result.qualifyingRound} 轮达标获胜`;
+  else if(endgame.result?.reason==='time_limit'||endgame.result?.reason==='manual')banner.textContent=`${endgame.result.reason==='time_limit'?'比赛时间到':'裁判结束比赛'} · ${endgame.result.ranking.map(row=>`第 ${row.rank} 名 ${row.team} 队 ${row.score} 分`).join(' · ')}`;
+  else banner.textContent=`暂定达标：${endgame.provisional.map(row=>`${row.team} 队第 ${row.round} 轮达到 ${row.score} 分`).join('、')} · 等待相关轮次和战斗结清`;
+}
 function buffs(t){return [t.eventShield?`事件抵消 ×${t.eventShield}`:'',t.misfortuneShield?`厄运抵消 ×${t.misfortuneShield}`:'',t.debuffShield?`debuff 抵消 ×${t.debuffShield}`:'',t.nextBattleModifier?`下次战斗 ${t.nextBattleModifier} 分`:'',t.loanActive?'快速贷款还款':'',t.maxCardUses>1?'每回合可用 2 张牌':'',t.arcaeaVisitIncome?'造访 Arcaea 获得收入':'',t.fanshiVisitMoney?`造访范式 +${t.fanshiVisitMoney} 金钱`:'',t.discardAbility?'机械帮手弃牌':'',...(t.debuffs||[]).map(d=>`debuff：${d.name}`)].filter(Boolean).join(' · ')||'无';}
 function activeBattle(id){
   return snapshot.battles.find(b=>b.status==='待结算'&&(snapshot.role==='host'||b.round===snapshot.teams[snapshot.teamId].round)&&
@@ -228,6 +251,7 @@ function showTeamInfo(id){
 }
 function renderTurnControls(){
   if(snapshot.role!=='team'){$('turnControls').innerHTML='';return;}
+  if(snapshot.endgame?.result){$('turnControls').innerHTML='<div class="turnState">比赛已结束，房间仅供查看</div>';return;}
   const t=snapshot.teams[snapshot.teamId];
   if(!t.awaitingEnd){$('turnControls').innerHTML=`<div class="turnState">第 ${t.round} 回合 · 请选择手牌移动</div>`;return;}
   if(t.pendingChallenge){$('turnControls').innerHTML='<div class="turnState">挑战已提交 · 等待裁判判定</div>';return;}
@@ -308,8 +332,8 @@ function renderPreview(){
   $('backPreview').onclick=()=>{preview=null;renderPreview();};
   $('playPreview').onclick=async()=>{
     if(!canPlay)return;const {cardId,mode}=preview;preview=null;renderPreview();
-    if(mode==='move'||mode==='extra'){selected=card;moveKind=mode;renderCards();return;}
-    if(mode==='use')await action('use-card',{cardId});
+    if(mode==='move'||mode==='extra'){selected=card;moveKind=mode;setGameView('map');renderCards();return;}
+    if(mode==='use'&&await action('use-card',{cardId}))setGameView('map');
     if(mode==='discard')await action('discard-card',{cardId});
   };
 }
@@ -383,11 +407,17 @@ function renderLog(){
   $('judgeLog').innerHTML=snapshot.role==='host'?snapshot.log.map(e=>`<div>${time(e.time)} · ${esc(e.message)}</div>`).join(''):'';
 }
 $('openBattleTable').onclick=()=>{$('battleModal').classList.add('show');$('closeBattleTable').focus();};
+$('openBattleTableJudge').onclick=$('openBattleTable').onclick;
 $('closeBattleTable').onclick=()=>$('battleModal').classList.remove('show');
 $('battleModal').onclick=e=>{if(e.target===$('battleModal'))$('battleModal').classList.remove('show');};
 $('openHandHelp').onclick=()=>{$('handHelp').classList.add('show');$('closeHandHelp').focus();};
 $('closeHandHelp').onclick=()=>$('handHelp').classList.remove('show');
 $('handHelp').onclick=e=>{if(e.target===$('handHelp'))$('handHelp').classList.remove('show');};
+document.querySelectorAll('[data-game-view]').forEach(button=>button.onclick=()=>setGameView(button.dataset.gameView));
+$('zoomOut').onclick=()=>changeMapZoom(mapZoom-.25);
+$('zoomReset').onclick=()=>changeMapZoom(1);
+$('zoomIn').onclick=()=>changeMapZoom(mapZoom+.25);
+setGameView('map');
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('battleModal').classList.remove('show');$('handHelp').classList.remove('show');}});
 if('ResizeObserver' in window)new ResizeObserver(fitMap).observe(document.querySelector('.mapViewport'));
 else window.addEventListener('resize',fitMap);
