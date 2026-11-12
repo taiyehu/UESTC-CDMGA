@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import PageShell from '../components/PageShell'
 
-type Team = { teamId: number; members: { id: number; account: string }[] }
-type Details = { code: string; courseTitle: string; status: 'waiting' | 'active' | 'ended'; role: 'host' | 'team' | 'spectator'; teamId: string | null; canAct: boolean; myIdentityId: number; myTeamId: number | null; initialMoney: number; initialIncome: number; teams: Team[]; seats: { seat: string; teamId: number; operatorAccount: string }[] }
+type TeamMember = { id: number; account: string; avatar?: string | null; titleName?: string | null; titleTier?: string | null; titleAcquisitionMethod?: string | null }
+type Team = { teamId: number; botStrategy?: 'steady' | 'aggressive'; members: TeamMember[] }
+type Details = { code: string; courseTitle: string; status: 'waiting' | 'active' | 'ended'; role: 'host' | 'team' | 'spectator'; teamId: string | null; canAct: boolean; myIdentityId: number; myTeamId: number | null; initialMoney: number; initialIncome: number; teams: Team[]; seats: { seat: string; teamId: number; operatorAccount: string | null; botStrategy: Team['botStrategy'] | null }[] }
 
 async function request(code: string, action = 'details', method = 'GET', data?: unknown) {
   const response = await fetch(`/game-api/rooms/${code}/${action}`, { method, credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: data === undefined ? undefined : JSON.stringify(data) })
@@ -73,8 +74,13 @@ export default function GameRoomPage({ roomCode, embedded = false }: { roomCode?
     {details?.status === 'waiting' && <>
       <section className="panel" style={{ padding: 24, marginBottom: 20 }}>
         <h2>等待组队 · {details.teams.length}/3</h2>
-        <p>每支队伍最多三人。三支未解散队伍齐全后，裁判可以开始游戏。</p>
+        <p>每支真人队伍最多三人。裁判可添加最多两支人机队伍；三队齐全后开始游戏，挑战和战斗仍由裁判判定。</p>
+        <p className="meta">稳健人机优先积累收入、保留资金；进攻人机优先抢分，并尝试走到同轮对手的落点触发战斗。</p>
         {details.role === 'host' && <button type="button" disabled={busy || details.teams.length !== 3} onClick={() => void act('start')}>开始游戏</button>}
+        {details.role === 'host' && details.teams.length < 3 && details.teams.filter(team => team.botStrategy).length < 2 && <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <button type="button" disabled={busy} onClick={() => void act('add-bot', { strategy: 'steady' })}>添加稳健人机</button>
+          <button type="button" disabled={busy} onClick={() => void act('add-bot', { strategy: 'aggressive' })}>添加进攻人机</button>
+        </div>}
         {details.role === 'host' && <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 16 }}>
           <label>初始金钱 <input className="page-input" type="number" min={0} max={1000000} value={money} onChange={e => setMoney(Number(e.target.value))} /></label>
           <label>初始收入 <input className="page-input" type="number" min={0} max={1000000} value={income} onChange={e => setIncome(Number(e.target.value))} /></label>
@@ -84,11 +90,16 @@ export default function GameRoomPage({ roomCode, embedded = false }: { roomCode?
         {details.myTeamId && <button type="button" disabled={busy} onClick={() => void act('leave-team')}>退出队伍</button>}
       </section>
       <div className="page-grid">{details.teams.map(team => <section className="page-card" key={team.teamId}>
-        <h3>队伍 #{team.teamId}</h3>
-        <p>{team.members.map(member => member.account).join('、')}</p>
-        <p className="meta">{team.members.length}/3 人</p>
-        {!details.myTeamId && details.role !== 'host' && team.members.length < 3 && <button type="button" disabled={busy} onClick={() => void act('join-team', { teamId: team.teamId })}>加入队伍</button>}
-        {(details.role === 'host' || team.members[0]?.id === details.myIdentityId) && <button type="button" disabled={busy} onClick={() => { if (window.confirm(`确定解散队伍 #${team.teamId}？`)) void act('disband-team', { teamId: team.teamId }) }}>解散队伍</button>}
+        <h3>队伍 #{team.teamId}{team.botStrategy ? ` · ${team.botStrategy === 'steady' ? '稳健人机' : '进攻人机'}` : ''}</h3>
+        {team.botStrategy ? <p>由服务端自动行动</p> : <><div className="game-team-members">{team.members.map(member => <div className="feed-author" key={member.id}>
+          <Link to={`/profile/${member.id}`} className="feed-avatar"><img src={member.avatar || '/club-logo.jpg'} alt="" /></Link>
+          <div className="feed-author-meta"><div className="feed-author-identity">
+            <Link to={`/profile/${member.id}`} className="feed-author-name">{member.account}</Link>
+            {member.titleName && member.titleTier && <span className={`feed-title-badge ${member.titleTier}`} title={member.titleAcquisitionMethod || '称号'}>{member.titleName}</span>}
+          </div></div>
+        </div>)}</div><p className="meta">{team.members.length}/3 人</p></>}
+        {!team.botStrategy && !details.myTeamId && details.role !== 'host' && team.members.length < 3 && <button type="button" disabled={busy} onClick={() => void act('join-team', { teamId: team.teamId })}>加入队伍</button>}
+        {(details.role === 'host' || !team.botStrategy && team.members[0]?.id === details.myIdentityId) && <button type="button" disabled={busy} onClick={() => { if (window.confirm(`确定${team.botStrategy ? '移除人机' : '解散队伍'} #${team.teamId}？`)) void act('disband-team', { teamId: team.teamId }) }}>{team.botStrategy ? '移除人机' : '解散队伍'}</button>}
       </section>)}</div>
     </>}
   </>

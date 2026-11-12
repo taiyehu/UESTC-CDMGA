@@ -127,7 +127,7 @@ function state(room,who) {
       debuffs:t.debuffs,debuffShield:t.debuffShield,nextBattleModifier:t.nextBattleModifier,
       loanActive:t.loanActive,maxCardUses:t.maxCardUses,cardUsesThisRound:t.cardUsesThisRound,
       arcaeaVisitIncome:t.arcaeaVisitIncome,fanshiVisitMoney:t.fanshiVisitMoney,
-      canDiscard:t.discardAbility&&t.awaitingEnd&&HOUSE.has(t.position)&&t.discardedRound!==t.round&&
+      canDiscard:t.discardAbility&&t.awaitingEnd&&Object.hasOwn(GRAPH,t.position)&&t.discardedRound!==t.round&&
         !t.pendingChallenge&&!t.pendingTeleport&&!t.pendingExtraMove&&!t.pendingTarget&&!t.pendingReroll&&!room.pendingAuction&&!room.pendingMisfortuneChoice&&!t.hand.some(c=>canUse(t,c)),
       pendingChallenge:who.role==='host'||id===who.id?t.pendingChallenge?{id:t.pendingChallenge.id,card:t.pendingChallenge.card}:null:undefined,
       pendingTeleport:id===who.id||who.role==='host'?t.pendingTeleport:undefined,
@@ -269,7 +269,7 @@ function extraMove(room,who,cardId,route){
 function discardCard(room,who,cardId){
   if(who.role!=='team')throw Error('只有队伍可以弃牌');
   const t=room.teams[who.id],index=t.hand.findIndex(c=>c.id===cardId);
-  if(!t.discardAbility||!t.awaitingEnd||!HOUSE.has(t.position)||t.discardedRound===t.round||index<0||t.pendingChallenge||t.pendingTeleport||t.pendingExtraMove||t.pendingTarget||t.pendingReroll||room.pendingAuction||room.pendingMisfortuneChoice||t.hand.some(c=>canUse(t,c)))throw Error('当前不能使用机械帮手弃牌');
+  if(!t.discardAbility||!t.awaitingEnd||!Object.hasOwn(GRAPH,t.position)||t.discardedRound===t.round||index<0||t.pendingChallenge||t.pendingTeleport||t.pendingExtraMove||t.pendingTarget||t.pendingReroll||room.pendingAuction||room.pendingMisfortuneChoice||t.hand.some(c=>canUse(t,c)))throw Error('当前不能使用机械帮手弃牌');
   consumeCard(room,t,index);t.discardedRound=t.round;note(room,`${t.id} 队使用机械帮手能力弃一张手牌并补牌`);
 }
 function houseAction(room,who){

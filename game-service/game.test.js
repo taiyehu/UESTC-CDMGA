@@ -129,6 +129,30 @@ test('成品手牌的收入、传送、厄运抵消、额外移动与机械帮�
   assert.throws(()=>g.discardCard(helper.room,helper.who,helper.t.hand[0].id),/不能使用/);
 });
 
+test('机械帮手允许在普通站点无法使用卡牌时弃牌',()=>{
+  const {room,t,who,card}=arriveWithCard('card6','范式起源');
+  g.useCard(room,who,card.id);g.resolveChallenge(room,{role:'host'},'A',true);
+  g.endTurn(room,who);
+  t.position='R1';const mover=t.hand.find(c=>c.move!==7);mover.move=1;
+  g.move(room,who,mover.id,['R2']);
+  assert.equal(g.state(room,who).teams.A.canDiscard,true);
+  const discarded=t.hand[0].id;
+  g.discardCard(room,who,discarded);
+  assert.equal(t.hand.length,6);
+  assert.equal(g.state(room,who).teams.A.canDiscard,false);
+  assert.throws(()=>g.discardCard(room,who,t.hand[0].id),/不能使用/);
+});
+
+test('两张小额积分手牌按配置加分和扣费',()=>{
+  for(const [id,house,points,cost] of [['card12','Phigros',1,50],['card13','Phigros',2,150]]){
+    const {room,t,who,card}=arriveWithCard(id,house,500),before=t.money;
+    g.useCard(room,who,card.id);
+    assert.equal(t.money,before-cost);
+    g.resolveChallenge(room,{role:'host'},'A',true);
+    assert.equal(t.score,points);
+  }
+});
+
 test('新手牌按 CSV 执行转移、重掷、贷款和双牌效果',()=>{
   const host={role:'host'};
   const trade=arriveWithCard('card8','Arcaea',1000);

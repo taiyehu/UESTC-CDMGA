@@ -3,13 +3,17 @@ const fs = require('node:fs');
 const path = require('node:path');
 const mysql = require('mysql2/promise');
 const game = require('./game');
+const bot = require('./bot');
+
+const springJdbcUrl = process.env.SPRING_DATASOURCE_URL || '';
+const springDatabase = /^jdbc:mysql:\/\/[^/]+\/([^?]+)/.exec(springJdbcUrl)?.[1];
 
 const pool = mysql.createPool({
   host: process.env.GAME_DB_HOST || '127.0.0.1',
   port: Number(process.env.GAME_DB_PORT || 3306),
   user: process.env.GAME_DB_USER || process.env.SPRING_DATASOURCE_USERNAME,
   password: process.env.GAME_DB_PASSWORD || process.env.SPRING_DATASOURCE_PASSWORD,
-  database: process.env.GAME_DB_NAME || 'CDMGA',
+  database: process.env.GAME_DB_NAME || springDatabase || 'CDMGA',
   waitForConnections: true,
   connectionLimit: 10,
   timezone: '+08:00',
@@ -36,7 +40,7 @@ async function readRoom(code, db=pool) {
   const [rows]=await db.query('SELECT r.*, c.title AS course_title, c.category AS course_category FROM game_room r JOIN course c ON c.id=r.course_id WHERE r.code=?',[code]);
   if(!rows.length)throw fail(404,'房间不存在');
   const room=rows[0];
-  const [seats]=await db.query('SELECT s.seat,s.team_id,s.operator_identity_id,i.account AS operator_account FROM game_room_seat s JOIN identity i ON i.id=s.operator_identity_id WHERE s.room_id=? ORDER BY s.seat',[room.id]);
+  const [seats]=await db.query('SELECT s.seat,s.team_id,s.operator_identity_id,i.account AS operator_account,b.strategy AS bot_strategy FROM game_room_seat s LEFT JOIN identity i ON i.id=s.operator_identity_id LEFT JOIN game_room_bot b ON b.room_id=s.room_id AND b.team_id=s.team_id WHERE s.room_id=? ORDER BY s.seat',[room.id]);
   room.seats=seats;
   return room;
 }
@@ -55,15 +59,16 @@ async function membership(userId, db=pool) {
   return rows[0]?.code||null;
 }
 async function waitingTeams(courseId, db=pool) {
-  const [rows]=await db.query('SELECT t.id,t.team_id,t.identity_id,i.account FROM team t JOIN identity i ON i.id=t.identity_id AND i.is_deleted=0 WHERE t.course_id=? AND t.team_id IS NOT NULL ORDER BY t.team_id,t.id',[courseId]);
+  const [rows]=await db.query("SELECT t.id,t.team_id,t.identity_id,i.account,td.name AS titleName,td.tier AS titleTier,td.acquisition_method AS titleAcquisitionMethod,(SELECT pr.avatar FROM profile pr WHERE pr.identity_id=i.id AND pr.status=1 ORDER BY pr.id DESC LIMIT 1) AS avatar FROM team t JOIN identity i ON i.id=t.identity_id AND i.is_deleted=0 LEFT JOIN title_award ta ON ta.identity_id=i.id AND ta.status='approved' AND ta.is_equipped=1 LEFT JOIN title_definition td ON td.id=ta.title_id WHERE t.course_id=? AND t.team_id IS NOT NULL ORDER BY t.team_id,t.id",[courseId]);
   const teams=[];
-  for(const row of rows){let team=teams.find(t=>t.teamId===row.team_id);if(!team){team={teamId:row.team_id,members:[]};teams.push(team);}team.members.push({id:row.identity_id,account:row.account});}
-  return teams;
+  for(const row of rows){let team=teams.find(t=>t.teamId===row.team_id);if(!team){team={teamId:row.team_id,members:[]};teams.push(team);}team.members.push({id:row.identity_id,account:row.account,avatar:row.avatar,titleName:row.titleName,titleTier:row.titleTier,titleAcquisitionMethod:row.titleAcquisitionMethod});}
+  const [bots]=await db.query('SELECT b.team_id,b.strategy FROM game_room_bot b JOIN game_room r ON r.id=b.room_id WHERE r.course_id=? ORDER BY b.team_id',[courseId]);
+  return [...teams,...bots.map(row=>({teamId:row.team_id,botStrategy:row.strategy,members:[]}))].sort((a,b)=>a.teamId-b.teamId);
 }
 function publicRoom(room,who) {
   return {code:room.code,courseId:room.course_id,courseTitle:room.course_title,status:room.status,
     refereeIdentityId:room.referee_identity_id,initialMoney:room.initial_money,initialIncome:room.initial_income,
-    seats:room.seats.map(s=>({seat:s.seat,teamId:s.team_id,operatorIdentityId:s.operator_identity_id,operatorAccount:s.operator_account})),
+    seats:room.seats.map(s=>({seat:s.seat,teamId:s.team_id,operatorIdentityId:s.operator_identity_id,operatorAccount:s.operator_account,botStrategy:s.bot_strategy})),
     role:who.role,teamId:who.id||null,canAct:who.canAct};
 }
 const operations={roll:(r,w,b)=>game.roll(r,w,b.cardId),
@@ -100,7 +105,8 @@ const server=http.createServer(async(req,res)=>{
   if(!url.pathname.startsWith('/game-api/')){res.writeHead(404);res.end();return;}
   try {
     if(req.method==='GET'&&url.pathname==='/game-api/health') {
-      await pool.query('SELECT 1 FROM game_room LIMIT 0');
+      await pool.query('SELECT 1 FROM game_room_bot LIMIT 0');
+      await pool.query('SELECT actor_type FROM game_action_log LIMIT 0');
       return send(res,200,{status:'ok'});
     }
     const user=await identity(req);
@@ -111,7 +117,7 @@ const server=http.createServer(async(req,res)=>{
       return send(res,200,{courses,teams});
     }
     if(req.method==='GET'&&url.pathname==='/game-api/rooms') {
-      const [rows]=await pool.query("SELECT r.id,r.code,r.course_id,r.status,c.title AS course_title,c.description AS course_description,c.image AS course_image,r.referee_identity_id FROM game_room r JOIN course c ON c.id=r.course_id WHERE c.category='board_game' AND c.is_deleted=0 ORDER BY r.id DESC");
+      const [rows]=await pool.query("SELECT r.id,r.code,r.course_id,r.status,c.title AS course_title,c.description AS course_description,c.image AS course_image,r.referee_identity_id,(SELECT COUNT(DISTINCT t.team_id) FROM team t WHERE t.course_id=r.course_id AND t.team_id IS NOT NULL)+(SELECT COUNT(*) FROM game_room_bot b WHERE b.room_id=r.id) AS team_count FROM game_room r JOIN course c ON c.id=r.course_id WHERE c.category='board_game' AND c.is_deleted=0 ORDER BY r.id DESC");
       return send(res,200,{rooms:rows,myRoomCode:await membership(user.id)});
     }
     if(req.method==='POST'&&url.pathname==='/game-api/rooms') {
@@ -138,6 +144,21 @@ const server=http.createServer(async(req,res)=>{
         await db.commit();return send(res,200,{initialMoney:money,initialIncome:income});
       }catch(e){await db.rollback();throw e;}finally{db.release();}
     }
+    if(req.method==='POST'&&match[2]==='add-bot'){
+      if(who.role!=='host')throw fail(403,'只有裁判可以添加人机');
+      const b=await body(req);
+      if(!['steady','aggressive'].includes(b.strategy))throw fail(400,'请选择稳健或进攻人机');
+      const db=await pool.getConnection();
+      try{await db.beginTransaction();
+        const [locked]=await db.query('SELECT status FROM game_room WHERE id=? FOR UPDATE',[room.id]);
+        if(locked[0].status!=='waiting')throw fail(409,'游戏开始后不能添加人机');
+        const teams=await waitingTeams(room.course_id,db);
+        if(teams.length>=3||teams.filter(t=>t.botStrategy).length>=2)throw fail(409,'最多三支队伍，其中至多两支人机');
+        const teamId=Math.max(0,...teams.map(t=>t.teamId))+1;
+        await db.query('INSERT INTO game_room_bot(room_id,team_id,strategy) VALUES(?,?,?)',[room.id,teamId,b.strategy]);
+        await db.commit();return send(res,200,{teams:await waitingTeams(room.course_id)});
+      }catch(e){await db.rollback();throw e;}finally{db.release();}
+    }
     if(req.method==='POST'&&['create-team','join-team','leave-team','disband-team'].includes(match[2])){
       const b=await body(req),db=await pool.getConnection();
       try{
@@ -157,7 +178,7 @@ const server=http.createServer(async(req,res)=>{
           const teamId=match[2]==='create-team'?Math.max(0,...teams.map(t=>t.teamId))+1:targetId;
           if(match[2]==='create-team'&&teams.length>=3)throw fail(409,'房间最多有三个未解散的队伍');
           const target=teams.find(t=>t.teamId===teamId);
-          if(match[2]==='join-team'&&(!target||target.members.length>=3))throw fail(400,'目标队伍不存在或已满');
+          if(match[2]==='join-team'&&(!target||target.botStrategy||target.members.length>=3))throw fail(400,'目标队伍不存在或已满');
           const [existing]=await db.query('SELECT id FROM team WHERE course_id=? AND identity_id=? LIMIT 1',[room.course_id,user.id]);
           if(existing.length)await db.query('UPDATE team SET team_id=?,is_touched=0 WHERE id=?',[teamId,existing[0].id]);
           else await db.query('INSERT INTO team(course_id,team_id,identity_id,is_touched) VALUES(?,?,?,0)',[room.course_id,teamId,user.id]);
@@ -167,8 +188,13 @@ const server=http.createServer(async(req,res)=>{
         }else{
           const target=teams.find(t=>t.teamId===targetId);
           if(!target)throw fail(400,'队伍不存在');
+          if(target.botStrategy){
+            if(who.role!=='host')throw fail(403,'只有裁判可以移除人机');
+            await db.query('DELETE FROM game_room_bot WHERE room_id=? AND team_id=?',[room.id,targetId]);
+          }else{
           if(who.role!=='host'&&target.members[0].id!==user.id)throw fail(403,'只有队长或裁判可以解散队伍');
           await db.query('UPDATE team SET team_id=NULL WHERE course_id=? AND team_id=?',[room.course_id,targetId]);
+          }
         }
         const updated=await waitingTeams(room.course_id,db);
         await db.commit();return send(res,200,{teams:updated,myTeamId:updated.find(t=>t.members.some(m=>m.id===user.id))?.teamId||null});
@@ -180,12 +206,12 @@ const server=http.createServer(async(req,res)=>{
       try {await db.beginTransaction();const [locked]=await db.query('SELECT status FROM game_room WHERE id=? FOR UPDATE',[room.id]);
         if(locked[0].status!=='waiting')throw fail(409,'房间已经开始');
         const teams=await waitingTeams(room.course_id,db);
-        if(teams.length!==3)throw fail(409,'需要三个未解散的队伍才能开始游戏');
+        if(teams.length!==3||teams.every(t=>t.botStrategy))throw fail(409,'需要三支队伍，且至少一支真人队伍才能开始游戏');
         if(teams.some(t=>t.members.some(m=>m.id===room.referee_identity_id)))throw fail(409,'裁判不能属于参赛队伍');
         const state=game.createRoom({initialMoney:room.initial_money,initialIncome:room.initial_income});state.code=room.code;
         for(const [index,team] of teams.entries()){
           const seat='ABC'[index];
-          await db.query('INSERT INTO game_room_seat(room_id,seat,team_id,operator_identity_id) VALUES(?,?,?,?)',[room.id,seat,team.teamId,team.members[0].id]);
+          await db.query('INSERT INTO game_room_seat(room_id,seat,team_id,operator_identity_id) VALUES(?,?,?,?)',[room.id,seat,team.teamId,team.botStrategy?null:team.members[0].id]);
           state.teams[seat].joined=true;
         }
         await db.query('INSERT INTO game_room_state(room_id,version,state_json) VALUES(?,?,?)',[room.id,state.version,JSON.stringify(state)]);
@@ -212,7 +238,7 @@ const server=http.createServer(async(req,res)=>{
       const [rows]=await pool.query('SELECT state_json FROM game_room_state WHERE room_id=?',[room.id]);
       if(!rows.length)throw fail(500,'房间状态缺失');
       const state=game.state(game.hydrate(json(rows[0].state_json)),who);
-      return send(res,200,{...state,canAct:who.canAct&&room.status==='active'});
+      return send(res,200,{...state,botSeats:Object.fromEntries(room.seats.filter(s=>s.bot_strategy).map(s=>[s.seat,s.bot_strategy])),canAct:who.canAct&&room.status==='active'});
     }
     if(req.method==='POST'&&operations[match[2]]) {
       if(room.status!=='active')throw fail(409,'房间已结束');
@@ -226,11 +252,45 @@ const server=http.createServer(async(req,res)=>{
         const version=Number(rows[0].version)+1;
         await db.query('UPDATE game_room_state SET version=?,state_json=? WHERE room_id=?',[version,JSON.stringify(state),room.id]);
         await db.query('INSERT INTO game_action_log(room_id,seq,actor_identity_id,seat,action_type,payload_json,result_version) VALUES(?,?,?,?,?,?,?)',[room.id,version,user.id,who.id||null,match[2],JSON.stringify(b),version]);
-        await db.commit();return send(res,200,{...game.state(state,who),canAct:who.canAct});
+        await db.commit();return send(res,200,{...game.state(state,who),botSeats:Object.fromEntries(room.seats.filter(s=>s.bot_strategy).map(s=>[s.seat,s.bot_strategy])),canAct:who.canAct});
       } catch(e){await db.rollback();throw e;} finally {db.release();}
     }
     throw fail(404,'接口不存在');
   } catch(e){send(res,e.status||500,{error:e.status?e.message:'服务器处理失败'});if(!e.status)console.error(e);}
 });
-if(require.main===module)server.listen(Number(process.env.GAME_PORT||3001),process.env.GAME_HOST||'127.0.0.1',()=>console.log('Board game service ready'));
+let botTickRunning=false;
+async function advanceBots(){
+  if(botTickRunning)return;
+  botTickRunning=true;
+  try{
+    const [rooms]=await pool.query("SELECT DISTINCT r.id FROM game_room r JOIN game_room_bot b ON b.room_id=r.id WHERE r.status='active'");
+    for(const room of rooms){
+      const db=await pool.getConnection();
+      try{await db.beginTransaction();
+        const [states]=await db.query('SELECT version,state_json FROM game_room_state WHERE room_id=? FOR UPDATE',[room.id]);
+        if(!states.length){await db.rollback();continue;}
+        const [status]=await db.query('SELECT status FROM game_room WHERE id=? FOR UPDATE',[room.id]);
+        if(status[0]?.status!=='active'){await db.rollback();continue;}
+        const [seats]=await db.query('SELECT s.seat,s.operator_identity_id,b.strategy FROM game_room_seat s LEFT JOIN game_room_bot b ON b.room_id=s.room_id AND b.team_id=s.team_id WHERE s.room_id=? ORDER BY s.seat',[room.id]);
+        const state=game.hydrate(json(states[0].state_json));
+        const humanSeats=seats.filter(s=>s.operator_identity_id!==null).map(s=>s.seat);
+        let action,seat;
+        for(const candidate of seats.filter(s=>s.strategy)){
+          action=bot.choose(state,candidate.seat,candidate.strategy,humanSeats);
+          if(action){seat=candidate.seat;break;}
+        }
+        if(!action){await db.rollback();continue;}
+        operations[action.type](state,{role:'team',id:seat},action.payload);
+        const version=Number(states[0].version)+1;
+        await db.query('UPDATE game_room_state SET version=?,state_json=? WHERE room_id=?',[version,JSON.stringify(state),room.id]);
+        await db.query("INSERT INTO game_action_log(room_id,seq,actor_identity_id,actor_type,seat,action_type,payload_json,result_version) VALUES(?,?,NULL,'bot',?,?,?,?)",[room.id,version,seat,action.type,JSON.stringify(action.payload),version]);
+        await db.commit();
+      }catch(error){await db.rollback();console.error('Bot action failed for room',room.id,error);}finally{db.release();}
+    }
+  }catch(error){console.error('Bot scheduler failed',error);}finally{botTickRunning=false;}
+}
+if(require.main===module)server.listen(Number(process.env.GAME_PORT||3001),process.env.GAME_HOST||'127.0.0.1',()=>{
+  console.log('Board game service ready');
+  setInterval(advanceBots,3000).unref();
+});
 module.exports={server,pool};
