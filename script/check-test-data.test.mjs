@@ -32,6 +32,7 @@ for (const [path, content] of [
 }
 
 for (const [path, content] of [
+  ['game-service/node-types.csv', 'name,type\nR1,normal\n'],
   ['game-service/content/hand.csv', 'id,name\ncard1,synthetic card\n'],
   ['game-service/content/events.csv', 'id,name\nevent1,synthetic event\n'],
   ['game-service/content/misfortunes.csv', 'id,name\nmis1,synthetic misfortune\n'],

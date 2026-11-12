@@ -25,6 +25,18 @@ jobs:
           cache: npm
           cache-dependency-path: game-service/package-lock.json
 
+      - name: Verify required game data is committed
+        run: |
+          git ls-files --error-unmatch -- \
+            game-service/node-types.csv \
+            game-service/content/hand.csv \
+            game-service/content/events.csv \
+            game-service/content/misfortunes.csv
+          test -s game-service/node-types.csv
+          test -s game-service/content/hand.csv
+          test -s game-service/content/events.csv
+          test -s game-service/content/misfortunes.csv
+
       - name: Check board game rules
         working-directory: game-service
         run: |

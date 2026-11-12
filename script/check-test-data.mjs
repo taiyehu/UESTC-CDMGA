@@ -5,8 +5,9 @@ const paths = execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8' }).spli
 const rejected = []
 for (const path of paths) {
   // Published game cards are versioned assets, even though their directory is named output.
-  // Keep this exception limited to the three card catalogs and their numbered PNGs.
-  const publishedCardAsset = /^game-service\/content\/(?:hand|events|misfortunes)\.csv$/.test(path)
+  // Keep this exception limited to the map data, three card catalogs and numbered PNGs.
+  const publishedCardAsset = path === 'game-service/node-types.csv'
+    || /^game-service\/content\/(?:hand|events|misfortunes)\.csv$/.test(path)
     || /^game-service\/content\/output\/(?:card|event|mis)[1-9][0-9]*\.png$/.test(path)
   if (publishedCardAsset) continue
   const localArtifact = /(^|\/)(ref|output|tmp|\.local-data|test-results|playwright-report|blob-report|coverage|uploads|backups?|dumps?)(\/|$)/i.test(path)
