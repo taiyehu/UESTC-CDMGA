@@ -51,7 +51,7 @@ test('人机抵达普通格后选择本组三轮尚未预定的队员',()=>{
 test('人机获得机械帮手后会在普通站点弃一张不能使用的牌', () => {
   const room = game.createRoom({ seed: 'bot-helper' }), team = room.teams.A;
   team.discardAbility = true;
-  team.position = 'R2';
+  team.position = 'R3';
   team.awaitingEnd = true;
   team.cardActionDone = true;
   const action = bot.choose(room, 'A', 'steady', ['B']);

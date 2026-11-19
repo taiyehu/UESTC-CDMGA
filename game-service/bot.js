@@ -82,7 +82,11 @@ function choose(room, seat, strategy, humanSeats) {
     return act('bid', { amount: Math.min(team.money, Math.min(strategy === 'aggressive' ? 60 : 25, Math.floor(team.money * (strategy === 'aggressive' ? .14 : .06)))) });
   }
   if (team.pendingChallenge) return null;
-  if (team.pendingTarget) return act('card-target', { target: leader });
+  if (team.pendingTarget) {
+    const eligible=opponents.filter(id=>!team.pendingTarget.effect_type.startsWith('challenge_battle_')||
+      room.teams[id].immuneFromRound==null||room.teams[id].immuneFromRound>team.round);
+    return eligible.length ? act('card-target', { target: eligible[0] }) : null;
+  }
   if (team.pendingReroll) return act('card-reroll', { again: team.pendingReroll.firstRoll <= 3 });
   if (team.pendingTeleport) return act('teleport', { node: strategy === 'steady' ? 'Arcaea' : 'Phigros' });
   if (team.pendingExtraMove) return bestMovement(room, seat, strategy, true);
@@ -93,7 +97,8 @@ function choose(room, seat, strategy, humanSeats) {
       if(member)return act('reserve-member',{memberId:member.id});
     }
     if (!team.cardActionDone) {
-      const usable = team.hand.filter(card => game.canUse(team,card));
+      const usable = team.hand.filter(card => game.canUse(team,card)&&
+        (!card.effect_type.startsWith('challenge_battle_')||opponents.some(id=>room.teams[id].immuneFromRound==null||room.teams[id].immuneFromRound>team.round)));
       usable.sort((a, b) => cardValue(b, strategy) - cardValue(a, strategy));
       return usable.length ? act('use-card', { cardId: usable[0].id }) : act('skip-use');
     }
