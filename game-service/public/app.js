@@ -1,18 +1,32 @@
 const roomCode=new URLSearchParams(location.search).get('room');
 let session=/^[A-F0-9]{8}$/.test(roomCode||'')?{code:roomCode}:null;
-let snapshot=null,selected=null,moving=false,seenRecords=null,introTimer=null;
+let snapshot=null,selected=null,pendingRoute=null,moving=false,seenRecords=null,introTimer=null;
 let preview=null,detailPreview=null,moveKind='normal',seenEffects=null,seenMoney=null,seenIncome=null,seenExtra=null,seenFlows=null,effectQueue=[],effectActive=false,effectTimer=null;
 let resourceQueue=[],resourceActive=false,resourceTimer=null,ghostRevealTeam=null,replayTimer=null,replayBusy=false,liveOtherQueue=[],liveOtherBusy=false;
 let seenBattles=null,battleQueue=[],battleActive=false,battleTimer=null;
 let seenExTime=null,exTimeQueue=[],exTimeActive=false,exTimeTimer=null;
+let seenDice=null,diceQueue=[],diceActive=false,diceTimer=null,diceInterval=null;
 let cardFlowQueue=[],cardFlowBusy=false,cardFlowEpoch=0;const drawingCardIds=new Set();
 let bidDraft='0',bidAuctionId=null;
 let mapZoom=1;
+const MAP_BOUNDS={x:-270,y:-200,width:1910,height:1710};
+const mapPercent=([x,y])=>[(x-MAP_BOUNDS.x)/MAP_BOUNDS.width*100,(y-MAP_BOUNDS.y)/MAP_BOUNDS.height*100];
 const animations={},animationTimers={};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const time=n=>new Date(n).toLocaleTimeString('zh-CN',{hour12:false});
-const cardUsable=(t,c)=>c.effect_type==='event_cancel_random'?t.pendingEvent&&t.money>=c.cost:snapshot.house.includes(t.position)&&(c.game_type==='random'||(c.game_type==='fanshi'?'范式起源':c.game_type)===t.position)&&t.money>=c.cost;
+const diceFaceUrls=Array.from({length:6},(_,i)=>`/game-client/dice/${i+1}.svg`);
+for(const src of diceFaceUrls){const preload=new Image();preload.src=src;}
+const cardUsable=(t,c)=>{
+  if(t.money<c.cost)return false;
+  if(t.pendingMisfortuneCard)return c.effect_type==='redirect_misfortune';
+  if(c.effect_type==='event_cancel_random')return t.pendingEvent;
+  if(c.game_type==='koushui')return snapshot.nodeTypes[t.position]==='收税格'&&
+    (!c.effect_type.startsWith('challenge_battle_')||!t.exTime&&'ABC'.split('').some(id=>id!==snapshot.teamId&&!snapshot.teams[id].exTime))&&
+    (c.effect_type!=='challenge_battle_low_hand_tax_refund'||t.hand.every(card=>card.move<=3));
+  if(c.game_type==='mis')return false;
+  return snapshot.house.includes(t.position)&&(c.game_type==='random'||(c.game_type==='fanshi'?'范式起源':c.game_type)===t.position);
+};
 const avatar=(member,label)=>member?.avatar?`<img src="${esc(member.avatar)}" alt="${esc(label)}头像">`:`<span class="avatarFallback" aria-label="${esc(label)}头像">${esc((member?.account||label||'?').slice(0,1))}</span>`;
 async function api(method,path,data){
   const r=await fetch('/game-api'+path,{method,credentials:'same-origin',headers:{'content-type':'application/json'},body:data?JSON.stringify(data):undefined});
@@ -27,8 +41,8 @@ function fitMap(){
   const availableWidth=viewport.clientWidth,availableHeight=viewport.clientHeight;
   if(!availableWidth||!availableHeight)return;
   const mobile=matchMedia('(max-width:700px), (max-width:950px) and (max-height:520px)').matches;
-  const width=Math.floor(mobile?availableWidth*mapZoom:Math.min(availableWidth,availableHeight*1640/1510));
-  map.style.width=width+'px';map.style.height=Math.floor(width*1510/1640)+'px';
+  const width=Math.floor(mobile?availableWidth*mapZoom:Math.min(availableWidth,availableHeight*MAP_BOUNDS.width/MAP_BOUNDS.height));
+  map.style.width=width+'px';map.style.height=Math.floor(width*MAP_BOUNDS.height/MAP_BOUNDS.width)+'px';
 }
 function setGameView(view){
   document.body.dataset.gameView=view;
@@ -50,16 +64,17 @@ async function refresh(){
 }
 function ingest(next){
   if(snapshot&&snapshot.resetCount!==next.resetCount){
-    selected=null;preview=null;detailPreview=null;moving=false;seenRecords=null;seenEffects=null;seenMoney=null;seenIncome=null;seenExtra=null;seenFlows=null;effectQueue=[];resourceQueue=[];cardFlowQueue=[];cardFlowEpoch++;cardFlowBusy=false;drawingCardIds.clear();$('cardMotion').innerHTML='';$('pileNotice').classList.remove('show');
+    selected=null;pendingRoute=null;preview=null;detailPreview=null;moving=false;seenRecords=null;seenEffects=null;seenMoney=null;seenIncome=null;seenExtra=null;seenFlows=null;effectQueue=[];resourceQueue=[];cardFlowQueue=[];cardFlowEpoch++;cardFlowBusy=false;drawingCardIds.clear();$('cardMotion').innerHTML='';$('pileNotice').classList.remove('show');
     if(effectTimer)clearTimeout(effectTimer);effectTimer=null;
     if(resourceTimer)clearTimeout(resourceTimer);resourceTimer=null;resourceActive=false;document.querySelectorAll('.resourceDelta').forEach(el=>el.remove());
     if(battleTimer)clearTimeout(battleTimer);battleTimer=null;battleActive=false;battleQueue=[];seenBattles=null;$('battleIntro').classList.remove('show');
     if(exTimeTimer)clearTimeout(exTimeTimer);exTimeTimer=null;exTimeActive=false;exTimeQueue=[];seenExTime=null;$('exTimeIntro').classList.remove('show');
+    if(diceTimer)clearTimeout(diceTimer);if(diceInterval)clearInterval(diceInterval);diceTimer=null;diceInterval=null;diceActive=false;diceQueue=[];seenDice=null;$('diceIntro').classList.remove('show');
     if(replayTimer)clearTimeout(replayTimer);replayTimer=null;ghostRevealTeam=null;replayBusy=false;liveOtherQueue=[];liveOtherBusy=false;
     $('effectIntro').classList.remove('show');effectActive=false;
     for(const id of 'ABC'){if(animationTimers[id])clearTimeout(animationTimers[id]);delete animationTimers[id];delete animations[id];}
   }
-  let freshEffects=[],freshResources=[],freshFlows=[],freshBattles=[],freshExTime=[];
+  let freshEffects=[],freshResources=[],freshFlows=[],freshBattles=[],freshExTime=[],freshDice=[];
   if(seenEffects===null)seenEffects=new Set(next.effects.map(e=>e.id));
   else for(const event of next.effects)if(!seenEffects.has(event.id)){seenEffects.add(event.id);freshEffects.push(event);}
   if(seenMoney===null)seenMoney=new Set(next.moneyChanges.map(e=>e.id));
@@ -71,6 +86,8 @@ function ingest(next){
   else for(const flow of next.cardFlows)if(!seenFlows.has(flow.id)){seenFlows.add(flow.id);if(next.role==='team')freshFlows.push(flow);}
   if(seenExTime===null)seenExTime=new Set((next.exTimeEvents||[]).map(e=>e.id));
   else for(const event of next.exTimeEvents||[])if(!seenExTime.has(event.id)){seenExTime.add(event.id);freshExTime.push(event);}
+  if(seenDice===null)seenDice=new Set((next.diceRolls||[]).map(e=>e.id));
+  else for(const roll of next.diceRolls||[])if(!seenDice.has(roll.id)){seenDice.add(roll.id);freshDice.push(roll);}
   if(seenBattles===null)seenBattles=new Map(next.battles.map(b=>[b.id,b.startedAt||b.status]));
   else for(const battle of next.battles)if(seenBattles.get(battle.id)!==(battle.startedAt||battle.status)){
     seenBattles.set(battle.id,battle.startedAt||battle.status);
@@ -90,46 +107,57 @@ function ingest(next){
   else for(const extra of extras)if(!seenExtra.has(extra.id)){seenExtra.add(extra.id);if(Date.now()-extra.time<5000){if(next.role==='team'&&extra.team!==next.teamId&&extra.round===introRound)queueOtherAnimation(extra);else animate(extra);}}
   snapshot=next;render();
   cardFlowQueue.push(...freshFlows.map(flow=>({flow,from:oldCardRects[flow.id]})));
-  effectQueue.push(...freshEffects);resourceQueue.push(...freshResources);battleQueue.push(...freshBattles);exTimeQueue.push(...freshExTime);
+  effectQueue.push(...freshEffects);resourceQueue.push(...freshResources);battleQueue.push(...freshBattles);exTimeQueue.push(...freshExTime);diceQueue.push(...freshDice);
   if(newRound){sessionStorage.setItem(introKey,String(introRound));showRoundIntro(introRound,next.records.filter(r=>r.round===introRound&&r.team!==next.teamId).sort((a,b)=>a.order-b.order));}
-  showNextExTime();showNextEffect();showNextResource();showNextBattle();playNextCardFlow();
+  showNextDice();showNextExTime();showNextEffect();showNextResource();showNextBattle();playNextCardFlow();
+}
+function showNextDice(){
+  if(diceActive||exTimeActive||battleActive||effectActive||resourceActive||$('roundIntro').classList.contains('show')||!diceQueue.length)return;
+  diceActive=true;const roll=diceQueue.shift(),el=$('diceIntro');
+  el.innerHTML=`<div class="diceStage"><small>${esc(roll.team)} 队 · ${esc(roll.reason)}</small><div class="die"><img src="${diceFaceUrls[0]}" alt="掷骰中"></div><strong>掷骰中…</strong></div>`;
+  el.classList.add('show');
+  const stage=el.querySelector('.diceStage'),face=el.querySelector('.die img');
+  const settle=()=>{clearInterval(diceInterval);diceInterval=null;face.src=diceFaceUrls[roll.value-1];face.alt=`骰子 ${roll.value} 点`;stage.classList.add('settled');stage.querySelector('strong').textContent=`${roll.value} 点`;diceTimer=setTimeout(()=>{el.classList.remove('show');diceActive=false;diceTimer=null;showNextDice();showNextExTime();showNextEffect();showNextResource();showNextBattle();playNextCardFlow();},950);};
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){settle();return;}
+  let faceNumber=1;diceInterval=setInterval(()=>{faceNumber=faceNumber%6+1;face.src=diceFaceUrls[faceNumber-1];},90);
+  diceTimer=setTimeout(settle,1100);
 }
 function showNextExTime(){
-  if(exTimeActive||battleActive||resourceActive||effectActive||$('roundIntro').classList.contains('show')||!exTimeQueue.length)return;
+  if(exTimeActive||diceActive||battleActive||resourceActive||effectActive||$('roundIntro').classList.contains('show')||!exTimeQueue.length)return;
   exTimeActive=true;const event=exTimeQueue.shift(),el=$('exTimeIntro');
   el.innerHTML=`<div class="exTimeStage"><small>${esc(event.team)} 队 · 第 ${event.round} 回合</small><strong>EX time</strong><span>首次达到 20 分 · 进入免战阶段</span></div>`;
   el.classList.add('show');
-  exTimeTimer=setTimeout(()=>{el.classList.remove('show');exTimeActive=false;exTimeTimer=null;showNextExTime();showNextEffect();showNextResource();showNextBattle();playNextCardFlow();},2600);
+  exTimeTimer=setTimeout(()=>{el.classList.remove('show');exTimeActive=false;exTimeTimer=null;showNextDice();showNextExTime();showNextEffect();showNextResource();showNextBattle();playNextCardFlow();},2600);
 }
 function showNextEffect(){
-  if(effectActive||battleActive||resourceActive||exTimeActive||$('roundIntro').classList.contains('show')||!effectQueue.length)return;
+  if(effectActive||battleActive||resourceActive||exTimeActive||diceActive||$('roundIntro').classList.contains('show')||!effectQueue.length)return;
   effectActive=true;const e=effectQueue.shift(),el=$('effectIntro');
   el.innerHTML=`<div class="effectStage"><div class="effectTitle">${e.kind==='event'?'触发事件':'触发厄运'}</div><p>${esc(e.team)} 队</p><div class="effectCards">${e.cards.length?e.cards.map(c=>`<img src="${c.image}" alt="${esc(c.name)}">`).join(''):`<strong>${e.kind==='event'?'事件':'厄运'}已抵消</strong>`}</div></div>`;
   el.classList.add('show');
-  effectTimer=setTimeout(()=>{el.classList.remove('show');effectActive=false;effectTimer=null;showNextExTime();showNextEffect();showNextResource();showNextBattle();playNextCardFlow();},2400);
+  effectTimer=setTimeout(()=>{el.classList.remove('show');effectActive=false;effectTimer=null;showNextDice();showNextExTime();showNextEffect();showNextResource();showNextBattle();playNextCardFlow();},2400);
 }
 function showNextResource(){
-  if(resourceActive||battleActive||effectActive||exTimeActive||$('roundIntro').classList.contains('show')||!resourceQueue.length)return;
+  if(resourceActive||battleActive||effectActive||exTimeActive||diceActive||$('roundIntro').classList.contains('show')||!resourceQueue.length)return;
   resourceActive=true;const change=resourceQueue.shift(),row=document.querySelector(`[data-resource-team="${change.team}"]`);
   const el=document.createElement('span');el.className=`resourceDelta ${change.amount>0?'gain':'loss'}`;
   el.textContent=`${change.kind} ${change.amount>0?'+':''}${change.amount}`;
   el.title=change.reason;
   if(row)row.appendChild(el);
-  resourceTimer=setTimeout(()=>{el.remove();resourceActive=false;resourceTimer=null;showNextExTime();showNextEffect();showNextResource();showNextBattle();playNextCardFlow();},1200);
+  resourceTimer=setTimeout(()=>{el.remove();resourceActive=false;resourceTimer=null;showNextDice();showNextExTime();showNextEffect();showNextResource();showNextBattle();playNextCardFlow();},1200);
 }
 function showNextBattle(){
-  if(battleActive||resourceActive||effectActive||exTimeActive||!battleQueue.length||$('roundIntro').classList.contains('show'))return;
+  if(battleActive||resourceActive||effectActive||exTimeActive||diceActive||!battleQueue.length||$('roundIntro').classList.contains('show'))return;
   battleActive=true;const battle=battleQueue.shift(),el=$('battleIntro');
   const members=[battle.first,battle.second].map(id=>snapshot.records.find(r=>r.id===id)?.defender);
   el.innerHTML=`<div class="battleStage"><strong>触发战斗</strong><div class="battleFaces">${members.map((m,i)=>`<div>${avatar(m,battle.participants[i]+' 队')}<span>${esc(battle.participants[i])} 队 · ${esc(m?.account||'待定')}</span></div>`).join('<b>⚔</b>')}</div><small>第 ${battle.round} 回合 · ${esc(battle.node)}</small></div>`;
   el.classList.add('show');
-  battleTimer=setTimeout(()=>{el.classList.remove('show');battleActive=false;battleTimer=null;showNextExTime();showNextEffect();showNextResource();showNextBattle();},1800);
+  battleTimer=setTimeout(()=>{el.classList.remove('show');battleActive=false;battleTimer=null;showNextDice();showNextExTime();showNextEffect();showNextResource();showNextBattle();},1800);
 }
 function showRoundIntro(round,records=[]){
   const el=$('roundIntro');if(introTimer)clearTimeout(introTimer);
   liveOtherQueue=[];liveOtherBusy=false;
   el.textContent=`第 ${round} 回合`;el.classList.remove('show');void el.offsetWidth;el.classList.add('show');
-  introTimer=setTimeout(()=>{el.classList.remove('show');replayOtherTeams(records,round);showNextExTime();showNextEffect();showNextResource();showNextBattle();playNextCardFlow();},1500);
+  introTimer=setTimeout(()=>{el.classList.remove('show');replayOtherTeams(records,round);showNextDice();showNextExTime();showNextEffect();showNextResource();showNextBattle();playNextCardFlow();},1500);
 }
 function rectOf(el){if(!el)return null;const r=el.getBoundingClientRect();return {left:r.left,top:r.top,width:r.width,height:r.height};}
 async function flyCard(from,to,image,back=false){
@@ -163,7 +191,7 @@ async function runCardFlow(item,epoch){
   drawingCardIds.delete(flow.drawn.id);renderCards();renderPiles();
 }
 function playNextCardFlow(){
-  if(cardFlowBusy||!cardFlowQueue.length||effectActive||resourceActive||exTimeActive||$('roundIntro').classList.contains('show'))return;
+  if(cardFlowBusy||!cardFlowQueue.length||effectActive||resourceActive||exTimeActive||diceActive||$('roundIntro').classList.contains('show'))return;
   cardFlowBusy=true;const item=cardFlowQueue.shift(),epoch=cardFlowEpoch;
   runCardFlow(item,epoch).catch(e=>{drawingCardIds.delete(item.flow.drawn.id);renderCards();console.error(e);}).finally(()=>{if(epoch!==cardFlowEpoch)return;cardFlowBusy=false;playNextCardFlow();});
 }
@@ -249,7 +277,7 @@ function renderMap(){
     let el=document.getElementById('marker-'+id);
     if(!el){el=document.createElement('div');el.id='marker-'+id;el.className='marker '+id;el.textContent=id;$('markers').appendChild(el);}
     const view=snapshot.mapView[id],[x,y]=snapshot.pos[node];
-    el.classList.toggle('ghost',view.ghost);el.classList.toggle('ghostReveal',ghostRevealTeam===id);el.classList.toggle('inBattle',!!activeBattle(id));el.style.left=(x/16.4+(i-ids.length/2+.5)*1.5)+'%';el.style.top=y/15.1+'%';
+    el.classList.toggle('ghost',view.ghost);el.classList.toggle('ghostReveal',ghostRevealTeam===id);el.classList.toggle('inBattle',!!activeBattle(id));const [left,top]=mapPercent([x,y]);el.style.left=(left+(i-ids.length/2+.5)*1.5)+'%';el.style.top=top+'%';
     el.setAttribute('role','button');el.tabIndex=0;el.setAttribute('aria-label',`查看 ${id} 队信息`);
     el.onclick=()=>showTeamInfo(id);el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showTeamInfo(id);}};
     el.title=view.ghost?`${id} 队当前第 ${view.actualRound} 回合 · 尚未进行本队第 ${snapshot.teams[snapshot.teamId].round} 回合 · 实时位置 ${node}`:
@@ -269,66 +297,80 @@ function renderTurnControls(){
   const t=snapshot.teams[snapshot.teamId];
   if(!t.awaitingEnd){$('turnControls').innerHTML=`<div class="turnState">第 ${t.round} 回合 · 请选择手牌移动</div>`;return;}
   const record=snapshot.records.findLast(r=>r.team===snapshot.teamId&&r.round===t.round);
+  if(t.pendingMisfortuneCard&&!t.pendingTarget){
+    $('turnControls').innerHTML='<div class="turnState">经过厄运 B：可使用「厄运火杆」转移一次厄运，或正常结算。<button id="skipUse">正常结算厄运</button></div>';
+    $('skipUse').onclick=()=>action('skip-use',{});return;
+  }
   if(record&&!snapshot.house.includes(record.node)&&!record.defender&&t.eligibleMembers?.length){
     $('turnControls').innerHTML=`<div class="turnState">第 ${t.round} 回合 · 选择一名队员留守 ${esc(record.node)}<div class="defenderChoices">${t.eligibleMembers.map(m=>`<button data-defender="${esc(m.id)}">${avatar(m,m.account)}<span>${esc(m.account)}</span></button>`).join('')}</div></div>`;
     document.querySelectorAll('[data-defender]').forEach(el=>el.onclick=()=>action('reserve-member',{memberId:el.dataset.defender}));return;
   }
   if(t.pendingChallenge){$('turnControls').innerHTML='<div class="turnState">挑战已提交 · 等待裁判判定</div>';return;}
   if(t.pendingTeleport){
-    $('turnControls').innerHTML=`<div class="turnState">巧夺先机：选择传送目的地 <select id="teleportNode">${Object.keys(snapshot.graph).map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')}</select><button id="teleportNow">传送</button></div>`;
+    $('turnControls').innerHTML=`<div class="turnState">选择传送目的地 <select id="teleportNode">${Object.keys(snapshot.graph).map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')}</select><button id="teleportNow">传送</button></div>`;
     $('teleportNow').onclick=()=>action('teleport',{node:$('teleportNode').value});return;
   }
   if(t.pendingExtraMove){$('turnControls').innerHTML='<div class="turnState">言而无信：选择一张手牌额外移动（不触发格子与战斗）</div>';return;}
-  if(t.pendingTarget){$('turnControls').innerHTML=`<div class="turnState">诈骗交易：选择另一支队伍<div class="testActions">${'ABC'.split('').filter(id=>id!==snapshot.teamId).map(id=>`<button data-card-target="${id}">${id} 队</button>`).join('')}</div></div>`;document.querySelectorAll('[data-card-target]').forEach(el=>el.onclick=()=>action('card-target',{target:el.dataset.cardTarget}));return;}
+  if(t.pendingTarget){$('turnControls').innerHTML=`<div class="turnState">${esc(t.pendingTarget.name)}：选择另一支队伍<div class="testActions">${'ABC'.split('').filter(id=>id!==snapshot.teamId&&(!t.pendingTarget.effect_type.startsWith('challenge_battle_')||!snapshot.teams[id].exTime)).map(id=>`<button data-card-target="${id}">${id} 队</button>`).join('')}</div></div>`;document.querySelectorAll('[data-card-target]').forEach(el=>el.onclick=()=>action('card-target',{target:el.dataset.cardTarget}));return;}
   if(t.pendingReroll){const prizes=[10,25,50,100,150,200];$('turnControls').innerHTML=`<div class="turnState">魔幻饰品：首次掷出 ${t.pendingReroll.firstRoll}，可获得 ${prizes[t.pendingReroll.firstRoll-1]} 金钱<div class="testActions"><button id="keepRoll">保留</button><button id="rerollCard">重掷一次</button></div></div>`;$('keepRoll').onclick=()=>action('card-reroll',{again:false});$('rerollCard').onclick=()=>action('card-reroll',{again:true});return;}
   if(!t.cardActionDone){
     const blocked=!!animations[snapshot.teamId]||!!snapshot.pendingAuction||!!snapshot.pendingMisfortuneChoice;
-    const remaining=t.maxCardUses-t.cardUsesThisRound;
+    const remaining=t.maxCardUses+t.extraCardUsesThisRound-t.cardUsesThisRound;
     $('turnControls').innerHTML=`<div class="turnState">${t.pendingEvent?'事件格：可使用「装腔作势」抵消本次事件':`第 ${t.round} 回合 · 还可使用 ${remaining} 张适用手牌`} <button id="skipUse" ${blocked?'disabled':''}>${t.pendingEvent?'翻开事件牌':t.cardUsesThisRound?'不再使用':'不使用卡牌'}</button></div>`;
     $('skipUse').onclick=()=>action('skip-use',{});return;
   }
   const blocked=!!animations[snapshot.teamId]||!!snapshot.pendingAuction||!!snapshot.pendingMisfortuneChoice;
   const house=snapshot.house.includes(t.position),effect=t.position==='Arcaea'?`支付 ${t.income+10} 金钱，收入永久 +10`:t.position==='范式起源'?'掷 d6 获得 10/25/50/100/150/200 金钱':'1 积分兑换 200 金钱';
   const canHouse=house&&!t.houseActionDone&&!blocked&&(t.position==='Arcaea'?t.money>=t.income+10:t.position==='Phigros'?t.score>=1:true);
-  $('turnControls').innerHTML=`<div class="turnState">第 ${t.round} 回合结算完成 <div>${house?`<button id="houseAction" ${canHouse?'':'disabled'}>${t.houseActionDone?'建筑效果已使用':esc(t.position+'：'+effect)}</button> `:''}<button id="endTurn" ${blocked?'disabled':''}>结束回合</button></div></div>`;
+  $('turnControls').innerHTML=`<div class="turnState">第 ${t.round} 回合结算完成${t.skipNextTurn?' · 下一回合将跳过':''} <div>${house?`<button id="houseAction" ${canHouse?'':'disabled'}>${t.houseActionDone?'建筑效果已使用':esc(t.position+'：'+effect)}</button> `:''}<button id="endTurn" ${blocked?'disabled':''}>结束回合</button></div></div>`;
   if($('houseAction'))$('houseAction').onclick=()=>action('house-action',{});
   $('endTurn').onclick=()=>action('end-turn',{});
 }
 function renderCards(){
   const own=snapshot.role==='team'?snapshot.teams[snapshot.teamId]:null;
-  if(!own){$('cards').innerHTML='';$('route').textContent='';$('choices').innerHTML='';$('destinations').innerHTML='';return;}
-  if(selected&&!own.hand.some(c=>c.id===selected.id))selected=null;
+  if(!own){selected=null;pendingRoute=null;$('cards').innerHTML='';clearRouteChoices();return;}
+  if(selected&&!own.hand.some(c=>c.id===selected.id)){selected=null;pendingRoute=null;}
   $('cards').innerHTML=own.hand.map(c=>{const playable=own.awaitingEnd&&!own.cardActionDone&&!own.pendingChallenge&&!own.pendingTeleport&&!own.pendingExtraMove&&!own.pendingTarget&&!own.pendingReroll&&!snapshot.pendingAuction&&!snapshot.pendingMisfortuneChoice&&cardUsable(own,c);return `<div class="card ${selected?.id===c.id?'selected':''} ${playable?'playable':''} ${drawingCardIds.has(c.id)?'drawing':''}" role="button" tabindex="0" data-card="${c.id}" title="${esc(c.name)}：${esc(c.effect)}"><img src="${c.image}" alt="${esc(c.name)}"><span class="cardBadge">${esc(c.name)} · ${c.move===7?'?':c.move} 步</span></div>`;}).join('');
   document.querySelectorAll('[data-card]').forEach(el=>{const choose=()=>{
     if(moving)return;
     const mode=own.pendingExtraMove?'extra':!own.awaitingEnd?'move':!own.cardActionDone&&!own.pendingChallenge&&!own.pendingTeleport&&!own.pendingTarget&&!own.pendingReroll?'use':own.canDiscard?'discard':'view';
     preview={cardId:el.dataset.card,mode};renderPreview();
   };el.onclick=choose;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose();}};});
-  if(snapshot.pendingAuction||snapshot.pendingMisfortuneChoice){$('route').textContent='';$('choices').innerHTML='';$('destinations').innerHTML='';return;}
-  if(own.awaitingEnd&&!own.pendingExtraMove){selected=null;$('route').textContent='';$('choices').innerHTML='';$('destinations').innerHTML='';return;}
-  if(!selected){$('route').textContent='';$('choices').innerHTML='';$('destinations').innerHTML='';return;}
+  if(snapshot.pendingAuction||snapshot.pendingMisfortuneChoice){pendingRoute=null;clearRouteChoices();return;}
+  if(own.awaitingEnd&&!own.pendingExtraMove){selected=null;pendingRoute=null;clearRouteChoices();return;}
+  if(!selected){pendingRoute=null;clearRouteChoices();return;}
   const steps=selected.move===7?(own.pendingRoll?.cardId===selected.id?own.pendingRoll.value:null):selected.move;
   if(steps===null){
+    pendingRoute=null;renderRoutePreview();$('routeConfirmation').innerHTML='';
     $('route').textContent='问号牌：先掷一颗 d6，骰子点数就是本次移动步数。';
     $('choices').innerHTML='<button id="rollCard">掷骰决定步数</button><button id="cancelMove">取消选牌</button>';
     $('destinations').innerHTML='';
     $('rollCard').onclick=()=>action('roll',{cardId:selected.id});
-    $('cancelMove').onclick=()=>{selected=null;renderCards();};return;
+    $('cancelMove').onclick=cancelRouteSelection;return;
   }
   const options=window.routes.reachable(snapshot.graph,snapshot.house,own.position,steps);
+  if(pendingRoute&&(pendingRoute.cardId!==selected.id||pendingRoute.from!==own.position||!options.some(o=>o.node===pendingRoute.node&&o.route.join('|')===pendingRoute.route.join('|'))))pendingRoute=null;
+  renderRoutePreview();
   const counts={};for(const o of options)counts[o.node]=(counts[o.node]||0)+1;
   const seen={};
-  $('route').textContent=`第 ${own.round} 回合 · ${moveKind==='extra'?'额外移动 · ':''}${steps} 步 · ${Object.keys(counts).length} 个终点、${options.length} 条路线。`;
-  $('choices').innerHTML=options.map((o,i)=>`<button data-option="${i}" ${moving?'disabled':''}>${esc(o.node)} <small>经 ${esc(o.route.join(' → '))}</small></button>`).join('')+
+  $('route').textContent=`第 ${own.round} 回合 · ${moveKind==='extra'?'额外移动 · ':''}${steps} 步 · ${Object.keys(counts).length} 个终点、${options.length} 条路线。点击终点或路线预览，确认后移动。`;
+  $('routeConfirmation').innerHTML=pendingRoute?`<div><strong>确认沿高亮路线移动到 ${esc(pendingRoute.node)}？</strong><span>${esc(own.position+' → '+pendingRoute.route.join(' → '))}</span></div><div class="routeConfirmActions"><button id="confirmMove" ${moving?'disabled':''}>确认移动</button><button id="cancelRoute" ${moving?'disabled':''}>取消并重新选牌</button></div>`:'';
+  $('choices').innerHTML=options.map((o,i)=>`<button data-option="${i}" class="${pendingRoute?.index===i?'routeChoiceActive':''}" ${moving?'disabled':''}>${esc(o.node)} <small>经 ${esc(o.route.join(' → '))}</small></button>`).join('')+
     `<button id="cancelMove" ${moving?'disabled':''}>取消选牌</button>`;
-  $('destinations').innerHTML=options.map((o,i)=>{const [x,y]=snapshot.pos[o.node],n=seen[o.node]||0;seen[o.node]=n+1;const offset=n-(counts[o.node]-1)/2;return `<button class="destination" data-option="${i}" title="路线：${esc(own.position+' → '+o.route.join(' → '))}" style="left:${x/16.4+offset*3}%;top:${y/15.1+offset*2}%" ${moving?'disabled':''}>${esc(o.node)}${counts[o.node]>1?` ${n+1}`:''}</button>`;}).join('');
-  document.querySelectorAll('[data-option]').forEach(el=>el.onclick=async()=>{
-    if(moving)return;moving=true;renderCards();
-    const choice=options[Number(el.dataset.option)];const cardId=selected.id;
-    const ok=await action(moveKind==='extra'?'extra-move':'move',{cardId,route:choice.route});moving=false;
-    if(ok)selected=null;renderCards();
-  });
-  $('cancelMove').onclick=()=>{selected=null;renderCards();};
+  $('destinations').innerHTML=options.map((o,i)=>{const [x,y]=snapshot.pos[o.node],n=seen[o.node]||0;seen[o.node]=n+1;const offset=n-(counts[o.node]-1)/2;return `<button class="destination ${pendingRoute?.index===i?'routeDestinationActive':''}" data-option="${i}" title="路线：${esc(own.position+' → '+o.route.join(' → '))}" style="left:${mapPercent([x,y])[0]+offset*3}%;top:${mapPercent([x,y])[1]+offset*2}%" ${moving?'disabled':''}>${esc(o.node)}${counts[o.node]>1?` ${n+1}`:''}</button>`;}).join('');
+  document.querySelectorAll('[data-option]').forEach(el=>el.onclick=()=>{if(moving)return;const index=Number(el.dataset.option),choice=options[index];pendingRoute={cardId:selected.id,from:own.position,node:choice.node,route:[...choice.route],index};renderCards();});
+  if($('confirmMove'))$('confirmMove').onclick=async()=>{if(moving||!pendingRoute)return;const {cardId,route}=pendingRoute,kind=moveKind;moving=true;renderCards();const ok=await action(kind==='extra'?'extra-move':'move',{cardId,route});moving=false;if(ok){selected=null;pendingRoute=null;}renderCards();};
+  if($('cancelRoute'))$('cancelRoute').onclick=cancelRouteSelection;
+  $('cancelMove').onclick=cancelRouteSelection;
+}
+function cancelRouteSelection(){selected=null;pendingRoute=null;setGameView('hand');renderCards();}
+function clearRouteChoices(){$('route').textContent='';$('routeConfirmation').innerHTML='';$('choices').innerHTML='';$('destinations').innerHTML='';renderRoutePreview();}
+function renderRoutePreview(){
+  const overlay=$('routePreview');if(!pendingRoute){overlay.replaceChildren();return;}
+  const points=[pendingRoute.from,...pendingRoute.route].map(node=>snapshot.pos[node]);
+  if(points.some(point=>!point)){overlay.replaceChildren();return;}
+  const path=points.map(([x,y])=>`${x},${y}`).join(' ');
+  overlay.innerHTML=`<polyline class="routeHalo" points="${path}" fill="none" stroke="#ff9929" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/><polyline class="routeLine" points="${path}" fill="none" stroke="#fff2a2" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>${points.map(([x,y],i)=>`<circle class="routeStep" cx="${x}" cy="${y}" r="${i===points.length-1?22:13}" fill="#fff5b9" stroke="#e9821e" stroke-width="8"/>`).join('')}`;
 }
 function renderPiles(){
   const own=snapshot.role==='team'?snapshot.teams[snapshot.teamId]:null;
@@ -350,7 +392,7 @@ function renderPreview(){
   $('backPreview').onclick=()=>{preview=null;renderPreview();};
   $('playPreview').onclick=async()=>{
     if(!canPlay)return;const {cardId,mode}=preview;preview=null;renderPreview();
-    if(mode==='move'||mode==='extra'){selected=card;moveKind=mode;setGameView('map');renderCards();return;}
+    if(mode==='move'||mode==='extra'){selected=card;pendingRoute=null;moveKind=mode;setGameView('map');renderCards();return;}
     if(mode==='use'&&await action('use-card',{cardId}))setGameView('map');
     if(mode==='discard')await action('discard-card',{cardId});
   };
@@ -367,7 +409,7 @@ function renderTable(){
     const played=r.usedCards?.length?r.usedCards:r.usedCard?[r.usedCard]:[];
     const used=played.length?played.map(c=>`${cardButton(c,`使用：${c.name} · ${c.result}`,c.effect)}<p class="recordEffect">${esc(c.effect)}</p>`).join(''):`<span class="muted">使用：${r.cardSkipped?'无':'待选择'}</span>`;
     const event=r.event?`<div>${cardButton(r.event,`事件：${r.event.name}`,r.event.effect||'')}</div>`:'';
-    const mis=(r.misfortune||[]).map(c=>`<div>${cardButton(c,`厄运：${c.name}`,c.effect||'')}</div>`).join('');
+    const mis=(r.misfortune||[]).map(c=>`<div>${cardButton(c,`厄运：${c.name}${c.redirectedTo?' → '+c.redirectedTo+' 队':''}`,c.effect||'')}</div>`).join('');
     const battle=snapshot.battles.find(b=>['待结算','待战','待选人'].includes(b.status)&&(b.first===r.id||b.second===r.id));
     return `<td><b>${esc(r.node)}</b>${battle?`<span class="battleFlag"> ⚔ ${battle.status==='待结算'?'对战中':battle.status}</span>`:''}<br><span class="muted">${time(r.time)} · 格子金钱 ${r.moneyDelta>=0?'+':''}${r.moneyDelta}</span>${r.defender?`<div class="battlePlayer">${avatar(r.defender,r.defender.account)} 留守：${esc(r.defender.account)}</div>`:r.defenderUnavailable?'<div class="muted">本轮无可预定队员</div>':''}<div>${move}</div><div>${used}</div>${r.houseAction?`<p class="recordEffect">建筑：${esc(r.houseAction.detail)}</p>`:''}${event}${mis}</td>`;
   }).join('')}</tr>`).join(''):'<tr><td colspan="4" class="muted">暂无移动记录</td></tr>';

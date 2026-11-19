@@ -15,3 +15,14 @@ card13,稀世珍宝,3,150,Phigros,获得2点积分,游玩黄金之城 IN难度�
 card14,机器会计,5,400,Arcaea,获得4点积分，收入+20,游玩XTREME FTR难度达到995w分,art/hand13.jpg,cover,0.5,0.5,score_income,4,20,1
 card15,颁奖典礼,4,300,Arcaea,获得3点积分，收入+10，并获得永久效果：你造访Arcaea时，获得一次收入,游玩Last Celebration FTR难度达到995w分,art/hand14.jpg,cover,0.5,0.5,score_income_arcaea_visit,3,10,1
 card16,萨满的魔杖,4,400,fanshi,获得6点积分，并获得永久效果：你造访范式时，获得70金钱,游玩MAGICAL RENDA STADIUM MSV难度达到1005000分,art/hand15.png,cover,0.5,0.5,score_fanshi_visit,6,70,1
+card17,交锋,3,0,koushui,"当你的手牌点数均小于等于3时可以使用，选择任意其他队伍发起一次该回合的战斗,你无需在这个站点支付税金",无,art/hand16.png,cover,0.5,0.5,challenge_battle_low_hand_tax_refund,0,0,1
+card18,与我一战！,3,100,koushui,选择任意其他队伍发起一次该回合的战斗，你无需在这个站点支付税金,无,art/hand17.png,cover,0.5,0.5,challenge_battle_tax_refund,0,0,1
+card19,惊人强大,6,1000,Arcaea,"(如果使用此卡牌移动，-20金钱),+15积分 ",游玩Amazing Mighty!!!! FTR难度达到990w分,art/hand18.jpg,cover,0.5,0.5,score_move_fee,15,20,1
+card20,大善人,5,0,Phigros,+150金钱 ,游玩goodrage IN难度达到 99.6％acc,art/hand19.png,cover,0.5,0.5,money,150,0,1
+card21,魔咒之剑,1,0,fanshi,+3积分，(如果使用此卡牌移动，则跳过一回合),游玩Dark Falchion MAS难度达到INF评级,art/hand20.png,cover,0.5,0.5,score_skip_if_moved,3,0,1
+card22,厄运火杆,2,350,mis,你不会受到厄运点的影响，选择任意其他队伍，该队伍遭遇厄运,无,art/hand21.jpg,cover,0.5,0.5,redirect_misfortune,0,0,1
+card23,这谱谁写的,4,400,Arcaea,+7积分,游玩怒槌 FTR难度达到995w,art/hand22.jpg,cover,0.5,0.5,score,7,0,1
+card24,外快,3,0,Arcaea,+1积分+50金钱,游玩Speed of Light ETR难度达到995w,art/hand23.jpg,cover,0.5,0.5,score_money,1,50,1
+card25,二手货,7,0,fanshi,+60金钱，你可以再使用一张卡牌,游玩Avantgarde MAS难度达到INF,art/hand24.jpg,cover,0.5,0.5,money_extra_use,60,1,1
+card26,贿赂有道,5,50,koushui,瞬移到任意站点，(如果使用此卡牌移动，则-20金钱),无,art/hand25.jpg,cover,0.5,0.5,teleport_move_fee_tax,0,20,1
+card27,找对关系,3,0,koushui,获得一次收入，你无需在这个站点支付税金,无,art/hand26.jpg,cover,0.5,0.5,income_once_tax_refund,0,0,1

@@ -1,8 +1,13 @@
 #destinations{position:absolute;inset:0;pointer-events:none}
+#routePreview{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:4;overflow:visible}
+.routeHalo,.routeLine{fill:none;stroke-linecap:round;stroke-linejoin:round}.routeHalo{stroke:#ff9929;stroke-width:32;opacity:.7;filter:drop-shadow(0 0 24px #ff6a00);animation:routePulse .9s ease-in-out infinite alternate}.routeLine{stroke:#fff2a2;stroke-width:13;stroke-dasharray:24 15;animation:routeMarch .8s linear infinite}.routeStep{fill:#fff5b9;stroke:#e9821e;stroke-width:8;filter:drop-shadow(0 0 15px #ff6a00);animation:routePulse .9s ease-in-out infinite alternate}
+@keyframes routePulse{from{opacity:.45}to{opacity:1}}@keyframes routeMarch{to{stroke-dashoffset:-39}}
 .marker{transition:left .38s ease,top .38s ease}
 .destination{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;min-width:42px;min-height:42px;border:3px solid #fff1a7;border-radius:22px;background:#e9aa32;color:#172139;box-shadow:0 0 0 6px #ffdf824d,0 5px 16px #0008;font-size:12px;padding:6px 8px;z-index:3}
 .destination:hover,.destination:focus-visible{background:#ffe08b;box-shadow:0 0 0 9px #ffdf8280,0 5px 16px #0008}
 .destination:disabled{opacity:.55;cursor:wait}
+.destination.routeDestinationActive{background:#fff4a7;box-shadow:0 0 0 10px #ff9b57aa,0 0 28px 14px #ff7e31;animation:routePulse .9s ease-in-out infinite alternate}
+.choices .routeChoiceActive{background:#ca7830;border:2px solid #ffe59d}.routeConfirmation{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0;padding:10px 12px;border:2px solid #ffcd74;border-radius:12px;background:#51351f;color:#fff4dc}.routeConfirmation:empty{display:none}.routeConfirmation>div:first-child{display:flex;flex-direction:column;gap:4px;min-width:0}.routeConfirmation span{font-size:12px;overflow-wrap:anywhere}.routeConfirmActions{display:flex;gap:8px;flex:none}.routeConfirmActions button:last-child{background:#455778;color:#fff}
 .testActions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
 .testLink{display:inline-block;padding:9px 12px;border-radius:9px;background:#31517e;color:#edf4ff;text-decoration:none;font-size:13px;font-weight:650}
 .testLink:hover,.testLink:focus-visible{background:#4676d9}
@@ -47,6 +52,7 @@
 .effectStage p{font-size:22px;margin:8px 0 20px}.effectCards{display:flex;justify-content:center;gap:18px}.effectCards img{height:min(55vh,460px);max-width:42vw;object-fit:contain;border-radius:10px;box-shadow:0 18px 45px #000b}
 @keyframes effectArrival{0%{opacity:0;transform:scale(.95)}15%{opacity:1;transform:scale(1)}82%{opacity:1}100%{opacity:0}}
 @media(prefers-reduced-motion:reduce){.card,.marker{transition:none}.card.playable,.marker.ghostReveal,#effectIntro.show{animation:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.routeHalo,.routeLine,.routeStep,.destination.routeDestinationActive{animation:none;opacity:1}}
 
 /* Board layout: team rail, map and record, hand rail. */
 #game{max-width:none;padding:12px}
@@ -90,7 +96,7 @@ body.playing #game[hidden]{display:none}
 .historyItem{display:flex;flex-direction:column;gap:3px;padding:8px 5px;border-bottom:1px solid #394968;font-size:12px;line-height:1.3}
 .historyItem strong{color:#e7efff}.historyItem small{color:#a8bce0}
 .mapPanel{height:100%;min-height:0;min-width:0;display:flex;align-items:center;justify-content:center;padding:0;border:0;background:transparent;box-shadow:none;overflow:hidden}
-.mapPanel .mapWrap{width:100%;height:auto;aspect-ratio:1640/1510;flex:none}
+.mapPanel .mapWrap{width:100%;height:auto;aspect-ratio:1910/1710;flex:none}
 .mapPanel .mapWrap img{width:100%;height:100%;object-fit:contain}
 .handPanel{display:flex;flex-direction:column}
 .handPanel>.sectionHead,.handPanel #turnControls,.handPanel #pendingAction,.handPanel #route{flex:none}
@@ -166,6 +172,9 @@ body.playing #game[hidden]{display:none}
 .battleFaces{display:flex;align-items:center;justify-content:center;gap:clamp(12px,4vw,60px)}.battleFaces>div{display:flex;flex-direction:column;align-items:center;gap:8px}.battleFaces img,.battleFaces .avatarFallback{width:clamp(72px,14vw,150px);height:clamp(72px,14vw,150px);border-radius:50%;object-fit:cover;border:4px solid #ffd19d;box-shadow:0 12px 34px #0009}.battleFaces .avatarFallback{display:grid;place-items:center;background:#48577b;font-size:48px}.battleFaces b{font-size:clamp(32px,6vw,72px);color:#ffbc7d}
 #exTimeIntro{display:none;position:fixed;inset:0;z-index:90;place-items:center;pointer-events:none;background:radial-gradient(circle at center,#324875ef,#071225f5 72%);color:#fff;text-align:center}
 #exTimeIntro.show{display:grid;animation:exTimeArrival 2.6s ease-in-out forwards}.exTimeStage{display:flex;flex-direction:column;gap:14px;align-items:center}.exTimeStage small{font-size:clamp(18px,3vw,28px);letter-spacing:.15em;color:#c8dcff}.exTimeStage strong{font-size:clamp(64px,14vw,180px);font-style:italic;line-height:1;background:linear-gradient(110deg,#fff,#8fd8ff,#f8d793);background-clip:text;color:transparent;text-shadow:0 16px 40px #10255080}.exTimeStage span{font-size:clamp(18px,3vw,32px);font-weight:700}
+#diceIntro{display:none;position:fixed;inset:0;z-index:95;place-items:center;pointer-events:none;background:#0d1730db;color:#fff;text-align:center}
+#diceIntro.show{display:grid}.diceStage{display:flex;flex-direction:column;align-items:center;gap:20px;perspective:700px}.diceStage small{font-size:clamp(18px,3vw,27px);font-weight:800;color:#d7e5ff}.diceStage strong{font-size:clamp(25px,5vw,48px);color:#ffe29a}.die{display:grid;place-items:center;width:clamp(105px,23vw,190px);aspect-ratio:1;border:8px solid #f8fbff;border-radius:24px;background:#fff;box-shadow:0 18px 50px #000b,0 0 35px #75b8ff;animation:diceTumble .42s linear infinite}.die img{width:80%;height:80%;object-fit:contain}.diceStage.settled .die{animation:diceLand .38s ease-out both}
+@keyframes diceTumble{to{transform:rotateX(180deg) rotateY(180deg) rotateZ(90deg)}}@keyframes diceLand{from{transform:rotateX(45deg) rotateY(40deg) scale(1.2)}to{transform:rotateX(0) rotateY(0) scale(1)}}
 @keyframes exTimeArrival{0%{opacity:0;transform:scale(.84)}17%{opacity:1;transform:scale(1.04)}32%{transform:scale(1)}82%{opacity:1}100%{opacity:0}}
 .defenderChoices{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.defenderChoices button{display:flex;align-items:center;gap:7px;background:#314d74}.defenderChoices img,.defenderChoices .avatarFallback,.battlePlayer img,.battlePlayer .avatarFallback{width:32px;height:32px;object-fit:cover;border-radius:50%;display:grid;place-items:center;background:#526381}.battleLine{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:8px}.battlePlayer{display:inline-flex;align-items:center;gap:6px;font-weight:700}.exTimeTag{color:#ffe093;font-weight:900}
 @keyframes battleArrival{0%{opacity:0;transform:scale(1.08)}15%{opacity:1;transform:scale(1)}75%{opacity:1}100%{opacity:0}}
@@ -175,6 +184,7 @@ body.playing #game[hidden]{display:none}
 #judgePanel .log{max-height:none}
 @media(max-width:650px){.mapStatus{left:4px;top:4px;max-width:60%}#resourceStatus,.mapStatus #roundStatus{padding:4px 5px;font-size:10px}.resourceRow b{font-size:11px}.resourceDelta{font-size:10px}.rankBadge{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.resourceDelta,#battleIntro.show,#exTimeIntro.show{animation:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.die,.diceStage.settled .die{animation:none}}
 
 .endgameBanner{width:100%;padding:10px 12px;border:1px solid #e7b657;border-radius:10px;background:#43351d;color:#fff0c7;font-weight:700;text-align:center}
 .endgameBanner[hidden]{display:none}
@@ -195,6 +205,7 @@ body.playing #game[hidden]{display:none}
   .mapViewport .mapWrap{max-width:none;max-height:none}
   .mapStatus{max-width:55%}
   .actionDock{max-height:38dvh;min-height:0;overflow:auto;padding:8px}
+  .routeConfirmation{flex-direction:column;align-items:stretch}.routeConfirmActions button{flex:1}
   .actionDock button,.mobileGameTabs button,.mobileMapZoom button{min-height:44px}
   .handPanel .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:none;grid-auto-rows:min-content;gap:8px;overflow:auto;align-content:start}
   .handPanel .card{height:auto;aspect-ratio:94/132;min-height:0}

@@ -113,10 +113,11 @@ function staticFile(req,res,url) {
   let file;
   if(url.pathname==='/game-client/' || url.pathname==='/game-client')file=path.join(__dirname,'public/index.html');
   else if(/^\/game-client\/(app\.js|routes\.js|style\.css|movement\.css|map\.svg)$/.test(url.pathname))file=path.join(__dirname,'public',url.pathname.slice('/game-client/'.length));
+  else if(/^\/game-client\/dice\/[1-6]\.svg$/.test(url.pathname))file=path.join(__dirname,'public','dice',path.basename(url.pathname));
   else if(/^\/game-assets\/cards\/output\/[a-zA-Z0-9_-]+\.png$/.test(url.pathname))file=path.join(process.env.GAME_CONTENT_DIR || path.join(__dirname,'content'),'output',path.basename(url.pathname));
   else return false;
   const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png'};
-  fs.readFile(file,(err,data)=>{if(err){res.writeHead(404);res.end();return;}res.writeHead(200,{'content-type':types[path.extname(file)],'cache-control':file.endsWith('.html')?'no-store':'public, max-age=3600'});res.end(data);});
+  fs.readFile(file,(err,data)=>{if(err){res.writeHead(404);res.end();return;}res.writeHead(200,{'content-type':types[path.extname(file)],'cache-control':['.html','.js','.css','.svg'].includes(path.extname(file))?'no-store':'public, max-age=3600'});res.end(data);});
   return true;
 }
 const server=http.createServer(async(req,res)=>{
