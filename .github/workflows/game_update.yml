@@ -25,14 +25,16 @@ jobs:
           cache: npm
           cache-dependency-path: game-service/package-lock.json
 
-      - name: Verify required game data is committed
+      - name: Verify required service files are committed
         run: |
           git ls-files --error-unmatch -- \
+            game-service/tutorial.js \
             game-service/node-types.csv \
             game-service/content/hand.csv \
             game-service/content/events.csv \
             game-service/content/misfortunes.csv
           test -s game-service/node-types.csv
+          test -s game-service/tutorial.js
           test -s game-service/content/hand.csv
           test -s game-service/content/events.csv
           test -s game-service/content/misfortunes.csv
@@ -44,7 +46,9 @@ jobs:
           npm test
 
       - name: Package service and card assets
-        run: tar -czf board-game.tar.gz -C game-service package.json package-lock.json server.js game.js bot.js catalog.js map-data.js node-types.csv public content
+        run: |
+          tar -czf board-game.tar.gz -C game-service package.json package-lock.json server.js game.js bot.js tutorial.js catalog.js map-data.js node-types.csv public content
+          tar -xOzf board-game.tar.gz tutorial.js > /dev/null
 
       - name: Upload release
         uses: appleboy/scp-action@v1.0.0
