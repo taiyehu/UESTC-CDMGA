@@ -4,6 +4,7 @@ const path = require('node:path');
 const mysql = require('mysql2/promise');
 const game = require('./game');
 const bot = require('./bot');
+const tutorial = require('./tutorial');
 
 const springJdbcUrl = process.env.SPRING_DATASOURCE_URL || '';
 const springDatabase = /^jdbc:mysql:\/\/[^/]+\/([^?]+)/.exec(springJdbcUrl)?.[1];
@@ -90,8 +91,9 @@ function publicRoom(room,who) {
     seats:room.seats.map(s=>({seat:s.seat,teamId:s.team_id,operatorIdentityId:s.operator_identity_id,operatorAccount:s.operator_account,botStrategy:s.bot_strategy})),
     role:who.role,teamId:who.id||null,canAct:who.canAct};
 }
-const operations={roll:(r,w,b)=>game.roll(r,w,b.cardId),
+const operations={roll:(r,w,b)=>game.roll(r,w,b.cardId,b.value),
   'use-card':(r,w,b)=>game.useCard(r,w,b.cardId),
+  'counter-response':(r,w,b)=>game.counterResponse(r,w,b.use,b.cardId),
   'skip-use':(r,w)=>game.skipUse(r,w),
   'resolve-challenge':(r,w,b)=>game.resolveChallenge(r,w,b.team,b.success),
   'card-target':(r,w,b)=>game.chooseCardTarget(r,w,b.target),
@@ -128,9 +130,36 @@ const server=http.createServer(async(req,res)=>{
     if(req.method==='GET'&&url.pathname==='/game-api/health') {
       await pool.query('SELECT 1 FROM game_room_bot LIMIT 0');
       await pool.query('SELECT actor_type FROM game_action_log LIMIT 0');
+      await pool.query('SELECT identity_id FROM game_tutorial_progress LIMIT 0');
       return send(res,200,{status:'ok'});
     }
     const user=await identity(req);
+    const tutorialMatch=url.pathname.match(/^\/game-api\/tutorial(?:\/(reset|[a-z-]+))?$/);
+    if(tutorialMatch){
+      if(req.method!=='GET'&&req.method!=='POST')throw fail(405,'请求方式不支持');
+      if(req.method==='GET'&&tutorialMatch[1])throw fail(404,'接口不存在');
+      if(req.method==='POST'&&!tutorialMatch[1])throw fail(404,'接口不存在');
+      const initial=(resetCount=0)=>tutorial.create(user,resetCount);
+      if(req.method==='GET'){
+        let [rows]=await pool.query('SELECT progress_json FROM game_tutorial_progress WHERE identity_id=?',[user.id]);
+        if(!rows.length){
+          await pool.query('INSERT IGNORE INTO game_tutorial_progress(identity_id,progress_json) VALUES(?,?)',[user.id,JSON.stringify(initial())]);
+          [rows]=await pool.query('SELECT progress_json FROM game_tutorial_progress WHERE identity_id=?',[user.id]);
+        }
+        return send(res,200,tutorial.publicState(json(rows[0].progress_json)));
+      }
+      const payload=await body(req),db=await pool.getConnection();
+      try{
+        await db.beginTransaction();
+        await db.query('INSERT IGNORE INTO game_tutorial_progress(identity_id,progress_json) VALUES(?,?)',[user.id,JSON.stringify(initial())]);
+        const [rows]=await db.query('SELECT progress_json FROM game_tutorial_progress WHERE identity_id=? FOR UPDATE',[user.id]);
+        const saved=json(rows[0].progress_json);
+        const progress=tutorialMatch[1]==='reset'?initial(Number(saved.room.resetCount||0)+1):saved;
+        if(tutorialMatch[1]!=='reset')try{tutorial.apply(progress,tutorialMatch[1],payload);}catch(e){throw fail(400,e.message);}
+        await db.query('UPDATE game_tutorial_progress SET progress_json=? WHERE identity_id=?',[JSON.stringify(progress),user.id]);
+        await db.commit();return send(res,200,tutorial.publicState(progress));
+      }catch(e){await db.rollback();throw e;}finally{db.release();}
+    }
     if(req.method==='GET'&&url.pathname==='/game-api/catalog') {
       const [courses]=await pool.query("SELECT id,title,description,image,referee_identity_id FROM course WHERE category='board_game' AND is_deleted=0 ORDER BY id DESC");
       if(user.role!=='admin')return send(res,200,{courses});
@@ -272,7 +301,7 @@ const server=http.createServer(async(req,res)=>{
         if(!rows.length)throw fail(500,'房间状态缺失');
         const state=game.hydrate(json(rows[0].state_json));
         state.deadlineAt=room.course_end_time?new Date(room.course_end_time).getTime():null;
-        try {operations[match[2]](state,who,b);game.evaluateEnd(state);} catch(e){throw fail(400,e.message);}
+        try {if(state.pendingCardReaction&&!['counter-response','resolve-challenge'].includes(match[2]))throw Error('请先处理卡牌反制');operations[match[2]](state,who,b);game.evaluateEnd(state);} catch(e){throw fail(400,e.message);}
         const version=Number(rows[0].version)+1;
         await db.query('UPDATE game_room_state SET version=?,state_json=? WHERE room_id=?',[version,JSON.stringify(state),room.id]);
         await db.query('INSERT INTO game_action_log(room_id,seq,actor_identity_id,seat,action_type,payload_json,result_version) VALUES(?,?,?,?,?,?,?)',[room.id,version,user.id,who.id||null,match[2],JSON.stringify(b),version]);

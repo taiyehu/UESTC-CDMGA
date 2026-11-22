@@ -82,7 +82,7 @@ export default function GameRoomPage({ roomCode, embedded = false }: { roomCode?
   const content = <>
     {!embedded && <p><Link to="/game">← 返回房间列表</Link></p>}
     <div className="page-card" style={{ marginBottom: 20, textAlign: 'center' }}>
-      <img src="/board-game-map.svg" alt="桌游棋盘" style={{ display: 'block', width: '100%', maxWidth: 900, margin: '0 auto' }} />
+      <img src="/board-game-map.svg?v=ring-arrows-1" alt="桌游棋盘" style={{ display: 'block', width: '100%', maxWidth: 900, margin: '0 auto' }} />
       <p className="meta">游戏开始后，这里会显示可操作的实时棋盘。</p>
     </div>
     {error && <p role="alert" className="page-card error">{error}</p>}

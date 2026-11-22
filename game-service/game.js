@@ -14,10 +14,10 @@ const GRAPH = {
   B:['R2','R8']
 };
 const POS = {
-  R1:[950,950], R2:[800,990], R3:[650,950], R4:[540,840], R5:[500,690], R6:[540,540],
-  R7:[650,430], R8:[800,390], R9:[950,430], R10:[1060,540], R11:[1100,690], R12:[1060,840],
-  A1:[946,1284], Arcaea:[1441,1371], A2:[1394,836], P2:[258,1171], Phigros:[-104,931], P1:[91,543],
-  F4:[856,-1], F3:[1151,-165], '范式起源':[1434,19], F1:[1421,332], F2:[1160,490], B:[800,690]
+  R1:[910.9,1745.9], R2:[294.7,1855.1], R3:[-294.2,1640.6], R4:[-695.9,1160.9], R5:[-805.1,544.7], R6:[-590.6,-44.2],
+  R7:[-110.9,-445.9], R8:[505.3,-555.1], R9:[1094.2,-340.6], R10:[1495.9,139.1], R11:[1605.1,755.3], R12:[1390.6,1344.2],
+  A1:[1144.7040,2326.2539], Arcaea:[2267.5260,2878.6760], A2:[1920.8749,1676.2897], P2:[-1248.1964,1455.1716], Phigros:[-2463.6130,1156.3896], P1:[-1424.8857,458.1391],
+  F4:[1218.7887,-953.7498], F3:[1775.8483,-1238.6350], '范式起源':[2994.3048,-1523.7031], F1:[2499.6867,-374.2455], F2:[2121.4004,124.1264], B:[400,650]
 };
 const randomId = () => crypto.randomBytes(18).toString('base64url');
 function hydrate(room) {
@@ -26,13 +26,31 @@ function hydrate(room) {
   for(const t of Object.values(room.teams||{}))if(t.score>=GOAL_SCORE&&t.immuneFromRound==null){t.immuneFromRound=t.round;t.qualifyingRound=t.round;t.qualifiedAt=Date.now();}
   room.exTimeEvents??=[];
   room.diceRolls??=[];
+  room.pendingCardReaction??=null;
   for(const t of Object.values(room.teams||{})){
     t.members??=[];t.pendingEvent??=false;
     t.pendingMisfortuneCard??=null;t.skipNextTurn??=false;t.extraCardUsesThisRound??=0;
+    t.nextBattleWinBonus??=0;t.chooseNextSteps??=false;t.doubleEvent??=false;
+    t.lastResolvedCard??=null;t.lastHouse??=null;
+    t.battleRescue??=0;t.freeSongChallenge??=0;t.linkedTeamId??=null;
     if(t.awaitingEnd){const current=room.records?.findLast(r=>r.team===t.id&&r.round===t.round);if(current)delete current.defenderUnavailable;}
   }
   room.result??=null;
   room.randomInt = max => crypto.createHash('sha256').update(`${room.seed}:${room.randomCounter++}`).digest().readUInt32BE(0)%max;
+  if((room.catalogVersion??1)<3&&room.teams?.A?.deck){
+    for(const t of Object.values(room.teams)){
+      const existing=new Set([...t.hand,...t.deck,...t.discard].map(card=>card.sourceId||card.id));
+      const added=HAND.filter(card=>!existing.has(card.id)).flatMap(card=>Array.from({length:card.quantity},(_,n)=>({...card,id:`${t.id}-${card.id}-${n+1}`,sourceId:card.id})));
+      if(added.length)t.deck=shuffle([...t.deck,...added],room.randomInt);
+    }
+    for(const [kind,cards] of [['event',EVENTS],['misfortune',MISFORTUNES]]){
+      const deck=kind+'Deck',discard=kind+'Discard';
+      const existing=new Set([...(room[deck]||[]),...(room[discard]||[])].map(card=>card.id));
+      const added=cards.filter(card=>!existing.has(card.id)).flatMap(card=>Array.from({length:card.quantity},()=>card));
+      if(added.length)room[deck]=shuffle([...(room[deck]||[]),...added],room.randomInt);
+    }
+  }
+  room.catalogVersion=3;
   return room;
 }
 const shuffle = (cards,randomInt) => {
@@ -46,6 +64,8 @@ function newTeam(id,randomInt,initialMoney,initialIncome,start) {
     immuneFromRound:null,qualifyingRound:null,qualifiedAt:null,qualificationOrder:null,
     round:1, awaitingEnd:false, cardActionDone:false, position:start, members:[], pendingEvent:false, hand:deck.splice(0,6), deck,
     discard:[], lastArrival:0,pendingRoll:null,eventShield:0,misfortuneShield:0,
+    nextBattleWinBonus:0,chooseNextSteps:false,doubleEvent:false,lastResolvedCard:null,lastHouse:null,
+    battleRescue:0,freeSongChallenge:0,linkedTeamId:null,
     pendingChallenge:null,pendingTeleport:false,pendingExtraMove:false,pendingTarget:null,pendingReroll:null,pendingMisfortuneCard:null,
     discardAbility:false,discardedRound:0,houseActionDone:false,debuffs:[],debuffShield:0,nextBattleModifier:0,
     loanActive:false,maxCardUses:1,extraCardUsesThisRound:0,cardUsesThisRound:0,skipNextTurn:false,arcaeaVisitIncome:false,fanshiVisitMoney:0};
@@ -61,13 +81,13 @@ function createRoom({seed=null,testMode=false,initialMoney=200,initialIncome=30,
   if(!Number.isSafeInteger(initialMoney)||initialMoney<0||initialMoney>1_000_000)throw Error('初始金钱必须是 0 到 1000000 的整数');
   if(!Number.isSafeInteger(initialIncome)||initialIncome<0||initialIncome>1_000_000)throw Error('初始收入必须是 0 到 1000000 的整数');
   const room=hydrate({code:'',hostToken:randomId(),seed:seed??randomId(),randomCounter:0,testMode,initialMoney,initialIncome,
-    resetCount:0,teams:{},deadlineAt,result:null,
+    resetCount:0,teams:{},deadlineAt,result:null,catalogVersion:3,
     records:[],battles:[],log:[],effects:[],exTimeEvents:[],diceRolls:[],moneyChanges:[],incomeChanges:[],scoreChanges:[],cardFlows:[],version:0});
   room.starts=shuffle([...HOUSE],room.randomInt);
   for(const [i,id] of [...'ABC'].entries())room.teams[id]=newTeam(id,room.randomInt,initialMoney,initialIncome,room.starts[i]);
   room.eventDeck=makePile(EVENTS,room.randomInt);room.eventDiscard=[];
   room.misfortuneDeck=makePile(MISFORTUNES,room.randomInt);room.misfortuneDiscard=[];
-  room.pendingAuction=null;room.pendingMisfortuneChoice=null;room.auctionQueue=[];
+  room.pendingAuction=null;room.pendingMisfortuneChoice=null;room.pendingCardReaction=null;room.auctionQueue=[];
   if(testMode)for(const id of 'ABC'){room.teams[id].joined=true;room.teams[id].token=randomId();}
   return room;
 }
@@ -79,7 +99,7 @@ function reset(room,who) {
   for(const [i,id] of [...'ABC'].entries())room.teams[id]={...newTeam(id,room.randomInt,room.initialMoney,room.initialIncome,room.starts[i]),...seats[id]};
   room.eventDeck=makePile(EVENTS,room.randomInt);room.eventDiscard=[];
   room.misfortuneDeck=makePile(MISFORTUNES,room.randomInt);room.misfortuneDiscard=[];
-  room.pendingAuction=null;room.pendingMisfortuneChoice=null;room.auctionQueue=[];
+  room.pendingAuction=null;room.pendingMisfortuneChoice=null;room.pendingCardReaction=null;room.auctionQueue=[];
   room.records=[];room.battles=[];room.log=[];room.effects=[];room.exTimeEvents=[];room.diceRolls=[];room.moneyChanges=[];room.incomeChanges=[];room.scoreChanges=[];room.cardFlows=[];room.result=null;room.resetCount++;
   note(room,'裁判重置了测试房间');
 }
@@ -142,6 +162,12 @@ function viewer(room,token) {
   for (const id of 'ABC') if (token===room.teams[id].token && room.teams[id].joined) return {role:'team',id};
   throw Error('无效的房间凭证');
 }
+function visiblePile(cards){
+  return cards.map(c=>({id:c.sourceId||c.id,name:c.name,image:c.image})).sort((a,b)=>{
+    const aNumber=Number(a.id.match(/\d+$/)?.[0]),bNumber=Number(b.id.match(/\d+$/)?.[0]);
+    return aNumber-bNumber||a.id.localeCompare(b.id);
+  });
+}
 function state(room,who) {
   const own=who.role==='team'?room.teams[who.id]:null;
   const visible=room.records.filter(r=>who.role==='host'||(r.round<=own.round && r.time<=Date.now()));
@@ -165,6 +191,7 @@ function state(room,who) {
     pendingAuction:room.pendingAuction?{card:room.pendingAuction.card,triggerTeam:room.pendingAuction.triggerTeam,
       bids:Object.fromEntries('ABC'.split('').map(id=>[id,who.role==='host'||id===who.id?room.pendingAuction.bids[id]:room.pendingAuction.bids[id]===undefined?undefined:'已提交']))}:null,
     pendingMisfortuneChoice:room.pendingMisfortuneChoice,
+    pendingCardReaction:room.pendingCardReaction?{sourceTeam:room.pendingCardReaction.sourceTeam,card:{name:room.pendingCardReaction.card.name,image:room.pendingCardReaction.card.image},responder:room.pendingCardReaction.responders[0]||null,reactor:room.pendingCardReaction.reactor||null}:null,
     challenges:who.role==='host'?Object.fromEntries('ABC'.split('').filter(id=>room.teams[id].pendingChallenge).map(id=>[id,room.teams[id].pendingChallenge])):undefined,
     testTokens:who.role==='host'&&room.testMode?Object.fromEntries('ABC'.split('').map(id=>[id,room.teams[id].token])):undefined,
     teams:Object.fromEntries(Object.entries(room.teams).map(([id,t])=>[id,{joined:t.joined,score:resource(t,'score',visibleScore,0),
@@ -173,14 +200,17 @@ function state(room,who) {
       exTime:t.immuneFromRound!=null&&(who.role==='host'||id===who.id||t.immuneFromRound<=own.round),
       ...(who.role==='host'||id===who.id?{members:t.members,eligibleMembers:eligibleMembers(room,t),pendingEvent:t.pendingEvent}:{}),
       deckCount:t.deck.length,discardCount:t.discard.length,handCount:t.hand.length,
+      ...(id===who.id?{deckCards:visiblePile(t.deck),discardCards:visiblePile(t.discard)}:{}),
       ...(who.role==='host'||id===who.id?{discardTop:t.discard.at(-1)?{name:t.discard.at(-1).name,image:t.discard.at(-1).image}:null}:{}),
       eventShield:t.eventShield,misfortuneShield:t.misfortuneShield,discardAbility:t.discardAbility,
       debuffs:t.debuffs,debuffShield:t.debuffShield,nextBattleModifier:t.nextBattleModifier,
+      nextBattleWinBonus:t.nextBattleWinBonus,chooseNextSteps:t.chooseNextSteps,doubleEvent:t.doubleEvent,
+      battleRescue:t.battleRescue,freeSongChallenge:t.freeSongChallenge,linkedTeamId:t.linkedTeamId,
       loanActive:t.loanActive,maxCardUses:t.maxCardUses,extraCardUsesThisRound:t.extraCardUsesThisRound,cardUsesThisRound:t.cardUsesThisRound,skipNextTurn:t.skipNextTurn,
       arcaeaVisitIncome:t.arcaeaVisitIncome,fanshiVisitMoney:t.fanshiVisitMoney,
       canDiscard:t.discardAbility&&t.awaitingEnd&&Object.hasOwn(GRAPH,t.position)&&t.discardedRound!==t.round&&
         !t.pendingChallenge&&!t.pendingTeleport&&!t.pendingExtraMove&&!t.pendingTarget&&!t.pendingReroll&&!t.pendingMisfortuneCard&&!room.pendingAuction&&!room.pendingMisfortuneChoice&&!t.hand.some(c=>canUse(t,c)),
-      pendingChallenge:who.role==='host'||id===who.id?t.pendingChallenge?{id:t.pendingChallenge.id,card:t.pendingChallenge.card}:null:undefined,
+      pendingChallenge:who.role==='host'||id===who.id?t.pendingChallenge?{id:t.pendingChallenge.id,card:t.pendingChallenge.card,freeSong:t.pendingChallenge.freeSong}:null:undefined,
       pendingTeleport:id===who.id||who.role==='host'?t.pendingTeleport:undefined,
       pendingExtraMove:id===who.id||who.role==='host'?t.pendingExtraMove:undefined,
       pendingTarget:id===who.id||who.role==='host'?t.pendingTarget:undefined,
@@ -191,14 +221,15 @@ function state(room,who) {
     records:visible,battles:room.battles.filter(b=>who.role==='host'||visible.some(r=>r.id===b.first||r.id===b.second)),
     log:who.role==='host'?room.log:[],graph:GRAPH,pos:POS,nodeTypes:NODE_TYPES,house:[...HOUSE]};
 }
-function roll(room,who,cardId){
+function roll(room,who,cardId,value){
   if(who.role!=='team')throw Error('只有队伍可以掷骰');
   const t=room.teams[who.id],card=t.hand.find(c=>c.id===cardId);
   if(t.awaitingEnd&&!t.pendingExtraMove)throw Error('当前不能掷骰移动');
-  if(!card||card.move!==7)throw Error('只能为手中的问号牌掷骰');
+  if(!card||card.move!==7&&!t.chooseNextSteps)throw Error('只能为问号牌掷骰或选择下一次移动步数');
   if(t.pendingRoll?.cardId===cardId)return t.pendingRoll.value;
-  t.pendingRoll={cardId,value:rollD6(room,t,'问号移动牌')};
-  note(room,`${who.id} 队问号牌掷出 ${t.pendingRoll.value} 点`);
+  if(t.chooseNextSteps&&(!Number.isInteger(value)||value<1||value>6))throw Error('请选择 1 到 6 步');
+  t.pendingRoll={cardId,value:t.chooseNextSteps?value:rollD6(room,t,'问号移动牌')};
+  note(room,`${who.id} 队${t.chooseNextSteps?'选择':'掷出'} ${t.pendingRoll.value} 步`);
   return t.pendingRoll.value;
 }
 function consumeCard(room,t,index){
@@ -213,8 +244,11 @@ function consumeCard(room,t,index){
 const cardHouse=card=>card.game_type==='fanshi'?'范式起源':card.game_type;
 function canUse(t,card){
   if(t.money<card.cost)return false;
+  if(card.effect_type==='counter_other_card')return false;
   if(t.pendingMisfortuneCard)return card.effect_type==='redirect_misfortune';
   if(card.effect_type==='event_cancel_random')return NODE_TYPES[t.position]==='事件格'&&t.pendingEvent;
+  if(card.effect_type==='money_extra_use')return NODE_TYPES[t.position]==='事件格';
+  if(card.game_type==='event')return NODE_TYPES[t.position]==='事件格';
   if(card.game_type==='koushui')return NODE_TYPES[t.position]==='收税格'&&
     (!card.effect_type.startsWith('challenge_battle_')||t.immuneFromRound==null||t.immuneFromRound>t.round)&&
     (card.effect_type!=='challenge_battle_low_hand_tax_refund'||t.hand.every(c=>c.move<=3));
@@ -272,14 +306,54 @@ function applyCardEffect(room,t,card,record){
     case 'score_income_arcaea_visit':changeScore(room,t,card.effectValue,card.name);changeIncome(room,t,card.effectAux,card.name);t.arcaeaVisitIncome=true;break;
     case 'score_fanshi_visit':changeScore(room,t,card.effectValue,card.name);t.fanshiVisitMoney=card.effectAux;break;
     case 'money_extra_use':changeMoney(room,t,card.effectValue,card.name);t.extraCardUsesThisRound+=card.effectAux;break;
+    case 'clear_debuff_draw_buff':{
+      const count=t.debuffs.length;t.debuffs=[];
+      const buffs=['eventShield','misfortuneShield','debuffShield'];
+      for(let i=0;i<count;i++)t[buffs[room.randomInt(buffs.length)]]++;
+      note(room,`${t.id} 队清除 ${count} 个 debuff，抽取 ${count} 个抵消类 buff`);break;
+    }
+    case 'next_battle_win_bonus':t.nextBattleWinBonus+=card.effectValue;break;
+    case 'score_choose_next_steps':changeScore(room,t,card.effectValue,card.name);t.chooseNextSteps=true;break;
+    case 'double_event':t.doubleEvent=true;break;
+    case 'score_battle_rescue':changeScore(room,t,card.effectValue,card.name);t.battleRescue++;break;
+    case 'score_free_song':changeScore(room,t,card.effectValue,card.name);t.freeSongChallenge++;break;
+    case 'score_link_team':changeScore(room,t,card.effectValue,card.name);t.pendingTarget=card;break;
+    case 'replay_card_house':{
+      const previous=t.lastResolvedCard;
+      if(previous?.effect_type==='event_cancel_random'){
+        const points=rollD6(room,t,`${card.name}重放${previous.name}`);
+        changeScore(room,t,points,card.name);changeMoney(room,t,points*70,card.name);
+      }else if(previous&&previous.effect_type!=='replay_card_house')applyCardEffect(room,t,previous,record);
+      if(t.lastHouse)performHouseEffect(room,t,t.lastHouse,`${card.name}重放`);
+      break;
+    }
     default:throw Error(`尚不支持卡牌效果 ${card.effect_type}`);
   }
+  if(card.effect_type!=='replay_card_house')t.lastResolvedCard=card;
   if(!t.pendingTeleport&&!t.pendingExtraMove&&!t.pendingTarget&&!t.pendingReroll)finishCardUse(t);
+}
+function resolvePlayedCard(room,t,card,record){
+  if(card.effect_type==='event_cancel_random'){
+    const points=rollD6(room,t,card.name);changeScore(room,t,points,card.name);changeMoney(room,t,points*70,card.name);t.pendingEvent=false;
+    if(record){record.pendingEvent=false;record.event={id:'cancelled',name:'事件已抵消',image:null};}
+    effectNotice(room,'event',t.id,[]);finishCardUse(t);note(room,`${t.id} 队使用「${card.name}」：抵消当前事件，+${points} 分、+${points*70} 金钱`);
+    t.lastResolvedCard=card;
+    if(record)record.usedCard.result='已生效';
+  }else if(card.condition==='无'){
+    applyCardEffect(room,t,card,record);
+    if(record)record.usedCard.result='已生效';
+    note(room,`${t.id} 队使用「${card.name}」：${card.effect}`);
+  }else{
+    const freeSong=!!t.freeSongChallenge;if(freeSong)t.freeSongChallenge--;
+    t.pendingChallenge={id:randomId(),card,round:t.round,debuffs:consumeDebuffs(t),freeSong};
+    note(room,`${t.id} 队使用「${card.name}」，等待裁判判定挑战：${card.condition}`);
+  }
+  if(t.pendingEvent&&t.cardActionDone){t.pendingEvent=false;if(record)record.pendingEvent=false;resolveEvent(room,t,record);}
 }
 function useCard(room,who,cardId){
   if(who.role!=='team')throw Error('只有队伍可以使用手牌');
   const t=room.teams[who.id];
-  if(!t.awaitingEnd||t.cardActionDone||t.pendingChallenge||t.pendingTeleport||t.pendingExtraMove||t.pendingTarget||t.pendingReroll||room.pendingAuction||room.pendingMisfortuneChoice)throw Error('当前不在使用手牌阶段');
+  if(!t.awaitingEnd||t.cardActionDone||t.pendingChallenge||t.pendingTeleport||t.pendingExtraMove||t.pendingTarget||t.pendingReroll||room.pendingAuction||room.pendingMisfortuneChoice||room.pendingCardReaction)throw Error('当前不在使用手牌阶段');
   const index=t.hand.findIndex(c=>c.id===cardId);if(index<0)throw Error('这张牌不在手牌中');
   const card=t.hand[index];if(!canUse(t,card))throw Error('使用地点不匹配或金钱不足');
   if(card.effect_type.startsWith('challenge_battle_')&&!'ABC'.split('').some(id=>id!==t.id&&
@@ -287,32 +361,42 @@ function useCard(room,who,cardId){
   changeMoney(room,t,-card.cost,`${card.name}使用费用`);consumeCard(room,t,index);t.cardUsesThisRound++;
   const record=room.records.findLast(r=>r.team===t.id&&r.round===t.round);
   if(record){record.usedCard={id:card.sourceId,name:card.name,image:card.image,effect:card.effect,result:'待判定'};(record.usedCards??=[]).push(record.usedCard);}
-  if(card.effect_type==='event_cancel_random'){
-    const points=rollD6(room,t,card.name);changeScore(room,t,points,card.name);changeMoney(room,t,points*70,card.name);t.pendingEvent=false;
-    if(record){record.pendingEvent=false;record.event={id:'cancelled',name:'事件已抵消',image:null};}
-    effectNotice(room,'event',t.id,[]);t.cardActionDone=true;note(room,`${t.id} 队使用「${card.name}」：抵消当前事件，+${points} 分、+${points*70} 金钱`);
-    if(record)record.usedCard.result='已生效';
-  }else if(card.condition==='无'){
-    applyCardEffect(room,t,card,record);
-    if(record)record.usedCard.result='已生效';
-    note(room,`${t.id} 队使用「${card.name}」：${card.effect}`);
+  const responders='ABC'.split('').filter(id=>id!==t.id&&room.teams[id].joined&&!room.teams[id].pendingChallenge&&room.teams[id].hand.some(c=>c.effect_type==='counter_other_card'&&room.teams[id].money>=c.cost));
+  if(responders.length){room.pendingCardReaction={sourceTeam:t.id,card,recordId:record?.id||null,responders,reactor:null};note(room,`${t.id} 队使用「${card.name}」，等待 ${responders[0]} 队决定是否反制`);}
+  else resolvePlayedCard(room,t,card,record);
+  evaluateEnd(room);
+}
+function counterResponse(room,who,use,cardId){
+  const pending=room.pendingCardReaction;
+  if(!pending||typeof use!=='boolean'||pending.reactor)throw Error('当前没有待响应的卡牌');
+  const responder=pending.responders[0];
+  if(who.role!=='host'&&!(who.role==='team'&&who.id===responder))throw Error('只有当前响应队伍可以选择');
+  if(use){
+    if(who.role!=='team')throw Error('只有队伍可以使用反制牌');
+    const t=room.teams[responder],index=t.hand.findIndex(c=>c.id===cardId&&c.effect_type==='counter_other_card');
+    if(index<0||t.money<t.hand[index].cost||t.pendingChallenge)throw Error('当前不能使用反制牌');
+    const card=t.hand[index];changeMoney(room,t,-card.cost,`${card.name}使用费用`);consumeCard(room,t,index);
+    pending.reactor=responder;pending.responders=[];
+    t.pendingChallenge={id:randomId(),card,round:t.round,debuffs:consumeDebuffs(t),reaction:true};
+    note(room,`${responder} 队使用「${card.name}」反制 ${pending.sourceTeam} 队的「${pending.card.name}」，等待裁判判定`);
   }else{
-    t.pendingChallenge={id:randomId(),card,round:t.round,debuffs:consumeDebuffs(t)};
-    note(room,`${t.id} 队使用「${card.name}」，等待裁判判定挑战：${card.condition}`);
+    pending.responders.shift();note(room,`${responder} 队放弃反制「${pending.card.name}」`);
+    if(!pending.responders.length){room.pendingCardReaction=null;const t=room.teams[pending.sourceTeam],record=room.records.find(r=>r.id===pending.recordId);resolvePlayedCard(room,t,pending.card,record);}
   }
   evaluateEnd(room);
 }
 function skipUse(room,who){
   if(who.role!=='team')throw Error('只有队伍可以选择');
+  if(room.pendingCardReaction)throw Error('请先处理卡牌反制');
   const t=room.teams[who.id];
   if(t.pendingMisfortuneCard&&!t.pendingTarget){
     const pending=t.pendingMisfortuneCard,record=room.records.find(r=>r.id===pending.recordId);
     t.pendingMisfortuneCard=null;resolveMisfortuneVisits(room,t,record,pending.visits);
-    t.cardActionDone=!(HOUSE.has(t.position)||NODE_TYPES[t.position]==='收税格'&&t.hand.some(c=>canUse(t,c))||t.pendingEvent);
+    t.cardActionDone=!(HOUSE.has(t.position)||NODE_TYPES[t.position]==='收税格'&&t.hand.some(c=>canUse(t,c))||t.pendingEvent||NODE_TYPES[t.position]==='事件格'&&t.hand.some(c=>c.effect_type==='money_extra_use'&&t.money>=c.cost));
     if(t.cardActionDone)record.cardSkipped=true;
     note(room,`${t.id} 队不使用「厄运火杆」，正常结算厄运`);evaluateEnd(room);return;
   }
-  if(!t.awaitingEnd||!(HOUSE.has(t.position)||NODE_TYPES[t.position]==='收税格'||t.pendingEvent)||t.cardActionDone||t.pendingChallenge||t.pendingTeleport||t.pendingExtraMove||t.pendingTarget||t.pendingReroll||room.pendingAuction||room.pendingMisfortuneChoice)throw Error('当前不能跳过手牌');
+  if(!t.awaitingEnd||!(HOUSE.has(t.position)||NODE_TYPES[t.position]==='收税格'||NODE_TYPES[t.position]==='事件格')||t.cardActionDone||t.pendingChallenge||t.pendingTeleport||t.pendingExtraMove||t.pendingTarget||t.pendingReroll||room.pendingAuction||room.pendingMisfortuneChoice)throw Error('当前不能跳过手牌');
   t.cardActionDone=true;note(room,`${t.id} 队本回合不使用手牌`);
   const record=room.records.findLast(r=>r.team===t.id&&r.round===t.round);if(record)record.cardSkipped=true;
   if(t.pendingEvent){t.pendingEvent=false;record.pendingEvent=false;resolveEvent(room,t,record);evaluateEnd(room);}
@@ -321,11 +405,24 @@ function resolveChallenge(room,who,teamId,success){
   if(who.role!=='host'||typeof success!=='boolean')throw Error('只有裁判可以判定挑战');
   const t=room.teams[teamId];if(!t?.pendingChallenge)throw Error('没有待判定的挑战');
   const card=t.pendingChallenge.card;t.pendingChallenge=null;
+  if(card.effect_type==='counter_other_card'){
+    const pending=room.pendingCardReaction;if(!pending||pending.reactor!==teamId)throw Error('反制目标已失效');
+    const source=room.teams[pending.sourceTeam],sourceRecord=room.records.find(r=>r.id===pending.recordId);
+    room.pendingCardReaction=null;
+    if(success){changeScore(room,t,card.effectValue,card.name);if(sourceRecord?.usedCard)sourceRecord.usedCard.result='已抵消';finishCardUse(source);
+      if(source.pendingEvent&&source.cardActionDone){source.pendingEvent=false;if(sourceRecord)sourceRecord.pendingEvent=false;resolveEvent(room,source,sourceRecord);}
+    }else resolvePlayedCard(room,source,pending.card,sourceRecord);
+    note(room,`${teamId} 队「${card.name}」挑战${success?'成功，抵消了':'失败，未抵消'} ${pending.sourceTeam} 队的「${pending.card.name}」`);
+    evaluateEnd(room);return;
+  }
   const record=room.records.findLast(r=>r.team===teamId&&r.round===t.round);
   if(record?.usedCard)record.usedCard.result=success?'成功':'失败';
-  if(!success){finishCardUse(t);note(room,`${teamId} 队「${card.name}」挑战失败`);return;}
+  if(!success){finishCardUse(t);note(room,`${teamId} 队「${card.name}」挑战失败`);
+    if(t.pendingEvent&&t.cardActionDone){t.pendingEvent=false;record.pendingEvent=false;resolveEvent(room,t,record);}
+    evaluateEnd(room);return;}
   applyCardEffect(room,t,card,record);
   note(room,`${teamId} 队「${card.name}」挑战成功：${card.effect}`);
+  if(t.pendingEvent&&t.cardActionDone){t.pendingEvent=false;record.pendingEvent=false;resolveEvent(room,t,record);}
   evaluateEnd(room);
 }
 function chooseCardTarget(room,who,targetId){
@@ -342,6 +439,9 @@ function chooseCardTarget(room,who,targetId){
     resolveMisfortuneVisits(room,t,record,pending.visits,target);
     t.pendingMisfortuneCard=null;
     note(room,`${t.id} 队使用「${card.name}」，将一次厄运转给 ${targetId} 队`);
+  }else if(card.effect_type==='score_link_team'){
+    t.linkedTeamId=targetId;
+    note(room,`${t.id} 队与 ${targetId} 队建立了彼岸双生单向连接`);
   }else if(card.effect_type.startsWith('challenge_battle_')){
     if(t.immuneFromRound!=null&&t.immuneFromRound<=t.round||target.immuneFromRound!=null&&target.immuneFromRound<=t.round)throw Error('EX time 队伍不能发起或参与新战斗');
     const record=room.records.findLast(r=>r.team===t.id&&r.round===t.round);
@@ -382,12 +482,12 @@ function extraMove(room,who,cardId,route){
   if(who.role!=='team')throw Error('只有队伍可以额外移动');
   const t=room.teams[who.id],index=t.hand.findIndex(c=>c.id===cardId);
   if(!t.pendingExtraMove||index<0||room.pendingAuction||room.pendingMisfortuneChoice)throw Error('当前不能额外移动');
-  const card=t.hand[index],steps=card.move===7?t.pendingRoll?.cardId===cardId?t.pendingRoll.value:null:card.move;
+  const card=t.hand[index],steps=t.chooseNextSteps||card.move===7?t.pendingRoll?.cardId===cardId?t.pendingRoll.value:null:card.move;
   if(steps===null)throw Error('问号牌需要先掷骰');
   if(!Array.isArray(route)||route.length<1||route.length>steps)throw Error('额外移动步数不正确');
   const from=t.position;let node=from;for(const next of route){if(!(GRAPH[node]||[]).includes(next))throw Error('路线不符合地图方向');node=next;}
   if(route.length<steps&&!HOUSE.has(node))throw Error('只有进入房屋可以提前结束移动');
-  chargeLoan(room,t);consumeCard(room,t,index);setExtraPosition(room,t,node);t.pendingExtraMove=false;finishCardUse(t);
+  chargeLoan(room,t);consumeCard(room,t,index);if(t.chooseNextSteps)t.chooseNextSteps=false;setExtraPosition(room,t,node);t.pendingExtraMove=false;finishCardUse(t);
   const record=room.records.findLast(r=>r.team===t.id&&r.round===t.round);
   if(record)(record.extraMoves??=[]).push({id:randomId(),team:t.id,from,route:[...route],time:Date.now()});
   note(room,`${t.id} 队额外移动至 ${node}（不触发格子与战斗）`);
@@ -398,24 +498,29 @@ function discardCard(room,who,cardId){
   if(!t.discardAbility||!t.awaitingEnd||!Object.hasOwn(GRAPH,t.position)||t.discardedRound===t.round||index<0||t.pendingChallenge||t.pendingTeleport||t.pendingExtraMove||t.pendingTarget||t.pendingReroll||room.pendingAuction||room.pendingMisfortuneChoice||t.hand.some(c=>canUse(t,c)))throw Error('当前不能使用机械帮手弃牌');
   consumeCard(room,t,index);t.discardedRound=t.round;note(room,`${t.id} 队使用机械帮手能力弃一张手牌并补牌`);
 }
-function houseAction(room,who){
-  if(who.role!=='team')throw Error('只有队伍可以使用建筑效果');
-  const t=room.teams[who.id];
-  if(!t.awaitingEnd||!t.cardActionDone||t.houseActionDone||!HOUSE.has(t.position)||room.pendingAuction||room.pendingMisfortuneChoice)throw Error('当前不能使用建筑效果');
-  const house=t.position,record=room.records.findLast(r=>r.team===t.id&&r.round===t.round);
+function performHouseEffect(room,t,house,reason=house){
   let detail;
   if(house==='Arcaea'){
     const cost=t.income+10;
     if(t.money<cost)throw Error(`需要 ${cost} 金钱`);
-    changeMoney(room,t,-cost,'Arcaea 建筑效果');changeIncome(room,t,10,'Arcaea 建筑效果');
+    changeMoney(room,t,-cost,reason);changeIncome(room,t,10,reason);
     detail=`支付 ${cost} 金钱，永久收入 +10`;
   }else if(house==='范式起源'){
-    const roll=rollD6(room,t,'范式起源建筑'),prize=[10,25,50,100,150,200][roll-1];
-    changeMoney(room,t,prize,'范式起源建筑效果');detail=`掷出 ${roll}，获得 ${prize} 金钱`;
+    const roll=rollD6(room,t,reason),prize=[10,25,50,100,150,200][roll-1];
+    changeMoney(room,t,prize,reason);detail=`掷出 ${roll}，获得 ${prize} 金钱`;
   }else{
     if(t.score<1)throw Error('至少需要 1 积分');
-    changeScore(room,t,-1,'Phigros 建筑效果');changeMoney(room,t,200,'Phigros 建筑效果');detail='兑换 1 积分，获得 200 金钱';
+    changeScore(room,t,-1,reason);changeMoney(room,t,200,reason);detail='兑换 1 积分，获得 200 金钱';
   }
+  t.lastHouse=house;return detail;
+}
+function houseAction(room,who){
+  if(who.role!=='team')throw Error('只有队伍可以使用建筑效果');
+  if(room.pendingCardReaction)throw Error('请先处理卡牌反制');
+  const t=room.teams[who.id];
+  if(!t.awaitingEnd||!t.cardActionDone||t.houseActionDone||!HOUSE.has(t.position)||room.pendingAuction||room.pendingMisfortuneChoice)throw Error('当前不能使用建筑效果');
+  const house=t.position,record=room.records.findLast(r=>r.team===t.id&&r.round===t.round);
+  const detail=performHouseEffect(room,t,house,`${house} 建筑效果`);
   t.houseActionDone=true;if(record)record.houseAction={house,detail};
   note(room,`${t.id} 队使用 ${house} 建筑效果：${detail}`);
   evaluateEnd(room);
@@ -430,7 +535,7 @@ function applyMisfortune(room,t,card,sourceRound=t.round){
     case 'auction_lowest_score':queueAuction(room,t.id,card,sourceRound);return;
     case 'score':changeScore(room,t,card.effectValue,card.name,sourceRound);break;
     case 'half_money':for(const team of Object.values(room.teams))changeMoney(room,team,-Math.floor(team.money*card.effectValue/100),card.name,sourceRound);break;
-    case 'debuff_eye':case 'debuff_offset':addDebuff(room,t,card);break;
+    case 'debuff_eye':case 'debuff_offset':case 'debuff_mute':addDebuff(room,t,card);break;
     default:throw Error(`尚不支持厄运效果 ${card.effect_type}`);
   }
   note(room,`${t.id} 队承受厄运「${card.name}」：${card.effect}`);
@@ -469,14 +574,18 @@ function applyEvent(room,t,card,record){
       const {roll,prize}=rollFanshi(room,t,card.name);record.event.detail=`掷出 ${roll}，获得 ${prize} 金钱`;break;
     }
     case 'battle_modifier':t.nextBattleModifier+=card.effectValue;break;
+    case 'income_battle_modifier':changeIncome(room,t,-10,card.name);t.nextBattleModifier+=card.effectValue;break;
+    case 'teleport':t.pendingTeleport=true;break;
     default:throw Error(`尚不支持事件效果 ${card.effect_type}`);
   }
   note(room,`${t.id} 队触发事件「${card.name}」：${record.event.detail||card.effect}`);
 }
 function resolveEvent(room,t,record){
   if(t.eventShield>0){t.eventShield--;record.event={id:'cancelled',name:'事件已抵消',image:null};effectNotice(room,'event',t.id,[]);note(room,`${t.id} 队抵消了事件格效果`);return;}
-  const event=drawPile(room,'event');record.event={id:event.id,name:event.name,image:event.image,effect:event.effect};
-  effectNotice(room,'event',t.id,[event]);applyEvent(room,t,event,record);
+  const events=Array.from({length:t.doubleEvent?2:1},()=>drawPile(room,'event'));
+  record.events=events.map(event=>({id:event.id,name:event.name,image:event.image,effect:event.effect}));
+  record.event=record.events[0];effectNotice(room,'event',t.id,events);
+  for(const event of events)applyEvent(room,t,event,record);
 }
 function eligibleMembers(room,t){
   const group=Math.floor((t.round-1)/3);
@@ -557,12 +666,13 @@ function bid(room,who,amount){
 }
 function move(room,who,cardId,route) {
   if (who.role!=='team') throw Error('只有队伍可以移动');
+  if(room.pendingCardReaction)throw Error('请先处理卡牌反制');
   if(room.pendingAuction||room.pendingMisfortuneChoice)throw Error('请先完成厄运结算');
   const t=room.teams[who.id], idx=t.hand.findIndex(c=>c.id===cardId);
   if(t.awaitingEnd)throw Error('请先结束当前回合');
   if(idx<0) throw Error('这张牌不在手牌中');
   const card=t.hand[idx];
-  const steps=card.move===7?t.pendingRoll?.cardId===cardId?t.pendingRoll.value:null:card.move;
+  const steps=t.chooseNextSteps||card.move===7?t.pendingRoll?.cardId===cardId?t.pendingRoll.value:null:card.move;
   if(steps===null)throw Error('问号牌需要先掷骰');
   if(!Array.isArray(route)||route.length<1||route.length>steps) throw Error('移动步数不正确');
   let node=t.position;
@@ -576,15 +686,16 @@ function move(room,who,cardId,route) {
   }
   for(const [i,step] of route.entries()){
     const type=NODE_TYPES[step],end=i===route.length-1;
+    if(HOUSE.has(step))t.lastHouse=step;
     const amount=type==='收入格'?t.income*(end?2:1):type==='收税格'?-10*(end?2:1):0;
     if(amount)moneyEffects.push({node:step,amount:changeMoney(room,t,amount,type)});
     if(step==='Arcaea'&&t.arcaeaVisitIncome)changeMoney(room,t,t.income,'颁奖典礼造访 Arcaea');
     if(step==='范式起源'&&t.fanshiVisitMoney)changeMoney(room,t,t.fanshiVisitMoney,'萨满的魔杖造访范式起源');
   }
-  const {shuffled}=consumeCard(room,t,idx);
+  const {shuffled}=consumeCard(room,t,idx);if(t.chooseNextSteps)t.chooseNextSteps=false;
   if(card.effect_type==='score_skip_if_moved')t.skipNextTurn=true;
   t.position=node;t.lastArrival=Date.now();t.awaitingEnd=true;t.cardUsesThisRound=0;t.extraCardUsesThisRound=0;t.pendingEvent=false;
-  t.cardActionDone=!(HOUSE.has(node)||NODE_TYPES[node]==='收税格'&&t.hand.some(c=>canUse(t,c)));
+  t.cardActionDone=!(HOUSE.has(node)||NODE_TYPES[node]==='收税格'&&t.hand.some(c=>canUse(t,c))||NODE_TYPES[node]==='事件格'&&t.hand.some(c=>canUse(t,c)));
   const record={id:randomId(),round,team:t.id,from,route:[...route],node,time:t.lastArrival,
     order:room.records.length+1,moneyDelta:t.money-moneyBefore,moneyEffects,
     card:{id:card.sourceId,name:card.name,image:card.image,steps},usedCard:null,cardSkipped:t.cardActionDone};
@@ -605,7 +716,7 @@ function move(room,who,cardId,route) {
     }
   }
   if(NODE_TYPES[node]==='事件格'){
-    if(!t.eventShield&&t.hand.some(c=>c.effect_type==='event_cancel_random'&&t.money>=c.cost)){
+    if(!t.eventShield&&t.hand.some(c=>(c.effect_type==='event_cancel_random'||c.game_type==='event')&&t.money>=c.cost)){
       t.pendingEvent=true;t.cardActionDone=false;record.pendingEvent=true;record.cardSkipped=false;
       note(room,`${t.id} 队到达事件格，可使用「装腔作势」抵消本次事件`);
     }else resolveEvent(room,t,record);
@@ -616,6 +727,7 @@ function move(room,who,cardId,route) {
 }
 function endTurn(room,who){
   if(who.role!=='team')throw Error('只有队伍可以结束回合');
+  if(room.pendingCardReaction)throw Error('请先处理卡牌反制');
   const t=room.teams[who.id];
   if(!t.awaitingEnd)throw Error('请先完成本回合移动');
   if(room.pendingAuction||room.pendingMisfortuneChoice)throw Error('请先完成厄运结算');
@@ -641,12 +753,15 @@ function battle(room,who,battleId,winner) {
   if(winner!==first&&winner!==second) throw Error('胜者必须是参战队伍');
   const loser=winner===first?second:first;
   const winTeam=room.teams[winner],loseTeam=room.teams[loser];
-  const winPoints=2+winTeam.nextBattleModifier,losePoints=-2+loseTeam.nextBattleModifier;
+  const rescued=loseTeam.battleRescue>0;
+  const winPoints=2+winTeam.nextBattleModifier+winTeam.nextBattleWinBonus,losePoints=(rescued?0:-2)+loseTeam.nextBattleModifier;
   changeScore(room,winTeam,winPoints,'战斗结算',b.round);changeScore(room,loseTeam,losePoints,'战斗结算',b.round);
+  if(rescued){loseTeam.battleRescue--;changeMoney(room,loseTeam,30,'复活吧我的爱人',b.round);b.rescued=true;}
+  if(loseTeam.linkedTeamId===winner){changeScore(room,winTeam,-4,'彼岸双生',b.round);b.linkedPenalty=-4;}
   b.debuffs={[winner]:consumeDebuffs(winTeam),[loser]:consumeDebuffs(loseTeam)};
-  winTeam.nextBattleModifier=0;loseTeam.nextBattleModifier=0;
+  winTeam.nextBattleModifier=0;loseTeam.nextBattleModifier=0;winTeam.nextBattleWinBonus=0;loseTeam.nextBattleWinBonus=0;
   b.status='已结算';b.winner=winner;note(room,`第 ${b.round} 轮 ${b.node} 战斗：${winner} 胜，${winPoints>=0?'+':''}${winPoints} 分；${loser} 负，${losePoints>=0?'+':''}${losePoints} 分`);
   activateBattles(room);
   evaluateEnd(room);
 }
-module.exports={GRAPH,POS,HAND,hydrate,createRoom,reset,join,viewer,state,roll,useCard,skipUse,resolveChallenge,chooseCardTarget,resolveReroll,teleport,extraMove,discardCard,houseAction,bid,misfortuneTarget,misfortunePick,move,reserveMember,endTurn,score,battle,evaluateEnd,finishByScores,eligibleMembers,canUse};
+module.exports={GRAPH,POS,HAND,hydrate,createRoom,reset,join,viewer,state,roll,useCard,counterResponse,skipUse,resolveChallenge,chooseCardTarget,resolveReroll,teleport,extraMove,discardCard,houseAction,bid,misfortuneTarget,misfortunePick,move,reserveMember,endTurn,score,battle,evaluateEnd,finishByScores,eligibleMembers,canUse};

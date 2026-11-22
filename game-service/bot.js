@@ -66,6 +66,7 @@ function cardValue(card, strategy) {
 
 function choose(room, seat, strategy, humanSeats) {
   const team = room.teams[seat];
+  if(room.pendingCardReaction)return room.pendingCardReaction.responders[0]===seat?act('counter-response',{use:false}):null;
   const opponents = 'ABC'.split('').filter(id => id !== seat);
   const leader = opponents.sort((a, b) => room.teams[b].score - room.teams[a].score)[0];
   const choice = room.pendingMisfortuneChoice;
