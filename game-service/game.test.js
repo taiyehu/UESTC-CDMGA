@@ -55,6 +55,8 @@ test('移动后必须手动结束回合才能再次移动',()=>{
   g.move(room,who,card.id,route);
   assert.equal(t.round,1);assert.equal(t.awaitingEnd,true);
   assert.throws(()=>g.move(room,who,t.hand[0].id,route),/结束当前回合/);
+  if(!t.cardActionDone)g.skipUse(room,who);
+  if(t.pendingTeleport)g.teleport(room,who,'R1');
   g.endTurn(room,who);
   assert.equal(t.round,2);assert.equal(t.awaitingEnd,false);
   assert.equal(g.state(room,who).teams.A.round,2);
@@ -403,29 +405,44 @@ test('经过与停留收入税格按规则结算，金钱不会低于零',()=>{
   assert.equal(team.money,0);assert.equal(taxed.moneyDelta,0);
 });
 
-test('二十七张成品手牌独立抽弃洗牌，数量始终守恒',()=>{
+test('三十七张成品手牌独立抽弃洗牌，数量始终守恒',()=>{
   const room=g.createRoom();const token=g.join(room,'A');g.join(room,'B');const who=g.viewer(room,token);
   const bBefore=JSON.stringify(room.teams.B);
-  for(let i=0;i<22;i++){
+  for(let i=0;i<33;i++){
     const team=room.teams.A,card=team.hand.find(c=>c.move!==7);
     team.position='R1';card.move=1;
     g.move(room,who,card.id,['R2']);
     finishOptionalTurn(room,who);
     assert.equal(team.hand.length,6);
-    assert.equal(team.hand.length+team.deck.length+team.discard.length,27);
+    assert.equal(team.hand.length+team.deck.length+team.discard.length,37);
   }
-  assert.equal(room.teams.A.deck.length+room.teams.A.discard.length,21);
+  assert.equal(room.teams.A.deck.length+room.teams.A.discard.length,31);
   assert.equal(JSON.stringify(room.teams.B),bBefore);
-  assert.equal(room.records.length,22);
+  assert.equal(room.records.length,33);
   assert.equal(room.records[0].from,'R1');
   assert.equal(room.records[0].route.at(-1),room.records[0].node);
-  assert.equal(room.cardFlows.length,22);
+  assert.equal(room.cardFlows.length,33);
   assert.ok(room.cardFlows.some(flow=>flow.shuffled));
   assert.ok(room.cardFlows.every(flow=>flow.team==='A'&&flow.spent.image&&flow.drawn.image));
-  assert.equal(g.state(room,who).cardFlows.length,22);
+  assert.equal(g.state(room,who).cardFlows.length,33);
   assert.equal(g.state(room,{role:'team',id:'B'}).cardFlows.length,0);
   g.reset(room,{role:'host'});
   assert.equal(room.cardFlows.length,0);
+});
+
+test('牌堆展示按卡牌数字 ID 排序，不改变实际抽牌顺序',()=>{
+  const room=g.createRoom({seed:'pile-view'}),team=room.teams.A;
+  team.discard=team.deck.splice(0,3).reverse();
+  const actualDeck=team.deck.map(card=>card.id),actualDiscard=team.discard.map(card=>card.id);
+  const view=g.state(room,{role:'team',id:'A'}).teams.A;
+  const numericId=card=>Number(card.id.match(/\d+$/)[0]);
+  assert.deepEqual(view.deckCards.map(numericId),view.deckCards.map(numericId).toSorted((a,b)=>a-b));
+  assert.deepEqual(view.discardCards.map(numericId),view.discardCards.map(numericId).toSorted((a,b)=>a-b));
+  assert.equal(view.deckCards.length,team.deck.length);
+  assert.equal(view.discardCards.length,team.discard.length);
+  assert.deepEqual(team.deck.map(card=>card.id),actualDeck);
+  assert.deepEqual(team.discard.map(card=>card.id),actualDiscard);
+  assert.equal(g.state(room,{role:'team',id:'B'}).teams.A.deckCards,undefined);
 });
 
 test('成品手牌按 CSV 点数移动，问号牌由服务器掷骰',()=>{
@@ -509,6 +526,9 @@ test('新事件牌结算积分、debuff 防护、范式奖励与战斗修正',()
   assert.equal(treasure.room.diceRolls.length,1);
   const battle=trigger('event6');
   assert.equal(battle.t.nextBattleModifier,-1);
+  const blessing=trigger('event7');
+  assert.equal(blessing.t.income,20);
+  assert.equal(blessing.t.nextBattleModifier,2);
   battle.room.eventDeck=[EVENTS.find(c=>c.id==='event1')];
   const opponent=battle.room.teams.B;opponent.position='R4';opponent.hand[0].move=1;
   g.move(battle.room,{role:'team',id:'B'},opponent.hand[0].id,['P2']);
@@ -521,8 +541,8 @@ test('新厄运牌结算全队金钱与下次挑战的 debuff',()=>{
   const pass=id=>{
     const room=g.createRoom({initialMoney:101}),t=room.teams.A;
     room.misfortuneDeck=[MISFORTUNES.find(c=>c.id===id)];
-    t.position='R2';t.hand[0].move=2;
-    g.move(room,{role:'team',id:'A'},t.hand[0].id,['B','R8']);
+    t.position='R2';const mover=safeMover(t);mover.move=2;
+    g.move(room,{role:'team',id:'A'},mover.id,['B','R8']);
     return {room,t};
   };
   const half=pass('mis4');
@@ -534,13 +554,15 @@ test('新厄运牌结算全队金钱与下次挑战的 debuff',()=>{
   eye.t.position='Phigros';
   eye.t.cardActionDone=false;
   eye.t.money=1000;
-  const challengeCard=[...eye.t.hand,...eye.t.deck].find(c=>c.game_type==='Phigros');
+  const challengeCard=[...eye.t.hand,...eye.t.deck].find(c=>c.game_type==='Phigros'&&c.condition!=='无');
   if(!eye.t.hand.includes(challengeCard)){const old=eye.t.hand[0];eye.t.hand[0]=challengeCard;eye.t.deck[eye.t.deck.indexOf(challengeCard)]=old;}
   g.useCard(eye.room,{role:'team',id:'A'},challengeCard.id);
   assert.equal(eye.t.pendingChallenge.debuffs[0].id,'mis2');
   assert.equal(eye.t.debuffs.length,0);
   const offset=pass('mis5');
   assert.equal(offset.t.debuffs[0].id,'mis5');
+  const mute=pass('mis6');
+  assert.equal(mute.t.debuffs[0].id,'mis6');
   const cold=pass('mis3');
   assert.equal(cold.t.score,0);
 });
@@ -638,6 +660,8 @@ test('非房屋格预定队员受三轮分组限制，战斗展示头像并在�
   }
   const a={role:'team',id:'A'},b={role:'team',id:'B'};
   g.move(room,a,room.teams.A.hand[0].id,['R2']);
+  if(!room.teams.A.cardActionDone)g.skipUse(room,a);
+  if(room.teams.A.pendingTeleport)g.teleport(room,a,'R2');
   assert.throws(()=>g.endTurn(room,a),/选择一名队员/);
   g.reserveMember(room,a,'A-1');g.endTurn(room,a);
   room.teams.A.position='R1';room.teams.A.hand[0].move=1;
@@ -681,10 +705,11 @@ test('一人队伍每轮由同一人留守，且仍能参与新战斗',()=>{
   room.teams.A.members=[{id:'A-1',account:'A 队员'}];
   room.teams.B.members=[{id:'B-1',account:'B 队员'}];
   room.teams.A.position='R1';room.teams.A.hand[0].move=1;
-  g.move(room,a,room.teams.A.hand[0].id,['R2']);g.reserveMember(room,a,'A-1');g.endTurn(room,a);
+  g.move(room,a,room.teams.A.hand[0].id,['R2']);g.reserveMember(room,a,'A-1');if(!room.teams.A.cardActionDone)g.skipUse(room,a);g.endTurn(room,a);
   room.teams.A.position='R1';room.teams.A.hand[0].move=1;
   const record=g.move(room,a,room.teams.A.hand[0].id,['R2']);
   assert.deepEqual(g.eligibleMembers(room,room.teams.A).map(m=>m.id),['A-1']);
+  if(!room.teams.A.cardActionDone)g.skipUse(room,a);
   assert.throws(()=>g.endTurn(room,a),/选择一名队员/);
   g.reserveMember(room,a,'A-1');
   assert.equal(record.defender.id,'A-1');

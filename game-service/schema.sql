@@ -65,3 +65,10 @@ CREATE TABLE IF NOT EXISTS game_room_bot (
   PRIMARY KEY (room_id,team_id),
   CONSTRAINT fk_game_bot_room FOREIGN KEY (room_id) REFERENCES game_room(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS game_tutorial_progress (
+  identity_id INT NOT NULL PRIMARY KEY,
+  progress_json JSON NOT NULL,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_game_tutorial_identity FOREIGN KEY (identity_id) REFERENCES identity(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

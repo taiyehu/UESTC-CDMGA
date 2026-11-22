@@ -57,6 +57,11 @@ export default function GameLobbyPage() {
   }
 
   return <PageShell title="桌游课题" subtitle="选择课题查看棋盘和房间" wide>
+    <section className="page-card" style={{ marginBottom: 20 }}>
+      <h2>第一次玩？先完成新手教程</h2>
+      <p className="desc">亲手练习移动、事件、厄运和三座建筑；进度会自动保存。</p>
+      <Link className="page-btn primary" to="/game/tutorial">进入独立练习 →</Link>
+    </section>
     {error && <p role="alert" className="page-card error">{error}</p>}
     {myRoomCode && <p className="page-card">已于房间{myRoomCode}中存在队伍</p>}
     {loading && <p className="page-card">正在载入课题…</p>}

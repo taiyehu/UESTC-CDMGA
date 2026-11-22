@@ -134,6 +134,13 @@ CREATE TABLE IF NOT EXISTS game_room_bot (
   CONSTRAINT fk_game_bot_room FOREIGN KEY (room_id) REFERENCES game_room(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS game_tutorial_progress (
+  identity_id INT NOT NULL PRIMARY KEY,
+  progress_json JSON NOT NULL,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_game_tutorial_identity FOREIGN KEY (identity_id) REFERENCES identity(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- 仅补建已有桌游课题中尚无房间、且裁判仍为有效管理员的房间。
 INSERT INTO game_room (code, course_id, created_by_identity_id, referee_identity_id)
 SELECT UPPER(SUBSTRING(REPLACE(UUID(), '-', ''), 1, 8)), c.id, c.referee_identity_id, c.referee_identity_id

@@ -23,6 +23,16 @@ card21,魔咒之剑,1,0,fanshi,+3积分，(如果使用此卡牌移动，则跳�
 card22,厄运火杆,2,350,mis,你不会受到厄运点的影响，选择任意其他队伍，该队伍遭遇厄运,无,art/hand21.jpg,cover,0.5,0.5,redirect_misfortune,0,0,1
 card23,这谱谁写的,4,400,Arcaea,+7积分,游玩怒槌 FTR难度达到995w,art/hand22.jpg,cover,0.5,0.5,score,7,0,1
 card24,外快,3,0,Arcaea,+1积分+50金钱,游玩Speed of Light ETR难度达到995w,art/hand23.jpg,cover,0.5,0.5,score_money,1,50,1
-card25,二手货,7,0,fanshi,+60金钱，你可以再使用一张卡牌,游玩Avantgarde MAS难度达到INF,art/hand24.jpg,cover,0.5,0.5,money_extra_use,60,1,1
+card25,二手货,7,0,event,+60金钱，你可以再使用一张卡牌,游玩Avantgarde MAS难度达到INF,art/hand24.jpg,cover,0.5,0.5,money_extra_use,60,1,1
 card26,贿赂有道,5,50,koushui,瞬移到任意站点，(如果使用此卡牌移动，则-20金钱),无,art/hand25.jpg,cover,0.5,0.5,teleport_move_fee_tax,0,20,1
 card27,找对关系,3,0,koushui,获得一次收入，你无需在这个站点支付税金,无,art/hand26.jpg,cover,0.5,0.5,income_once_tax_refund,0,0,1
+card28,反转了,1,200,Phigros,"根据debuff数量抽buff，清除所有debuff",无,,contain,0.5,0.5,clear_debuff_draw_buff,0,0,1
+card29,燃起来了,2,50,Phigros,"若下一次战斗获胜，则获得的积分+2",挑战Burn IN难度fc,,contain,0.5,0.5,next_battle_win_bonus,2,0,1
+card30,记忆工厂,3,150,Arcaea,触发上一张卡牌的效果和上一次经过的建筑效果,挑战memoryfactory.lzh ftr EX+,,contain,0.5,0.5,replay_card_house,0,0,1
+card31,零號車輛,6,50,Phigros,"+1积分，下一次步数在1~6中自行选择",挑战零號車輛 MSV FC,,contain,0.5,0.5,score_choose_next_steps,1,0,1
+card32,创造性AI,4,200,event,"永久效果：触发事件格时，抽取两个事件效果",无,,contain,0.5,0.5,double_event,2,0,1
+card33,!？叠？！,5,50,event,收入+10,无,,contain,0.5,0.5,income,10,0,1
+card34,海神九考,6,100,Phigros,"获得1点积分，并获得单次效果复活吧我的爱人：你的队友在对战中落败时，无视本次挑战结果并获得30金钱",游玩Ωκεανο MSV难度达到1005000分,,contain,0.5,0.5,score_battle_rescue,1,30,1
+card35,挖到宝了,4,400,Phigros,"获得2点积分，并获得单次效果已添加到我喜欢的音乐：你的队伍在下次乐曲挑战中，无视本次挑战选曲自行选曲",游玩CRYSTAL MINING MSV难度达到1004444分以上,,contain,0.5,0.5,score_free_song,2,0,1
+card36,彼岸双生,2,300,Arcaea,"获得2点积分，并获得永久效果彼岸双生：选择一支队伍建立单向连接；在对战中若己方失败，对方也受到双倍惩罚，己方成功则无效果",游玩Tie me down gently FTR难度达到998w分,,contain,0.5,0.5,score_link_team,2,0,1
+card37,忘忘队立大功,3,400,Phigros,"获得1点积分；在其他队伍使用卡牌时可以使用此牌，使对方卡牌效果失效",游玩ATHAZA IN难度达到99.8ACC,,contain,0.5,0.5,counter_other_card,1,0,1

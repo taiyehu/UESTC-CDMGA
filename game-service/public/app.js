@@ -1,7 +1,7 @@
-const roomCode=new URLSearchParams(location.search).get('room');
-let session=/^[A-F0-9]{8}$/.test(roomCode||'')?{code:roomCode}:null;
+const params=new URLSearchParams(location.search),roomCode=params.get('room');
+let session=params.has('tutorial')?{tutorial:true}:/^[A-F0-9]{8}$/.test(roomCode||'')?{code:roomCode}:null;
 let snapshot=null,selected=null,pendingRoute=null,moving=false,seenRecords=null,introTimer=null;
-let preview=null,detailPreview=null,moveKind='normal',seenEffects=null,seenMoney=null,seenIncome=null,seenExtra=null,seenFlows=null,effectQueue=[],effectActive=false,effectTimer=null;
+let preview=null,detailPreview=null,pileView=null,pileScrollTop=0,moveKind='normal',seenEffects=null,seenMoney=null,seenIncome=null,seenExtra=null,seenFlows=null,effectQueue=[],effectActive=false,effectTimer=null;
 let resourceQueue=[],resourceActive=false,resourceTimer=null,ghostRevealTeam=null,replayTimer=null,replayBusy=false,liveOtherQueue=[],liveOtherBusy=false;
 let seenBattles=null,battleQueue=[],battleActive=false,battleTimer=null;
 let seenExTime=null,exTimeQueue=[],exTimeActive=false,exTimeTimer=null;
@@ -9,7 +9,7 @@ let seenDice=null,diceQueue=[],diceActive=false,diceTimer=null,diceInterval=null
 let cardFlowQueue=[],cardFlowBusy=false,cardFlowEpoch=0;const drawingCardIds=new Set();
 let bidDraft='0',bidAuctionId=null;
 let mapZoom=1;
-const MAP_BOUNDS={x:-270,y:-200,width:1910,height:1710};
+const MAP_BOUNDS={x:-3350,y:-1800,width:7500,height:5000};
 const mapPercent=([x,y])=>[(x-MAP_BOUNDS.x)/MAP_BOUNDS.width*100,(y-MAP_BOUNDS.y)/MAP_BOUNDS.height*100];
 const animations={},animationTimers={};
 const $=id=>document.getElementById(id);
@@ -21,6 +21,9 @@ const cardUsable=(t,c)=>{
   if(t.money<c.cost)return false;
   if(t.pendingMisfortuneCard)return c.effect_type==='redirect_misfortune';
   if(c.effect_type==='event_cancel_random')return t.pendingEvent;
+  if(c.effect_type==='counter_other_card')return false;
+  if(c.effect_type==='money_extra_use')return snapshot.nodeTypes[t.position]==='事件格';
+  if(c.game_type==='event')return snapshot.nodeTypes[t.position]==='事件格';
   if(c.game_type==='koushui')return snapshot.nodeTypes[t.position]==='收税格'&&
     (!c.effect_type.startsWith('challenge_battle_')||!t.exTime&&'ABC'.split('').some(id=>id!==snapshot.teamId&&!snapshot.teams[id].exTime))&&
     (c.effect_type!=='challenge_battle_low_hand_tax_refund'||t.hand.every(card=>card.move<=3));
@@ -35,7 +38,7 @@ async function api(method,path,data){
 function fail(e){alert(e.message||String(e));}
 function save(){}
 function showLobby(error=''){document.body.classList.remove('playing');$('battleModal').classList.remove('show');$('handHelp').classList.remove('show');$('lobby').hidden=false;$('game').hidden=true;$('lobbyError').textContent=error;}
-function showGame(){const opening=$('game').hidden;document.body.classList.add('playing');document.body.dataset.gameView||='map';$('lobby').hidden=true;$('game').hidden=false;$('roomLabel').textContent=`房间 ${session.code} · ${snapshot.role==='host'?'裁判':snapshot.teamId+' 队'}${snapshot.canAct?'':' · 观战'}`;if(opening)requestAnimationFrame(fitMap);}
+function showGame(){const opening=$('game').hidden;document.body.classList.add('playing');document.body.classList.toggle('tutorial',!!snapshot.tutorial);document.body.dataset.gameView||='map';$('lobby').hidden=true;$('game').hidden=false;$('roomLabel').textContent=session.tutorial?'新手教程':`房间 ${session.code} · ${snapshot.role==='host'?'裁判':snapshot.teamId+' 队'}${snapshot.canAct?'':' · 观战'}`;renderTutorial();if(opening)requestAnimationFrame(fitMap);}
 function fitMap(){
   const viewport=document.querySelector('.mapViewport'),map=viewport.querySelector('.mapWrap');
   const availableWidth=viewport.clientWidth,availableHeight=viewport.clientHeight;
@@ -59,12 +62,12 @@ function changeMapZoom(next){
 }
 async function refresh(){
   if(!session)return;
-  try {const next=await api('GET',`/rooms/${session.code}`);if(!snapshot||snapshot.version!==next.version)ingest(next); $('sync').textContent='已同步 '+time(Date.now());}
+  try {const next=await api('GET',session.tutorial?'/tutorial':`/rooms/${session.code}`);if(!snapshot||snapshot.version!==next.version||snapshot.tutorial?.scene!==next.tutorial?.scene)ingest(next); $('sync').textContent='已同步 '+time(Date.now());}
   catch(e){session=null;showLobby(e.message);}
 }
 function ingest(next){
   if(snapshot&&snapshot.resetCount!==next.resetCount){
-    selected=null;pendingRoute=null;preview=null;detailPreview=null;moving=false;seenRecords=null;seenEffects=null;seenMoney=null;seenIncome=null;seenExtra=null;seenFlows=null;effectQueue=[];resourceQueue=[];cardFlowQueue=[];cardFlowEpoch++;cardFlowBusy=false;drawingCardIds.clear();$('cardMotion').innerHTML='';$('pileNotice').classList.remove('show');
+    selected=null;pendingRoute=null;preview=null;detailPreview=null;pileView=null;pileScrollTop=0;moving=false;seenRecords=null;seenEffects=null;seenMoney=null;seenIncome=null;seenExtra=null;seenFlows=null;effectQueue=[];resourceQueue=[];cardFlowQueue=[];cardFlowEpoch++;cardFlowBusy=false;drawingCardIds.clear();$('cardMotion').innerHTML='';$('pileNotice').classList.remove('show');
     if(effectTimer)clearTimeout(effectTimer);effectTimer=null;
     if(resourceTimer)clearTimeout(resourceTimer);resourceTimer=null;resourceActive=false;document.querySelectorAll('.resourceDelta').forEach(el=>el.remove());
     if(battleTimer)clearTimeout(battleTimer);battleTimer=null;battleActive=false;battleQueue=[];seenBattles=null;$('battleIntro').classList.remove('show');
@@ -226,7 +229,13 @@ function animate(record,done,holdAtEnd=false){
   };
   animationTimers[id]=setTimeout(step,120);
 }
-async function action(path,data){try{const next=await api('POST',`/rooms/${session.code}/${path}`,data);ingest(next);return true;}catch(e){fail(e);return false;}}
+async function action(path,data){try{const next=await api('POST',session.tutorial?`/tutorial/${path}`:`/rooms/${session.code}/${path}`,data);ingest(next);return true;}catch(e){fail(e);return false;}}
+function renderTutorial(){
+  const panel=$('tutorialPanel'),info=snapshot.tutorial;
+  panel.hidden=!info;if(!info)return;
+  panel.innerHTML=`<div><span class="tutorialKicker">练习旅程 · ${info.scene}/${info.total} · 操作 A 队</span><h2>${esc(info.title)}</h2><p>${esc(info.instruction)}</p></div><div class="tutorialActions"><a href="/game" target="_top">返回桌游列表</a><button id="restartTutorial" type="button">从头练习</button></div>`;
+  $('restartTutorial').onclick=()=>{if(confirm('确定从头练习？当前进度会清除。'))action('reset',{});};
+}
 function render(){showGame();$('judgePanel').hidden=snapshot.role!=='host';$('cards').hidden=snapshot.role==='host';$('rightTitle').textContent=snapshot.role==='host'?'裁判控制':'手牌';$('openHandHelp').hidden=snapshot.role==='host';document.querySelector('[data-game-view="judge"]').hidden=snapshot.role!=='host';document.querySelector('[data-game-view="hand"]').hidden=snapshot.role==='host';if(snapshot.role==='host'&&document.body.dataset.gameView==='hand'||snapshot.role!=='host'&&document.body.dataset.gameView==='judge')setGameView('map');renderSummary();renderMap();renderEndgame();renderTurnControls();renderCards();renderPiles();renderPreview();renderPending();$('actionDock').hidden=snapshot.role==='host'&&!snapshot.pendingAuction&&!snapshot.pendingMisfortuneChoice;renderHistory();renderTable();renderTestTools();renderLog();if(!snapshot.canAct)document.querySelectorAll('#actionDock button, #cards button, #judgePanel button').forEach(el=>{el.disabled=true;el.title='本队仅指定操作者可操作';});}
 function renderEndgame(){
   const banner=$('endgameBanner'),endgame=snapshot.endgame;
@@ -236,7 +245,7 @@ function renderEndgame(){
   else if(endgame.result?.reason==='time_limit'||endgame.result?.reason==='manual')banner.textContent=`${endgame.result.reason==='time_limit'?'比赛时间到':'裁判结束比赛'} · ${endgame.result.ranking.map(row=>`第 ${row.rank} 名 ${row.team} 队 ${row.score} 分`).join(' · ')}`;
   else banner.textContent=`暂定达标：${endgame.provisional.map(row=>`${row.team} 队第 ${row.round} 轮达到 ${row.score} 分`).join('、')} · 等待相关轮次和战斗结清`;
 }
-function buffs(t){return [t.eventShield?`事件抵消 ×${t.eventShield}`:'',t.misfortuneShield?`厄运抵消 ×${t.misfortuneShield}`:'',t.debuffShield?`debuff 抵消 ×${t.debuffShield}`:'',t.nextBattleModifier?`下次战斗 ${t.nextBattleModifier} 分`:'',t.loanActive?'快速贷款还款':'',t.maxCardUses>1?'每回合可用 2 张牌':'',t.arcaeaVisitIncome?'造访 Arcaea 获得收入':'',t.fanshiVisitMoney?`造访范式 +${t.fanshiVisitMoney} 金钱`:'',t.discardAbility?'机械帮手弃牌':'',...(t.debuffs||[]).map(d=>`debuff：${d.name}`)].filter(Boolean).join(' · ')||'无';}
+function buffs(t){return [t.eventShield?`事件抵消 ×${t.eventShield}`:'',t.misfortuneShield?`厄运抵消 ×${t.misfortuneShield}`:'',t.debuffShield?`debuff 抵消 ×${t.debuffShield}`:'',t.nextBattleModifier?`下次战斗 ${t.nextBattleModifier} 分`:'',t.nextBattleWinBonus?`下次战斗获胜 +${t.nextBattleWinBonus} 分`:'',t.battleRescue?`战斗落败保护 ×${t.battleRescue}`:'',t.freeSongChallenge?`下次挑战自选曲 ×${t.freeSongChallenge}`:'',t.linkedTeamId?`彼岸双生 → ${t.linkedTeamId} 队`:'',t.chooseNextSteps?'下次移动自选 1–6 步':'',t.doubleEvent?'事件格抽两张':'',t.loanActive?'快速贷款还款':'',t.maxCardUses>1?'每回合可用 2 张牌':'',t.arcaeaVisitIncome?'造访 Arcaea 获得收入':'',t.fanshiVisitMoney?`造访范式 +${t.fanshiVisitMoney} 金钱`:'',t.discardAbility?'机械帮手弃牌':'',...(t.debuffs||[]).map(d=>`debuff：${d.name}`)].filter(Boolean).join(' · ')||'无';}
 function activeBattle(id){
   return snapshot.battles.find(b=>['待结算','待战'].includes(b.status)&&(snapshot.role==='host'||b.round===snapshot.teams[snapshot.teamId].round)&&
     [b.first,b.second].some(recordId=>snapshot.records.find(r=>r.id===recordId)?.team===id));
@@ -263,7 +272,8 @@ function renderHistory(){
   $('historyList').innerHTML=records.length?records.map(r=>{
     const battles=snapshot.battles.filter(b=>b.first===r.id||b.second===r.id);
     const used=r.usedCards?.length?r.usedCards.map(c=>c.name).join('、'):r.usedCard?.name;
-    return `<div class="historyItem"><strong>${own?'':esc(r.team)+' 队 · '}第 ${r.round} 回合</strong><span>${esc(r.from)} → ${esc(r.node)}</span><small>移动：${esc(r.card?.name||'')} · ${r.card?.steps??'?'} 步</small><small>使用：${used?esc(used):r.cardSkipped?'无':'待选择'}</small>${r.event?`<small>事件：${esc(r.event.name)}</small>`:''}${r.misfortune?.length?`<small>厄运：${r.misfortune.map(c=>esc(c.name)).join('、')}</small>`:''}${r.houseAction?`<small>建筑：${esc(r.houseAction.detail)}</small>`:''}${battles.map(b=>`<small>战斗：${esc(b.status)}${b.winner?' · '+esc(b.winner)+' 胜':''}</small>`).join('')}</div>`;
+    const events=r.events?.length?r.events:r.event?[r.event]:[];
+    return `<div class="historyItem"><strong>${own?'':esc(r.team)+' 队 · '}第 ${r.round} 回合</strong><span>${esc(r.from)} → ${esc(r.node)}</span><small>移动：${esc(r.card?.name||'')} · ${r.card?.steps??'?'} 步</small><small>使用：${used?esc(used):r.cardSkipped?'无':'待选择'}</small>${events.length?`<small>事件：${events.map(c=>esc(c.name)).join('、')}</small>`:''}${r.misfortune?.length?`<small>厄运：${r.misfortune.map(c=>esc(c.name)).join('、')}</small>`:''}${r.houseAction?`<small>建筑：${esc(r.houseAction.detail)}</small>`:''}${battles.map(b=>`<small>战斗：${esc(b.status)}${b.winner?' · '+esc(b.winner)+' 胜':''}</small>`).join('')}</div>`;
   }).join(''):'<p class="notice">暂无历史记录</p>';
   $('historyList').scrollTop=scroll;
 }
@@ -284,7 +294,7 @@ function renderMap(){
       snapshot.role==='team'&&id!==snapshot.teamId?`${id} 队第 ${snapshot.teams[snapshot.teamId].round} 回合位置 ${node} · 当前第 ${view.actualRound} 回合`:`${id} 队第 ${view.actualRound} 回合 · ${node}`;
   });
   const ids=snapshot.role==='host'?[...'ABC']:[...'ABC'].filter(id=>id!==snapshot.teamId);
-  $('roundStatus').innerHTML=`<strong>${snapshot.role==='host'?'队伍回合':'其他队伍回合'}</strong>`+ids.map(id=>`<span>${id} 队 · 第 ${snapshot.teams[id].round} 回合${snapshot.teams[id].awaitingEnd?'（待结束）':''}</span>`).join('');
+  $('roundStatus').innerHTML=`<strong>${snapshot.role==='host'?'队伍回合':'其他队伍回合'}</strong>`+ids.map(id=>{const team=snapshot.teams[id];return `<span class="roundTeam${team.awaitingEnd?' waiting':''}" aria-label="${id} 队第 ${team.round} 回合${team.awaitingEnd?'，待结束':''}" title="${id} 队 · 第 ${team.round} 回合${team.awaitingEnd?'（待结束）':''}"><b class="${id.toLowerCase()}">${id} 队</b><span>第 ${team.round} 回合</span></span>`;}).join('');
 }
 function showTeamInfo(id){
   const t=snapshot.teams[id];
@@ -293,8 +303,20 @@ function showTeamInfo(id){
 }
 function renderTurnControls(){
   if(snapshot.role!=='team'){$('turnControls').innerHTML='';return;}
+  const reaction=snapshot.pendingCardReaction;
+  if(reaction){
+    const own=snapshot.teams[snapshot.teamId];
+    if(reaction.responder===snapshot.teamId){
+      const counter=own.hand.find(c=>c.effect_type==='counter_other_card'&&own.money>=c.cost);
+      $('turnControls').innerHTML=`<div class="turnState">${esc(reaction.sourceTeam)} 队使用「${esc(reaction.card.name)}」，是否用「忘忘队立大功」反制？<div>${counter?'<button id="counterUse">使用反制牌</button> ':''}<button id="counterPass">放弃反制</button></div></div>`;
+      if(counter)$('counterUse').onclick=()=>action('counter-response',{use:true,cardId:counter.id});
+      $('counterPass').onclick=()=>action('counter-response',{use:false});
+    }else $('turnControls').innerHTML=`<div class="turnState">${reaction.reactor?`等待裁判判定 ${esc(reaction.reactor)} 队的反制挑战`:`等待 ${esc(reaction.responder)} 队决定是否反制「${esc(reaction.card.name)}」`}</div>`;
+    return;
+  }
   if(snapshot.endgame?.result){$('turnControls').innerHTML='<div class="turnState">比赛已结束，房间仅供查看</div>';return;}
   const t=snapshot.teams[snapshot.teamId];
+  if(snapshot.tutorial?.completed){$('turnControls').innerHTML='<div class="turnState">教程完成！你可以返回桌游列表，或从头再练一次。</div>';return;}
   if(!t.awaitingEnd){$('turnControls').innerHTML=`<div class="turnState">第 ${t.round} 回合 · 请选择手牌移动</div>`;return;}
   const record=snapshot.records.findLast(r=>r.team===snapshot.teamId&&r.round===t.round);
   if(t.pendingMisfortuneCard&&!t.pendingTarget){
@@ -305,7 +327,7 @@ function renderTurnControls(){
     $('turnControls').innerHTML=`<div class="turnState">第 ${t.round} 回合 · 选择一名队员留守 ${esc(record.node)}<div class="defenderChoices">${t.eligibleMembers.map(m=>`<button data-defender="${esc(m.id)}">${avatar(m,m.account)}<span>${esc(m.account)}</span></button>`).join('')}</div></div>`;
     document.querySelectorAll('[data-defender]').forEach(el=>el.onclick=()=>action('reserve-member',{memberId:el.dataset.defender}));return;
   }
-  if(t.pendingChallenge){$('turnControls').innerHTML='<div class="turnState">挑战已提交 · 等待裁判判定</div>';return;}
+  if(t.pendingChallenge){$('turnControls').innerHTML=`<div class="turnState">挑战已提交${t.pendingChallenge.freeSong?' · 本次可自行选曲':''} · 等待裁判判定</div>`;return;}
   if(t.pendingTeleport){
     $('turnControls').innerHTML=`<div class="turnState">选择传送目的地 <select id="teleportNode">${Object.keys(snapshot.graph).map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')}</select><button id="teleportNow">传送</button></div>`;
     $('teleportNow').onclick=()=>action('teleport',{node:$('teleportNode').value});return;
@@ -316,7 +338,7 @@ function renderTurnControls(){
   if(!t.cardActionDone){
     const blocked=!!animations[snapshot.teamId]||!!snapshot.pendingAuction||!!snapshot.pendingMisfortuneChoice;
     const remaining=t.maxCardUses+t.extraCardUsesThisRound-t.cardUsesThisRound;
-    $('turnControls').innerHTML=`<div class="turnState">${t.pendingEvent?'事件格：可使用「装腔作势」抵消本次事件':`第 ${t.round} 回合 · 还可使用 ${remaining} 张适用手牌`} <button id="skipUse" ${blocked?'disabled':''}>${t.pendingEvent?'翻开事件牌':t.cardUsesThisRound?'不再使用':'不使用卡牌'}</button></div>`;
+    $('turnControls').innerHTML=`<div class="turnState">${t.pendingEvent?'事件格：可使用适用手牌，或翻开事件牌':`第 ${t.round} 回合 · 还可使用 ${remaining} 张适用手牌`} <button id="skipUse" ${blocked?'disabled':''}>${t.pendingEvent?'翻开事件牌':t.cardUsesThisRound?'不再使用':'不使用卡牌'}</button></div>`;
     $('skipUse').onclick=()=>action('skip-use',{});return;
   }
   const blocked=!!animations[snapshot.teamId]||!!snapshot.pendingAuction||!!snapshot.pendingMisfortuneChoice;
@@ -327,25 +349,26 @@ function renderTurnControls(){
   $('endTurn').onclick=()=>action('end-turn',{});
 }
 function renderCards(){
-  const own=snapshot.role==='team'?snapshot.teams[snapshot.teamId]:null;
+  const own=snapshot.role==='team'&&!snapshot.tutorial?.completed?snapshot.teams[snapshot.teamId]:null;
   if(!own){selected=null;pendingRoute=null;$('cards').innerHTML='';clearRouteChoices();return;}
   if(selected&&!own.hand.some(c=>c.id===selected.id)){selected=null;pendingRoute=null;}
-  $('cards').innerHTML=own.hand.map(c=>{const playable=own.awaitingEnd&&!own.cardActionDone&&!own.pendingChallenge&&!own.pendingTeleport&&!own.pendingExtraMove&&!own.pendingTarget&&!own.pendingReroll&&!snapshot.pendingAuction&&!snapshot.pendingMisfortuneChoice&&cardUsable(own,c);return `<div class="card ${selected?.id===c.id?'selected':''} ${playable?'playable':''} ${drawingCardIds.has(c.id)?'drawing':''}" role="button" tabindex="0" data-card="${c.id}" title="${esc(c.name)}：${esc(c.effect)}"><img src="${c.image}" alt="${esc(c.name)}"><span class="cardBadge">${esc(c.name)} · ${c.move===7?'?':c.move} 步</span></div>`;}).join('');
+  $('cards').innerHTML=own.hand.map(c=>{const playable=own.awaitingEnd&&!own.cardActionDone&&!own.pendingChallenge&&!own.pendingTeleport&&!own.pendingExtraMove&&!own.pendingTarget&&!own.pendingReroll&&!snapshot.pendingAuction&&!snapshot.pendingMisfortuneChoice&&!snapshot.pendingCardReaction&&cardUsable(own,c);return `<div class="card ${selected?.id===c.id?'selected':''} ${playable?'playable':''} ${drawingCardIds.has(c.id)?'drawing':''}" role="button" tabindex="0" data-card="${c.id}" title="${esc(c.name)}：${esc(c.effect)}"><img src="${c.image}" alt="${esc(c.name)}"><span class="cardBadge">${esc(c.name)} · ${c.move===7?'?':c.move} 步</span></div>`;}).join('');
   document.querySelectorAll('[data-card]').forEach(el=>{const choose=()=>{
     if(moving)return;
-    const mode=own.pendingExtraMove?'extra':!own.awaitingEnd?'move':!own.cardActionDone&&!own.pendingChallenge&&!own.pendingTeleport&&!own.pendingTarget&&!own.pendingReroll?'use':own.canDiscard?'discard':'view';
+    const mode=snapshot.pendingCardReaction?'view':own.pendingExtraMove?'extra':!own.awaitingEnd?'move':!own.cardActionDone&&!own.pendingChallenge&&!own.pendingTeleport&&!own.pendingTarget&&!own.pendingReroll?'use':own.canDiscard?'discard':'view';
     preview={cardId:el.dataset.card,mode};renderPreview();
   };el.onclick=choose;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose();}};});
-  if(snapshot.pendingAuction||snapshot.pendingMisfortuneChoice){pendingRoute=null;clearRouteChoices();return;}
+  if(snapshot.pendingAuction||snapshot.pendingMisfortuneChoice||snapshot.pendingCardReaction){pendingRoute=null;clearRouteChoices();return;}
   if(own.awaitingEnd&&!own.pendingExtraMove){selected=null;pendingRoute=null;clearRouteChoices();return;}
   if(!selected){pendingRoute=null;clearRouteChoices();return;}
-  const steps=selected.move===7?(own.pendingRoll?.cardId===selected.id?own.pendingRoll.value:null):selected.move;
+  const steps=own.chooseNextSteps||selected.move===7?(own.pendingRoll?.cardId===selected.id?own.pendingRoll.value:null):selected.move;
   if(steps===null){
     pendingRoute=null;renderRoutePreview();$('routeConfirmation').innerHTML='';
-    $('route').textContent='问号牌：先掷一颗 d6，骰子点数就是本次移动步数。';
-    $('choices').innerHTML='<button id="rollCard">掷骰决定步数</button><button id="cancelMove">取消选牌</button>';
+    $('route').textContent=own.chooseNextSteps?'零號車輛：为下一次移动选择 1–6 步。':'问号牌：先掷一颗 d6，骰子点数就是本次移动步数。';
+    $('choices').innerHTML=own.chooseNextSteps?Array.from({length:6},(_,i)=>`<button data-steps="${i+1}">${i+1} 步</button>`).join('')+'<button id="cancelMove">取消选牌</button>':'<button id="rollCard">掷骰决定步数</button><button id="cancelMove">取消选牌</button>';
     $('destinations').innerHTML='';
-    $('rollCard').onclick=()=>action('roll',{cardId:selected.id});
+    if($('rollCard'))$('rollCard').onclick=()=>action('roll',{cardId:selected.id});
+    document.querySelectorAll('[data-steps]').forEach(el=>el.onclick=()=>action('roll',{cardId:selected.id,value:Number(el.dataset.steps)}));
     $('cancelMove').onclick=cancelRouteSelection;return;
   }
   const options=window.routes.reachable(snapshot.graph,snapshot.house,own.position,steps);
@@ -379,15 +402,27 @@ function renderPiles(){
   $('deckPile').classList.toggle('empty',own.deckCount===0);
   $('discardPile').classList.toggle('empty',own.discardCount===0);
   $('discardFace').innerHTML=own.discardTop?`<img src="${esc(own.discardTop.image)}" alt="${esc(own.discardTop.name)}">`:'—';
+  $('deckPile').onclick=()=>{pileView='deck';pileScrollTop=0;preview=null;detailPreview=null;renderPreview();};
+  $('discardPile').onclick=()=>{pileView='discard';pileScrollTop=0;preview=null;detailPreview=null;renderPreview();};
 }
 function renderPreview(){
-  if(detailPreview){$('cardPreview').innerHTML=`<div class="previewBody"><img src="${esc(detailPreview.image)}" alt="${esc(detailPreview.name)}"><div><h2>${esc(detailPreview.name)}</h2><p>${esc(detailPreview.effect||'')}</p><div class="previewActions"><button id="backPreview">返回</button></div></div></div>`;$('cardPreview').classList.add('show');$('backPreview').onclick=()=>{detailPreview=null;renderPreview();};return;}
+  if(detailPreview){$('cardPreview').innerHTML=`<div class="previewBody cardOnly"><img src="${esc(detailPreview.image)}" alt="${esc(detailPreview.name)}"><div class="previewActions"><button id="backPreview">取消</button></div></div>`;$('cardPreview').classList.add('show');$('backPreview').onclick=()=>{detailPreview=null;renderPreview();};return;}
+  if(pileView&&snapshot?.role==='team'){
+    const cards=snapshot.teams[snapshot.teamId][pileView==='deck'?'deckCards':'discardCards']||[];
+    const title=pileView==='deck'?'抽牌堆':'弃牌堆';
+    pileScrollTop=$('cardPreview').querySelector('.pileViewerGrid')?.scrollTop??pileScrollTop;
+    $('cardPreview').innerHTML=`<div class="pileViewerBody" role="dialog" aria-label="${title}"><div class="pileViewerHeader"><h2>${title} · ${cards.length} 张</h2><button id="closePileViewer">取消</button></div>${cards.length?`<div class="pileViewerGrid">${cards.map((card,index)=>`<button data-pile-card="${index}" type="button" aria-label="查看 ${esc(card.id)} ${esc(card.name)}"><img src="${esc(card.image)}" alt=""><span>${esc(card.id)} · ${esc(card.name)}</span></button>`).join('')}</div>`:'<div class="pileViewerEmpty">暂无卡牌</div>'}</div>`;
+    $('cardPreview').classList.add('show');$('closePileViewer').onclick=()=>{pileView=null;pileScrollTop=0;renderPreview();};
+    if($('cardPreview').querySelector('.pileViewerGrid'))$('cardPreview').querySelector('.pileViewerGrid').scrollTop=pileScrollTop;
+    document.querySelectorAll('[data-pile-card]').forEach(el=>el.onclick=()=>{pileScrollTop=$('cardPreview').querySelector('.pileViewerGrid').scrollTop;detailPreview=cards[Number(el.dataset.pileCard)];renderPreview();});
+    return;
+  }
   if(!preview||snapshot?.role!=='team'){$('cardPreview').classList.remove('show');$('cardPreview').innerHTML='';return;}
   const own=snapshot.teams[snapshot.teamId],card=own.hand.find(c=>c.id===preview.cardId);
   if(!card){preview=null;renderPreview();return;}
   const usable=preview.mode!=='use'||cardUsable(own,card);
-  const canPlay=preview.mode!=='view'&&usable&&!own.pendingTarget&&!own.pendingReroll&&!snapshot.pendingAuction&&!snapshot.pendingMisfortuneChoice;
-  $('cardPreview').innerHTML=`<div class="previewBody"><img src="${card.image}" alt="${esc(card.name)}"><div><h2>${esc(card.name)}</h2><p>${esc(card.effect)}</p><p>条件：${esc(card.condition)}</p><p>费用：${card.cost} 金钱 · ${preview.mode==='move'?'移动':preview.mode==='extra'?'额外移动':preview.mode==='discard'?'弃牌':'使用'}${!usable?'（使用地点不匹配或金钱不足）':''}</p><div class="previewActions"><button id="playPreview" ${canPlay?'':'disabled'}>打出</button><button id="backPreview">返回</button></div></div></div>`;
+  const canPlay=preview.mode!=='view'&&usable&&snapshot.canAct!==false&&!own.pendingTarget&&!own.pendingReroll&&!snapshot.pendingAuction&&!snapshot.pendingMisfortuneChoice;
+  $('cardPreview').innerHTML=`<div class="previewBody cardOnly"><img src="${esc(card.image)}" alt="${esc(card.name)}"><div class="previewActions"><button id="playPreview" ${canPlay?'':'disabled'}>打出</button><button id="backPreview">取消</button></div></div>`;
   $('cardPreview').classList.add('show');
   $('backPreview').onclick=()=>{preview=null;renderPreview();};
   $('playPreview').onclick=async()=>{
@@ -408,7 +443,7 @@ function renderTable(){
     const move=cardButton(r.card,`移动：${r.card.name} · ${r.card.steps} 步`,`移动 ${r.card.steps} 步`);
     const played=r.usedCards?.length?r.usedCards:r.usedCard?[r.usedCard]:[];
     const used=played.length?played.map(c=>`${cardButton(c,`使用：${c.name} · ${c.result}`,c.effect)}<p class="recordEffect">${esc(c.effect)}</p>`).join(''):`<span class="muted">使用：${r.cardSkipped?'无':'待选择'}</span>`;
-    const event=r.event?`<div>${cardButton(r.event,`事件：${r.event.name}`,r.event.effect||'')}</div>`:'';
+    const event=(r.events?.length?r.events:r.event?[r.event]:[]).map(c=>`<div>${cardButton(c,`事件：${c.name}`,c.effect||'')}</div>`).join('');
     const mis=(r.misfortune||[]).map(c=>`<div>${cardButton(c,`厄运：${c.name}${c.redirectedTo?' → '+c.redirectedTo+' 队':''}`,c.effect||'')}</div>`).join('');
     const battle=snapshot.battles.find(b=>['待结算','待战','待选人'].includes(b.status)&&(b.first===r.id||b.second===r.id));
     return `<td><b>${esc(r.node)}</b>${battle?`<span class="battleFlag"> ⚔ ${battle.status==='待结算'?'对战中':battle.status}</span>`:''}<br><span class="muted">${time(r.time)} · 格子金钱 ${r.moneyDelta>=0?'+':''}${r.moneyDelta}</span>${r.defender?`<div class="battlePlayer">${avatar(r.defender,r.defender.account)} 留守：${esc(r.defender.account)}</div>`:r.defenderUnavailable?'<div class="muted">本轮无可预定队员</div>':''}<div>${move}</div><div>${used}</div>${r.houseAction?`<p class="recordEffect">建筑：${esc(r.houseAction.detail)}</p>`:''}${event}${mis}</td>`;
@@ -419,12 +454,19 @@ function renderTable(){
     return `<div class="battle ${b.status==='已结算'?'settled':''}">第 ${b.round} 轮 · ${esc(b.node)} · ${b.status}${b.winner?' · '+b.winner+' 胜':''}<div class="battleLine"><span class="battlePlayer">${avatar(first?.defender,a+' 队')}${esc(a||'?')} 队 · ${esc(first?.defender?.account||'待选人')}</span><b>⚔</b><span class="battlePlayer">${avatar(second?.defender,c+' 队')}${esc(c||'?')} 队 · ${esc(second?.defender?.account||'待选人')}</span></div>${snapshot.role==='host'&&b.status==='待结算'?`<div><button data-battle="${b.id}" data-winner="${a}">${a} 胜</button><button data-battle="${b.id}" data-winner="${c}">${c} 胜</button></div>`:''}</div>`;
   }).join('');
   document.querySelectorAll('[data-battle]').forEach(el=>el.onclick=()=>action('battle',{id:el.dataset.battle,winner:el.dataset.winner}));
-  const challenges=snapshot.role==='host'?Object.entries(snapshot.challenges||{}).map(([id,c])=>`<div class="battle"><b>${id} 队使用「${esc(c.card.name)}」</b><p class="notice">挑战条件：${esc(c.card.condition)}</p>${c.debuffs?.length?`<p class="notice">本次 debuff：${c.debuffs.map(d=>esc(d.effect)).join('；')}</p>`:''}<button data-challenge="${id}" data-success="true">挑战成功</button> <button data-challenge="${id}" data-success="false">挑战失败</button></div>`).join(''):'';
+  const challenges=snapshot.role==='host'?Object.entries(snapshot.challenges||{}).map(([id,c])=>`<div class="battle"><b>${id} 队使用「${esc(c.card.name)}」</b><p class="notice">挑战条件：${esc(c.card.condition)}${c.freeSong?' · 本次可自行选曲':''}</p>${c.debuffs?.length?`<p class="notice">本次 debuff：${c.debuffs.map(d=>esc(d.effect)).join('；')}</p>`:''}<button data-challenge="${id}" data-success="true">挑战成功</button> <button data-challenge="${id}" data-success="false">挑战失败</button></div>`).join(''):'';
   $('hostTools').innerHTML=snapshot.role==='host'?`<h3>待判定的卡牌挑战</h3>${challenges||'<p class="notice">暂无</p>'}<h3>裁判调分</h3><div class="scoreTools">`+ 'ABC'.split('').map(id=>`<button data-score="${id}" data-value="-2">${id} −2</button><button data-score="${id}" data-value="1">${id} +1</button><button data-score="${id}" data-value="2">${id} +2</button>`).join('')+'</div>':'';
   document.querySelectorAll('[data-challenge]').forEach(el=>el.onclick=()=>action('resolve-challenge',{team:el.dataset.challenge,success:el.dataset.success==='true'}));
   document.querySelectorAll('[data-score]').forEach(el=>el.onclick=()=>action('score',{team:el.dataset.score,value:Number(el.dataset.value)}));
 }
 function renderPending(){
+  const reaction=snapshot.pendingCardReaction;
+  if(reaction){
+    const canPass=snapshot.role==='host'&&reaction.responder;
+    $('pendingAction').innerHTML=`<div class="battle"><b>${esc(reaction.sourceTeam)} 队使用「${esc(reaction.card.name)}」</b><p class="notice">${reaction.reactor?`等待裁判判定 ${esc(reaction.reactor)} 队的反制挑战`:`等待 ${esc(reaction.responder)} 队决定是否使用反制牌`}</p>${canPass?'<button id="counterHostPass">裁判代为放弃反制</button>':''}</div>`;
+    if(canPass)$('counterHostPass').onclick=()=>action('counter-response',{use:false});
+    return;
+  }
   const choice=snapshot.pendingMisfortuneChoice;
   if(choice){
     const id=snapshot.teamId;
@@ -452,7 +494,7 @@ function renderTestTools(){
 function renderLog(){
   const entries=snapshot.records.flatMap(r=>{
     const lines=[{time:r.time,message:`第 ${r.round} 回合 · ${r.team} 队移动至 ${r.node}（${r.card?.steps??'?'} 步，格子金钱 ${r.moneyDelta>=0?'+':''}${r.moneyDelta}）`}];
-    if(r.event)lines.push({time:r.time,message:`${r.team} 队事件：${r.event.name}`});
+    for(const event of r.events?.length?r.events:r.event?[r.event]:[])lines.push({time:r.time,message:`${r.team} 队事件：${event.name}`});
     for(const card of r.misfortune||[])lines.push({time:r.time,message:`${r.team} 队厄运：${card.name}`});
     for(const card of r.usedCards?.length?r.usedCards:r.usedCard?[r.usedCard]:[])lines.push({time:r.time,message:`${r.team} 队使用：${card.name} · ${card.result}`});
     if(r.cardSkipped)lines.push({time:r.time,message:`${r.team} 队本回合未使用手牌`});

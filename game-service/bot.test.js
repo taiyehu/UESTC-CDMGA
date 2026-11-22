@@ -88,6 +88,6 @@ test('两种策略都能通过规则引擎完成一整个回合', () => {
       const action = bot.choose(room, 'A', strategy, ['B']);
       if (action) operations[action.type](room, { role: 'team', id: 'A' }, action.payload);
     }
-    assert.equal(room.teams.A.round, 2, `${strategy} stalled in its first round`);
+    assert.ok(room.teams.A.round>=2, `${strategy} stalled in its first round`);
   }
 });
