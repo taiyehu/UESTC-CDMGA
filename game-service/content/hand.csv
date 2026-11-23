@@ -5,7 +5,7 @@ card3,巧夺先机,3,100,Phigros,瞬移至任意站点或建筑,游玩Temporal S
 card4,幸运药水,3,0,fanshi,当你必须获得厄运时抵挡一次厄运,游玩Blessed Bleath MSV难度达到full combo,art/hand4.png,cover,0.5,0.5,shield_misfortune,1,0,1
 card5,言而无信,4,40,Arcaea,获得1点积分，额外移动一次,游玩Breach of Faith BYD难度达到990w分,art/hand5.png,cover,0.5,0.5,score_extra_move,1,0,1
 card6,机械帮手,2,700,fanshi,获得9点积分，到达站点或建筑但无法使用卡牌时可以选择丢弃一张手牌,游玩Turning Point MSV难度达到inf+,art/hand6.png,cover,0.5,0.5,score_optional_discard,9,0,1
-card7,装腔作势,7,0,random,抵消一次事件格的事件,（骰子决定）走X步或获得X分+70X块钱,art/hand7.jpg,cover,0.5,0.5,event_cancel_random,1,0,1
+card7,装腔作势,7,0,event,抵消一次事件格的事件,（骰子决定）走X步或获得X分+70X块钱,art/hand7.jpg,cover,0.5,0.5,event_cancel_random,1,0,1
 card8,诈骗交易,1,0,Arcaea,选择任意其他队伍，该队伍给你100金钱并且收入-5，你的队伍收入+5,游玩Tr!cK Ma?tEr ETR难度达到990w分,art/hand8.jpg,cover,0.5,0.5,transfer_income,100,5,1
 card9,魔幻饰品,2,0,fanshi,触发范式建筑效果，你可以再扔一个骰子，只有最后一次骰子算数,游玩爆裂魔法 MSV难度达到1005000分,art/hand9.png,cover,0.5,0.5,fanshi_reroll,0,0,1
 card10,快速贷款,3,0,Arcaea,获得400金钱，并获得永久效果：每次走牌开始时，-25金钱，如果不能付清，则-3积分并消除此效果,游玩Garakuta Doll Play FTR难度达到990w分,art/example.png,cover,0.5,0.5,loan,400,25,1
@@ -15,7 +15,7 @@ card13,稀世珍宝,3,150,Phigros,获得2点积分,游玩黄金之城 IN难度�
 card14,机器会计,5,400,Arcaea,获得4点积分，收入+20,游玩XTREME FTR难度达到995w分,art/hand13.jpg,cover,0.5,0.5,score_income,4,20,1
 card15,颁奖典礼,4,300,Arcaea,获得3点积分，收入+10，并获得永久效果：你造访Arcaea时，获得一次收入,游玩Last Celebration FTR难度达到995w分,art/hand14.jpg,cover,0.5,0.5,score_income_arcaea_visit,3,10,1
 card16,萨满的魔杖,4,400,fanshi,获得6点积分，并获得永久效果：你造访范式时，获得70金钱,游玩MAGICAL RENDA STADIUM MSV难度达到1005000分,art/hand15.png,cover,0.5,0.5,score_fanshi_visit,6,70,1
-card17,交锋,3,0,koushui,"当你的手牌点数均小于等于3时可以使用，选择任意其他队伍发起一次该回合的战斗,你无需在这个站点支付税金",无,art/hand16.png,cover,0.5,0.5,challenge_battle_low_hand_tax_refund,0,0,1
+card17,交锋,3,0,koushui,"当你的手牌点数均小于等于3时可以使用，选择任意其他队伍立即战斗，双方当场选人；你无需在这个站点支付税金",无,art/hand16.png,cover,0.5,0.5,challenge_battle_low_hand_tax_refund,0,0,1
 card18,与我一战！,3,100,koushui,选择任意其他队伍发起一次该回合的战斗，你无需在这个站点支付税金,无,art/hand17.png,cover,0.5,0.5,challenge_battle_tax_refund,0,0,1
 card19,惊人强大,6,1000,Arcaea,"(如果使用此卡牌移动，-20金钱),+15积分 ",游玩Amazing Mighty!!!! FTR难度达到990w分,art/hand18.jpg,cover,0.5,0.5,score_move_fee,15,20,1
 card20,大善人,5,0,Phigros,+150金钱 ,游玩goodrage IN难度达到 99.6％acc,art/hand19.png,cover,0.5,0.5,money,150,0,1
@@ -26,13 +26,13 @@ card24,外快,3,0,Arcaea,+1积分+50金钱,游玩Speed of Light ETR难度达到9
 card25,二手货,7,0,event,+60金钱，你可以再使用一张卡牌,游玩Avantgarde MAS难度达到INF,art/hand24.jpg,cover,0.5,0.5,money_extra_use,60,1,1
 card26,贿赂有道,5,50,koushui,瞬移到任意站点，(如果使用此卡牌移动，则-20金钱),无,art/hand25.jpg,cover,0.5,0.5,teleport_move_fee_tax,0,20,1
 card27,找对关系,3,0,koushui,获得一次收入，你无需在这个站点支付税金,无,art/hand26.jpg,cover,0.5,0.5,income_once_tax_refund,0,0,1
-card28,反转了,1,200,Phigros,"根据debuff数量抽buff，清除所有debuff",无,,contain,0.5,0.5,clear_debuff_draw_buff,0,0,1
+card28,反转了,1,200,mis,"根据debuff数量抽buff，清除所有debuff",无,,contain,0.5,0.5,clear_debuff_draw_buff,0,0,1
 card29,燃起来了,2,50,Phigros,"若下一次战斗获胜，则获得的积分+2",挑战Burn IN难度fc,,contain,0.5,0.5,next_battle_win_bonus,2,0,1
 card30,记忆工厂,3,150,Arcaea,触发上一张卡牌的效果和上一次经过的建筑效果,挑战memoryfactory.lzh ftr EX+,,contain,0.5,0.5,replay_card_house,0,0,1
-card31,零號車輛,6,50,Phigros,"+1积分，下一次步数在1~6中自行选择",挑战零號車輛 MSV FC,,contain,0.5,0.5,score_choose_next_steps,1,0,1
+card31,零號車輛,6,50,fanshi,"+1积分，下一次步数在1~6中自行选择",挑战零號車輛 MSV FC,,contain,0.5,0.5,score_choose_next_steps,1,0,1
 card32,创造性AI,4,200,event,"永久效果：触发事件格时，抽取两个事件效果",无,,contain,0.5,0.5,double_event,2,0,1
 card33,!？叠？！,5,50,event,收入+10,无,,contain,0.5,0.5,income,10,0,1
 card34,海神九考,6,100,Phigros,"获得1点积分，并获得单次效果复活吧我的爱人：你的队友在对战中落败时，无视本次挑战结果并获得30金钱",游玩Ωκεανο MSV难度达到1005000分,,contain,0.5,0.5,score_battle_rescue,1,30,1
-card35,挖到宝了,4,400,Phigros,"获得2点积分，并获得单次效果已添加到我喜欢的音乐：你的队伍在下次乐曲挑战中，无视本次挑战选曲自行选曲",游玩CRYSTAL MINING MSV难度达到1004444分以上,,contain,0.5,0.5,score_free_song,2,0,1
-card36,彼岸双生,2,300,Arcaea,"获得2点积分，并获得永久效果彼岸双生：选择一支队伍建立单向连接；在对战中若己方失败，对方也受到双倍惩罚，己方成功则无效果",游玩Tie me down gently FTR难度达到998w分,,contain,0.5,0.5,score_link_team,2,0,1
-card37,忘忘队立大功,3,400,Phigros,"获得1点积分；在其他队伍使用卡牌时可以使用此牌，使对方卡牌效果失效",游玩ATHAZA IN难度达到99.8ACC,,contain,0.5,0.5,counter_other_card,1,0,1
+card35,挖到宝了,4,400,Phigros,"获得2点积分，并获得单次buff“已添加到我喜欢的音乐”：你的队伍在下次对战时可以无视本次选曲并自行选曲",游玩CRYSTAL MINING MSV难度达到1004444分以上,,contain,0.5,0.5,score_free_song,2,0,1
+card36,彼岸双生,2,300,Arcaea,"获得2点积分，并获得一次效果彼岸双生：选择一支队伍建立单向连接；在对战中若己方失败，对方也受到双倍惩罚，己方成功则无效果",游玩Tie me down gently FTR难度达到998w分,,contain,0.5,0.5,score_link_team,2,0,1
+card37,忘忘队立大功,3,100,Phigros,"获得1点积分，选择一个队伍，丢弃其一张手牌",游玩ATHAZA IN难度达到99.8ACC,,contain,0.5,0.5,score_discard_other,1,0,1

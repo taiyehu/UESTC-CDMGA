@@ -83,6 +83,12 @@ function choose(room, seat, strategy, humanSeats) {
     return act('bid', { amount: Math.min(team.money, Math.min(strategy === 'aggressive' ? 60 : 25, Math.floor(team.money * (strategy === 'aggressive' ? .14 : .06)))) });
   }
   if (team.pendingChallenge) return null;
+  if (team.pendingDiscard) {
+    const target = room.teams[team.pendingDiscard];
+    return target?.hand.length ? act('discard-target-card', { cardId: target.hand[0].id }) : null;
+  }
+  const forced=room.battles.find(b=>b.forced&&b.status==='待选人'&&[b.first,b.second].some(id=>room.records.some(r=>r.id===id&&r.team===seat&&!r.defender)));
+  if(forced&&team.members.length){const member=game.eligibleMembers(room,team)[0];if(member)return act('reserve-member',{memberId:member.id});}
   if (team.pendingTarget) {
     const eligible=opponents.filter(id=>!team.pendingTarget.effect_type.startsWith('challenge_battle_')||
       room.teams[id].immuneFromRound==null||room.teams[id].immuneFromRound>team.round);
