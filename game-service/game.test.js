@@ -551,11 +551,13 @@ test('事件格抽成品事件卡并加钱，厄运格触发三队竞标',()=>{
 
 test('新事件牌结算积分、debuff 防护、范式奖励与战斗修正',()=>{
   const trigger=(id,setup=()=>{})=>{
-    const room=g.createRoom({initialMoney:100}),t=room.teams.A;
+    const room=g.createRoom({seed:`event-${id}`,initialMoney:100}),t=room.teams.A;
     room.eventDeck=[EVENTS.find(c=>c.id===id)];
     setup(room,t);
-    t.position='R4';t.hand[0].move=1;
-    g.move(room,{role:'team',id:'A'},t.hand[0].id,['P2']);
+    const mover=safeMover(t);
+    assert.ok(mover,'测试需要一张无移动费用的手牌');
+    t.position='R4';mover.move=1;
+    g.move(room,{role:'team',id:'A'},mover.id,['P2']);
     if(t.pendingEvent)g.skipUse(room,{role:'team',id:'A'});
     return {room,t};
   };
@@ -567,7 +569,7 @@ test('新事件牌结算积分、debuff 防护、范式奖励与战斗修正',()
   assert.equal(lowest.room.teams.C.score,1);
   assert.equal(lowest.t.score,2);
   const treasure=trigger('event5');
-  assert.ok(treasure.t.money>=110&&treasure.t.money<=300);
+  assert.equal(treasure.t.money,100+[10,25,50,100,150,200][treasure.room.diceRolls[0].value-1]);
   assert.match(treasure.room.records[0].event.detail,/掷出/);
   assert.equal(treasure.room.diceRolls.length,1);
   const battle=trigger('event6');
