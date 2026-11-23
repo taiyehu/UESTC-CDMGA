@@ -62,6 +62,52 @@ test('移动后必须手动结束回合才能再次移动',()=>{
   assert.equal(g.state(room,who).teams.A.round,2);
 });
 
+test('裁判调整金钱按实际变化记账且不允许队伍操作',()=>{
+  const room=g.createRoom({seed:'judge-money'}),host={role:'host'};
+  assert.throws(()=>g.money(room,{role:'team',id:'A'},'A',100),/只有裁判/);
+  assert.throws(()=>g.money(room,host,'A',50),/金钱调整无效/);
+  g.money(room,host,'A',100);
+  assert.equal(room.teams.A.money,300);
+  room.teams.A.money=40;
+  g.money(room,host,'A',-100);
+  assert.equal(room.teams.A.money,0);
+  assert.equal(room.moneyChanges.at(-1).amount,-40);
+  assert.equal(room.moneyChanges.at(-1).reason,'裁判调整金钱');
+});
+
+test('裁判可强制跳过未完成的当前回合并开启下一回合',()=>{
+  const room=g.createRoom({seed:'judge-force'}),host={role:'host'},t=room.teams.A;
+  assert.throws(()=>g.forceEndTurn(room,{role:'team',id:'A'},'A'),/只有裁判/);
+  assert.throws(()=>g.forceEndTurn(room,host,'D'),/队伍无效/);
+  t.awaitingEnd=true;t.pendingChallenge={card:{name:'测试'}};t.pendingTeleport=true;t.pendingRoll={value:3};t.skipNextTurn=true;t.pendingEvent=true;
+  g.forceEndTurn(room,host,'A');
+  assert.equal(t.round,2);
+  assert.equal(t.awaitingEnd,false);
+  assert.equal(t.pendingChallenge,null);
+  assert.equal(t.pendingTeleport,false);
+  assert.equal(t.pendingRoll,null);
+  assert.equal(t.pendingEvent,false);
+  assert.equal(t.skipNextTurn,false);
+  assert.match(room.log.at(0).message,/强制结束 A 队第 1 回合/);
+  const mover=safeMover(t),route=[];let node=t.position;
+  for(let i=0;i<mover.move;i++){node=g.GRAPH[node][0];route.push(node);}
+  g.move(room,{role:'team',id:'A'},mover.id,route);
+  assert.equal(t.awaitingEnd,true);
+});
+
+test('强制结束取消该队触发的待结算流程',()=>{
+  const room=g.createRoom({seed:'judge-force-pending'});
+  room.pendingCardReaction={sourceTeam:'A',reactor:null,responders:['B'],card:{name:'测试'}};
+  room.pendingAuction={triggerTeam:'A',bids:{},card:{name:'测试'}};
+  room.auctionQueue=[{triggerTeam:'B',bids:{},card:{name:'其他队厄运'}}];
+  room.pendingMisfortuneChoice={triggerTeam:'A',target:'B',cards:[]};
+  g.forceEndTurn(room,{role:'host'},'A');
+  assert.equal(room.pendingCardReaction,null);
+  assert.equal(room.pendingMisfortuneChoice,null);
+  assert.equal(room.pendingAuction.triggerTeam,'B');
+  assert.equal(room.teams.A.round,2);
+});
+
 test('房屋卡牌阶段可跳过，使用时扣费并由裁判判定挑战',()=>{
   const {room,t,who,card}=arriveWithCard('card1','Phigros',500);
   assert.equal(t.cardActionDone,false);
@@ -525,7 +571,7 @@ test('新事件牌结算积分、debuff 防护、范式奖励与战斗修正',()
   assert.match(treasure.room.records[0].event.detail,/掷出/);
   assert.equal(treasure.room.diceRolls.length,1);
   const battle=trigger('event6');
-  assert.equal(battle.t.nextBattleModifier,-1);
+  assert.equal(battle.t.nextBattleDebuff,-1);
   const blessing=trigger('event7');
   assert.equal(blessing.t.income,20);
   assert.equal(blessing.t.nextBattleModifier,2);

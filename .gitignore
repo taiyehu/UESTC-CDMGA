@@ -39,4 +39,6 @@ reactproject/.env*
 **/storageState*.json
 /backups/
 /dumps/
+/.card-source/
+game-service.zip
 /.local-data/

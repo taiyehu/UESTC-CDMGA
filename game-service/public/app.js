@@ -19,7 +19,7 @@ const diceFaceUrls=Array.from({length:6},(_,i)=>`/game-client/dice/${i+1}.svg`);
 for(const src of diceFaceUrls){const preload=new Image();preload.src=src;}
 const cardUsable=(t,c)=>{
   if(t.money<c.cost)return false;
-  if(t.pendingMisfortuneCard)return c.effect_type==='redirect_misfortune';
+  if(t.pendingMisfortuneCard)return c.effect_type==='redirect_misfortune'||c.effect_type==='clear_debuff_draw_buff';
   if(c.effect_type==='event_cancel_random')return t.pendingEvent;
   if(c.effect_type==='counter_other_card')return false;
   if(c.effect_type==='money_extra_use')return snapshot.nodeTypes[t.position]==='事件格';
@@ -27,7 +27,7 @@ const cardUsable=(t,c)=>{
   if(c.game_type==='koushui')return snapshot.nodeTypes[t.position]==='收税格'&&
     (!c.effect_type.startsWith('challenge_battle_')||!t.exTime&&'ABC'.split('').some(id=>id!==snapshot.teamId&&!snapshot.teams[id].exTime))&&
     (c.effect_type!=='challenge_battle_low_hand_tax_refund'||t.hand.every(card=>card.move<=3));
-  if(c.game_type==='mis')return false;
+  if(c.game_type==='mis')return snapshot.nodeTypes[t.position]==='厄运格';
   return snapshot.house.includes(t.position)&&(c.game_type==='random'||(c.game_type==='fanshi'?'范式起源':c.game_type)===t.position);
 };
 const avatar=(member,label)=>member?.avatar?`<img src="${esc(member.avatar)}" alt="${esc(label)}头像">`:`<span class="avatarFallback" aria-label="${esc(label)}头像">${esc((member?.account||label||'?').slice(0,1))}</span>`;
@@ -37,7 +37,7 @@ async function api(method,path,data){
 }
 function fail(e){alert(e.message||String(e));}
 function save(){}
-function showLobby(error=''){document.body.classList.remove('playing');$('battleModal').classList.remove('show');$('handHelp').classList.remove('show');$('lobby').hidden=false;$('game').hidden=true;$('lobbyError').textContent=error;}
+function showLobby(error=''){document.body.classList.remove('playing');$('battleModal').classList.remove('show');$('handHelp').classList.remove('show');$('defenderModal').classList.remove('show');$('lobby').hidden=false;$('game').hidden=true;$('lobbyError').textContent=error;}
 function showGame(){const opening=$('game').hidden;document.body.classList.add('playing');document.body.classList.toggle('tutorial',!!snapshot.tutorial);document.body.dataset.gameView||='map';$('lobby').hidden=true;$('game').hidden=false;$('roomLabel').textContent=session.tutorial?'新手教程':`房间 ${session.code} · ${snapshot.role==='host'?'裁判':snapshot.teamId+' 队'}${snapshot.canAct?'':' · 观战'}`;renderTutorial();if(opening)requestAnimationFrame(fitMap);}
 function fitMap(){
   const viewport=document.querySelector('.mapViewport'),map=viewport.querySelector('.mapWrap');
@@ -236,7 +236,7 @@ function renderTutorial(){
   panel.innerHTML=`<div><span class="tutorialKicker">练习旅程 · ${info.scene}/${info.total} · 操作 A 队</span><h2>${esc(info.title)}</h2><p>${esc(info.instruction)}</p></div><div class="tutorialActions"><a href="/game" target="_top">返回桌游列表</a><button id="restartTutorial" type="button">从头练习</button></div>`;
   $('restartTutorial').onclick=()=>{if(confirm('确定从头练习？当前进度会清除。'))action('reset',{});};
 }
-function render(){showGame();$('judgePanel').hidden=snapshot.role!=='host';$('cards').hidden=snapshot.role==='host';$('rightTitle').textContent=snapshot.role==='host'?'裁判控制':'手牌';$('openHandHelp').hidden=snapshot.role==='host';document.querySelector('[data-game-view="judge"]').hidden=snapshot.role!=='host';document.querySelector('[data-game-view="hand"]').hidden=snapshot.role==='host';if(snapshot.role==='host'&&document.body.dataset.gameView==='hand'||snapshot.role!=='host'&&document.body.dataset.gameView==='judge')setGameView('map');renderSummary();renderMap();renderEndgame();renderTurnControls();renderCards();renderPiles();renderPreview();renderPending();$('actionDock').hidden=snapshot.role==='host'&&!snapshot.pendingAuction&&!snapshot.pendingMisfortuneChoice;renderHistory();renderTable();renderTestTools();renderLog();if(!snapshot.canAct)document.querySelectorAll('#actionDock button, #cards button, #judgePanel button').forEach(el=>{el.disabled=true;el.title='本队仅指定操作者可操作';});}
+function render(){showGame();$('judgePanel').hidden=snapshot.role!=='host';$('cards').hidden=snapshot.role==='host';$('rightTitle').textContent=snapshot.role==='host'?'裁判控制':'手牌';$('openHandHelp').hidden=snapshot.role==='host';document.querySelector('[data-game-view="judge"]').hidden=snapshot.role!=='host';document.querySelector('[data-game-view="hand"]').hidden=snapshot.role==='host';if(snapshot.role==='host'&&document.body.dataset.gameView==='hand'||snapshot.role!=='host'&&document.body.dataset.gameView==='judge')setGameView('map');renderSummary();renderMap();renderEndgame();renderTurnControls();if(!$('chooseDefender')||!snapshot.canAct)$('defenderModal').classList.remove('show');renderCards();renderPiles();renderPreview();renderPending();$('actionDock').hidden=snapshot.role==='host'&&!snapshot.pendingAuction&&!snapshot.pendingMisfortuneChoice;renderHistory();renderTable();renderTestTools();renderLog();if(!snapshot.canAct)document.querySelectorAll('#actionDock button, #cards button, #judgePanel button').forEach(el=>{el.disabled=true;el.title='本队仅指定操作者可操作';});}
 function renderEndgame(){
   const banner=$('endgameBanner'),endgame=snapshot.endgame;
   if(!endgame?.result&&!endgame?.provisional?.length){banner.hidden=true;return;}
@@ -245,7 +245,7 @@ function renderEndgame(){
   else if(endgame.result?.reason==='time_limit'||endgame.result?.reason==='manual')banner.textContent=`${endgame.result.reason==='time_limit'?'比赛时间到':'裁判结束比赛'} · ${endgame.result.ranking.map(row=>`第 ${row.rank} 名 ${row.team} 队 ${row.score} 分`).join(' · ')}`;
   else banner.textContent=`暂定达标：${endgame.provisional.map(row=>`${row.team} 队第 ${row.round} 轮达到 ${row.score} 分`).join('、')} · 等待相关轮次和战斗结清`;
 }
-function buffs(t){return [t.eventShield?`事件抵消 ×${t.eventShield}`:'',t.misfortuneShield?`厄运抵消 ×${t.misfortuneShield}`:'',t.debuffShield?`debuff 抵消 ×${t.debuffShield}`:'',t.nextBattleModifier?`下次战斗 ${t.nextBattleModifier} 分`:'',t.nextBattleWinBonus?`下次战斗获胜 +${t.nextBattleWinBonus} 分`:'',t.battleRescue?`战斗落败保护 ×${t.battleRescue}`:'',t.freeSongChallenge?`下次挑战自选曲 ×${t.freeSongChallenge}`:'',t.linkedTeamId?`彼岸双生 → ${t.linkedTeamId} 队`:'',t.chooseNextSteps?'下次移动自选 1–6 步':'',t.doubleEvent?'事件格抽两张':'',t.loanActive?'快速贷款还款':'',t.maxCardUses>1?'每回合可用 2 张牌':'',t.arcaeaVisitIncome?'造访 Arcaea 获得收入':'',t.fanshiVisitMoney?`造访范式 +${t.fanshiVisitMoney} 金钱`:'',t.discardAbility?'机械帮手弃牌':'',...(t.debuffs||[]).map(d=>`debuff：${d.name}`)].filter(Boolean).join(' · ')||'无';}
+function buffs(t){return [t.eventShield?`事件抵消 ×${t.eventShield}`:'',t.misfortuneShield?`厄运抵消 ×${t.misfortuneShield}`:'',t.debuffShield?`debuff 抵消 ×${t.debuffShield}`:'',t.nextBattleModifier?`下次战斗 ${t.nextBattleModifier} 分`:'',t.nextBattleWinBonus?`下次战斗获胜 +${t.nextBattleWinBonus} 分`:'',t.battleRescue?`战斗落败保护 ×${t.battleRescue}`:'',t.freeSongBattle?`下次对战自选曲 ×${t.freeSongBattle}`:'',t.linkedTeamId?`彼岸双生 → ${t.linkedTeamId} 队（一次）`:'',t.chooseNextSteps?'下次移动自选 1–6 步':'',t.doubleEvent?'事件格抽两张':'',t.loanActive?'快速贷款还款':'',t.maxCardUses>1?'每回合可用 2 张牌':'',t.arcaeaVisitIncome?'造访 Arcaea 获得收入':'',t.fanshiVisitMoney?`造访范式 +${t.fanshiVisitMoney} 金钱`:'',t.discardAbility?'机械帮手弃牌':'',t.nextBattleDebuff?`debuff：下次战斗 ${t.nextBattleDebuff} 分`:'',...(t.debuffs||[]).map(d=>`debuff：${d.name}`)].filter(Boolean).join(' · ')||'无';}
 function activeBattle(id){
   return snapshot.battles.find(b=>['待结算','待战'].includes(b.status)&&(snapshot.role==='host'||b.round===snapshot.teams[snapshot.teamId].round)&&
     [b.first,b.second].some(recordId=>snapshot.records.find(r=>r.id===recordId)?.team===id));
@@ -301,6 +301,20 @@ function showTeamInfo(id){
   $('teamInfo').innerHTML=`<div class="teamInfoBody"><button id="closeTeamInfo" aria-label="关闭">×</button><h2 class="${id.toLowerCase()}">${id} 队</h2><p>第 ${t.round} 回合 · ${esc(t.position)}</p><p>积分 ${t.score}${activeBattle(id)?' · 对战中':''}</p><p>已有 Buff：${esc(buffs(t))}</p></div>`;
   $('teamInfo').classList.add('show');$('closeTeamInfo').onclick=()=>{$('teamInfo').classList.remove('show');};
 }
+function openDefenderPicker(forced,record){
+  const members=snapshot.teams[snapshot.teamId].eligibleMembers||[];
+  $('defenderModalTitle').textContent=forced?'选择交锋出战队员':'选择留守队员';
+  $('defenderModalNote').textContent=forced?'请选择一名队员出战。':`第 ${record.round} 回合 · 留守 ${record.node}`;
+  $('defenderModalChoices').innerHTML=members.map(m=>`<button type="button" data-defender="${esc(m.id)}">${avatar(m,m.account)}<span>${esc(m.account)}</span></button>`).join('');
+  $('defenderModal').classList.add('show');
+  document.querySelectorAll('#defenderModalChoices [data-defender]').forEach(el=>el.onclick=async()=>{
+    if(!snapshot.canAct)return;
+    document.querySelectorAll('#defenderModalChoices button').forEach(button=>button.disabled=true);
+    if(await action('reserve-member',{memberId:el.dataset.defender}))$('defenderModal').classList.remove('show');
+    else document.querySelectorAll('#defenderModalChoices button').forEach(button=>button.disabled=false);
+  });
+  $('defenderModalChoices').querySelector('button')?.focus();
+}
 function renderTurnControls(){
   if(snapshot.role!=='team'){$('turnControls').innerHTML='';return;}
   const reaction=snapshot.pendingCardReaction;
@@ -316,16 +330,19 @@ function renderTurnControls(){
   }
   if(snapshot.endgame?.result){$('turnControls').innerHTML='<div class="turnState">比赛已结束，房间仅供查看</div>';return;}
   const t=snapshot.teams[snapshot.teamId];
+  if(t.pendingDiscard){$('turnControls').innerHTML=`<div class="turnState">选择 ${esc(t.pendingDiscard)} 队要丢弃的手牌<div class="defenderChoices">${(t.pendingDiscardCards||[]).map(c=>`<button data-target-card="${esc(c.id)}"><img src="${esc(c.image)}" alt=""><span>${esc(c.name)}</span></button>`).join('')}</div></div>`;document.querySelectorAll('[data-target-card]').forEach(el=>el.onclick=()=>action('discard-target-card',{cardId:el.dataset.targetCard}));return;}
+  const forced=snapshot.battles.find(b=>b.forced&&b.status==='待选人'&&[b.first,b.second].some(id=>snapshot.records.some(r=>r.id===id&&r.team===snapshot.teamId&&!r.defender)));
+  if(forced&&t.eligibleMembers?.length){$('turnControls').innerHTML='<div class="turnState">交锋：现在选择出战队员 <button id="chooseDefender">选择队员</button></div>';$('chooseDefender').onclick=()=>openDefenderPicker(true);return;}
   if(snapshot.tutorial?.completed){$('turnControls').innerHTML='<div class="turnState">教程完成！你可以返回桌游列表，或从头再练一次。</div>';return;}
   if(!t.awaitingEnd){$('turnControls').innerHTML=`<div class="turnState">第 ${t.round} 回合 · 请选择手牌移动</div>`;return;}
   const record=snapshot.records.findLast(r=>r.team===snapshot.teamId&&r.round===t.round);
   if(t.pendingMisfortuneCard&&!t.pendingTarget){
-    $('turnControls').innerHTML='<div class="turnState">经过厄运 B：可使用「厄运火杆」转移一次厄运，或正常结算。<button id="skipUse">正常结算厄运</button></div>';
+    $('turnControls').innerHTML='<div class="turnState">经过厄运 B：可使用适用手牌，或正常结算厄运。<button id="skipUse">正常结算厄运</button></div>';
     $('skipUse').onclick=()=>action('skip-use',{});return;
   }
   if(record&&!snapshot.house.includes(record.node)&&!record.defender&&t.eligibleMembers?.length){
-    $('turnControls').innerHTML=`<div class="turnState">第 ${t.round} 回合 · 选择一名队员留守 ${esc(record.node)}<div class="defenderChoices">${t.eligibleMembers.map(m=>`<button data-defender="${esc(m.id)}">${avatar(m,m.account)}<span>${esc(m.account)}</span></button>`).join('')}</div></div>`;
-    document.querySelectorAll('[data-defender]').forEach(el=>el.onclick=()=>action('reserve-member',{memberId:el.dataset.defender}));return;
+    $('turnControls').innerHTML=`<div class="turnState">第 ${t.round} 回合 · 留守 ${esc(record.node)} <button id="chooseDefender">选择留守队员</button></div>`;
+    $('chooseDefender').onclick=()=>openDefenderPicker(false,record);return;
   }
   if(t.pendingChallenge){$('turnControls').innerHTML=`<div class="turnState">挑战已提交${t.pendingChallenge.freeSong?' · 本次可自行选曲':''} · 等待裁判判定</div>`;return;}
   if(t.pendingTeleport){
@@ -375,12 +392,11 @@ function renderCards(){
   if(pendingRoute&&(pendingRoute.cardId!==selected.id||pendingRoute.from!==own.position||!options.some(o=>o.node===pendingRoute.node&&o.route.join('|')===pendingRoute.route.join('|'))))pendingRoute=null;
   renderRoutePreview();
   const counts={};for(const o of options)counts[o.node]=(counts[o.node]||0)+1;
-  const seen={};
   $('route').textContent=`第 ${own.round} 回合 · ${moveKind==='extra'?'额外移动 · ':''}${steps} 步 · ${Object.keys(counts).length} 个终点、${options.length} 条路线。点击终点或路线预览，确认后移动。`;
   $('routeConfirmation').innerHTML=pendingRoute?`<div><strong>确认沿高亮路线移动到 ${esc(pendingRoute.node)}？</strong><span>${esc(own.position+' → '+pendingRoute.route.join(' → '))}</span></div><div class="routeConfirmActions"><button id="confirmMove" ${moving?'disabled':''}>确认移动</button><button id="cancelRoute" ${moving?'disabled':''}>取消并重新选牌</button></div>`:'';
-  $('choices').innerHTML=options.map((o,i)=>`<button data-option="${i}" class="${pendingRoute?.index===i?'routeChoiceActive':''}" ${moving?'disabled':''}>${esc(o.node)} <small>经 ${esc(o.route.join(' → '))}</small></button>`).join('')+
+  $('choices').innerHTML=options.map((o,i)=>`<button data-option="${i}" class="${pendingRoute?.index===i?'routeChoiceActive':''}" ${moving?'disabled':''}>${esc(o.node)} · ${esc(snapshot.nodeTypes[o.node]||'建筑')} <small>经 ${esc(o.route.join(' → '))}</small></button>`).join('')+
     `<button id="cancelMove" ${moving?'disabled':''}>取消选牌</button>`;
-  $('destinations').innerHTML=options.map((o,i)=>{const [x,y]=snapshot.pos[o.node],n=seen[o.node]||0;seen[o.node]=n+1;const offset=n-(counts[o.node]-1)/2;return `<button class="destination ${pendingRoute?.index===i?'routeDestinationActive':''}" data-option="${i}" title="路线：${esc(own.position+' → '+o.route.join(' → '))}" style="left:${mapPercent([x,y])[0]+offset*3}%;top:${mapPercent([x,y])[1]+offset*2}%" ${moving?'disabled':''}>${esc(o.node)}${counts[o.node]>1?` ${n+1}`:''}</button>`;}).join('');
+  $('destinations').innerHTML=options.map((o,i)=>({...o,index:i})).filter((o,i,all)=>all.findIndex(other=>other.node===o.node)===i).map(o=>{const [x,y]=snapshot.pos[o.node],type=snapshot.nodeTypes[o.node]||'建筑';return `<button class="destination ${pendingRoute?.node===o.node?'routeDestinationActive':''}" data-option="${o.index}" aria-label="终点 ${esc(o.node)}，${esc(type)}，${counts[o.node]} 条路线" title="${esc(o.node)} · ${esc(type)}；${counts[o.node]} 条路线可在下方选择" style="left:${mapPercent([x,y])[0]}%;top:${mapPercent([x,y])[1]}%" ${moving?'disabled':''}><span class="destinationHalo" aria-hidden="true"></span></button>`;}).join('');
   document.querySelectorAll('[data-option]').forEach(el=>el.onclick=()=>{if(moving)return;const index=Number(el.dataset.option),choice=options[index];pendingRoute={cardId:selected.id,from:own.position,node:choice.node,route:[...choice.route],index};renderCards();});
   if($('confirmMove'))$('confirmMove').onclick=async()=>{if(moving||!pendingRoute)return;const {cardId,route}=pendingRoute,kind=moveKind;moving=true;renderCards();const ok=await action(kind==='extra'?'extra-move':'move',{cardId,route});moving=false;if(ok){selected=null;pendingRoute=null;}renderCards();};
   if($('cancelRoute'))$('cancelRoute').onclick=cancelRouteSelection;
@@ -440,7 +456,7 @@ function renderTable(){
   $('rows').innerHTML=rounds.length?rounds.map(round=>`<tr><td>第 ${round} 轮</td>${'ABC'.split('').map(id=>{
     const r=snapshot.records.find(x=>x.round===round&&x.team===id);
     if(!r)return '<td><span class="muted">—</span></td>';
-    const move=cardButton(r.card,`移动：${r.card.name} · ${r.card.steps} 步`,`移动 ${r.card.steps} 步`);
+    const move=r.card?cardButton(r.card,`移动：${r.card.name} · ${r.card.steps} 步`,`移动 ${r.card.steps} 步`):'<span class="muted">交锋：当场选人</span>';
     const played=r.usedCards?.length?r.usedCards:r.usedCard?[r.usedCard]:[];
     const used=played.length?played.map(c=>`${cardButton(c,`使用：${c.name} · ${c.result}`,c.effect)}<p class="recordEffect">${esc(c.effect)}</p>`).join(''):`<span class="muted">使用：${r.cardSkipped?'无':'待选择'}</span>`;
     const event=(r.events?.length?r.events:r.event?[r.event]:[]).map(c=>`<div>${cardButton(c,`事件：${c.name}`,c.effect||'')}</div>`).join('');
@@ -451,13 +467,15 @@ function renderTable(){
   document.querySelectorAll('[data-table-card]').forEach(el=>el.onclick=()=>{detailPreview=previews[Number(el.dataset.tableCard)];renderPreview();});
   $('battles').innerHTML=snapshot.battles.map(b=>{
     const first=snapshot.records.find(r=>r.id===b.first),second=snapshot.records.find(r=>r.id===b.second),a=first?.team,c=second?.team;
-    return `<div class="battle ${b.status==='已结算'?'settled':''}">第 ${b.round} 轮 · ${esc(b.node)} · ${b.status}${b.winner?' · '+b.winner+' 胜':''}<div class="battleLine"><span class="battlePlayer">${avatar(first?.defender,a+' 队')}${esc(a||'?')} 队 · ${esc(first?.defender?.account||'待选人')}</span><b>⚔</b><span class="battlePlayer">${avatar(second?.defender,c+' 队')}${esc(c||'?')} 队 · ${esc(second?.defender?.account||'待选人')}</span></div>${snapshot.role==='host'&&b.status==='待结算'?`<div><button data-battle="${b.id}" data-winner="${a}">${a} 胜</button><button data-battle="${b.id}" data-winner="${c}">${c} 胜</button></div>`:''}</div>`;
+    return `<div class="battle ${b.status==='已结算'?'settled':''}">第 ${b.round} 轮 · ${esc(b.node)} · ${b.status}${b.winner?' · '+b.winner+' 胜':''}<div class="battleLine"><span class="battlePlayer">${avatar(first?.defender,a+' 队')}${esc(a||'?')} 队 · ${esc(first?.defender?.account||'待选人')}</span><b>⚔</b><span class="battlePlayer">${avatar(second?.defender,c+' 队')}${esc(c||'?')} 队 · ${esc(second?.defender?.account||'待选人')}</span></div>${Object.entries(b.freeSong||{}).map(([id])=>`<p class="notice">${esc(id)} 队本次对战可自行选曲</p>`).join('')}${snapshot.role==='host'&&b.status==='待结算'?`<div><button data-battle="${b.id}" data-winner="${a}">${a} 胜</button><button data-battle="${b.id}" data-winner="${c}">${c} 胜</button></div>`:''}</div>`;
   }).join('');
   document.querySelectorAll('[data-battle]').forEach(el=>el.onclick=()=>action('battle',{id:el.dataset.battle,winner:el.dataset.winner}));
   const challenges=snapshot.role==='host'?Object.entries(snapshot.challenges||{}).map(([id,c])=>`<div class="battle"><b>${id} 队使用「${esc(c.card.name)}」</b><p class="notice">挑战条件：${esc(c.card.condition)}${c.freeSong?' · 本次可自行选曲':''}</p>${c.debuffs?.length?`<p class="notice">本次 debuff：${c.debuffs.map(d=>esc(d.effect)).join('；')}</p>`:''}<button data-challenge="${id}" data-success="true">挑战成功</button> <button data-challenge="${id}" data-success="false">挑战失败</button></div>`).join(''):'';
-  $('hostTools').innerHTML=snapshot.role==='host'?`<h3>待判定的卡牌挑战</h3>${challenges||'<p class="notice">暂无</p>'}<h3>裁判调分</h3><div class="scoreTools">`+ 'ABC'.split('').map(id=>`<button data-score="${id}" data-value="-2">${id} −2</button><button data-score="${id}" data-value="1">${id} +1</button><button data-score="${id}" data-value="2">${id} +2</button>`).join('')+'</div>':'';
+  $('hostTools').innerHTML=snapshot.role==='host'?`<h3>待判定的卡牌挑战</h3>${challenges||'<p class="notice">暂无</p>'}<h3>裁判调分</h3><div class="scoreTools">`+ 'ABC'.split('').map(id=>`<button data-score="${id}" data-value="-2">${id} −2</button><button data-score="${id}" data-value="1">${id} +1</button><button data-score="${id}" data-value="2">${id} +2</button>`).join('')+'</div><h3>裁判调整金钱</h3><div class="scoreTools">'+'ABC'.split('').map(id=>`<button data-money="${id}" data-value="-100">${id} −100</button><button data-money="${id}" data-value="100">${id} +100</button>`).join('')+'</div><h3>强制结束回合</h3><div class="scoreTools">'+'ABC'.split('').map(id=>`<button data-force-end-turn="${id}">${id} 队 · 第 ${snapshot.teams[id].round} 回合</button>`).join('')+'</div>':'';
   document.querySelectorAll('[data-challenge]').forEach(el=>el.onclick=()=>action('resolve-challenge',{team:el.dataset.challenge,success:el.dataset.success==='true'}));
   document.querySelectorAll('[data-score]').forEach(el=>el.onclick=()=>action('score',{team:el.dataset.score,value:Number(el.dataset.value)}));
+  document.querySelectorAll('[data-money]').forEach(el=>el.onclick=()=>action('money',{team:el.dataset.money,value:Number(el.dataset.value)}));
+  document.querySelectorAll('[data-force-end-turn]').forEach(el=>el.onclick=()=>{const id=el.dataset.forceEndTurn;if(confirm(`强制结束 ${id} 队第 ${snapshot.teams[id].round} 回合并开启下一回合？本回合未完成的操作将取消。`))action('force-end-turn',{team:id});});
 }
 function renderPending(){
   const reaction=snapshot.pendingCardReaction;
@@ -516,12 +534,14 @@ $('battleModal').onclick=e=>{if(e.target===$('battleModal'))$('battleModal').cla
 $('openHandHelp').onclick=()=>{$('handHelp').classList.add('show');$('closeHandHelp').focus();};
 $('closeHandHelp').onclick=()=>$('handHelp').classList.remove('show');
 $('handHelp').onclick=e=>{if(e.target===$('handHelp'))$('handHelp').classList.remove('show');};
+$('closeDefenderModal').onclick=()=>$('defenderModal').classList.remove('show');
+$('defenderModal').onclick=e=>{if(e.target===$('defenderModal'))$('defenderModal').classList.remove('show');};
 document.querySelectorAll('[data-game-view]').forEach(button=>button.onclick=()=>setGameView(button.dataset.gameView));
 $('zoomOut').onclick=()=>changeMapZoom(mapZoom-.25);
 $('zoomReset').onclick=()=>changeMapZoom(1);
 $('zoomIn').onclick=()=>changeMapZoom(mapZoom+.25);
 setGameView('map');
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('battleModal').classList.remove('show');$('handHelp').classList.remove('show');}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('battleModal').classList.remove('show');$('handHelp').classList.remove('show');$('defenderModal').classList.remove('show');}});
 if('ResizeObserver' in window)new ResizeObserver(fitMap).observe(document.querySelector('.mapViewport'));
 else window.addEventListener('resize',fitMap);
 if(session)refresh();else showLobby('请从游戏房间页面进入');setInterval(refresh,1000);

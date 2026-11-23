@@ -3,10 +3,13 @@
 .routeHalo,.routeLine{fill:none;stroke-linecap:round;stroke-linejoin:round}.routeHalo{stroke:#ff9929;stroke-width:32;opacity:.7;filter:drop-shadow(0 0 24px #ff6a00);animation:routePulse .9s ease-in-out infinite alternate}.routeLine{stroke:#fff2a2;stroke-width:13;stroke-dasharray:24 15;animation:routeMarch .8s linear infinite}.routeStep{fill:#fff5b9;stroke:#e9821e;stroke-width:8;filter:drop-shadow(0 0 15px #ff6a00);animation:routePulse .9s ease-in-out infinite alternate}
 @keyframes routePulse{from{opacity:.45}to{opacity:1}}@keyframes routeMarch{to{stroke-dashoffset:-39}}
 .marker{transition:left .38s ease,top .38s ease}
-.destination{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;min-width:42px;min-height:42px;border:3px solid #fff1a7;border-radius:22px;background:#e9aa32;color:#172139;box-shadow:0 0 0 6px #ffdf824d,0 5px 16px #0008;font-size:12px;padding:6px 8px;z-index:3}
-.destination:hover,.destination:focus-visible{background:#ffe08b;box-shadow:0 0 0 9px #ffdf8280,0 5px 16px #0008}
+.destination{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;width:8.8%;min-width:38px;max-width:88px;aspect-ratio:1;border:0;border-radius:50%;background:transparent;padding:0;z-index:3;overflow:visible}
+.destinationHalo{position:absolute;inset:14%;border:3px solid #ffe59d;border-radius:50%;box-shadow:0 0 12px 3px #ffba5999;animation:destinationZoom 1.3s ease-in-out infinite alternate;pointer-events:none}
+.destination:hover .destinationHalo,.destination:focus-visible .destinationHalo{border-color:#fff8c5;box-shadow:0 0 19px 7px #ffcc78}
+.destination:focus-visible{outline:2px solid #fff8c5;outline-offset:4px}
 .destination:disabled{opacity:.55;cursor:wait}
-.destination.routeDestinationActive{background:#fff4a7;box-shadow:0 0 0 10px #ff9b57aa,0 0 28px 14px #ff7e31;animation:routePulse .9s ease-in-out infinite alternate}
+.destination.routeDestinationActive .destinationHalo{border-color:#ff9b57;box-shadow:0 0 18px 7px #ff7e31}
+@keyframes destinationZoom{from{transform:scale(.88)}to{transform:scale(1.16)}}
 .choices .routeChoiceActive{background:#ca7830;border:2px solid #ffe59d}.routeConfirmation{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0;padding:10px 12px;border:2px solid #ffcd74;border-radius:12px;background:#51351f;color:#fff4dc}.routeConfirmation:empty{display:none}.routeConfirmation>div:first-child{display:flex;flex-direction:column;gap:4px;min-width:0}.routeConfirmation span{font-size:12px;overflow-wrap:anywhere}.routeConfirmActions{display:flex;gap:8px;flex:none}.routeConfirmActions button:last-child{background:#455778;color:#fff}
 .testActions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
 .testLink{display:inline-block;padding:9px 12px;border-radius:9px;background:#31517e;color:#edf4ff;text-decoration:none;font-size:13px;font-weight:650}
@@ -64,7 +67,7 @@
 .effectStage p{font-size:22px;margin:8px 0 20px}.effectCards{display:flex;justify-content:center;gap:18px}.effectCards img{height:min(55vh,460px);max-width:42vw;object-fit:contain;border-radius:10px;box-shadow:0 18px 45px #000b}
 @keyframes effectArrival{0%{opacity:0;transform:scale(.95)}15%{opacity:1;transform:scale(1)}82%{opacity:1}100%{opacity:0}}
 @media(prefers-reduced-motion:reduce){.card,.marker{transition:none}.card.playable,.marker.ghostReveal,#effectIntro.show{animation:none;opacity:1}}
-@media(prefers-reduced-motion:reduce){.routeHalo,.routeLine,.routeStep,.destination.routeDestinationActive{animation:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.routeHalo,.routeLine,.routeStep,.destinationHalo{animation:none;opacity:1}}
 
 /* Board layout: team rail, map and record, hand rail. */
 #game{max-width:none;padding:12px}
@@ -194,6 +197,15 @@ body.playing #game[hidden]{display:none}
 @keyframes diceTumble{to{transform:rotateX(180deg) rotateY(180deg) rotateZ(90deg)}}@keyframes diceLand{from{transform:rotateX(45deg) rotateY(40deg) scale(1.2)}to{transform:rotateX(0) rotateY(0) scale(1)}}
 @keyframes exTimeArrival{0%{opacity:0;transform:scale(.84)}17%{opacity:1;transform:scale(1.04)}32%{transform:scale(1)}82%{opacity:1}100%{opacity:0}}
 .defenderChoices{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.defenderChoices button{display:flex;align-items:center;gap:7px;background:#314d74}.defenderChoices img,.defenderChoices .avatarFallback,.battlePlayer img,.battlePlayer .avatarFallback{width:32px;height:32px;object-fit:cover;border-radius:50%;display:grid;place-items:center;background:#526381}.battleLine{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:8px}.battlePlayer{display:inline-flex;align-items:center;gap:6px;font-weight:700}.exTimeTag{color:#ffe093;font-weight:900}
+#defenderModal{display:none;position:fixed;inset:0;z-index:80;align-items:center;justify-content:center;padding:16px;background:#0b1122d9}
+#defenderModal.show{display:flex}
+.defenderModalBody{position:relative;width:min(480px,100%);max-height:90dvh;overflow:auto;padding:26px}
+#closeDefenderModal{position:absolute;right:12px;top:12px;width:36px;height:36px;padding:0;font-size:24px}
+.defenderModalBody h2{padding-right:40px}.defenderModalBody p{margin:9px 0 18px;color:#aab9d7}
+.defenderModalChoices{display:grid;gap:10px}
+.defenderModalChoices button{display:flex;align-items:center;gap:13px;width:100%;padding:13px;text-align:left;background:#314d74;border:1px solid #5977aa}
+.defenderModalChoices button:hover{background:#456a9e}
+.defenderModalChoices img,.defenderModalChoices .avatarFallback{width:48px;height:48px;object-fit:cover;border-radius:12px;display:grid;place-items:center;background:#526381}
 @keyframes battleArrival{0%{opacity:0;transform:scale(1.08)}15%{opacity:1;transform:scale(1)}75%{opacity:1}100%{opacity:0}}
 .handPanel .cards[hidden],#judgePanel[hidden],#openHandHelp[hidden]{display:none}
 #judgePanel{min-height:0;flex:1;overflow:auto;scrollbar-width:thin}

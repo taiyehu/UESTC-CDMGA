@@ -95,6 +95,7 @@ const operations={roll:(r,w,b)=>game.roll(r,w,b.cardId,b.value),
   'use-card':(r,w,b)=>game.useCard(r,w,b.cardId),
   'counter-response':(r,w,b)=>game.counterResponse(r,w,b.use,b.cardId),
   'skip-use':(r,w)=>game.skipUse(r,w),
+  'discard-target-card':(r,w,b)=>game.discardTargetCard(r,w,b.cardId),
   'resolve-challenge':(r,w,b)=>game.resolveChallenge(r,w,b.team,b.success),
   'card-target':(r,w,b)=>game.chooseCardTarget(r,w,b.target),
   'card-reroll':(r,w,b)=>game.resolveReroll(r,w,b.again),
@@ -108,6 +109,8 @@ const operations={roll:(r,w,b)=>game.roll(r,w,b.cardId,b.value),
   move:(r,w,b)=>game.move(r,w,b.cardId,b.route),
   'reserve-member':(r,w,b)=>game.reserveMember(r,w,b.memberId),
   'end-turn':(r,w)=>game.endTurn(r,w),
+  'force-end-turn':(r,w,b)=>game.forceEndTurn(r,w,b.team),
+  money:(r,w,b)=>game.money(r,w,b.team,b.value),
   score:(r,w,b)=>game.score(r,w,b.team,b.value),
   battle:(r,w,b)=>game.battle(r,w,b.id,b.winner),
   reset:(r,w)=>game.reset(r,w)};
@@ -301,7 +304,7 @@ const server=http.createServer(async(req,res)=>{
         if(!rows.length)throw fail(500,'房间状态缺失');
         const state=game.hydrate(json(rows[0].state_json));
         state.deadlineAt=room.course_end_time?new Date(room.course_end_time).getTime():null;
-        try {if(state.pendingCardReaction&&!['counter-response','resolve-challenge'].includes(match[2]))throw Error('请先处理卡牌反制');operations[match[2]](state,who,b);game.evaluateEnd(state);} catch(e){throw fail(400,e.message);}
+        try {if(state.pendingCardReaction&&!['counter-response','resolve-challenge','force-end-turn','money'].includes(match[2]))throw Error('请先处理卡牌反制');operations[match[2]](state,who,b);game.evaluateEnd(state);} catch(e){throw fail(400,e.message);}
         const version=Number(rows[0].version)+1;
         await db.query('UPDATE game_room_state SET version=?,state_json=? WHERE room_id=?',[version,JSON.stringify(state),room.id]);
         await db.query('INSERT INTO game_action_log(room_id,seq,actor_identity_id,seat,action_type,payload_json,result_version) VALUES(?,?,?,?,?,?,?)',[room.id,version,user.id,who.id||null,match[2],JSON.stringify(b),version]);

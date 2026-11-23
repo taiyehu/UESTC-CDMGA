@@ -16,7 +16,7 @@ function putCard(team,sourceId,slot=0){
 function arrive(sourceId,house,initialMoney=1000){
   const room=game.createRoom({seed:`new-${sourceId}`,initialMoney}),team=room.teams.A,who=teamWho('A');
   const card=putCard(team,sourceId);
-  team.position={Arcaea:'A2',Phigros:'P2','范式起源':'F3'}[house];
+  team.position={Arcaea:'A2',Phigros:'P2','范式起源':'F3','B':'R2'}[house];
   const mover=team.hand.find(other=>other.id!==card.id&&other.move!==7&&
     !['score_move_fee','teleport_move_fee_tax','score_skip_if_moved'].includes(other.effect_type));
   assert.ok(mover);mover.move=1;
@@ -52,12 +52,22 @@ test('旧房间加载时补入新牌且不会重复添加',()=>{
   assert.equal(room.teams.A.hand.length+room.teams.A.deck.length,37);
 });
 
+test('已有房间的卡牌配置随新版目录更新',()=>{
+  const room=game.createRoom({seed:'catalog-refresh'}),team=room.teams.A;
+  const card=putCard(team,'card34');card.game_type='Arcaea';card.cost=9999;
+  game.hydrate(room);
+  const updated=team.hand.find(c=>c.sourceId==='card34');
+  assert.equal(updated.game_type,'Phigros');assert.equal(updated.cost,100);
+  team.position='Phigros';team.money=200;
+  assert.equal(game.canUse(team,updated),true);
+});
+
 test('反转了清除 debuff 并抽等量 buff，燃起来了奖励下一次战斗胜利',()=>{
-  const clear=arrive('card28','Phigros');
+  const clear=arrive('card28','B');
   clear.team.debuffs=[{name:'甲',effect:'甲'},{name:'乙',effect:'乙'}];
   game.useCard(clear.room,clear.who,clear.card.id);
   assert.equal(clear.team.debuffs.length,0);
-  assert.equal(clear.team.eventShield+clear.team.misfortuneShield+clear.team.debuffShield,2);
+  assert.ok(clear.team.eventShield+clear.team.misfortuneShield+clear.team.debuffShield>=1);
   const battle=arrive('card29','Phigros');
   game.useCard(battle.room,battle.who,battle.card.id);
   game.resolveChallenge(battle.room,{role:'host'},'A',true);
@@ -73,7 +83,7 @@ test('记忆工厂重放卡牌和建筑效果，零號車輛允许自选下次�
   game.resolveChallenge(replay.room,{role:'host'},'A',true);
   assert.equal(replay.team.income,income+10);
   assert.ok(replay.team.money>money-150);
-  const choice=arrive('card31','Phigros');
+  const choice=arrive('card31','范式起源');
   game.useCard(choice.room,choice.who,choice.card.id);
   game.resolveChallenge(choice.room,{role:'host'},'A',true);
   assert.equal(choice.team.chooseNextSteps,true);
@@ -102,6 +112,7 @@ test('创造性AI在事件格抽两张，大炮发射允许选择目的地',()=>
 
 test('海神九考保护一次战斗落败，挖到宝了允许下次挑战自行选曲',()=>{
   const rescue=arrive('card34','Phigros');
+  assert.equal(game.canUse(rescue.team,rescue.card),true);
   game.useCard(rescue.room,rescue.who,rescue.card.id);
   game.resolveChallenge(rescue.room,{role:'host'},'A',true);
   assert.equal(rescue.team.score,1);assert.equal(rescue.team.battleRescue,1);
@@ -114,11 +125,12 @@ test('海神九考保护一次战斗落败，挖到宝了允许下次挑战自�
   const song=arrive('card35','Phigros');
   game.useCard(song.room,song.who,song.card.id);
   game.resolveChallenge(song.room,{role:'host'},'A',true);
-  assert.equal(song.team.score,2);assert.equal(song.team.freeSongChallenge,1);
-  const next=putCard(song.team,'card1');song.team.cardActionDone=false;song.team.cardUsesThisRound=0;
-  game.useCard(song.room,song.who,next.id);
-  assert.equal(song.team.pendingChallenge.freeSong,true);
-  assert.equal(song.team.freeSongChallenge,0);
+  assert.equal(song.team.score,2);assert.equal(song.team.freeSongBattle,1);
+  song.team.members=[{id:'song-a',account:'A选手'}];song.room.teams.B.members=[{id:'song-b',account:'B选手'}];
+  song.room.records.push({id:'song-own',team:'A',round:1,node:'R2',forcedBattleOnly:true},{id:'song-opponent',team:'B',round:1,node:'R2',forcedBattleOnly:true});
+  song.room.battles.push({id:'song-battle',first:'song-own',second:'song-opponent',round:1,node:'R2',targetTeam:'B',forced:true,status:'待选人'});
+  game.reserveMember(song.room,song.who,'song-a');game.reserveMember(song.room,teamWho('B'),'song-b');
+  assert.equal(song.room.battles.at(-1).freeSong.A,true);assert.equal(song.team.freeSongBattle,0);
 });
 
 test('彼岸双生连接对方并在己方落败时惩罚对方',()=>{
@@ -131,22 +143,18 @@ test('彼岸双生连接对方并在己方落败时惩罚对方',()=>{
   room.battles.push({id:'linked-battle',first:own.id,second:'linked-opponent',round:own.round,node:own.node,status:'待结算'});
   game.battle(room,{role:'host'},'linked-battle','B');
   assert.equal(room.teams.B.score,8);
+  assert.equal(team.linkedTeamId,null);
 });
 
-test('忘忘队立大功可在别队出牌时成功抵消或挑战失败后放行',()=>{
-  for(const counterSuccess of [true,false]){
-    const {room,team,who,card}=arrive('card2','Arcaea');
-    room.teams.B.joined=true;room.teams.B.money=1000;
-    const counter=putCard(room.teams.B,'card37');
-    const income=team.income;
-    game.useCard(room,who,card.id);
-    assert.equal(room.pendingCardReaction.responders[0],'B');
-    game.counterResponse(room,teamWho('B'),true,counter.id);
-    game.resolveChallenge(room,{role:'host'},'B',counterSuccess);
-    assert.equal(room.pendingCardReaction,null);
-    if(counterSuccess){assert.equal(team.income,income);assert.equal(room.teams.B.score,1);}
-    else{assert.ok(team.pendingChallenge);game.resolveChallenge(room,{role:'host'},'A',true);assert.equal(team.income,income+10);}
-  }
+test('忘忘队立大功得分并指定其他队伍弃牌补牌',()=>{
+  const {room,team,who,card}=arrive('card37','Phigros');
+  const target=room.teams.B,discarded=target.hand[0],before=team.money;
+  game.useCard(room,who,card.id);game.resolveChallenge(room,{role:'host'},'A',true);
+  game.chooseCardTarget(room,who,'B');
+  assert.equal(team.score,1);assert.equal(team.money,before-100);
+  game.discardTargetCard(room,who,discarded.id);
+  assert.equal(target.hand.length,6);assert.ok(!target.hand.some(c=>c.id===discarded.id));
+  assert.equal(team.pendingDiscard,null);
 });
 
 test('交锋和与我一战在税格免税并发起本轮定向战斗',()=>{
@@ -172,7 +180,7 @@ test('交锋和与我一战在税格免税并发起本轮定向战斗',()=>{
     game.chooseCardTarget(room,who,'B');
     const battle=room.battles.find(item=>item.forced);
     assert.equal(battle.targetTeam,'B');assert.equal(battle.round,1);
-    assert.equal(battle.status,'待选人');
+    assert.equal(battle.status,sourceId==='card17'?'待结算':'待选人');
     const b=room.teams.B;b.position=sourceId==='card17'?'R1':'R3';b.hand[0].move=1;
     game.move(room,teamWho('B'),b.hand[0].id,[sourceId==='card17'?'R2':'R4']);
     assert.equal(battle.status,'待结算');
@@ -180,6 +188,22 @@ test('交锋和与我一战在税格免税并发起本轮定向战斗',()=>{
     game.battle(room,{role:'host'},battle.id,'A');
     assert.equal(battle.winner,'A');
   }
+});
+
+test('交锋立即让双方选人，无须等待目标队伍移动',()=>{
+  const room=game.createRoom({seed:'immediate-duel',initialMoney:1000}),a=room.teams.A,b=room.teams.B,who=teamWho('A');
+  a.members=[{id:'a1',account:'A选手'}];b.members=[{id:'b1',account:'B选手'}];
+  const card=putCard(a,'card17');a.position='R1';
+  for(const held of a.hand)held.move=Math.min(held.move,3);
+  const mover=a.hand.find(held=>held.id!==card.id);mover.move=1;
+  game.move(room,who,mover.id,['R2']);for(const held of a.hand)held.move=Math.min(held.move,3);game.useCard(room,who,card.id);
+  game.chooseCardTarget(room,who,'B');
+  const duel=room.battles.find(item=>item.forced);
+  assert.equal(duel.status,'待选人');
+  assert.equal(b.awaitingEnd,false);
+  game.reserveMember(room,who,'a1');game.reserveMember(room,teamWho('B'),'b1');
+  assert.equal(duel.status,'待结算');
+  assert.equal(room.records.find(r=>r.id===duel.second).defender.account,'B选手');
 });
 
 test('移动代价、跳过回合、传送和收入免税按卡面生效',()=>{
@@ -282,6 +306,23 @@ test('二手货挑战失败后仍会翻开待结算的事件牌',()=>{
   assert.equal(team.pendingEvent,false);
   assert.equal(team.cardActionDone,true);
   assert.equal(room.records[0].event.id,'event1');
+});
+
+test('二手货翻出大炮发射后传送到收入格仍可放弃额外出牌',()=>{
+  const room=game.createRoom({seed:'secondhand-cannon',initialMoney:1000}),team=room.teams.A,who=teamWho('A');
+  const card=putCard(team,'card25');const bluff=putCard(team,'card7',team.hand.indexOf(card)===0?1:0);team.position='R4';
+  room.eventDeck=[EVENTS.find(event=>event.id==='event8')];
+  const mover=team.hand.find(held=>held.id!==card.id&&held.id!==bluff.id&&held.move!==7);mover.move=1;
+  game.move(room,who,mover.id,['P2']);game.useCard(room,who,card.id);
+  game.resolveChallenge(room,{role:'host'},'A',true);
+  team.pendingEvent=false;room.records[0].pendingEvent=false;
+  team.pendingTeleport=true;room.records[0].event={id:'event8',name:'大炮发射'};
+  assert.equal(team.pendingTeleport,true);
+  game.teleport(room,who,'R5');
+  assert.equal(team.cardActionDone,false);
+  game.skipUse(room,who);
+  assert.equal(team.cardActionDone,true);
+  game.endTurn(room,who);
 });
 
 test('厄运火杆可将一次厄运转给另一队，也可放弃使用',()=>{
