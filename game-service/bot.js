@@ -42,13 +42,14 @@ function bestMovement(room, seat, strategy, extra = false) {
   let best = null;
   for (const card of team.hand) {
     if (team.pendingRoll && card.id !== team.pendingRoll.cardId) continue;
-    const steps = card.move === 7 ? team.pendingRoll?.cardId === card.id ? team.pendingRoll.value : 3 : card.move;
-    for (const route of routes(team.position, steps)) {
-      const value = routeValue(room, seat, strategy, route, extra) - (card.move === 7 && team.pendingRoll?.cardId !== card.id ? .5 : 0);
-      if (!best || value > best.value) best = { card, route, value };
+    const stepOptions=team.pendingRoll?[team.pendingRoll.value]:team.chooseNextSteps?[1,2,3,4,5,6]:[card.move===7?3:card.move];
+    for (const steps of stepOptions) for (const route of routes(team.position, steps)) {
+      const value = routeValue(room, seat, strategy, route, extra) - (card.move === 7 && !team.pendingRoll && !team.chooseNextSteps ? .5 : 0);
+      if (!best || value > best.value) best = { card, route, steps, value };
     }
   }
   if (!best) return null;
+  if (team.chooseNextSteps && !team.pendingRoll) return act('roll', { cardId: best.card.id, value: best.steps });
   if (best.card.move === 7 && team.pendingRoll?.cardId !== best.card.id) return act('roll', { cardId: best.card.id });
   return act(extra ? 'extra-move' : 'move', { cardId: best.card.id, route: best.route });
 }
@@ -87,11 +88,11 @@ function choose(room, seat, strategy, humanSeats) {
     const target = room.teams[team.pendingDiscard];
     return target?.hand.length ? act('discard-target-card', { cardId: target.hand[0].id }) : null;
   }
+  if (team.pendingRedraw) return act('redraw-card', { cardId: [...team.hand].sort((a,b)=>cardValue(a,strategy)-cardValue(b,strategy))[0].id });
   const forced=room.battles.find(b=>b.forced&&b.status==='待选人'&&[b.first,b.second].some(id=>room.records.some(r=>r.id===id&&r.team===seat&&!r.defender)));
   if(forced&&team.members.length){const member=game.eligibleMembers(room,team)[0];if(member)return act('reserve-member',{memberId:member.id});}
   if (team.pendingTarget) {
-    const eligible=opponents.filter(id=>!team.pendingTarget.effect_type.startsWith('challenge_battle_')||
-      room.teams[id].immuneFromRound==null||room.teams[id].immuneFromRound>team.round);
+    const eligible=opponents.filter(id=>!team.pendingTarget.effect_type.startsWith('challenge_battle_')||room.teams[id].immuneFromRound==null||room.teams[id].immuneFromRound>team.round);
     return eligible.length ? act('card-target', { target: eligible[0] }) : null;
   }
   if (team.pendingReroll) return act('card-reroll', { again: team.pendingReroll.firstRoll <= 3 });

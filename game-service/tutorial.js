@@ -40,6 +40,7 @@ function prepareScene(progress) {
   team.pendingChallenge=null;
   team.pendingMisfortuneCard=null;
   team.pendingTarget=null;
+  team.pendingRedraw=false;
   team.awaitingEnd=false;
   team.cardActionDone=false;
   team.houseActionDone=false;

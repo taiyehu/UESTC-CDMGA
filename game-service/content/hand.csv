@@ -32,7 +32,10 @@ card30,记忆工厂,3,150,Arcaea,触发上一张卡牌的效果和上一次经�
 card31,零號車輛,6,50,fanshi,"+1积分，下一次步数在1~6中自行选择",挑战零號車輛 MSV FC,,contain,0.5,0.5,score_choose_next_steps,1,0,1
 card32,创造性AI,4,200,event,"永久效果：触发事件格时，抽取两个事件效果",无,,contain,0.5,0.5,double_event,2,0,1
 card33,!？叠？！,5,50,event,收入+10,无,,contain,0.5,0.5,income,10,0,1
-card34,海神九考,6,100,Phigros,"获得1点积分，并获得单次效果复活吧我的爱人：你的队友在对战中落败时，无视本次挑战结果并获得30金钱",游玩Ωκεανο MSV难度达到1005000分,,contain,0.5,0.5,score_battle_rescue,1,30,1
-card35,挖到宝了,4,400,Phigros,"获得2点积分，并获得单次buff“已添加到我喜欢的音乐”：你的队伍在下次对战时可以无视本次选曲并自行选曲",游玩CRYSTAL MINING MSV难度达到1004444分以上,,contain,0.5,0.5,score_free_song,2,0,1
+card34,海神九考,6,100,fanshi,"获得1点积分，并获得单次效果复活吧我的爱人：你的队友在对战中落败时，无视本次挑战结果并获得30金钱",游玩Ωκεανο MSV难度达到1005000分,,contain,0.5,0.5,score_battle_rescue,1,30,1
+card35,挖到宝了,4,400,fanshi,"获得2点积分，并获得单次buff“已添加到我喜欢的音乐”：你的队伍在下次对战时可以无视本次选曲并自行选曲",游玩CRYSTAL MINING MSV难度达到1004444分以上,,contain,0.5,0.5,score_free_song,2,0,1
 card36,彼岸双生,2,300,Arcaea,"获得2点积分，并获得一次效果彼岸双生：选择一支队伍建立单向连接；在对战中若己方失败，对方也受到双倍惩罚，己方成功则无效果",游玩Tie me down gently FTR难度达到998w分,,contain,0.5,0.5,score_link_team,2,0,1
 card37,忘忘队立大功,3,100,Phigros,"获得1点积分，选择一个队伍，丢弃其一张手牌",游玩ATHAZA IN难度达到99.8ACC,,contain,0.5,0.5,score_discard_other,1,0,1
+card38,蜘蛛侠之我是MJ,2,100,all,利用蛛丝瞬移到其他队在当前回合的位置且不触发对战,无,,contain,0.5,0.5,teleport_other_team,0,0,1
+card39,six seven,6,150,all,"获得单次效果6767：该回合出牌数加1，选一张牌丢入弃牌堆并重新抽取一张牌",无,,contain,0.5,0.5,extra_use_redraw_one,0,0,1
+card40,重启,1,100,all,"本回合出牌数+1，将你当前所有手牌丢弃并重新抽取六张手牌",无,,contain,0.5,0.5,extra_use_redraw_all,0,0,1

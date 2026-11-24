@@ -57,7 +57,7 @@ test('移动后必须手动结束回合才能再次移动',()=>{
   assert.throws(()=>g.move(room,who,t.hand[0].id,route),/结束当前回合/);
   if(!t.cardActionDone)g.skipUse(room,who);
   if(t.pendingTeleport)g.teleport(room,who,'R1');
-  g.endTurn(room,who);
+  finishOptionalTurn(room,who);
   assert.equal(t.round,2);assert.equal(t.awaitingEnd,false);
   assert.equal(g.state(room,who).teams.A.round,2);
 });
@@ -285,13 +285,16 @@ test('队伍地图按自身当前回合显示领先队伍快照，未行动队�
     b.hand[0].move=1;g.move(room,whoB,b.hand[0].id,[node]);
     if(node!=='R4')finishOptionalTurn(room,whoB);
   }
+  room.records[0].defender={id:'guard-1',account:'第一轮留守',avatar:'/guard-1.png'};
+  room.records[2].defender={id:'guard-3',account:'第三轮留守',avatar:'/guard-3.png'};
   const aView=g.state(room,{role:'team',id:'A'});
-  assert.deepEqual(aView.mapView.B,{node:'R2',ghost:false,actualRound:3});
+  assert.deepEqual(aView.mapView.B,{node:'R2',ghost:false,actualRound:3,defender:room.records[0].defender});
   assert.equal(aView.teams.B.position,'R2');
   assert.equal(aView.mapView.C.node,room.teams.C.position);
   assert.equal(aView.mapView.C.ghost,true);
   const hostView=g.state(room,{role:'host'});
   assert.equal(hostView.mapView.B.node,'R4');
+  assert.deepEqual(hostView.mapView.B.defender,room.records[2].defender);
   const a=room.teams.A;a.hand[0].move=1;g.move(room,{role:'team',id:'A'},a.hand[0].id,[g.GRAPH[a.position][0]]);
   if(!a.cardActionDone)g.skipUse(room,{role:'team',id:'A'});
   finishOptionalTurn(room,{role:'team',id:'A'});
@@ -439,38 +442,38 @@ test('经过与停留收入税格按规则结算，金钱不会低于零',()=>{
   team.position='R4';team.hand[0].move=1;
   const landed=g.move(room,who,team.hand[0].id,['R5']);
   assert.equal(team.money,60);assert.equal(landed.moneyDelta,60);
-  g.endTurn(room,who);
+  finishOptionalTurn(room,who);
   team.position='R4';team.hand[0].move=2;
   const crossed=g.move(room,who,team.hand[0].id,['R5','R6']);
   assert.equal(crossed.moneyDelta,10);
   assert.deepEqual(crossed.moneyEffects.map(e=>e.amount),[30,-20]);
   assert.equal(team.money,70);
-  g.endTurn(room,who);
+  finishOptionalTurn(room,who);
   team.money=0;team.position='R1';team.hand[0].move=1;
   const taxed=g.move(room,who,team.hand[0].id,['R2']);
   assert.equal(team.money,0);assert.equal(taxed.moneyDelta,0);
 });
 
-test('三十七张成品手牌独立抽弃洗牌，数量始终守恒',()=>{
+test('四十张成品手牌独立抽弃洗牌，数量始终守恒',()=>{
   const room=g.createRoom();const token=g.join(room,'A');g.join(room,'B');const who=g.viewer(room,token);
   const bBefore=JSON.stringify(room.teams.B);
-  for(let i=0;i<33;i++){
+  for(let i=0;i<36;i++){
     const team=room.teams.A,card=team.hand.find(c=>c.move!==7);
     team.position='R1';card.move=1;
     g.move(room,who,card.id,['R2']);
     finishOptionalTurn(room,who);
     assert.equal(team.hand.length,6);
-    assert.equal(team.hand.length+team.deck.length+team.discard.length,37);
+    assert.equal(team.hand.length+team.deck.length+team.discard.length,40);
   }
-  assert.equal(room.teams.A.deck.length+room.teams.A.discard.length,31);
+  assert.equal(room.teams.A.deck.length+room.teams.A.discard.length,34);
   assert.equal(JSON.stringify(room.teams.B),bBefore);
-  assert.equal(room.records.length,33);
+  assert.equal(room.records.length,36);
   assert.equal(room.records[0].from,'R1');
   assert.equal(room.records[0].route.at(-1),room.records[0].node);
-  assert.equal(room.cardFlows.length,33);
+  assert.equal(room.cardFlows.length,36);
   assert.ok(room.cardFlows.some(flow=>flow.shuffled));
   assert.ok(room.cardFlows.every(flow=>flow.team==='A'&&flow.spent.image&&flow.drawn.image));
-  assert.equal(g.state(room,who).cardFlows.length,33);
+  assert.equal(g.state(room,who).cardFlows.length,36);
   assert.equal(g.state(room,{role:'team',id:'B'}).cardFlows.length,0);
   g.reset(room,{role:'host'});
   assert.equal(room.cardFlows.length,0);

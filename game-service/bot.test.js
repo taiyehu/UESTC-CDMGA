@@ -27,6 +27,21 @@ test('人机最多领先真人一回合，竞标仍可在等待期间响应', ()
   assert.equal(bot.choose(room, 'A', 'steady', ['B']).type, 'bid');
 });
 
+test('下次移动自选步数时人机先选步数再移动',()=>{
+  const room=game.createRoom({seed:'bot-choose-steps'}),team=room.teams.A,who={role:'team',id:'A'};
+  team.position='R1';team.chooseNextSteps=true;
+  const first=bot.choose(room,'A','steady',[]);
+  assert.equal(first.type,'roll');
+  assert.ok(first.payload.value>=1&&first.payload.value<=6);
+  game.roll(room,who,first.payload.cardId,first.payload.value);
+  const second=bot.choose(room,'A','steady',[]);
+  assert.equal(second.type,'move');
+  assert.equal(second.payload.cardId,first.payload.cardId);
+  game.move(room,who,second.payload.cardId,second.payload.route);
+  assert.equal(team.awaitingEnd,true);
+  assert.equal(team.chooseNextSteps,false);
+});
+
 test('挑战交给裁判，待判战斗期间队伍继续行动', () => {
   const room = game.createRoom({ seed: 'bot-referee' });
   room.teams.A.pendingChallenge = { card: { name: '挑战' } };
@@ -62,13 +77,14 @@ test('人机获得机械帮手后会在普通站点弃一张不能使用的牌',
 
 test('两种策略都能通过规则引擎完成一整个回合', () => {
   const operations = {
-    roll: (r, w, p) => game.roll(r, w, p.cardId),
+    roll: (r, w, p) => game.roll(r, w, p.cardId, p.value),
     move: (r, w, p) => game.move(r, w, p.cardId, p.route),
     'use-card': (r, w, p) => game.useCard(r, w, p.cardId),
     'skip-use': (r, w) => game.skipUse(r, w),
     'house-action': (r, w) => game.houseAction(r, w),
     'end-turn': (r, w) => game.endTurn(r, w),
     'card-target': (r, w, p) => game.chooseCardTarget(r, w, p.target),
+    'redraw-card': (r, w, p) => game.redrawCard(r, w, p.cardId),
     'card-reroll': (r, w, p) => game.resolveReroll(r, w, p.again),
     teleport: (r, w, p) => game.teleport(r, w, p.node),
     'extra-move': (r, w, p) => game.extraMove(r, w, p.cardId, p.route),
