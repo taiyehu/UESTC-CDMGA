@@ -34,7 +34,7 @@ function load(name,kind){
     if(kind==='hand'&&(!Number.isInteger(move)||move<1||move>7))throw Error(`${name}: 移动点数无效 ${row.id}`);
     if(!Number.isInteger(quantity)||quantity<1||quantity>50||!Number.isFinite(effectValue)||!Number.isFinite(effectAux))throw Error(`${name}: 数值无效 ${row.id}`);
     return {...row,move,cost:kind==='hand'?Number(row.cost):undefined,
-      effectValue,effectAux,quantity,image:`/game-assets/cards/output/${row.id}.png`};
+      effectValue,effectAux,quantity,image:`/game-assets/cards/output/${row.id}.png${row.id==='card35'?'?v=fanshi-icon':''}`};
   });
 }
 const HAND=load('hand.csv','hand'),EVENTS=load('events.csv','event'),MISFORTUNES=load('misfortunes.csv','misfortune');

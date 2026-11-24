@@ -96,6 +96,7 @@ const operations={roll:(r,w,b)=>game.roll(r,w,b.cardId,b.value),
   'counter-response':(r,w,b)=>game.counterResponse(r,w,b.use,b.cardId),
   'skip-use':(r,w)=>game.skipUse(r,w),
   'discard-target-card':(r,w,b)=>game.discardTargetCard(r,w,b.cardId),
+  'redraw-card':(r,w,b)=>game.redrawCard(r,w,b.cardId),
   'resolve-challenge':(r,w,b)=>game.resolveChallenge(r,w,b.team,b.success),
   'card-target':(r,w,b)=>game.chooseCardTarget(r,w,b.target),
   'card-reroll':(r,w,b)=>game.resolveReroll(r,w,b.again),
@@ -118,10 +119,11 @@ function staticFile(req,res,url) {
   let file;
   if(url.pathname==='/game-client/' || url.pathname==='/game-client')file=path.join(__dirname,'public/index.html');
   else if(/^\/game-client\/(app\.js|routes\.js|style\.css|movement\.css|map\.svg)$/.test(url.pathname))file=path.join(__dirname,'public',url.pathname.slice('/game-client/'.length));
+  else if(/^\/game-client\/assets\/asset-\d{3}\.(png|jpg)$/.test(url.pathname))file=path.join(__dirname,'public','assets',path.basename(url.pathname));
   else if(/^\/game-client\/dice\/[1-6]\.svg$/.test(url.pathname))file=path.join(__dirname,'public','dice',path.basename(url.pathname));
   else if(/^\/game-assets\/cards\/output\/[a-zA-Z0-9_-]+\.png$/.test(url.pathname))file=path.join(process.env.GAME_CONTENT_DIR || path.join(__dirname,'content'),'output',path.basename(url.pathname));
   else return false;
-  const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png'};
+  const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg'};
   fs.readFile(file,(err,data)=>{if(err){res.writeHead(404);res.end();return;}res.writeHead(200,{'content-type':types[path.extname(file)],'cache-control':['.html','.js','.css','.svg'].includes(path.extname(file))?'no-store':'public, max-age=3600'});res.end(data);});
   return true;
 }

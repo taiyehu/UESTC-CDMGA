@@ -25,13 +25,91 @@ function arrive(sourceId,house,initialMoney=1000){
 }
 
 test('新卡牌和卡面完整入库',()=>{
-  assert.equal(HAND.length,37);
-  for(let n=17;n<=37;n++){
+  assert.equal(HAND.length,40);
+  for(let n=17;n<=40;n++){
     const card=HAND.find(row=>row.id===`card${n}`);
     assert.ok(card?.name);
-    assert.equal(card.image,`/game-assets/cards/output/card${n}.png`);
+    assert.equal(card.image,`/game-assets/cards/output/card${n}.png${n===35?'?v=fanshi-icon':''}`);
   }
   assert.equal(EVENTS.length,8);assert.equal(MISFORTUNES.length,6);
+});
+
+function ordinaryTurn(sourceId){
+  const room=game.createRoom({seed:`ordinary-${sourceId}`,initialMoney:1000}),team=room.teams.A,who=teamWho('A');
+  const card=putCard(team,sourceId);
+  team.position='R1';
+  const mover=team.hand.find(c=>c.id!==card.id&&c.move!==7);mover.move=1;
+  game.move(room,who,mover.id,['R2']);
+  assert.equal(team.position,'R2');
+  assert.equal(team.cardActionDone,false);
+  assert.equal(game.canUse(team,card),true);
+  return {room,team,who,card};
+}
+
+test('蜘蛛侠之我是MJ在普通格瞬移到其他队本回合位置且不触发战斗',()=>{
+  const {room,team,who,card}=ordinaryTurn('card38');
+  const money=team.money,battles=room.battles.length;
+  room.teams.B.position='R3';
+  const mover=room.teams.B.hand.find(c=>c.move!==7);mover.move=1;
+  game.move(room,teamWho('B'),mover.id,['R4']);
+  game.useCard(room,who,card.id);
+  assert.equal(team.pendingTarget.effect_type,'teleport_other_team');
+  game.chooseCardTarget(room,who,'B');
+  assert.equal(team.position,'R4');
+  assert.equal(room.records.findLast(r=>r.team==='A').finalPosition,'R4');
+  assert.equal(room.battles.length,battles);
+  assert.equal(team.money,money-100);
+});
+
+test('蜘蛛侠之我是MJ可选择本回合尚未移动的队伍',()=>{
+  const {room,team,who,card}=ordinaryTurn('card38');
+  const target=room.teams.C.position,battles=room.battles.length;
+  assert.equal(game.state(room,who).records.some(r=>r.team==='C'),false);
+  game.useCard(room,who,card.id);
+  game.chooseCardTarget(room,who,'C');
+  assert.equal(team.position,target);
+  assert.equal(room.records.findLast(r=>r.team==='A').finalPosition,target);
+  assert.equal(room.battles.length,battles);
+});
+
+test('蜘蛛侠之我是MJ传送到目标在本回合的位置，不读取未来回合',()=>{
+  const {room,team,who,card}=ordinaryTurn('card38');
+  room.teams.B.round=2;room.teams.B.position='R5';
+  room.records.push({id:'B-round-1',team:'B',round:1,node:'R4'},{id:'B-round-2',team:'B',round:2,node:'R5'});
+  game.useCard(room,who,card.id);
+  game.chooseCardTarget(room,who,'B');
+  assert.equal(team.position,'R4');
+});
+
+test('six seven在普通格增加一次出牌并指定一张手牌换牌',()=>{
+  const {room,team,who,card}=ordinaryTurn('card39');
+  const money=team.money;
+  game.useCard(room,who,card.id);
+  assert.equal(team.pendingRedraw,true);
+  assert.equal(team.extraCardUsesThisRound,1);
+  assert.throws(()=>game.skipUse(room,who),/不能跳过/);
+  const discarded=team.hand[0],flows=room.cardFlows.length;
+  game.redrawCard(room,who,discarded.id);
+  assert.equal(team.pendingRedraw,false);
+  assert.equal(team.hand.length,6);
+  assert.ok(!team.hand.some(c=>c.id===discarded.id));
+  assert.equal(room.cardFlows.length,flows+1);
+  assert.equal(team.cardActionDone,false);
+  assert.equal(team.money,money-150);
+  game.skipUse(room,who);
+  assert.equal(team.cardActionDone,true);
+});
+
+test('重启在普通格增加一次出牌并替换全部六张手牌',()=>{
+  const {room,team,who,card}=ordinaryTurn('card40');
+  const money=team.money,flows=room.cardFlows.length;
+  game.useCard(room,who,card.id);
+  assert.equal(team.extraCardUsesThisRound,1);
+  assert.equal(team.cardUsesThisRound,1);
+  assert.equal(team.hand.length,6);
+  assert.equal(room.cardFlows.length,flows+7);
+  assert.equal(team.cardActionDone,false);
+  assert.equal(team.money,money-100);
 });
 
 test('旧房间加载时补入新牌且不会重复添加',()=>{
@@ -45,11 +123,11 @@ test('旧房间加载时补入新牌且不会重复添加',()=>{
   room.eventDeck=room.eventDeck.filter(card=>Number(card.id.slice(5))<=6);
   room.misfortuneDeck=room.misfortuneDeck.filter(card=>Number(card.id.slice(3))<=5);
   game.hydrate(room);
-  for(const team of Object.values(room.teams))assert.equal(team.hand.length+team.deck.length+team.discard.length,37);
+  for(const team of Object.values(room.teams))assert.equal(team.hand.length+team.deck.length+team.discard.length,40);
   assert.equal(room.eventDeck.length+room.eventDiscard.length,8);
   assert.equal(room.misfortuneDeck.length+room.misfortuneDiscard.length,6);
   game.hydrate(room);
-  assert.equal(room.teams.A.hand.length+room.teams.A.deck.length,37);
+  assert.equal(room.teams.A.hand.length+room.teams.A.deck.length,40);
 });
 
 test('已有房间的卡牌配置随新版目录更新',()=>{
@@ -57,9 +135,10 @@ test('已有房间的卡牌配置随新版目录更新',()=>{
   const card=putCard(team,'card34');card.game_type='Arcaea';card.cost=9999;
   game.hydrate(room);
   const updated=team.hand.find(c=>c.sourceId==='card34');
-  assert.equal(updated.game_type,'Phigros');assert.equal(updated.cost,100);
-  team.position='Phigros';team.money=200;
+  assert.equal(updated.game_type,'fanshi');assert.equal(updated.cost,100);
+  team.position='范式起源';team.money=200;
   assert.equal(game.canUse(team,updated),true);
+  team.position='Phigros';assert.equal(game.canUse(team,updated),false);
 });
 
 test('反转了清除 debuff 并抽等量 buff，燃起来了奖励下一次战斗胜利',()=>{
@@ -96,7 +175,7 @@ test('记忆工厂重放卡牌和建筑效果，零號車輛允许自选下次�
   assert.equal(choice.team.chooseNextSteps,false);
 });
 
-test('创造性AI在事件格抽两张，大炮发射允许选择目的地',()=>{
+test('创造性AI在事件格抽两张，大炮发射随机移动',()=>{
   const room=game.createRoom({seed:'double-event',initialMoney:1000}),team=room.teams.A,who=teamWho('A');
   const card=putCard(team,'card32');
   const mover=team.hand.find(held=>held.id!==card.id&&held.move!==7);mover.move=1;
@@ -105,13 +184,14 @@ test('创造性AI在事件格抽两张，大炮发射允许选择目的地',()=>
   game.useCard(room,who,card.id);
   assert.equal(record.events.length,2);
   assert.equal(team.doubleEvent,true);
-  assert.equal(team.pendingTeleport,true);
-  game.teleport(room,who,'R7');
-  assert.equal(team.position,'R7');
+  assert.equal(team.pendingTeleport,false);
+  assert.ok(Object.hasOwn(game.GRAPH,team.position));
+  assert.notEqual(team.position,'P2');
+  assert.equal(record.finalPosition,team.position);
 });
 
 test('海神九考保护一次战斗落败，挖到宝了允许下次挑战自行选曲',()=>{
-  const rescue=arrive('card34','Phigros');
+  const rescue=arrive('card34','范式起源');
   assert.equal(game.canUse(rescue.team,rescue.card),true);
   game.useCard(rescue.room,rescue.who,rescue.card.id);
   game.resolveChallenge(rescue.room,{role:'host'},'A',true);
@@ -122,7 +202,7 @@ test('海神九考保护一次战斗落败，挖到宝了允许下次挑战自�
   const money=rescue.team.money;
   game.battle(rescue.room,{role:'host'},'rescue-battle','B');
   assert.equal(rescue.team.score,1);assert.equal(rescue.team.money,money+30);assert.equal(rescue.team.battleRescue,0);
-  const song=arrive('card35','Phigros');
+  const song=arrive('card35','范式起源');
   game.useCard(song.room,song.who,song.card.id);
   game.resolveChallenge(song.room,{role:'host'},'A',true);
   assert.equal(song.team.score,2);assert.equal(song.team.freeSongBattle,1);
@@ -308,17 +388,17 @@ test('二手货挑战失败后仍会翻开待结算的事件牌',()=>{
   assert.equal(room.records[0].event.id,'event1');
 });
 
-test('二手货翻出大炮发射后传送到收入格仍可放弃额外出牌',()=>{
+test('大炮发射随机移动到普通格后可以跳过使用手牌',()=>{
   const room=game.createRoom({seed:'secondhand-cannon',initialMoney:1000}),team=room.teams.A,who=teamWho('A');
   const card=putCard(team,'card25');const bluff=putCard(team,'card7',team.hand.indexOf(card)===0?1:0);team.position='R4';
   room.eventDeck=[EVENTS.find(event=>event.id==='event8')];
   const mover=team.hand.find(held=>held.id!==card.id&&held.id!==bluff.id&&held.move!==7);mover.move=1;
   game.move(room,who,mover.id,['P2']);game.useCard(room,who,card.id);
   game.resolveChallenge(room,{role:'host'},'A',true);
-  team.pendingEvent=false;room.records[0].pendingEvent=false;
-  team.pendingTeleport=true;room.records[0].event={id:'event8',name:'大炮发射'};
-  assert.equal(team.pendingTeleport,true);
-  game.teleport(room,who,'R5');
+  game.skipUse(room,who);
+  assert.equal(team.pendingTeleport,false);
+  assert.notEqual(team.position,'P2');
+  team.position='R5';team.cardActionDone=false;
   assert.equal(team.cardActionDone,false);
   game.skipUse(room,who);
   assert.equal(team.cardActionDone,true);

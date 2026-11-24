@@ -23,6 +23,7 @@ const cardUsable=(t,c)=>{
   if(c.effect_type==='event_cancel_random')return t.pendingEvent;
   if(c.effect_type==='counter_other_card')return false;
   if(c.effect_type==='money_extra_use')return snapshot.nodeTypes[t.position]==='事件格';
+  if(c.game_type==='all')return true;
   if(c.game_type==='event')return snapshot.nodeTypes[t.position]==='事件格';
   if(c.game_type==='koushui')return snapshot.nodeTypes[t.position]==='收税格'&&
     (!c.effect_type.startsWith('challenge_battle_')||!t.exTime&&'ABC'.split('').some(id=>id!==snapshot.teamId&&!snapshot.teams[id].exTime))&&
@@ -285,13 +286,14 @@ function renderMap(){
   }
   for(const [node,ids] of Object.entries(grouped))ids.forEach((id,i)=>{
     let el=document.getElementById('marker-'+id);
-    if(!el){el=document.createElement('div');el.id='marker-'+id;el.className='marker '+id;el.textContent=id;$('markers').appendChild(el);}
+    if(!el){el=document.createElement('div');el.id='marker-'+id;el.className='marker '+id;$('markers').appendChild(el);}
     const view=snapshot.mapView[id],[x,y]=snapshot.pos[node];
+    el.innerHTML=view.defender?`${avatar(view.defender,id+' 队留守队员')}<span class="markerTeamBadge">${id}</span><span class="markerMemberName">${esc(view.defender.account)}</span>`:id;
     el.classList.toggle('ghost',view.ghost);el.classList.toggle('ghostReveal',ghostRevealTeam===id);el.classList.toggle('inBattle',!!activeBattle(id));const [left,top]=mapPercent([x,y]);el.style.left=(left+(i-ids.length/2+.5)*1.5)+'%';el.style.top=top+'%';
-    el.setAttribute('role','button');el.tabIndex=0;el.setAttribute('aria-label',`查看 ${id} 队信息`);
+    el.setAttribute('role','button');el.tabIndex=0;el.setAttribute('aria-label',`查看 ${id} 队信息${view.defender?'，留守 '+view.defender.account:''}`);
     el.onclick=()=>showTeamInfo(id);el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showTeamInfo(id);}};
-    el.title=view.ghost?`${id} 队当前第 ${view.actualRound} 回合 · 尚未进行本队第 ${snapshot.teams[snapshot.teamId].round} 回合 · 实时位置 ${node}`:
-      snapshot.role==='team'&&id!==snapshot.teamId?`${id} 队第 ${snapshot.teams[snapshot.teamId].round} 回合位置 ${node} · 当前第 ${view.actualRound} 回合`:`${id} 队第 ${view.actualRound} 回合 · ${node}`;
+    el.title=(view.ghost?`${id} 队当前第 ${view.actualRound} 回合 · 尚未进行本队第 ${snapshot.teams[snapshot.teamId].round} 回合 · 实时位置 ${node}`:
+      snapshot.role==='team'&&id!==snapshot.teamId?`${id} 队第 ${snapshot.teams[snapshot.teamId].round} 回合位置 ${node} · 当前第 ${view.actualRound} 回合`:`${id} 队第 ${view.actualRound} 回合 · ${node}`)+(view.defender?` · 留守：${view.defender.account}`:'');
   });
   const ids=snapshot.role==='host'?[...'ABC']:[...'ABC'].filter(id=>id!==snapshot.teamId);
   $('roundStatus').innerHTML=`<strong>${snapshot.role==='host'?'队伍回合':'其他队伍回合'}</strong>`+ids.map(id=>{const team=snapshot.teams[id];return `<span class="roundTeam${team.awaitingEnd?' waiting':''}" aria-label="${id} 队第 ${team.round} 回合${team.awaitingEnd?'，待结束':''}" title="${id} 队 · 第 ${team.round} 回合${team.awaitingEnd?'（待结束）':''}"><b class="${id.toLowerCase()}">${id} 队</b><span>第 ${team.round} 回合</span></span>`;}).join('');
@@ -331,6 +333,7 @@ function renderTurnControls(){
   if(snapshot.endgame?.result){$('turnControls').innerHTML='<div class="turnState">比赛已结束，房间仅供查看</div>';return;}
   const t=snapshot.teams[snapshot.teamId];
   if(t.pendingDiscard){$('turnControls').innerHTML=`<div class="turnState">选择 ${esc(t.pendingDiscard)} 队要丢弃的手牌<div class="defenderChoices">${(t.pendingDiscardCards||[]).map(c=>`<button data-target-card="${esc(c.id)}"><img src="${esc(c.image)}" alt=""><span>${esc(c.name)}</span></button>`).join('')}</div></div>`;document.querySelectorAll('[data-target-card]').forEach(el=>el.onclick=()=>action('discard-target-card',{cardId:el.dataset.targetCard}));return;}
+  if(t.pendingRedraw){$('turnControls').innerHTML=`<div class="turnState">six seven：选择一张手牌丢弃并重新抽取<div class="defenderChoices">${t.hand.map(c=>`<button data-redraw-card="${esc(c.id)}"><img src="${esc(c.image)}" alt=""><span>${esc(c.name)}</span></button>`).join('')}</div></div>`;document.querySelectorAll('[data-redraw-card]').forEach(el=>el.onclick=()=>action('redraw-card',{cardId:el.dataset.redrawCard}));return;}
   const forced=snapshot.battles.find(b=>b.forced&&b.status==='待选人'&&[b.first,b.second].some(id=>snapshot.records.some(r=>r.id===id&&r.team===snapshot.teamId&&!r.defender)));
   if(forced&&t.eligibleMembers?.length){$('turnControls').innerHTML='<div class="turnState">交锋：现在选择出战队员 <button id="chooseDefender">选择队员</button></div>';$('chooseDefender').onclick=()=>openDefenderPicker(true);return;}
   if(snapshot.tutorial?.completed){$('turnControls').innerHTML='<div class="turnState">教程完成！你可以返回桌游列表，或从头再练一次。</div>';return;}
@@ -369,10 +372,10 @@ function renderCards(){
   const own=snapshot.role==='team'&&!snapshot.tutorial?.completed?snapshot.teams[snapshot.teamId]:null;
   if(!own){selected=null;pendingRoute=null;$('cards').innerHTML='';clearRouteChoices();return;}
   if(selected&&!own.hand.some(c=>c.id===selected.id)){selected=null;pendingRoute=null;}
-  $('cards').innerHTML=own.hand.map(c=>{const playable=own.awaitingEnd&&!own.cardActionDone&&!own.pendingChallenge&&!own.pendingTeleport&&!own.pendingExtraMove&&!own.pendingTarget&&!own.pendingReroll&&!snapshot.pendingAuction&&!snapshot.pendingMisfortuneChoice&&!snapshot.pendingCardReaction&&cardUsable(own,c);return `<div class="card ${selected?.id===c.id?'selected':''} ${playable?'playable':''} ${drawingCardIds.has(c.id)?'drawing':''}" role="button" tabindex="0" data-card="${c.id}" title="${esc(c.name)}：${esc(c.effect)}"><img src="${c.image}" alt="${esc(c.name)}"><span class="cardBadge">${esc(c.name)} · ${c.move===7?'?':c.move} 步</span></div>`;}).join('');
+  $('cards').innerHTML=own.hand.map(c=>{const playable=own.awaitingEnd&&!own.cardActionDone&&!own.pendingChallenge&&!own.pendingTeleport&&!own.pendingExtraMove&&!own.pendingTarget&&!own.pendingRedraw&&!own.pendingReroll&&!snapshot.pendingAuction&&!snapshot.pendingMisfortuneChoice&&!snapshot.pendingCardReaction&&cardUsable(own,c);return `<div class="card ${selected?.id===c.id?'selected':''} ${playable?'playable':''} ${drawingCardIds.has(c.id)?'drawing':''}" role="button" tabindex="0" data-card="${c.id}" title="${esc(c.name)}：${esc(c.effect)}"><img src="${c.image}" alt="${esc(c.name)}"><span class="cardBadge">${esc(c.name)} · ${c.move===7?'?':c.move} 步</span></div>`;}).join('');
   document.querySelectorAll('[data-card]').forEach(el=>{const choose=()=>{
     if(moving)return;
-    const mode=snapshot.pendingCardReaction?'view':own.pendingExtraMove?'extra':!own.awaitingEnd?'move':!own.cardActionDone&&!own.pendingChallenge&&!own.pendingTeleport&&!own.pendingTarget&&!own.pendingReroll?'use':own.canDiscard?'discard':'view';
+    const mode=snapshot.pendingCardReaction?'view':own.pendingExtraMove?'extra':!own.awaitingEnd?'move':!own.cardActionDone&&!own.pendingChallenge&&!own.pendingTeleport&&!own.pendingTarget&&!own.pendingRedraw&&!own.pendingReroll?'use':own.canDiscard?'discard':'view';
     preview={cardId:el.dataset.card,mode};renderPreview();
   };el.onclick=choose;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose();}};});
   if(snapshot.pendingAuction||snapshot.pendingMisfortuneChoice||snapshot.pendingCardReaction){pendingRoute=null;clearRouteChoices();return;}
