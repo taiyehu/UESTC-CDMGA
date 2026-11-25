@@ -33,7 +33,7 @@ function load(name,kind){
     const move=kind==='hand'?Number(row.move):undefined,quantity=Number(row.quantity||1),effectValue=Number(row.effect_value||0),effectAux=Number(row.effect_aux||0);
     if(kind==='hand'&&(!Number.isInteger(move)||move<1||move>7))throw Error(`${name}: 移动点数无效 ${row.id}`);
     if(!Number.isInteger(quantity)||quantity<1||quantity>50||!Number.isFinite(effectValue)||!Number.isFinite(effectAux))throw Error(`${name}: 数值无效 ${row.id}`);
-    const imageVersion=['event2','event6','card17','card18','card22','card35'].includes(row.id)?'?v=rules-20261125':row.id==='card7'?'?v=card7-rule-2':'';
+    const imageVersion=['event2','event6','card17','card18','card22','card35'].includes(row.id)?'?v=rules-20261125':['card1','card5','card6','card9'].includes(row.id)?'?v=rules-20261125b':row.id==='card7'?'?v=card7-event-icon':row.id==='event8'?'?v=event8-random-20261125':'';
     return {...row,move,cost:kind==='hand'?Number(row.cost):undefined,
       effectValue,effectAux,quantity,image:`/game-assets/cards/output/${row.id}.png${imageVersion}`};
   });

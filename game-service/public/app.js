@@ -336,6 +336,7 @@ function renderTurnControls(){
   const t=snapshot.teams[snapshot.teamId];
   if(t.pendingDiscard){$('turnControls').innerHTML=`<div class="turnState">选择 ${esc(t.pendingDiscard)} 队要丢弃的手牌<div class="defenderChoices">${(t.pendingDiscardCards||[]).map(c=>`<button data-target-card="${esc(c.id)}"><img src="${esc(c.image)}" alt=""><span>${esc(c.name)}</span></button>`).join('')}</div></div>`;document.querySelectorAll('[data-target-card]').forEach(el=>el.onclick=()=>action('discard-target-card',{cardId:el.dataset.targetCard}));return;}
   if(t.pendingRedraw){$('turnControls').innerHTML=`<div class="turnState">six seven：选择一张手牌丢弃并重新抽取<div class="defenderChoices">${t.hand.map(c=>`<button data-redraw-card="${esc(c.id)}"><img src="${esc(c.image)}" alt=""><span>${esc(c.name)}</span></button>`).join('')}</div></div>`;document.querySelectorAll('[data-redraw-card]').forEach(el=>el.onclick=()=>action('redraw-card',{cardId:el.dataset.redrawCard}));return;}
+  if(t.pendingCopy){$('turnControls').innerHTML=`<div class="turnState">双人成行：选择一张手牌复制到抽牌堆顶部<div class="defenderChoices">${t.hand.map(c=>`<button data-copy-card="${esc(c.id)}"><img src="${esc(c.image)}" alt=""><span>${esc(c.name)}</span></button>`).join('')}</div></div>`;document.querySelectorAll('[data-copy-card]').forEach(el=>el.onclick=()=>action('copy-card',{cardId:el.dataset.copyCard}));return;}
   const forced=snapshot.battles.find(b=>b.forced&&b.status==='待选人'&&[b.first,b.second].some(id=>snapshot.records.some(r=>r.id===id&&r.team===snapshot.teamId&&!r.defender)));
   if(forced&&t.eligibleMembers?.length){const record=snapshot.records.find(r=>[forced.first,forced.second].includes(r.id)&&r.team===snapshot.teamId);$('turnControls').innerHTML=`<div class="turnState">第 ${forced.round} 回合战斗：选择出战队员 <button id="chooseDefender">选择队员</button></div>`;$('chooseDefender').onclick=()=>openDefenderPicker(true,record);return;}
   if(snapshot.tutorial?.completed){$('turnControls').innerHTML='<div class="turnState">教程完成！你可以返回桌游列表，或从头再练一次。</div>';return;}
@@ -366,7 +367,7 @@ function renderTurnControls(){
   const blocked=!!animations[snapshot.teamId]||!!snapshot.pendingAuction||!!snapshot.pendingMisfortuneChoice;
   const house=snapshot.house.includes(t.position),effect=t.position==='Arcaea'?`支付 ${t.income+10} 金钱，收入永久 +10`:t.position==='范式起源'?'掷 d6 获得 10/25/50/100/150/200 金钱':'1 积分兑换 200 金钱';
   const canHouse=house&&!t.houseActionDone&&!blocked&&(t.position==='Arcaea'?t.money>=t.income+10:t.position==='Phigros'?t.score>=1:true);
-  $('turnControls').innerHTML=`<div class="turnState">第 ${t.round} 回合结算完成${t.skipNextTurn?' · 下一回合将跳过':''} <div>${house?`<button id="houseAction" ${canHouse?'':'disabled'}>${t.houseActionDone?'建筑效果已使用':esc(t.position+'：'+effect)}</button> `:''}<button id="endTurn" ${blocked?'disabled':''}>结束回合</button></div></div>`;
+  $('turnControls').innerHTML=`<div class="turnState">第 ${t.round} 回合结算完成${t.skipNextTurn?' · 下一回合将跳过':''} <div>${house?`<button id="houseAction" ${canHouse?'':'disabled'}>${t.houseActionDone?record?.houseActionSkipped?'本次建筑效果已跳过':'建筑效果已使用':esc(t.position+'：'+effect)}</button> `:''}<button id="endTurn" ${blocked?'disabled':''}>结束回合</button></div></div>`;
   if($('houseAction'))$('houseAction').onclick=()=>action('house-action',{});
   $('endTurn').onclick=()=>action('end-turn',{});
 }
@@ -374,10 +375,10 @@ function renderCards(){
   const own=snapshot.role==='team'&&!snapshot.tutorial?.completed?snapshot.teams[snapshot.teamId]:null;
   if(!own){selected=null;pendingRoute=null;$('cards').innerHTML='';clearRouteChoices();return;}
   if(selected&&!own.hand.some(c=>c.id===selected.id)){selected=null;pendingRoute=null;}
-  $('cards').innerHTML=own.hand.map(c=>{const playable=own.awaitingEnd&&!own.cardActionDone&&!own.pendingChallenge&&!own.pendingTeleport&&!own.pendingExtraMove&&!own.pendingTarget&&!own.pendingRedraw&&!own.pendingReroll&&!snapshot.pendingAction&&!snapshot.pendingCardReaction&&cardUsable(own,c);return `<div class="card ${selected?.id===c.id?'selected':''} ${playable?'playable':''} ${drawingCardIds.has(c.id)?'drawing':''}" role="button" tabindex="0" data-card="${c.id}" title="${esc(c.name)}：${esc(c.effect)}"><img src="${c.image}" alt="${esc(c.name)}"><span class="cardBadge">${esc(c.name)} · ${c.move===7?'?':c.move} 步</span></div>`;}).join('');
+  $('cards').innerHTML=own.hand.map(c=>{const playable=own.awaitingEnd&&!own.cardActionDone&&!own.pendingChallenge&&!own.pendingTeleport&&!own.pendingExtraMove&&!own.pendingTarget&&!own.pendingRedraw&&!own.pendingCopy&&!own.pendingReroll&&!snapshot.pendingAction&&!snapshot.pendingCardReaction&&cardUsable(own,c);return `<div class="card ${selected?.id===c.id?'selected':''} ${playable?'playable':''} ${drawingCardIds.has(c.id)?'drawing':''}" role="button" tabindex="0" data-card="${c.id}" title="${esc(c.name)}：${esc(c.effect)}"><img src="${c.image}" alt="${esc(c.name)}"><span class="cardBadge">${esc(c.name)} · ${c.move===7?'?':c.move} 步</span></div>`;}).join('');
   document.querySelectorAll('[data-card]').forEach(el=>{const choose=()=>{
     if(moving)return;
-    const mode=snapshot.pendingCardReaction||snapshot.pendingAction?'view':own.pendingExtraMove?'extra':!own.awaitingEnd?'move':!own.cardActionDone&&!own.pendingChallenge&&!own.pendingTeleport&&!own.pendingTarget&&!own.pendingRedraw&&!own.pendingReroll?'use':own.canDiscard?'discard':'view';
+    const mode=snapshot.pendingCardReaction||snapshot.pendingAction||own.pendingCopy?'view':own.pendingExtraMove?'extra':!own.awaitingEnd?'move':!own.cardActionDone&&!own.pendingChallenge&&!own.pendingTeleport&&!own.pendingTarget&&!own.pendingRedraw&&!own.pendingReroll?'use':own.canDiscard?'discard':'view';
     preview={cardId:el.dataset.card,mode};renderPreview();
   };el.onclick=choose;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose();}};});
   if(snapshot.pendingAction||snapshot.pendingCardReaction){pendingRoute=null;clearRouteChoices();return;}
@@ -447,7 +448,7 @@ function renderPreview(){
   const own=snapshot.teams[snapshot.teamId],card=own.hand.find(c=>c.id===preview.cardId);
   if(!card){preview=null;renderPreview();return;}
   const usable=preview.mode!=='use'||cardUsable(own,card);
-  const canPlay=preview.mode!=='view'&&usable&&snapshot.canAct!==false&&!own.pendingTarget&&!own.pendingReroll&&!snapshot.pendingAction;
+  const canPlay=preview.mode!=='view'&&usable&&snapshot.canAct!==false&&!own.pendingTarget&&!own.pendingCopy&&!own.pendingReroll&&!snapshot.pendingAction;
   $('cardPreview').innerHTML=`<div class="previewBody cardOnly"><img src="${esc(card.image)}" alt="${esc(card.name)}"><div class="previewActions"><button id="playPreview" ${canPlay?'':'disabled'}>打出</button><button id="backPreview">取消</button></div></div>`;
   $('cardPreview').classList.add('show');
   $('backPreview').onclick=()=>{preview=null;renderPreview();};

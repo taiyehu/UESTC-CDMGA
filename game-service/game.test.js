@@ -458,7 +458,7 @@ test('经过与停留收入税格按规则结算，金钱不会低于零',()=>{
   assert.equal(team.money,0);assert.equal(taxed.moneyDelta,0);
 });
 
-test('四十三张成品手牌独立抽弃洗牌，数量始终守恒',()=>{
+test('四十四张成品手牌独立抽弃洗牌，数量始终守恒',()=>{
   const room=g.createRoom();const token=g.join(room,'A');g.join(room,'B');const who=g.viewer(room,token);
   const bBefore=JSON.stringify(room.teams.B);
   for(let i=0;i<39;i++){
@@ -467,9 +467,9 @@ test('四十三张成品手牌独立抽弃洗牌，数量始终守恒',()=>{
     g.move(room,who,card.id,['R2']);
     finishOptionalTurn(room,who);
     assert.equal(team.hand.length,6);
-    assert.equal(team.hand.length+team.deck.length+team.discard.length,43);
+    assert.equal(team.hand.length+team.deck.length+team.discard.length,44);
   }
-  assert.equal(room.teams.A.deck.length+room.teams.A.discard.length,37);
+  assert.equal(room.teams.A.deck.length+room.teams.A.discard.length,38);
   assert.equal(JSON.stringify(room.teams.B),bBefore);
   assert.equal(room.records.length,39);
   assert.equal(room.records[0].from,'R1');
