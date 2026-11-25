@@ -25,8 +25,8 @@ function arrive(sourceId,house,initialMoney=1000){
 }
 
 test('新卡牌和卡面完整入库',()=>{
-  assert.equal(HAND.length,43);
-  for(let n=17;n<=43;n++){
+  assert.equal(HAND.length,44);
+  for(let n=17;n<=44;n++){
     const card=HAND.find(row=>row.id===`card${n}`);
     assert.ok(card?.name);
     assert.equal(card.image,`/game-assets/cards/output/card${n}.png${[17,18,22,35].includes(n)?'?v=rules-20261125':''}`);
@@ -253,11 +253,11 @@ test('旧房间加载时补入新牌且不会重复添加',()=>{
   room.eventDeck=room.eventDeck.filter(card=>Number(card.id.slice(5))<=6);
   room.misfortuneDeck=room.misfortuneDeck.filter(card=>Number(card.id.slice(3))<=5);
   game.hydrate(room);
-  for(const team of Object.values(room.teams))assert.equal(team.hand.length+team.deck.length+team.discard.length,43);
+  for(const team of Object.values(room.teams))assert.equal(team.hand.length+team.deck.length+team.discard.length,44);
   assert.equal(room.eventDeck.length+room.eventDiscard.length,11);
   assert.equal(room.misfortuneDeck.length+room.misfortuneDiscard.length,14);
   game.hydrate(room);
-  assert.equal(room.teams.A.hand.length+room.teams.A.deck.length,43);
+  assert.equal(room.teams.A.hand.length+room.teams.A.deck.length,44);
 });
 
 test('已有房间的卡牌配置随新版目录更新',()=>{

@@ -20,7 +20,7 @@ test('登录用户可以查看完整卡牌百科，未登录用户不能读取�
     const response=await fetch(url,{headers:{cookie:'session=test'}});
     assert.equal(response.status,200);
     const cards=await response.json();
-    assert.deepEqual([cards.hand.length,cards.events.length,cards.misfortunes.length],[43,11,14]);
+    assert.deepEqual([cards.hand.length,cards.events.length,cards.misfortunes.length],[44,11,14]);
     for(const pile of [cards.hand,cards.events,cards.misfortunes])for(const card of pile){
       assert.ok(card.id&&card.name&&card.effect&&card.image);
       assert.match(card.image,/^\/game-assets\/cards\/output\/[a-zA-Z0-9_-]+\.png/);

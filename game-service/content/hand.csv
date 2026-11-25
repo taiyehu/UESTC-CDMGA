@@ -1,13 +1,13 @@
 id,name,move,cost,game_type,effect,condition,art_path,art_fit,art_focus_x,art_focus_y,effect_type,effect_value,effect_aux,quantity
-card1,回收机,1,300,Phigros,获得4点积分,游玩Rubbish Sorting IN难度达到1000000分,art/hand1.png,cover,0.5,0.5,score,4,0,1
+card1,回收机,1,300,Phigros,获得4点积分,游玩Rubbish Sorting IN难度达到full combo,art/hand1.png,cover,0.5,0.5,score,4,0,1
 card2,遗产,6,0,Arcaea,收入格永久收入+10,游玩Lost Civilization BYD难度，lost数小于等于2,art/hand2.png,cover,0.5,0.5,income,10,0,1
 card3,巧夺先机,3,100,Phigros,瞬移至任意站点或建筑,游玩Temporal Shifting IN难度达到full combo,art/hand3.png,cover,0.5,0.5,teleport,0,0,1
 card4,幸运药水,3,0,fanshi,当你必须获得厄运时抵挡一次厄运,游玩Blessed Bleath MSV难度达到full combo,art/hand4.png,cover,0.5,0.5,shield_misfortune,1,0,1
-card5,言而无信,4,40,Arcaea,获得1点积分，额外移动一次,游玩Breach of Faith BYD难度达到990w分,art/hand5.png,cover,0.5,0.5,score_extra_move,1,0,1
-card6,机械帮手,2,700,fanshi,获得9点积分，到达站点或建筑但无法使用卡牌时可以选择丢弃一张手牌,游玩Turning Point MSV难度达到inf+,art/hand6.png,cover,0.5,0.5,score_optional_discard,9,0,1
+card5,言而无信,4,40,Arcaea,获得1点积分，额外移动一次,游玩Breach of Faith BYD难度达到980w分,art/hand5.png,cover,0.5,0.5,score_extra_move,1,0,1
+card6,机械帮手,2,700,fanshi,获得9点积分，到达站点或建筑但无法使用卡牌时可以选择丢弃一张手牌,游玩Turning Point MSV难度达到1007500,art/hand6.png,cover,0.5,0.5,score_optional_discard,9,0,1
 card7,装腔作势,7,0,event,抵消一次事件格的事件，（骰子决定）走X步或获得（3-X）分+50X块钱,无,art/hand7.jpg,cover,0.5,0.5,event_cancel_random,1,0,1
 card8,诈骗交易,1,0,Arcaea,选择任意其他队伍，该队伍给你100金钱并且收入-5，你的队伍收入+5,游玩Tr!cK Ma?tEr ETR难度达到990w分,art/hand8.jpg,cover,0.5,0.5,transfer_income,100,5,1
-card9,魔幻饰品,2,0,fanshi,触发范式建筑效果，你可以再扔一个骰子，只有最后一次骰子算数,游玩爆裂魔法 MSV难度达到1005000分,art/hand9.png,cover,0.5,0.5,fanshi_reroll,0,0,1
+card9,魔幻饰品,2,0,fanshi,触发范式建筑效果，你可以再扔一个骰子，只有最后一次骰子算数；使用后跳过本次范式起源建筑效果,游玩爆裂魔法 MSV难度达到1005000分,art/hand9.png,cover,0.5,0.5,fanshi_reroll,0,0,1
 card10,快速贷款,3,0,Arcaea,获得400金钱，并获得永久效果：每次走牌开始时，-25金钱，如果不能付清，则-3积分并消除此效果,游玩Garakuta Doll Play FTR难度达到990w分,art/example.png,cover,0.5,0.5,loan,400,25,1
 card11,加速器,4,900,Arcaea,获得9点积分，并获得永久效果：你的队伍每回合可以使用的卡牌张数变为2张,游玩Linear Accelerator FTR难度达到990w分,art/hand10.jpg,cover,0.5,0.5,score_double_use,9,2,1
 card12,小玩偶,3,50,Phigros,获得1点积分,游玩dB doll AT难度达到满分,art/hand11.jpg,cover,0.5,0.5,score,1,0,1
@@ -42,3 +42,4 @@ card40,重启,1,100,all,"本回合出牌数+1，将你当前所有手牌丢弃�
 card41,回环之力,4,0,Arcaea,获得当前回合数乘以20的金钱,游玩ouroboros -twin stroke of the end- FTR难度达到990w分,,contain,0.5,0.5,money_round,20,0,1
 card42,狂战,2,200,Arcaea,获得永久buff：路过其他队伍本回合占领的格子时可提前停下并发起战斗,游玩BUCHiGiRE Berserker FTR难度达到990w分,,contain,0.5,0.5,ambush_permanent,0,0,1
 card43,超时空警察,6,200,Phigros,获得一次性buff：路过其他队伍现在所在的格子时可提前停下并发起战斗，战斗轮次取两队较小值,游玩Rrhar'il IN难度达到acc>=99.5%,,contain,0.5,0.5,ambush_current_once,0,0,1
+card44,双人成行,2,200,Phigros,选择一张手牌进行复制并放入抽牌堆顶部,双人绑手游玩Doppelganger IN 难度达到 920000 分,,contain,0.5,0.5,copy_hand_to_deck_top,0,0,1

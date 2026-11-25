@@ -110,6 +110,7 @@ function choose(room, seat, strategy, humanSeats) {
     return target?.hand.length ? act('discard-target-card', { cardId: target.hand[0].id }) : null;
   }
   if (team.pendingRedraw) return act('redraw-card', { cardId: [...team.hand].sort((a,b)=>cardValue(a,strategy)-cardValue(b,strategy))[0].id });
+  if (team.pendingCopy) return act('copy-card', { cardId: [...team.hand].sort((a,b)=>cardValue(b,strategy)-cardValue(a,strategy))[0].id });
   const forced=room.battles.find(b=>b.forced&&b.status==='待选人'&&[b.first,b.second].some(id=>room.records.some(r=>r.id===id&&r.team===seat&&!r.defender)));
   if(forced&&team.members.length){const record=room.records.find(r=>[forced.first,forced.second].includes(r.id)&&r.team===seat);const member=game.eligibleMembers(room,team,record.round)[0];if(member)return act('reserve-member',{memberId:member.id});}
   if (team.pendingTarget) {
