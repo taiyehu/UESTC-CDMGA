@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom'
 import { api, type Course } from '../api'
 import GameRoomPage from '../pages/GameRoomPage'
 
-type Room = { code: string; course_id: number }
+type Room = { code: string; course_id: number; status: string }
 
 export default function BoardGameCourseOverview({ course }: { course: Course }) {
   const [roomCode, setRoomCode] = useState<string | null>(null)
+  const [roomStatus, setRoomStatus] = useState('')
   const [otherRoomCode, setOtherRoomCode] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -27,7 +28,9 @@ export default function BoardGameCourseOverview({ course }: { course: Course }) 
     api.get('/course/board-game-rooms').then(response => {
       if (!active) return
       const rooms = Array.isArray(response.data) ? response.data as Room[] : []
-      setRoomCode(rooms.find(room => Number(room.course_id) === course.id)?.code || null)
+      const match = rooms.find(room => Number(room.course_id) === course.id)
+      setRoomCode(match?.code || null)
+      setRoomStatus(match?.status || '')
     }).catch(e => { if (active) setError(e instanceof Error ? e.message : '房间服务暂不可用') })
       .finally(() => { if (active) setLoading(false) })
     fetch('/game-api/rooms', { credentials: 'same-origin' }).then(async response => {
@@ -37,7 +40,7 @@ export default function BoardGameCourseOverview({ course }: { course: Course }) 
     return () => { active = false }
   }, [course.id])
 
-  const blocked = Boolean(roomCode && otherRoomCode && roomCode !== otherRoomCode)
+  const blocked = Boolean(roomStatus !== 'ended' && roomCode && otherRoomCode && roomCode !== otherRoomCode)
   return <>
     <div className="page-actions-row"><Link className="page-btn" to="/game">← 返回桌游课题</Link></div>
     <section className="page-card" style={{ marginBottom: 20 }}>

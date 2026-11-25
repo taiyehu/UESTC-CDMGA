@@ -191,6 +191,10 @@ test('机械帮手允许在普通站点无法使用卡牌时弃牌',()=>{
   g.endTurn(room,who);
   t.position='R1';const mover=safeMover(t);mover.move=2;
   g.move(room,who,mover.id,['R2','R3']);
+  for(const held of [...t.hand].filter(held=>held.game_type==='all')){
+    const replacement=t.deck.find(candidate=>candidate.game_type!=='all');
+    t.deck[t.deck.indexOf(replacement)]=held;t.hand[t.hand.indexOf(held)]=replacement;
+  }
   assert.equal(g.state(room,who).teams.A.canDiscard,true);
   const discarded=t.hand[0].id;
   g.discardCard(room,who,discarded);
@@ -282,7 +286,7 @@ test('队伍地图按自身当前回合显示领先队伍快照，未行动队�
   const room=g.createRoom({seed:'map-snapshot'}),b=room.teams.B,whoB={role:'team',id:'B'};
   b.position='R1';
   for(const node of ['R2','R3','R4']){
-    b.hand[0].move=1;g.move(room,whoB,b.hand[0].id,[node]);
+    const card=safeMover(b);card.move=1;g.move(room,whoB,card.id,[node]);
     if(node!=='R4')finishOptionalTurn(room,whoB);
   }
   room.records[0].defender={id:'guard-1',account:'第一轮留守',avatar:'/guard-1.png'};
@@ -295,7 +299,7 @@ test('队伍地图按自身当前回合显示领先队伍快照，未行动队�
   const hostView=g.state(room,{role:'host'});
   assert.equal(hostView.mapView.B.node,'R4');
   assert.deepEqual(hostView.mapView.B.defender,room.records[2].defender);
-  const a=room.teams.A;a.hand[0].move=1;g.move(room,{role:'team',id:'A'},a.hand[0].id,[g.GRAPH[a.position][0]]);
+  const a=room.teams.A,aCard=safeMover(a);aCard.move=1;g.move(room,{role:'team',id:'A'},aCard.id,[g.GRAPH[a.position][0]]);
   if(!a.cardActionDone)g.skipUse(room,{role:'team',id:'A'});
   finishOptionalTurn(room,{role:'team',id:'A'});
   assert.equal(g.state(room,{role:'team',id:'A'}).mapView.B.node,'R3');
@@ -454,26 +458,26 @@ test('经过与停留收入税格按规则结算，金钱不会低于零',()=>{
   assert.equal(team.money,0);assert.equal(taxed.moneyDelta,0);
 });
 
-test('四十张成品手牌独立抽弃洗牌，数量始终守恒',()=>{
+test('四十三张成品手牌独立抽弃洗牌，数量始终守恒',()=>{
   const room=g.createRoom();const token=g.join(room,'A');g.join(room,'B');const who=g.viewer(room,token);
   const bBefore=JSON.stringify(room.teams.B);
-  for(let i=0;i<36;i++){
+  for(let i=0;i<39;i++){
     const team=room.teams.A,card=team.hand.find(c=>c.move!==7);
     team.position='R1';card.move=1;
     g.move(room,who,card.id,['R2']);
     finishOptionalTurn(room,who);
     assert.equal(team.hand.length,6);
-    assert.equal(team.hand.length+team.deck.length+team.discard.length,40);
+    assert.equal(team.hand.length+team.deck.length+team.discard.length,43);
   }
-  assert.equal(room.teams.A.deck.length+room.teams.A.discard.length,34);
+  assert.equal(room.teams.A.deck.length+room.teams.A.discard.length,37);
   assert.equal(JSON.stringify(room.teams.B),bBefore);
-  assert.equal(room.records.length,36);
+  assert.equal(room.records.length,39);
   assert.equal(room.records[0].from,'R1');
   assert.equal(room.records[0].route.at(-1),room.records[0].node);
-  assert.equal(room.cardFlows.length,36);
+  assert.equal(room.cardFlows.length,39);
   assert.ok(room.cardFlows.some(flow=>flow.shuffled));
   assert.ok(room.cardFlows.every(flow=>flow.team==='A'&&flow.spent.image&&flow.drawn.image));
-  assert.equal(g.state(room,who).cardFlows.length,36);
+  assert.equal(g.state(room,who).cardFlows.length,39);
   assert.equal(g.state(room,{role:'team',id:'B'}).cardFlows.length,0);
   g.reset(room,{role:'host'});
   assert.equal(room.cardFlows.length,0);
@@ -497,8 +501,10 @@ test('牌堆展示按卡牌数字 ID 排序，不改变实际抽牌顺序',()=>{
 test('成品手牌按 CSV 点数移动，问号牌由服务器掷骰',()=>{
   const room=g.createRoom({seed:'question'}),t=room.teams.A,who={role:'team',id:'A'};
   const card7=t.hand.find(c=>c.sourceId==='card7')||t.deck.find(c=>c.sourceId==='card7');
+  assert.equal(card7.condition,'无');
+  assert.equal(card7.effect,'抵消一次事件格的事件，（骰子决定）走X步或获得（3-X）分+50X块钱');
   if(!t.hand.includes(card7)){const old=t.hand[0];t.hand[0]=card7;t.deck[t.deck.indexOf(card7)]=old;}
-  assert.equal(card7.move,7);assert.match(card7.image,/card7\.png$/);
+  assert.equal(card7.move,7);assert.match(card7.image,/card7\.png(?:\?.*)?$/);
   assert.throws(()=>g.move(room,who,card7.id,['R1']),/掷骰/);
   const steps=g.roll(room,who,card7.id);assert.ok(steps>=1&&steps<=6);
   assert.equal(room.diceRolls.at(-1).value,steps);
@@ -519,25 +525,41 @@ test('装腔作势仅在事件格可用，并抵消当前事件',()=>{
   t.position='R4';const next=t.hand.find(c=>c.id!==card7.id&&c.move!==7);next.move=1;
   const record=g.move(room,who,next.id,['P2']);
   assert.equal(record.pendingEvent,true);assert.equal(record.event,undefined);
-  const before=t.money;g.useCard(room,who,card7.id);
-  const points=t.score;
-  assert.ok(points>=1&&points<=6);assert.equal(t.money,before+points*70);assert.equal(t.eventShield,0);
-  assert.equal(room.diceRolls.at(-1).value,points);
+  const beforeMoney=t.money,beforeScore=t.score;g.useCard(room,who,card7.id);
+  const roll=room.diceRolls.at(-1).value;
+  assert.ok(roll>=1&&roll<=6);
+  assert.equal(t.score,Math.max(0,beforeScore+3-roll));
+  assert.equal(t.money,beforeMoney+roll*50);assert.equal(t.eventShield,0);
   assert.equal(record.event.name,'事件已抵消');
   assert.equal(record.pendingEvent,false);
+});
+
+test('装腔作势掷出 4、5、6 点分别扣除 1、2、3 分',()=>{
+  for(const roll of [4,5,6]){
+    const room=g.createRoom({seed:`card7-negative-${roll}`}),t=room.teams.A;
+    const card=t.hand.find(c=>c.sourceId==='card7')||t.deck.find(c=>c.sourceId==='card7');
+    if(!t.hand.includes(card)){const old=t.hand[0];t.hand[0]=card;t.deck[t.deck.indexOf(card)]=old;}
+    t.position='P2';t.awaitingEnd=true;t.pendingEvent=true;t.cardActionDone=false;t.score=10;
+    room.randomInt=()=>roll-1;
+    g.useCard(room,{role:'team',id:'A'},card.id);
+    assert.equal(room.diceRolls.at(-1).value,roll);
+    assert.equal(t.score,13-roll);
+    assert.equal(t.money,room.initialMoney+roll*50);
+  }
 });
 
 test('事件格抽成品事件卡并加钱，厄运格触发三队竞标',()=>{
   const room=g.createRoom({seed:'special',initialMoney:100,initialIncome:10});
   room.eventDeck=[EVENTS.find(c=>c.id==='event1')];
   room.misfortuneDeck=[MISFORTUNES.find(c=>c.id==='mis1'),MISFORTUNES.find(c=>c.id==='mis3')];
-  const a=room.teams.A;a.position='R4';a.hand[0].move=1;
-  const event=g.move(room,{role:'team',id:'A'},a.hand[0].id,['P2']);
+  const a=room.teams.A;a.position='R4';const eventMover=safeMover(a);eventMover.move=1;
+  const event=g.move(room,{role:'team',id:'A'},eventMover.id,['P2']);
   if(a.pendingEvent)g.skipUse(room,{role:'team',id:'A'});
   assert.equal(event.event.name,'社团赞助');assert.equal(a.money,300);
   g.endTurn(room,{role:'team',id:'A'});
-  a.position='R2';a.hand[0].move=1;a.score=3;
-  const bad=g.move(room,{role:'team',id:'A'},a.hand[0].id,['B']);
+  a.position='R2';const misfortuneMover=safeMover(a);misfortuneMover.move=1;a.score=3;
+  const bad=g.move(room,{role:'team',id:'A'},misfortuneMover.id,['B']);
+  if(a.pendingMisfortuneCard)g.skipUse(room,{role:'team',id:'A'});
   assert.equal(bad.misfortune.length,2);
   assert.equal(room.pendingMisfortuneChoice.triggerTeam,'A');
   assert.throws(()=>g.misfortuneTarget(room,{role:'team',id:'B'},'C'),/指定/);
@@ -564,7 +586,7 @@ test('新事件牌结算积分、debuff 防护、范式奖励与战斗修正',()
     if(t.pendingEvent)g.skipUse(room,{role:'team',id:'A'});
     return {room,t};
   };
-  assert.equal(trigger('event2',(_,t)=>{t.score=5;}).t.score,3);
+  assert.equal(trigger('event2',(_,t)=>{t.score=5;}).t.score,4);
   const shield=trigger('event3');
   assert.equal(shield.t.debuffShield,1);
   const lowest=trigger('event4',room=>{room.teams.A.score=2;room.teams.B.score=0;room.teams.C.score=0;});
@@ -576,7 +598,7 @@ test('新事件牌结算积分、debuff 防护、范式奖励与战斗修正',()
   assert.match(treasure.room.records[0].event.detail,/掷出/);
   assert.equal(treasure.room.diceRolls.length,1);
   const battle=trigger('event6');
-  assert.equal(battle.t.nextBattleDebuff,-1);
+  assert.equal(battle.t.nextTriggeredBattlePenalty,1);
   const blessing=trigger('event7');
   assert.equal(blessing.t.income,20);
   assert.equal(blessing.t.nextBattleModifier,2);
@@ -584,16 +606,27 @@ test('新事件牌结算积分、debuff 防护、范式奖励与战斗修正',()
   const opponent=battle.room.teams.B;opponent.position='R4';opponent.hand[0].move=1;
   g.move(battle.room,{role:'team',id:'B'},opponent.hand[0].id,['P2']);
   g.battle(battle.room,{role:'host'},battle.room.battles[0].id,'A');
-  assert.equal(battle.t.score,1);
+  assert.equal(battle.t.score,2);
+  assert.equal(battle.t.nextTriggeredBattlePenalty,1);
+  battle.t.pendingTarget=require('./catalog').HAND.find(c=>c.id==='card18');
+  g.chooseCardTarget(battle.room,{role:'team',id:'A'},'B');
+  const initiated=battle.room.battles.at(-1);
+  assert.equal(initiated.triggerTeam,'A');
+  assert.equal(initiated.event6PenaltyTeam,'A');
+  g.battle(battle.room,{role:'host'},initiated.id,'A');
+  assert.equal(battle.t.score,3);
+  assert.equal(opponent.money,200);
+  assert.equal(battle.t.nextTriggeredBattlePenalty,0);
   assert.equal(battle.t.nextBattleModifier,0);
 });
 
 test('新厄运牌结算全队金钱与下次挑战的 debuff',()=>{
   const pass=id=>{
-    const room=g.createRoom({initialMoney:101}),t=room.teams.A;
+    const room=g.createRoom({seed:`new-misfortune-${id}`,initialMoney:101}),t=room.teams.A;
     room.misfortuneDeck=[MISFORTUNES.find(c=>c.id===id)];
     t.position='R2';const mover=safeMover(t);mover.move=2;
     g.move(room,{role:'team',id:'A'},mover.id,['B','R8']);
+    if(t.pendingMisfortuneCard)g.skipUse(room,{role:'team',id:'A'});
     return {room,t};
   };
   const half=pass('mis4');
@@ -620,6 +653,7 @@ test('新厄运牌结算全队金钱与下次挑战的 debuff',()=>{
 
 test('路过厄运 B 只抽一张并直接开始竞标',()=>{
   const room=g.createRoom({seed:'pass-b'}),t=room.teams.A;t.position='R2';t.hand[0].move=2;
+  t.money=0;
   room.misfortuneDeck=[MISFORTUNES.find(c=>c.id==='mis1')];
   const record=g.move(room,{role:'team',id:'A'},t.hand[0].id,['B','R8']);
   assert.equal(record.misfortune.length,1);

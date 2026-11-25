@@ -44,7 +44,7 @@ export default function GameLobbyPage() {
   const ended = entries.filter(item => item.room?.status === 'ended')
 
   function cards(items: CourseRoom[]) {
-    return <div className="page-grid">{items.map(({ course, room }) => <Link className="page-card course-card" key={course.id} to={`/task/${course.id}`}>
+    return <div className="page-grid">{items.map(({ course, room }) => <Link className="page-card course-card" key={course.id} to={room?.status === 'ended' ? `/game/rooms/${room.code}` : `/task/${course.id}`}>
       <div className="thumb game-course-cover" style={{ backgroundImage: `url(${course.image || '/club-logo.jpg'})` }}>
         {room?.status === 'waiting' && <span className="game-team-count" aria-label={`已组建 ${Number(room.team_count) || 0} 支队伍，共需 3 支`}>{Number(room.team_count) || 0}/3</span>}
       </div>
@@ -52,7 +52,7 @@ export default function GameLobbyPage() {
       <h3>{course.title}</h3>
       <p className="desc">{course.description || '暂无描述'}</p>
       <p className="meta">{room ? room.status === 'waiting' ? '等待组队' : room.status === 'active' ? '进行中' : '已结束' : '房间待创建'}</p>
-      <span className="page-btn small">进入课题 →</span>
+      <span className="page-btn small">{room?.status === 'ended' ? '查看对局 →' : '进入课题 →'}</span>
     </Link>)}</div>
   }
 
@@ -61,6 +61,11 @@ export default function GameLobbyPage() {
       <h2>第一次玩？先完成新手教程</h2>
       <p className="desc">亲手练习移动、事件、厄运和三座建筑；进度会自动保存。</p>
       <Link className="page-btn primary" to="/game/tutorial">进入独立练习 →</Link>
+    </section>
+    <section className="page-card" style={{ marginBottom: 20 }}>
+      <h2>桌游百科大全</h2>
+      <p className="desc">查看所有手牌、事件牌和厄运牌的卡面与效果。</p>
+      <Link className="page-btn" to="/game/cards">浏览全部卡牌 →</Link>
     </section>
     {error && <p role="alert" className="page-card error">{error}</p>}
     {myRoomCode && <p className="page-card">已于房间{myRoomCode}中存在队伍</p>}

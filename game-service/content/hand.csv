@@ -5,7 +5,7 @@ card3,巧夺先机,3,100,Phigros,瞬移至任意站点或建筑,游玩Temporal S
 card4,幸运药水,3,0,fanshi,当你必须获得厄运时抵挡一次厄运,游玩Blessed Bleath MSV难度达到full combo,art/hand4.png,cover,0.5,0.5,shield_misfortune,1,0,1
 card5,言而无信,4,40,Arcaea,获得1点积分，额外移动一次,游玩Breach of Faith BYD难度达到990w分,art/hand5.png,cover,0.5,0.5,score_extra_move,1,0,1
 card6,机械帮手,2,700,fanshi,获得9点积分，到达站点或建筑但无法使用卡牌时可以选择丢弃一张手牌,游玩Turning Point MSV难度达到inf+,art/hand6.png,cover,0.5,0.5,score_optional_discard,9,0,1
-card7,装腔作势,7,0,event,抵消一次事件格的事件,（骰子决定）走X步或获得X分+70X块钱,art/hand7.jpg,cover,0.5,0.5,event_cancel_random,1,0,1
+card7,装腔作势,7,0,event,抵消一次事件格的事件，（骰子决定）走X步或获得（3-X）分+50X块钱,无,art/hand7.jpg,cover,0.5,0.5,event_cancel_random,1,0,1
 card8,诈骗交易,1,0,Arcaea,选择任意其他队伍，该队伍给你100金钱并且收入-5，你的队伍收入+5,游玩Tr!cK Ma?tEr ETR难度达到990w分,art/hand8.jpg,cover,0.5,0.5,transfer_income,100,5,1
 card9,魔幻饰品,2,0,fanshi,触发范式建筑效果，你可以再扔一个骰子，只有最后一次骰子算数,游玩爆裂魔法 MSV难度达到1005000分,art/hand9.png,cover,0.5,0.5,fanshi_reroll,0,0,1
 card10,快速贷款,3,0,Arcaea,获得400金钱，并获得永久效果：每次走牌开始时，-25金钱，如果不能付清，则-3积分并消除此效果,游玩Garakuta Doll Play FTR难度达到990w分,art/example.png,cover,0.5,0.5,loan,400,25,1
@@ -15,12 +15,12 @@ card13,稀世珍宝,3,150,Phigros,获得2点积分,游玩黄金之城 IN难度�
 card14,机器会计,5,400,Arcaea,获得4点积分，收入+20,游玩XTREME FTR难度达到995w分,art/hand13.jpg,cover,0.5,0.5,score_income,4,20,1
 card15,颁奖典礼,4,300,Arcaea,获得3点积分，收入+10，并获得永久效果：你造访Arcaea时，获得一次收入,游玩Last Celebration FTR难度达到995w分,art/hand14.jpg,cover,0.5,0.5,score_income_arcaea_visit,3,10,1
 card16,萨满的魔杖,4,400,fanshi,获得6点积分，并获得永久效果：你造访范式时，获得70金钱,游玩MAGICAL RENDA STADIUM MSV难度达到1005000分,art/hand15.png,cover,0.5,0.5,score_fanshi_visit,6,70,1
-card17,交锋,3,0,koushui,"当你的手牌点数均小于等于3时可以使用，选择任意其他队伍立即战斗，双方当场选人；你无需在这个站点支付税金",无,art/hand16.png,cover,0.5,0.5,challenge_battle_low_hand_tax_refund,0,0,1
-card18,与我一战！,3,100,koushui,选择任意其他队伍发起一次该回合的战斗，你无需在这个站点支付税金,无,art/hand17.png,cover,0.5,0.5,challenge_battle_tax_refund,0,0,1
+card17,交锋,3,0,koushui,当你的手牌点数均小于等于3时可以使用，选择任意其他队伍战斗，发起的回合数为两队的回合数取最小值，另一方可调整该回合留守队员；你无需在这个站点支付税金,无,art/hand16.png,cover,0.5,0.5,challenge_battle_low_hand_tax_refund,0,0,1
+card18,与我一战！,3,100,koushui,选择任意其他队伍发起一次战斗，发起的回合数为两队的回合数取最小值，另一方可调整该回合留守队员；你无需在这个站点支付税金,无,art/hand17.png,cover,0.5,0.5,challenge_battle_tax_refund,0,0,1
 card19,惊人强大,6,1000,Arcaea,"(如果使用此卡牌移动，-20金钱),+15积分 ",游玩Amazing Mighty!!!! FTR难度达到990w分,art/hand18.jpg,cover,0.5,0.5,score_move_fee,15,20,1
 card20,大善人,5,0,Phigros,+150金钱 ,游玩goodrage IN难度达到 99.6％acc,art/hand19.png,cover,0.5,0.5,money,150,0,1
 card21,魔咒之剑,1,0,fanshi,+3积分，(如果使用此卡牌移动，则跳过一回合),游玩Dark Falchion MAS难度达到INF评级,art/hand20.png,cover,0.5,0.5,score_skip_if_moved,3,0,1
-card22,厄运火杆,2,350,mis,你不会受到厄运点的影响，选择任意其他队伍，该队伍遭遇厄运,无,art/hand21.jpg,cover,0.5,0.5,redirect_misfortune,0,0,1
+card22,厄运火杆,2,50,mis,你不会受到厄运点的影响，选择任意其他队伍，该队伍遭遇厄运,无,art/hand21.jpg,cover,0.5,0.5,redirect_misfortune,0,0,1
 card23,这谱谁写的,4,400,Arcaea,+7积分,游玩怒槌 FTR难度达到995w,art/hand22.jpg,cover,0.5,0.5,score,7,0,1
 card24,外快,3,0,Arcaea,+1积分+50金钱,游玩Speed of Light ETR难度达到995w,art/hand23.jpg,cover,0.5,0.5,score_money,1,50,1
 card25,二手货,7,0,event,+60金钱，你可以再使用一张卡牌,游玩Avantgarde MAS难度达到INF,art/hand24.jpg,cover,0.5,0.5,money_extra_use,60,1,1
@@ -33,9 +33,12 @@ card31,零號車輛,6,50,fanshi,"+1积分，下一次步数在1~6中自行选择
 card32,创造性AI,4,200,event,"永久效果：触发事件格时，抽取两个事件效果",无,,contain,0.5,0.5,double_event,2,0,1
 card33,!？叠？！,5,50,event,收入+10,无,,contain,0.5,0.5,income,10,0,1
 card34,海神九考,6,100,fanshi,"获得1点积分，并获得单次效果复活吧我的爱人：你的队友在对战中落败时，无视本次挑战结果并获得30金钱",游玩Ωκεανο MSV难度达到1005000分,,contain,0.5,0.5,score_battle_rescue,1,30,1
-card35,挖到宝了,4,400,fanshi,"获得2点积分，并获得单次buff“已添加到我喜欢的音乐”：你的队伍在下次对战时可以无视本次选曲并自行选曲",游玩CRYSTAL MINING MSV难度达到1004444分以上,,contain,0.5,0.5,score_free_song,2,0,1
+card35,挖到宝了,4,160,fanshi,"获得2点积分，并获得单次buff“已添加到我喜欢的音乐”：你的队伍在下次对战时可以无视本次选曲并自行选曲",游玩CRYSTAL MINING MSV难度达到1004444分以上,,contain,0.5,0.5,score_free_song,2,0,1
 card36,彼岸双生,2,300,Arcaea,"获得2点积分，并获得一次效果彼岸双生：选择一支队伍建立单向连接；在对战中若己方失败，对方也受到双倍惩罚，己方成功则无效果",游玩Tie me down gently FTR难度达到998w分,,contain,0.5,0.5,score_link_team,2,0,1
 card37,忘忘队立大功,3,100,Phigros,"获得1点积分，选择一个队伍，丢弃其一张手牌",游玩ATHAZA IN难度达到99.8ACC,,contain,0.5,0.5,score_discard_other,1,0,1
 card38,蜘蛛侠之我是MJ,2,100,all,利用蛛丝瞬移到其他队在当前回合的位置且不触发对战,无,,contain,0.5,0.5,teleport_other_team,0,0,1
 card39,six seven,6,150,all,"获得单次效果6767：该回合出牌数加1，选一张牌丢入弃牌堆并重新抽取一张牌",无,,contain,0.5,0.5,extra_use_redraw_one,0,0,1
 card40,重启,1,100,all,"本回合出牌数+1，将你当前所有手牌丢弃并重新抽取六张手牌",无,,contain,0.5,0.5,extra_use_redraw_all,0,0,1
+card41,回环之力,4,0,Arcaea,获得当前回合数乘以20的金钱,游玩ouroboros -twin stroke of the end- FTR难度达到990w分,,contain,0.5,0.5,money_round,20,0,1
+card42,狂战,2,200,Arcaea,获得永久buff：路过其他队伍本回合占领的格子时可提前停下并发起战斗,游玩BUCHiGiRE Berserker FTR难度达到990w分,,contain,0.5,0.5,ambush_permanent,0,0,1
+card43,超时空警察,6,200,Phigros,获得一次性buff：路过其他队伍现在所在的格子时可提前停下并发起战斗，战斗轮次取两队较小值,游玩Rrhar'il IN难度达到acc>=99.5%,,contain,0.5,0.5,ambush_current_once,0,0,1

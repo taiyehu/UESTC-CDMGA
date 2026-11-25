@@ -57,6 +57,20 @@ CREATE TABLE IF NOT EXISTS game_action_log (
   CONSTRAINT fk_game_action_actor FOREIGN KEY (actor_identity_id) REFERENCES identity(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS game_replay_frame (
+  room_id BIGINT UNSIGNED NOT NULL,
+  seq BIGINT UNSIGNED NOT NULL,
+  replay_round INT NOT NULL,
+  seat CHAR(1) NULL,
+  action_type VARCHAR(40) NOT NULL,
+  payload_json JSON NOT NULL,
+  state_json JSON NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (room_id, seq),
+  KEY idx_game_replay_round (room_id, replay_round, seq),
+  CONSTRAINT fk_game_replay_room FOREIGN KEY (room_id) REFERENCES game_room(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS game_room_bot (
   room_id BIGINT UNSIGNED NOT NULL,
   team_id INT NOT NULL,

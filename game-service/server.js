@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const mysql = require('mysql2/promise');
 const game = require('./game');
+const {HAND,EVENTS,MISFORTUNES} = require('./catalog');
 const bot = require('./bot');
 const tutorial = require('./tutorial');
 
@@ -37,6 +38,14 @@ async function identity(req) {
   return {id:Number(user.id),role:user.role,account:user.account};
 }
 const json = value => typeof value==='string'?JSON.parse(value):value;
+function replayRound(state,seat){
+  if(seat&&state.teams[seat])return state.teams[seat].round;
+  return Math.max(1,...Object.values(state.teams).map(t=>t.round-1));
+}
+async function saveReplayFrame(db,roomId,seq,round,seat,action,payload,state){
+  await db.query('INSERT INTO game_replay_frame(room_id,seq,replay_round,seat,action_type,payload_json,state_json) VALUES(?,?,?,?,?,?,?)',
+    [roomId,seq,round,seat,action,JSON.stringify(payload),JSON.stringify(state)]);
+}
 async function readRoom(code, db=pool) {
   const [rows]=await db.query('SELECT r.*, c.title AS course_title, c.category AS course_category, c.end_time AS course_end_time FROM game_room r JOIN course c ON c.id=r.course_id WHERE r.code=?',[code]);
   if(!rows.length)throw fail(404,'房间不存在');
@@ -60,6 +69,7 @@ async function settleExpired(room){
     if(!state.result){await db.rollback();return;}
     const version=Number(rows[0].version)+1;
     await db.query('UPDATE game_room_state SET version=?,state_json=? WHERE room_id=?',[version,JSON.stringify(state),room.id]);
+    await saveReplayFrame(db,room.id,version,replayRound(state,null),null,'end',{reason:'time_limit'},state);
     await db.query("UPDATE game_room SET status='ended',ended_at=NOW() WHERE id=?",[room.id]);
     await db.commit();room.status='ended';
   }catch(error){await db.rollback();throw error;}finally{db.release();}
@@ -70,6 +80,7 @@ async function access(room, user, db=pool) {
   const seat=room.seats.find(s=>s.team_id===rows[0]?.team_id);
   if(!seat){
     if(room.status==='waiting')return {role:'spectator',canAct:false};
+    if(room.status==='ended')return {role:'spectator',canAct:false};
     throw fail(403,'你不是此房间的裁判或参赛队员');
   }
   return {role:'team',id:seat.seat,canAct:seat.operator_identity_id===user.id};
@@ -107,6 +118,10 @@ const operations={roll:(r,w,b)=>game.roll(r,w,b.cardId,b.value),
   bid:(r,w,b)=>game.bid(r,w,b.amount),
   'misfortune-target':(r,w,b)=>game.misfortuneTarget(r,w,b.target),
   'misfortune-pick':(r,w,b)=>game.misfortunePick(r,w,b.index),
+  'misfortune-ransom':(r,w,b)=>game.misfortuneRansom(r,w,b.payment),
+  'misfortune-swap-target':(r,w,b)=>game.misfortuneSwapTarget(r,w,b.target),
+  'misfortune-swap':(r,w,b)=>game.misfortuneSwap(r,w,b.accept,b.sourceCardId,b.ownCardId),
+  'misfortune-pass-cards':(r,w,b)=>game.misfortunePassCards(r,w,b.cardIds),
   move:(r,w,b)=>game.move(r,w,b.cardId,b.route),
   'reserve-member':(r,w,b)=>game.reserveMember(r,w,b.memberId),
   'end-turn':(r,w)=>game.endTurn(r,w),
@@ -139,6 +154,10 @@ const server=http.createServer(async(req,res)=>{
       return send(res,200,{status:'ok'});
     }
     const user=await identity(req);
+    if(req.method==='GET'&&url.pathname==='/game-api/cards'){
+      const card=({id,name,effect,condition,move,cost,image,quantity})=>({id,name,effect,condition,move,cost,image,quantity});
+      return send(res,200,{hand:HAND.map(card),events:EVENTS.map(card),misfortunes:MISFORTUNES.map(card)});
+    }
     const tutorialMatch=url.pathname.match(/^\/game-api\/tutorial(?:\/(reset|[a-z-]+))?$/);
     if(tutorialMatch){
       if(req.method!=='GET'&&req.method!=='POST')throw fail(405,'请求方式不支持');
@@ -181,11 +200,44 @@ const server=http.createServer(async(req,res)=>{
     const match=url.pathname.match(/^\/game-api\/rooms\/([A-F0-9]{8})(?:\/(start|[a-z-]+))?$/);
     if(!match)throw fail(404,'接口不存在');
     const room=await readRoom(match[1]);
-    const who=await access(room,user);
     await settleExpired(room);
+    if(req.method==='GET'&&match[2]==='replay'){
+      if(room.status!=='ended')throw fail(409,'对局结束后才能查看重放');
+      const [first]=await pool.query('SELECT seq FROM game_replay_frame WHERE room_id=? ORDER BY seq LIMIT 1',[room.id]);
+      if(!first.length||Number(first[0].seq)!==0)throw fail(404,'此对局没有完整重放记录');
+      const roundValue=url.searchParams.get('round');
+      if(roundValue===null){
+        const [roundRows]=await pool.query('SELECT replay_round AS round,COUNT(*) AS steps FROM game_replay_frame WHERE room_id=? GROUP BY replay_round ORDER BY replay_round',[room.id]);
+        const [last]=await pool.query('SELECT state_json FROM game_replay_frame WHERE room_id=? ORDER BY seq DESC LIMIT 1',[room.id]);
+        const finalState=json(last[0].state_json);
+        const [battleFrames]=await pool.query("SELECT replay_round,payload_json FROM game_replay_frame WHERE room_id=? AND action_type='battle'",[room.id]);
+        const battleSettlementRounds=new Map(battleFrames.map(frame=>[json(frame.payload_json).id,frame.replay_round]));
+        const highlights=[
+          ...finalState.records.flatMap(record=>[
+            ...(record.events||[]).map(card=>({round:record.round,time:record.time,team:record.team,text:`触发事件「${card.name}」`})),
+            ...(record.misfortune||[]).map(card=>({round:record.round,time:record.time,team:record.team,text:`触发厄运「${card.name}」`}))
+          ]),
+          ...finalState.battles.flatMap(b=>[
+            {round:b.round,time:b.startedAt||0,team:finalState.records.find(r=>r.id===b.first)?.team||'?',text:`${b.node} 战斗开始`},
+            ...(b.winner?[{round:battleSettlementRounds.get(b.id)||b.round,time:b.startedAt||0,team:b.winner,text:`${b.node} 战斗，${b.winner} 队获胜`}]:[])
+          ]),
+          ...(finalState.exTimeEvents||[]).map(e=>({round:e.round,time:e.time,team:e.team,text:'进入 EX time'}))
+        ].sort((a,b)=>a.round-b.round||a.time-b.time);
+        return send(res,200,{code:room.code,courseTitle:room.course_title,rounds:roundRows,
+          result:finalState.result,scoreChanges:finalState.scoreChanges,highlights,
+          teams:Object.fromEntries(Object.entries(finalState.teams).map(([id,t])=>[id,{score:t.score,money:t.money,income:t.income}]))});
+      }
+      const round=Number(roundValue),view=url.searchParams.get('view')||'A';
+      if(!Number.isSafeInteger(round)||round<1||round>100000||!['A','B','C'].includes(view))throw fail(400,'无效的回合或视角');
+      const [frames]=await pool.query('SELECT f.seq,f.replay_round,f.seat,f.action_type,f.payload_json,f.state_json,(SELECT p.state_json FROM game_replay_frame p WHERE p.room_id=f.room_id AND p.seq<f.seq ORDER BY p.seq DESC LIMIT 1) AS before_state_json FROM game_replay_frame f WHERE f.room_id=? AND f.replay_round=? ORDER BY f.seq',[room.id,round]);
+      return send(res,200,{round,view,frames:frames.map(row=>({seq:Number(row.seq),seat:row.seat,action:row.action_type,payload:json(row.payload_json),
+        state:{...game.state(json(row.state_json),{role:'team',id:view}),canAct:false},
+        before:row.before_state_json?{...game.state(json(row.before_state_json),{role:'team',id:view}),canAct:false}:null}))});
+    }
+    const who=await access(room,user);
     if(req.method==='GET'&&match[2]==='details'){
       const other=await membership(user.id);
-      if(other&&other!==room.code&&who.role!=='host')throw fail(409,`已于房间${other}中存在队伍`);
+      if(room.status==='waiting'&&other&&other!==room.code&&who.role!=='host')throw fail(409,`已于房间${other}中存在队伍`);
       const teams=room.status==='waiting'?await waitingTeams(room.course_id):[];
       return send(res,200,{...publicRoom(room,who),teams,myIdentityId:user.id,myTeamId:teams.find(t=>t.members.some(m=>m.id===user.id))?.teamId||null});
     }
@@ -272,6 +324,7 @@ const server=http.createServer(async(req,res)=>{
           state.teams[seat].members=team.botStrategy?Array.from({length:3},(_,i)=>({id:`bot-${seat}-${i+1}`,account:`${team.botStrategy==='steady'?'稳健':'进攻'}人机 ${i+1}`,avatar:null})):team.members.map(m=>({id:m.id,account:m.account,avatar:m.avatar}));
         }
         await db.query('INSERT INTO game_room_state(room_id,version,state_json) VALUES(?,?,?)',[room.id,state.version,JSON.stringify(state)]);
+        await saveReplayFrame(db,room.id,0,1,null,'start',{},state);
         await db.query("UPDATE game_room SET status='active',started_at=NOW() WHERE id=?",[room.id]);
         await db.commit();return send(res,200,{status:'active'});
       } catch(e){await db.rollback();throw e;} finally {db.release();}
@@ -285,6 +338,7 @@ const server=http.createServer(async(req,res)=>{
         const state=game.hydrate(json(states[0].state_json));game.finishByScores(state,'manual');
         const version=Number(states[0].version)+1;
         await db.query('UPDATE game_room_state SET version=?,state_json=? WHERE room_id=?',[version,JSON.stringify(state),room.id]);
+        await saveReplayFrame(db,room.id,version,replayRound(state,null),null,'end',{reason:'manual'},state);
         await db.query('INSERT INTO game_action_log(room_id,seq,actor_identity_id,seat,action_type,payload_json,result_version) VALUES(?,?,?,NULL,?,?,?)',[room.id,version,user.id,'end','{}',version]);
         await db.query("UPDATE game_room SET status='ended',ended_at=NOW() WHERE id=?",[room.id]);
         await db.commit();return send(res,200,{status:'ended'});
@@ -294,6 +348,7 @@ const server=http.createServer(async(req,res)=>{
     if(req.method==='GET'&&!match[2]) {
       const [rows]=await pool.query('SELECT state_json FROM game_room_state WHERE room_id=?',[room.id]);
       if(!rows.length)throw fail(500,'房间状态缺失');
+      if(who.role==='spectator')throw fail(403,'请通过对局回顾查看已结束房间');
       const state=game.state(game.hydrate(json(rows[0].state_json)),who);
       return send(res,200,{...state,botSeats:Object.fromEntries(room.seats.filter(s=>s.bot_strategy).map(s=>[s.seat,s.bot_strategy])),canAct:who.canAct&&room.status==='active'});
     }
@@ -305,10 +360,20 @@ const server=http.createServer(async(req,res)=>{
         const [rows]=await db.query('SELECT version,state_json FROM game_room_state WHERE room_id=? FOR UPDATE',[room.id]);
         if(!rows.length)throw fail(500,'房间状态缺失');
         const state=game.hydrate(json(rows[0].state_json));
+        const round=replayRound(state,who.id);
         state.deadlineAt=room.course_end_time?new Date(room.course_end_time).getTime():null;
-        try {if(state.pendingCardReaction&&!['counter-response','resolve-challenge','force-end-turn','money'].includes(match[2]))throw Error('请先处理卡牌反制');operations[match[2]](state,who,b);game.evaluateEnd(state);} catch(e){throw fail(400,e.message);}
+        try {
+          if(state.pendingCardReaction&&!['counter-response','resolve-challenge','force-end-turn','money'].includes(match[2]))throw Error('请先处理卡牌反制');
+          if(!state.pendingCardReaction){
+            const pending=game.currentPendingKind(state);
+            const allowed={misfortuneChoice:['misfortune-target','misfortune-pick'],auction:['bid'],misfortuneEffect:['misfortune-ransom','misfortune-swap-target','misfortune-swap','misfortune-pass-cards']};
+            if(pending&&!['force-end-turn','money','score','reset'].includes(match[2])&&!allowed[pending].includes(match[2]))throw Error('请先完成待处理的厄运结算');
+          }
+          operations[match[2]](state,who,b);game.evaluateEnd(state);
+        } catch(e){throw fail(400,e.message);}
         const version=Number(rows[0].version)+1;
         await db.query('UPDATE game_room_state SET version=?,state_json=? WHERE room_id=?',[version,JSON.stringify(state),room.id]);
+        await saveReplayFrame(db,room.id,version,round,who.id||null,match[2],b,state);
         await db.query('INSERT INTO game_action_log(room_id,seq,actor_identity_id,seat,action_type,payload_json,result_version) VALUES(?,?,?,?,?,?,?)',[room.id,version,user.id,who.id||null,match[2],JSON.stringify(b),version]);
         if(state.result)await db.query("UPDATE game_room SET status='ended',ended_at=NOW() WHERE id=?",[room.id]);
         await db.commit();return send(res,200,{...game.state(state,who),botSeats:Object.fromEntries(room.seats.filter(s=>s.bot_strategy).map(s=>[s.seat,s.bot_strategy])),canAct:who.canAct&&!state.result});
@@ -342,10 +407,12 @@ async function advanceBots(){
           if(action){seat=candidate.seat;break;}
         }
         if(!action){await db.rollback();continue;}
+        const round=replayRound(state,seat);
         operations[action.type](state,{role:'team',id:seat},action.payload);
         game.evaluateEnd(state);
         const version=Number(states[0].version)+1;
         await db.query('UPDATE game_room_state SET version=?,state_json=? WHERE room_id=?',[version,JSON.stringify(state),room.id]);
+        await saveReplayFrame(db,room.id,version,round,seat,action.type,action.payload,state);
         await db.query("INSERT INTO game_action_log(room_id,seq,actor_identity_id,actor_type,seat,action_type,payload_json,result_version) VALUES(?,?,NULL,'bot',?,?,?,?)",[room.id,version,seat,action.type,JSON.stringify(action.payload),version]);
         if(state.result)await db.query("UPDATE game_room SET status='ended',ended_at=NOW() WHERE id=?",[room.id]);
         await db.commit();

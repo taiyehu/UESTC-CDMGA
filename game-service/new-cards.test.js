@@ -25,13 +25,16 @@ function arrive(sourceId,house,initialMoney=1000){
 }
 
 test('新卡牌和卡面完整入库',()=>{
-  assert.equal(HAND.length,40);
-  for(let n=17;n<=40;n++){
+  assert.equal(HAND.length,43);
+  for(let n=17;n<=43;n++){
     const card=HAND.find(row=>row.id===`card${n}`);
     assert.ok(card?.name);
-    assert.equal(card.image,`/game-assets/cards/output/card${n}.png${n===35?'?v=fanshi-icon':''}`);
+    assert.equal(card.image,`/game-assets/cards/output/card${n}.png${[17,18,22,35].includes(n)?'?v=rules-20261125':''}`);
   }
-  assert.equal(EVENTS.length,8);assert.equal(MISFORTUNES.length,6);
+  assert.equal(HAND.find(card=>card.id==='card22').cost,50);
+  assert.equal(HAND.find(card=>card.id==='card35').cost,160);
+  assert.equal(EVENTS.length,11);assert.equal(MISFORTUNES.length,14);
+  for(const id of ['event9','event10','event11','mis8'])assert.ok([...EVENTS,...MISFORTUNES].find(card=>card.id===id)?.image.endsWith(`${id}.png`));
 });
 
 function ordinaryTurn(sourceId){
@@ -70,6 +73,18 @@ test('蜘蛛侠之我是MJ可选择本回合尚未移动的队伍',()=>{
   assert.equal(team.position,target);
   assert.equal(room.records.findLast(r=>r.team==='A').finalPosition,target);
   assert.equal(room.battles.length,battles);
+});
+
+test('先到的队伍瞬移离开后，其他队抵达原落点不会触发战斗',()=>{
+  const {room,team,who,card}=ordinaryTurn('card38');
+  room.teams.B.position='R5';
+  game.useCard(room,who,card.id);
+  game.chooseCardTarget(room,who,'B');
+  assert.equal(team.position,'R5');
+  assert.equal(room.records.find(r=>r.team==='A').node,'R2');
+  const c=room.teams.C;c.position='R1';c.hand[0].move=1;
+  game.move(room,teamWho('C'),c.hand[0].id,['R2']);
+  assert.equal(room.battles.length,0);
 });
 
 test('蜘蛛侠之我是MJ传送到目标在本回合的位置，不读取未来回合',()=>{
@@ -112,6 +127,121 @@ test('重启在普通格增加一次出牌并替换全部六张手牌',()=>{
   assert.equal(team.money,money-100);
 });
 
+test('回环之力按使用时的当前回合数发钱',()=>{
+  const {room,team,who,card}=arrive('card41','Arcaea');
+  team.round=5;room.records.at(-1).round=5;
+  const before=team.money;
+  game.useCard(room,who,card.id);
+  game.resolveChallenge(room,{role:'host'},'A',true);
+  assert.equal(team.money,before+100);
+  assert.equal(room.moneyChanges.at(-1).amount,100);
+});
+
+test('狂战永久允许路过对手占领格时提前停下并发起战斗',()=>{
+  const {room,team,who,card}=arrive('card42','Arcaea');
+  game.useCard(room,who,card.id);game.resolveChallenge(room,{role:'host'},'A',true);
+  assert.equal(team.ambushPermanent,true);
+  game.endTurn(room,who);
+  team.position='R1';
+  room.records.push({id:'B-occupied',team:'B',round:team.round,node:'R2'});
+  const mover=team.hand.find(held=>held.move!==7);mover.move=3;
+  const record=game.move(room,who,mover.id,['R2']);
+  assert.equal(record.node,'R2');
+  assert.equal(room.battles.at(-1).first,'B-occupied');
+  assert.equal(room.battles.at(-1).second,record.id);
+  assert.equal(team.ambushPermanent,true);
+});
+
+test('超时空警察可伏击目标当前所在格，战斗轮次取较小值并消耗一次效果',()=>{
+  const {room,team,who,card}=arrive('card43','Phigros');
+  game.useCard(room,who,card.id);game.resolveChallenge(room,{role:'host'},'A',true);
+  assert.equal(team.ambushCurrentCharges,1);
+  game.endTurn(room,who);
+  team.position='R1';
+  room.teams.B.position='R2';
+  assert.equal(game.state(room,who).ambushCurrentTargets.B,'R2');
+  const mover=team.hand.find(held=>held.move!==7);mover.move=3;
+  assert.throws(()=>game.move(room,who,mover.id,['R2','R3']),/提前结束移动/);
+  assert.equal(team.ambushCurrentCharges,1);
+  const record=game.move(room,who,mover.id,['R2']);
+  assert.equal(team.ambushCurrentCharges,0);
+  assert.equal(room.battles.at(-1).round,1);
+  assert.equal(room.battles.at(-1).first,record.id);
+  assert.equal(room.records.find(r=>r.id===room.battles.at(-1).second).team,'B');
+  const odd=game.createRoom({seed:'ambush-odd'}),oddTeam=odd.teams.A;
+  oddTeam.position='R1';oddTeam.ambushCurrentCharges=1;oddTeam.hand[0].move=3;odd.teams.B.position='R2';odd.teams.B.round=3;
+  game.move(odd,teamWho('A'),oddTeam.hand[0].id,['R2']);
+  assert.equal(odd.battles.at(-1).round,1);
+  assert.equal(oddTeam.ambushCurrentCharges,0);
+  const house=game.createRoom({seed:'ambush-house'}),houseTeam=house.teams.A;
+  houseTeam.position='R4';houseTeam.ambushCurrentCharges=1;houseTeam.hand[0].move=3;house.teams.B.position='Phigros';
+  game.move(house,teamWho('A'),houseTeam.hand[0].id,['P2','Phigros']);
+  assert.equal(house.battles.at(-1).targetTeam,'B');
+  assert.equal(houseTeam.ambushCurrentCharges,0);
+});
+
+function triggerNewEvent(id,setup=()=>{}){
+  const room=game.createRoom({seed:`new-${id}`}),team=room.teams.A,who=teamWho('A');
+  setup(room);
+  room.eventDeck=[EVENTS.find(card=>card.id===id)];
+  team.position='R4';
+  const mover=team.hand.find(card=>card.move!==7);mover.move=1;
+  game.move(room,who,mover.id,['P2']);
+  if(team.pendingEvent)game.skipUse(room,who);
+  return {room,team,who};
+}
+
+test('新事件按回合数最少和最多结算，并列队伍均生效',()=>{
+  const low=triggerNewEvent('event9',room=>{
+    room.teams.A.round=3;room.teams.B.round=2;room.teams.C.round=2;
+    room.teams.B.score=2;room.teams.C.score=3;
+  });
+  assert.equal(low.room.teams.A.score,0);
+  assert.equal(low.room.teams.B.score,1);
+  assert.equal(low.room.teams.C.score,2);
+  const high=triggerNewEvent('event10',room=>{
+    room.teams.A.round=3;room.teams.B.round=3;room.teams.C.round=2;
+  });
+  assert.equal(high.room.teams.A.score,1);
+  assert.equal(high.room.teams.B.score,1);
+  assert.equal(high.room.teams.C.score,0);
+});
+
+test('握手言和仅抵消下一次针对本队发起的战斗',()=>{
+  const {room,team}=triggerNewEvent('event11');
+  assert.equal(team.nextIncomingBattleShield,1);
+  const b=room.teams.B;b.position='R4';b.hand[0].move=1;
+  game.move(room,teamWho('B'),b.hand[0].id,['P2']);
+  assert.equal(team.nextIncomingBattleShield,0);
+  assert.equal(room.battles.length,0);
+  const c=room.teams.C;c.position='R4';c.hand[0].move=1;
+  game.move(room,teamWho('C'),c.hand[0].id,['P2']);
+  assert.equal(room.battles.length,1);
+  const forced=game.createRoom({seed:'handshake-forced'}),attacker=forced.teams.A;
+  forced.teams.B.nextIncomingBattleShield=1;
+  forced.records.push({id:'attacker',team:'A',round:1,node:'R2'});
+  attacker.pendingTarget=HAND.find(card=>card.id==='card18');
+  game.chooseCardTarget(forced,teamWho('A'),'B');
+  assert.equal(forced.teams.B.nextIncomingBattleShield,0);
+  assert.equal(forced.battles.length,0);
+});
+
+test('好好睡让回合数最少的并列队伍跳过下一回合',()=>{
+  const room=game.createRoom({seed:'mis8'}),a=room.teams.A;
+  a.round=3;room.teams.B.round=2;room.teams.C.round=2;
+  room.misfortuneDeck=[MISFORTUNES.find(card=>card.id==='mis8')];
+  a.position='R2';a.hand[0].move=2;
+  game.move(room,teamWho('A'),a.hand[0].id,['B','R8']);
+  if(a.pendingMisfortuneCard)game.skipUse(room,teamWho('A'));
+  assert.equal(a.skipNextTurn,false);
+  for(const id of 'BC'){
+    const team=room.teams[id];assert.equal(team.skipNextTurn,true);
+    team.awaitingEnd=true;team.cardActionDone=true;
+    game.endTurn(room,teamWho(id));
+    assert.equal(team.round,4);
+  }
+});
+
 test('旧房间加载时补入新牌且不会重复添加',()=>{
   const room=game.createRoom({seed:'catalog-upgrade'});
   delete room.catalogVersion;
@@ -123,11 +253,11 @@ test('旧房间加载时补入新牌且不会重复添加',()=>{
   room.eventDeck=room.eventDeck.filter(card=>Number(card.id.slice(5))<=6);
   room.misfortuneDeck=room.misfortuneDeck.filter(card=>Number(card.id.slice(3))<=5);
   game.hydrate(room);
-  for(const team of Object.values(room.teams))assert.equal(team.hand.length+team.deck.length+team.discard.length,40);
-  assert.equal(room.eventDeck.length+room.eventDiscard.length,8);
-  assert.equal(room.misfortuneDeck.length+room.misfortuneDiscard.length,6);
+  for(const team of Object.values(room.teams))assert.equal(team.hand.length+team.deck.length+team.discard.length,43);
+  assert.equal(room.eventDeck.length+room.eventDiscard.length,11);
+  assert.equal(room.misfortuneDeck.length+room.misfortuneDiscard.length,14);
   game.hydrate(room);
-  assert.equal(room.teams.A.hand.length+room.teams.A.deck.length,40);
+  assert.equal(room.teams.A.hand.length+room.teams.A.deck.length,43);
 });
 
 test('已有房间的卡牌配置随新版目录更新',()=>{
@@ -237,7 +367,7 @@ test('忘忘队立大功得分并指定其他队伍弃牌补牌',()=>{
   assert.equal(team.pendingDiscard,null);
 });
 
-test('交锋和与我一战在税格免税并发起本轮定向战斗',()=>{
+test('交锋和与我一战在税格免税并立即发起定向战斗',()=>{
   for(const sourceId of ['card17','card18']){
     const room=game.createRoom({seed:sourceId,initialMoney:1000}),a=room.teams.A,who=teamWho('A');
     const card=putCard(a,sourceId);
@@ -260,7 +390,7 @@ test('交锋和与我一战在税格免税并发起本轮定向战斗',()=>{
     game.chooseCardTarget(room,who,'B');
     const battle=room.battles.find(item=>item.forced);
     assert.equal(battle.targetTeam,'B');assert.equal(battle.round,1);
-    assert.equal(battle.status,sourceId==='card17'?'待结算':'待选人');
+    assert.equal(battle.status,'待结算');
     const b=room.teams.B;b.position=sourceId==='card17'?'R1':'R3';b.hand[0].move=1;
     game.move(room,teamWho('B'),b.hand[0].id,[sourceId==='card17'?'R2':'R4']);
     assert.equal(battle.status,'待结算');
@@ -276,7 +406,7 @@ test('交锋立即让双方选人，无须等待目标队伍移动',()=>{
   const card=putCard(a,'card17');a.position='R1';
   for(const held of a.hand)held.move=Math.min(held.move,3);
   const mover=a.hand.find(held=>held.id!==card.id);mover.move=1;
-  game.move(room,who,mover.id,['R2']);for(const held of a.hand)held.move=Math.min(held.move,3);game.useCard(room,who,card.id);
+  game.move(room,who,mover.id,['R2']);for(const held of a.hand)held.move=Math.min(held.move,3);a.cardActionDone=false;game.useCard(room,who,card.id);
   game.chooseCardTarget(room,who,'B');
   const duel=room.battles.find(item=>item.forced);
   assert.equal(duel.status,'待选人');
@@ -284,6 +414,27 @@ test('交锋立即让双方选人，无须等待目标队伍移动',()=>{
   game.reserveMember(room,who,'a1');game.reserveMember(room,teamWho('B'),'b1');
   assert.equal(duel.status,'待结算');
   assert.equal(room.records.find(r=>r.id===duel.second).defender.account,'B选手');
+});
+
+test('交锋与与我一战按较小回合发起，目标可重选该回合留守队员',()=>{
+  for(const sourceId of ['card17','card18']){
+    const room=game.createRoom({seed:`earlier-${sourceId}`,initialMoney:1000}),a=room.teams.A,b=room.teams.B,who=teamWho('A');
+    a.round=3;b.round=2;a.members=[{id:'a1',account:'A选手'}];b.members=[{id:'b1',account:'B原留守'},{id:'b2',account:'B新留守'}];
+    room.records.push({id:'a-round-2',team:'A',round:2,node:'R5'},{id:'b-round-2',team:'B',round:2,node:'R6',defender:{id:'b1',account:'B原留守'}});
+    const card=putCard(a,sourceId);a.position='R1';
+    for(const held of a.hand)held.move=Math.min(held.move,3);
+    const mover=a.hand.find(held=>held.id!==card.id);mover.move=1;
+    game.move(room,who,mover.id,['R2']);
+    for(const held of a.hand)held.move=Math.min(held.move,3);
+    game.useCard(room,who,card.id);game.chooseCardTarget(room,who,'B');
+    const duel=room.battles.at(-1),first=room.records.find(r=>r.id===duel.first),second=room.records.find(r=>r.id===duel.second);
+    assert.equal(duel.round,2);assert.equal(duel.node,'R5');assert.equal(duel.status,'待选人');
+    assert.equal(first.round,2);assert.equal(second.round,2);assert.equal(second.node,'R6');
+    assert.equal(second.defender,undefined);
+    game.reserveMember(room,who,'a1');game.reserveMember(room,teamWho('B'),'b2');
+    assert.equal(duel.status,'待结算');assert.equal(second.defender.id,'b2');
+    assert.equal(room.records.find(r=>r.id==='b-round-2').defender.id,'b1');
+  }
 });
 
 test('移动代价、跳过回合、传送和收入免税按卡面生效',()=>{

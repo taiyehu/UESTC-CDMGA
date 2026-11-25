@@ -1,7 +1,7 @@
-function reachable(graph, houses, start, steps) {
+function reachable(graph, houses, start, steps, earlyStops=[]) {
   const destinations=[];
   function walk(node,route) {
-    if(route.length===steps||route.length>0&&houses.includes(node)) {
+    if(route.length===steps||route.length>0&&(houses.includes(node)||earlyStops.includes(node))) {
       destinations.push({node,route:[...route]});
     }
     if(route.length===steps)return;

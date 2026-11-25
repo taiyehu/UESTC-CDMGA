@@ -46,6 +46,8 @@ function prepareScene(progress) {
   team.houseActionDone=false;
   room.pendingMisfortuneChoice=null;
   room.pendingAuction=null;
+  room.pendingMisfortuneEffect=null;
+  room.misfortuneEffectQueue=[];
   if(progress.scene===6)game.score(room,{role:'host'},'A',1);
   if(progress.scene===3)room.eventDeck=[EVENTS.find(item=>item.id==='event1'),...room.eventDeck.filter(item=>item.id!=='event1')];
   if(progress.scene===4)room.misfortuneDeck=[...['mis2','mis3'].map(id=>MISFORTUNES.find(item=>item.id===id)),...room.misfortuneDeck.filter(item=>!['mis2','mis3'].includes(item.id))];
