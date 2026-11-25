@@ -5,3 +5,11 @@ mis3,感冒失声,本队-2积分,art/mis3.png,contain,0.5,0.5,score,-2,1
 mis4,摊主讹诈,所有队伍失去50%的金钱,art/mis4.jpg,contain,0.5,0.5,half_money,50,1
 mis5,偏差认知,获得debuff:下一次战斗或挑战时，偏移量+200,art/mis5.png,contain,0.5,0.5,debuff_offset,200,1
 mis6,静音灵,下一次战斗或挑战需静音游玩,,contain,0.5,0.5,debuff_mute,1,1
+mis7,抽奖,"掷骰子：1.-100金钱，2.-70金钱，3.-50金钱，4.-30金钱，5.-10金钱，6.+10金钱",,contain,0.5,0.5,roll_money,0,1
+mis8,好好睡,回合数最少的队伍下一回合被跳过,,contain,0.5,0.5,lowest_round_skip,1,1
+mis9,赎金,-150金钱（你的金钱数必须≥150）或-2积分,,contain,0.5,0.5,ransom_choice,-150,1
+mis10,命运共享,选择其他任一队伍，让其查看你的手牌。对方可以用自己的一张卡牌与你的任意一张卡牌交换,,contain,0.5,0.5,hand_swap_choice,0,1
+mis11,卖掉了,收入-10,,contain,0.5,0.5,income,-10,1
+mis12,抓钱舞,其他每个队伍+50金钱,,contain,0.5,0.5,other_teams_money,50,1
+mis13,握握双手,每个队伍将两张手牌传递给下一个队伍,,contain,0.5,0.5,pass_two_cards,2,1
+mis14,出勤,每个队伍收入-10,,contain,0.5,0.5,all_teams_income,-10,1

@@ -1,9 +1,12 @@
 id,name,effect,art_path,art_fit,art_focus_x,art_focus_y,effect_type,effect_value,quantity
 event1,社团赞助,本队+200金钱,art/event1.jpg,cover,0.5,0.5,money,200,1
-event2,冷场,本队-2积分,art/event2.jpg,cover,0.5,0.2,score,-2,1
+event2,冷场,本队-1积分,art/event2.jpg,cover,0.5,0.2,score,-1,1
 event3,手感火热,抵消下一次获得的debuff，如果已有debuff，则抵消最近一次获得的debuff,art/event3.jpg,cover,0.5,0.1,debuff_shield,1,1
 event4,亲友助威,当前积分最低的队伍 +1 积分,art/event4.jpg,cover,0.5,0.5,lowest_score,1,1
 event5,发现宝藏,触发一次范式起源建筑效果,art/event5.jpg,cover,0.5,0.5,fanshi_roll,0,1
-event6,对手阴招,本队伍下次战斗-1积分,art/event6.jpg,cover,0.5,0.9,battle_debuff,-1,1
+event6,对手阴招,本队伍触发的下次战斗中：自己队伍额外-1积分，对方队伍额外-100金钱,art/event6.jpg,cover,0.5,0.9,triggered_battle_penalty,-1,1
 event7,祝来袭！,"收入-10；下次战斗积分+2",,contain,0.5,0.5,income_battle_modifier,2,1
 event8,大炮发射,移动到随机位置,,contain,0.5,0.5,random_teleport,0,1
+event9,绿皮乌龟,回合数最少的队伍-1积分,,contain,0.5,0.5,lowest_round_score,-1,1
+event10,快人一步,回合数最多的队伍+1积分,,contain,0.5,0.5,highest_round_score,1,1
+event11,握手言和,你队伍的下一次被发起战斗不会触发,,contain,0.5,0.5,prevent_next_incoming_battle,1,1

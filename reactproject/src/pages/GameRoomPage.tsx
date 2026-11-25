@@ -70,17 +70,19 @@ export default function GameRoomPage({ roomCode, embedded = false }: { roomCode?
   if (details?.status === 'active' || details?.status === 'ended') return <div ref={gameShellRef} className={`game-room-shell${embedded ? ' embedded' : ''}`}>
     <div className="game-room-toolbar">
       <Link to="/game" style={{ color: 'white' }}>← 房间列表</Link>
+      <Link to="/game/cards" style={{ color: 'white' }}>百科大全</Link>
       <span>{details.courseTitle} · {details.code}</span>
       <span>{details.status === 'ended' ? '已结束 · 只读' : details.role === 'host' ? '裁判' : `${details.teamId} 队${details.canAct ? '操作者' : '观战'}`}</span>
       {details.status === 'active' && details.role === 'host' && <button disabled={busy} onClick={() => void end()}>结束房间</button>}
+      {details.status === 'ended' && <Link to={`/game/replay/${details.code}`} style={{ color: 'white' }}>对局回顾与重放 →</Link>}
       <button type="button" onClick={() => void toggleFullscreen()}>{fullscreen ? '退出全屏' : '全屏'}</button>
       {error && <span role="alert">{error}</span>}
     </div>
-    <iframe className="game-room-frame" key={details.status} title="桌游" src={`/game-client/?room=${details.code}`} allowFullScreen />
+    {details.role !== 'spectator' ? <iframe className="game-room-frame" key={details.status} title="桌游" src={`/game-client/?room=${details.code}`} allowFullScreen /> : <div className="page-card" style={{ margin: 20 }}><p>房间已结束。</p><Link className="page-btn primary" to={`/game/replay/${details.code}`}>查看对局回顾与重放 →</Link></div>}
   </div>
 
   const content = <>
-    {!embedded && <p><Link to="/game">← 返回房间列表</Link></p>}
+    {!embedded && <p><Link to="/game">← 返回房间列表</Link> · <Link to="/game/cards">百科大全</Link></p>}
     <div className="page-card" style={{ marginBottom: 20, textAlign: 'center' }}>
       <img src="/board-game-map.svg?v=ring-arrows-1" alt="桌游棋盘" style={{ display: 'block', width: '100%', maxWidth: 900, margin: '0 auto' }} />
       <p className="meta">游戏开始后，这里会显示可操作的实时棋盘。</p>

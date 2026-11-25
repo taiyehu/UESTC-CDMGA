@@ -141,6 +141,20 @@ CREATE TABLE IF NOT EXISTS game_tutorial_progress (
   CONSTRAINT fk_game_tutorial_identity FOREIGN KEY (identity_id) REFERENCES identity(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS game_replay_frame (
+  room_id BIGINT UNSIGNED NOT NULL,
+  seq BIGINT UNSIGNED NOT NULL,
+  replay_round INT NOT NULL,
+  seat CHAR(1) NULL,
+  action_type VARCHAR(40) NOT NULL,
+  payload_json JSON NOT NULL,
+  state_json JSON NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (room_id, seq),
+  KEY idx_game_replay_round (room_id, replay_round, seq),
+  CONSTRAINT fk_game_replay_room FOREIGN KEY (room_id) REFERENCES game_room(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- 仅补建已有桌游课题中尚无房间、且裁判仍为有效管理员的房间。
 INSERT INTO game_room (code, course_id, created_by_identity_id, referee_identity_id)
 SELECT UPPER(SUBSTRING(REPLACE(UUID(), '-', ''), 1, 8)), c.id, c.referee_identity_id, c.referee_identity_id
