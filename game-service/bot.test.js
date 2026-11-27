@@ -2,9 +2,10 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const game = require('./game');
 const bot = require('./bot');
+const createLegacyRoom=options=>{const room=game.createRoom(options);for(const team of Object.values(room.teams)){team.treasure='none';team.treasureChoices=[];}return room;};
 
 test('稳健路线偏向持续收入，进攻路线追击同轮对手', () => {
-  const room = game.createRoom({ seed: 'bot-routes' });
+  const room = createLegacyRoom({ seed: 'bot-routes' });
   room.teams.A.position = 'R4';
   room.records.push({ id: 'human-move', team: 'B', round: 1, node: 'R5' });
   const route = ['R5'];
@@ -19,7 +20,7 @@ test('稳健路线偏向持续收入，进攻路线追击同轮对手', () => {
 });
 
 test('人机最多领先真人一回合，竞标仍可在等待期间响应', () => {
-  const room = game.createRoom({ seed: 'bot-pace' });
+  const room = createLegacyRoom({ seed: 'bot-pace' });
   room.teams.A.round = 2;
   room.teams.B.round = 1;
   assert.equal(bot.choose(room, 'A', 'steady', ['B']), null);
@@ -28,7 +29,7 @@ test('人机最多领先真人一回合，竞标仍可在等待期间响应', ()
 });
 
 test('下次移动自选步数时人机先选步数再移动',()=>{
-  const room=game.createRoom({seed:'bot-choose-steps'}),team=room.teams.A,who={role:'team',id:'A'};
+  const room=createLegacyRoom({seed:'bot-choose-steps'}),team=room.teams.A,who={role:'team',id:'A'};
   team.position='R1';team.chooseNextSteps=true;
   const first=bot.choose(room,'A','steady',[]);
   assert.equal(first.type,'roll');
@@ -43,7 +44,7 @@ test('下次移动自选步数时人机先选步数再移动',()=>{
 });
 
 test('挑战交给裁判，待判战斗期间队伍继续行动', () => {
-  const room = game.createRoom({ seed: 'bot-referee' });
+  const room = createLegacyRoom({ seed: 'bot-referee' });
   room.teams.A.pendingChallenge = { card: { name: '挑战' } };
   assert.equal(bot.choose(room, 'A', 'aggressive', ['B']), null);
   room.teams.A.pendingChallenge = null;
@@ -53,7 +54,7 @@ test('挑战交给裁判，待判战斗期间队伍继续行动', () => {
 });
 
 test('人机抵达普通格后选择本组三轮尚未预定的队员',()=>{
-  const room=game.createRoom({seed:'bot-defender'}),team=room.teams.A;
+  const room=createLegacyRoom({seed:'bot-defender'}),team=room.teams.A;
   team.members=[1,2,3].map(n=>({id:`bot-A-${n}`,account:`人机 ${n}`}));
   team.position='R1';team.hand[0].move=1;
   game.move(room,{role:'team',id:'A'},team.hand[0].id,['R2']);
@@ -64,7 +65,7 @@ test('人机抵达普通格后选择本组三轮尚未预定的队员',()=>{
 });
 
 test('人机获得机械帮手后会在普通站点弃一张不能使用的牌', () => {
-  const room = game.createRoom({ seed: 'bot-helper' }), team = room.teams.A;
+  const room = createLegacyRoom({ seed: 'bot-helper' }), team = room.teams.A;
   team.discardAbility = true;
   team.position = 'R3';
   team.awaitingEnd = true;
@@ -94,7 +95,7 @@ test('两种策略都能通过规则引擎完成一整个回合', () => {
     bid: (r, w, p) => game.bid(r, w, p.amount),
   };
   for (const strategy of ['steady', 'aggressive']) {
-    const room = game.createRoom({ seed: `bot-turn-${strategy}` });
+    const room = createLegacyRoom({ seed: `bot-turn-${strategy}` });
     for (let step = 0; step < 50 && room.teams.A.round === 1; step++) {
       if (room.teams.A.pendingChallenge) game.resolveChallenge(room, { role: 'host' }, 'A', false);
       for (const battle of room.battles.filter(item => item.status === '待结算')) game.battle(room, { role: 'host' }, battle.id, 'A');

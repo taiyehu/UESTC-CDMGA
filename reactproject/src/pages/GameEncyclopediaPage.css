@@ -12,6 +12,7 @@
 .encyclopedia-card{min-width:0;display:flex;flex-direction:column;align-items:stretch;text-align:left;padding:10px;border:1px solid rgba(255,255,255,.2);border-radius:14px;background:rgba(8,18,30,.82);color:#fff;cursor:zoom-in;transition:transform .18s ease,border-color .18s ease}
 .encyclopedia-card:hover,.encyclopedia-card:focus-visible{transform:translateY(-3px);border-color:#72dfff}
 .encyclopedia-card img{display:block;width:100%;aspect-ratio:1062/1482;object-fit:contain;border-radius:8px;background:#182334}
+.encyclopedia-card.encyclopedia-treasure img{aspect-ratio:1}
 .encyclopedia-card-info{display:flex;flex-direction:column;gap:5px;padding:10px 3px 3px;min-width:0}
 .encyclopedia-kind{color:#9cddf3;font-size:12px;letter-spacing:.04em}
 .encyclopedia-card strong{font-size:16px}
