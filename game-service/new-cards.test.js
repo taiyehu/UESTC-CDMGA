@@ -305,6 +305,22 @@ test('记忆工厂重放卡牌和建筑效果，零號車輛允许自选下次�
   assert.equal(choice.team.chooseNextSteps,false);
 });
 
+test('记忆工厂重放装腔作势时沿用 3-X 积分与 50X 金钱公式',()=>{
+  const {room,team,who,card}=arrive('card30','Arcaea');
+  team.score=5;
+  team.lastResolvedCard=HAND.find(item=>item.id==='card7');
+  game.useCard(room,who,card.id);
+  const moneyBefore=team.money,incomeBefore=team.income;
+  room.randomInt=()=>4; // 重放掷出 5
+  game.resolveChallenge(room,{role:'host'},'A',true);
+  assert.equal(room.diceRolls.at(-1).value,5);
+  assert.equal(team.score,3);
+  assert.equal(room.scoreChanges.at(-1).amount,-2);
+  assert.equal(room.scoreChanges.at(-1).reason,'记忆工厂');
+  assert.equal(team.money,moneyBefore+250-(incomeBefore+10));
+  assert.equal(team.income,incomeBefore+10);
+});
+
 test('创造性AI在事件格抽两张，大炮发射随机移动',()=>{
   const room=game.createRoom({seed:'double-event',initialMoney:1000}),team=room.teams.A,who=teamWho('A');
   const card=putCard(team,'card32');

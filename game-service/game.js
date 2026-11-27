@@ -313,6 +313,9 @@ function rollD6(room,t,reason){
   room.diceRolls=room.diceRolls.slice(-120);
   return value;
 }
+function settleEventCancelReward(room,t,reason,roll){
+  return {points:changeScore(room,t,3-roll,reason),money:changeMoney(room,t,roll*50,reason)};
+}
 function treasureReroll(room,who,again){
   if(who.role!=='team'||typeof again!=='boolean')throw Error('只有队伍可以决定是否重掷');
   const t=room.teams[who.id],pending=t.pendingTreasureReroll;
@@ -399,8 +402,8 @@ function applyCardEffect(room,t,card,record){
     case 'replay_card_house':{
       const previous=t.lastResolvedCard;
       if(previous?.effect_type==='event_cancel_random'){
-        const points=rollD6(room,t,`${card.name}重放${previous.name}`);
-        changeScore(room,t,points,card.name);changeMoney(room,t,points*70,card.name);
+        const roll=rollD6(room,t,`${card.name}重放${previous.name}`);
+        settleEventCancelReward(room,t,card.name,roll);
       }else if(previous&&previous.effect_type!=='replay_card_house')applyCardEffect(room,t,previous,record);
       if(t.lastHouse)performHouseEffect(room,t,t.lastHouse,`${card.name}重放`);
       break;
@@ -413,8 +416,7 @@ function applyCardEffect(room,t,card,record){
 function resolvePlayedCard(room,t,card,record){
   if(card.effect_type==='event_cancel_random'){
     const roll=rollD6(room,t,card.name);
-    const points=changeScore(room,t,3-roll,card.name);
-    const money=changeMoney(room,t,roll*50,card.name);
+    const {points,money}=settleEventCancelReward(room,t,card.name,roll);
     t.pendingEvent=false;
     if(record){record.pendingEvent=false;record.event={id:'cancelled',name:'事件已抵消',image:null};}
     effectNotice(room,'event',t.id,[]);finishCardUse(t);note(room,`${t.id} 队使用「${card.name}」：抵消当前事件，${points>=0?'+':''}${points} 分、+${money} 金钱`);
