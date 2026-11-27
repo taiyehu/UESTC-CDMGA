@@ -142,10 +142,10 @@ function staticFile(req,res,url) {
   else if(/^\/game-client\/assets\/asset-\d{3}\.(png|jpg)$/.test(url.pathname))file=path.join(__dirname,'public','assets',path.basename(url.pathname));
   else if(/^\/game-client\/assets\/treasure(?:[1-9]|10|11)\.(?:jpg|JPG)$/.test(url.pathname))file=path.join(__dirname,'public','assets',path.basename(url.pathname));
   else if(/^\/game-client\/dice\/[1-6]\.svg$/.test(url.pathname))file=path.join(__dirname,'public','dice',path.basename(url.pathname));
-  else if(/^\/game-assets\/cards\/output\/[a-zA-Z0-9_-]+\.png$/.test(url.pathname))file=path.join(process.env.GAME_CONTENT_DIR || path.join(__dirname,'content'),'output',path.basename(url.pathname));
+  else if(/^\/game-assets\/cards\/output\/(?:card|event|mis)\d+(?:\.[a-f0-9]{12}(?:\.thumb)?)?\.(?:png|webp)$/.test(url.pathname))file=path.join(process.env.GAME_CONTENT_DIR || path.join(__dirname,'content'),'output',path.basename(url.pathname));
   else return false;
-  const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg'};
-  fs.readFile(file,(err,data)=>{if(err){res.writeHead(404);res.end();return;}const ext=path.extname(file).toLowerCase();res.writeHead(200,{'content-type':types[ext],'cache-control':['.html','.js','.css','.svg'].includes(ext)?'no-store':'public, max-age=3600'});res.end(data);});
+  const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp'};
+  fs.readFile(file,(err,data)=>{if(err){res.writeHead(404);res.end();return;}const ext=path.extname(file).toLowerCase(),versioned=/\.[a-f0-9]{12}(?:\.thumb)?\.webp$/.test(file);res.writeHead(200,{'content-type':types[ext],'cache-control':versioned?'public, max-age=31536000, immutable':['.html','.js','.css','.svg'].includes(ext)?'no-store':'public, max-age=3600'});res.end(data);});
   return true;
 }
 const server=http.createServer(async(req,res)=>{
@@ -161,7 +161,7 @@ const server=http.createServer(async(req,res)=>{
     }
     const user=await identity(req);
     if(req.method==='GET'&&url.pathname==='/game-api/cards'){
-      const card=({id,name,effect,condition,move,cost,image,quantity})=>({id,name,effect,condition,move,cost,image,quantity});
+      const card=({id,name,effect,condition,move,cost,image,thumbnail,quantity})=>({id,name,effect,condition,move,cost,image,thumbnail,quantity});
       return send(res,200,{hand:HAND.map(card),events:EVENTS.map(card),misfortunes:MISFORTUNES.map(card),treasures:TREASURES});
     }
     const tutorialMatch=url.pathname.match(/^\/game-api\/tutorial(?:\/(reset|[a-z-]+))?$/);

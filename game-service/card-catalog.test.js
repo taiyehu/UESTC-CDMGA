@@ -23,10 +23,21 @@ test('登录用户可以查看完整卡牌百科，未登录用户不能读取�
     assert.deepEqual([cards.hand.length,cards.events.length,cards.misfortunes.length,cards.treasures.length],[44,11,14,11]);
     for(const pile of [cards.hand,cards.events,cards.misfortunes])for(const card of pile){
       assert.ok(card.id&&card.name&&card.effect&&card.image);
-      assert.match(card.image,/^\/game-assets\/cards\/output\/[a-zA-Z0-9_-]+\.png/);
+      assert.match(card.image,/^\/game-assets\/cards\/output\/(?:card|event|mis)\d+\.[a-f0-9]{12}\.webp$/);
+      assert.equal(card.thumbnail,card.image.replace(/\.webp$/,'.thumb.webp'));
     }
     assert.equal(cards.hand.find(card=>card.id==='card22').cost,50);
     assert.equal(cards.events.find(card=>card.id==='event2').effect,'本队-1积分');
+    for(const imagePath of [cards.hand[0].image,cards.hand[0].thumbnail]){
+      const image=await fetch(`http://127.0.0.1:${server.address().port}${imagePath}`);
+      assert.equal(image.status,200);
+      assert.equal(image.headers.get('content-type'),'image/webp');
+      assert.match(image.headers.get('cache-control'),/max-age=31536000, immutable/);
+    }
+    const legacy=await fetch(`http://127.0.0.1:${server.address().port}/game-assets/cards/output/card1.png`);
+    assert.equal(legacy.status,200);
+    assert.equal(legacy.headers.get('content-type'),'image/png');
+    assert.match(legacy.headers.get('cache-control'),/max-age=3600/);
     for(const treasure of cards.treasures){
       assert.ok(treasure.id&&treasure.name&&treasure.effect&&treasure.image);
       const image=await fetch(`http://127.0.0.1:${server.address().port}${treasure.image}`);

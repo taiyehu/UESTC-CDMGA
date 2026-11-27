@@ -1,5 +1,6 @@
 const fs=require('node:fs');
 const path=require('node:path');
+const {imageNames}=require('./card-image-paths');
 const base=process.env.GAME_CONTENT_DIR || path.join(__dirname,'content');
 
 function parseCsv(text){
@@ -33,9 +34,11 @@ function load(name,kind){
     const move=kind==='hand'?Number(row.move):undefined,quantity=Number(row.quantity||1),effectValue=Number(row.effect_value||0),effectAux=Number(row.effect_aux||0);
     if(kind==='hand'&&(!Number.isInteger(move)||move<1||move>7))throw Error(`${name}: 移动点数无效 ${row.id}`);
     if(!Number.isInteger(quantity)||quantity<1||quantity>50||!Number.isFinite(effectValue)||!Number.isFinite(effectAux))throw Error(`${name}: 数值无效 ${row.id}`);
-    const imageVersion=['event2','event6','card17','card18','card22','card35'].includes(row.id)?'?v=rules-20261125':['card1','card5','card6','card9'].includes(row.id)?'?v=rules-20261125b':row.id==='card7'?'?v=card7-event-icon':row.id==='event8'?'?v=event8-random-20261125':'';
+    const {full,thumb}=imageNames(row.id,fs.readFileSync(file));
+    if(!fs.existsSync(path.join(base,'output',full))||!fs.existsSync(path.join(base,'output',thumb)))
+      throw Error(`${name}: 缺少 ${row.id} 的 WebP 图片，请运行 npm run images`);
     return {...row,move,cost:kind==='hand'?Number(row.cost):undefined,
-      effectValue,effectAux,quantity,image:`/game-assets/cards/output/${row.id}.png${imageVersion}`};
+      effectValue,effectAux,quantity,image:`/game-assets/cards/output/${full}`,thumbnail:`/game-assets/cards/output/${thumb}`};
   });
 }
 const HAND=load('hand.csv','hand'),EVENTS=load('events.csv','event'),MISFORTUNES=load('misfortunes.csv','misfortune');

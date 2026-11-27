@@ -2,6 +2,7 @@ const crypto = require('node:crypto');
 const {NODE_TYPES}=require('./map-data');
 const {HAND,EVENTS,MISFORTUNES}=require('./catalog');
 const {TREASURES}=require('./treasures');
+const CURRENT_IMAGES=new Map([...HAND,...EVENTS,...MISFORTUNES].map(card=>[card.id,card.image]));
 
 const HOUSE = new Set(['Arcaea', 'Phigros', '范式起源']);
 const GOAL_SCORE = 20;
@@ -206,7 +207,18 @@ function visibleMisfortuneEffect(room,who){
     submitted:Object.keys(pending.submitted||{}),
     ...(pending.kind==='swap'&&(who.role==='host'||who.id===pending.targetTeam)?{sourceHand:room.teams[pending.triggerTeam].hand.map(c=>({id:c.id,name:c.name,image:c.image,move:c.move,effect:c.effect}))}:{})};
 }
+function refreshCardImages(value,seen=new WeakSet()){
+  if(!value||typeof value!=='object'||seen.has(value))return;
+  seen.add(value);
+  if(typeof value.image==='string'){
+    const id=value.sourceId||value.id;
+    const catalogId=CURRENT_IMAGES.has(id)?id:typeof id==='string'?/^[ABC]-(card\d+)-/.exec(id)?.[1]:null;
+    if(catalogId&&CURRENT_IMAGES.has(catalogId))value.image=CURRENT_IMAGES.get(catalogId);
+  }
+  for(const nested of Object.values(value))refreshCardImages(nested,seen);
+}
 function state(room,who) {
+  refreshCardImages(room);
   const own=who.role==='team'?room.teams[who.id]:null;
   const visible=room.records.filter(r=>who.role==='host'||(r.round<=own.round && r.time<=Date.now()));
   const visibleMoney=room.moneyChanges.filter(c=>who.role==='host'||c.round<=own.round);

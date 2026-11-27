@@ -20,7 +20,7 @@ test('七张新厄运均入库并使用提供的成品卡面',()=>{
   for(const id of ['mis7','mis9','mis10','mis11','mis12','mis13','mis14']){
     const card=MISFORTUNES.find(item=>item.id===id);
     assert.ok(card?.effect);
-    assert.match(card.image,new RegExp(`/output/${id}\\.png$`));
+    assert.match(card.image,new RegExp(`/output/${id}\\.[a-f0-9]{12}\\.webp$`));
   }
 });
 

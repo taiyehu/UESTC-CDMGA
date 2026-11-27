@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "start": "node server.js",
+    "images": "node generate-card-images.js",
     "test": "node --test"
   },
   "dependencies": {

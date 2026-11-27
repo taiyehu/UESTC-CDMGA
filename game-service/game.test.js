@@ -483,6 +483,15 @@ test('四十四张成品手牌独立抽弃洗牌，数量始终守恒',()=>{
   assert.equal(room.cardFlows.length,0);
 });
 
+test('旧对局记录中的 PNG 卡图在返回状态时使用新版 WebP',()=>{
+  const room=g.createRoom({seed:'legacy-card-images'});
+  room.records.push({id:'legacy-record',team:'A',round:1,node:'R1',time:Date.now(),card:{id:'card1',name:'旧卡',image:'/game-assets/cards/output/card1.png'}});
+  room.cardFlows.push({id:'legacy-flow',team:'A',spent:{id:'A-card2-1',image:'/game-assets/cards/output/card2.png'}});
+  const view=g.state(room,{role:'host'});
+  assert.equal(view.records[0].card.image,g.HAND.find(card=>card.id==='card1').image);
+  assert.equal(view.cardFlows[0].spent.image,g.HAND.find(card=>card.id==='card2').image);
+});
+
 test('牌堆展示按卡牌数字 ID 排序，不改变实际抽牌顺序',()=>{
   const room=g.createRoom({seed:'pile-view'}),team=room.teams.A;
   team.discard=team.deck.splice(0,3).reverse();
@@ -504,7 +513,7 @@ test('成品手牌按 CSV 点数移动，问号牌由服务器掷骰',()=>{
   assert.equal(card7.condition,'无');
   assert.equal(card7.effect,'抵消一次事件格的事件，（骰子决定）走X步或获得（3-X）分+50X块钱');
   if(!t.hand.includes(card7)){const old=t.hand[0];t.hand[0]=card7;t.deck[t.deck.indexOf(card7)]=old;}
-  assert.equal(card7.move,7);assert.match(card7.image,/card7\.png(?:\?.*)?$/);
+  assert.equal(card7.move,7);assert.match(card7.image,/card7\.[a-f0-9]{12}\.webp$/);
   assert.throws(()=>g.move(room,who,card7.id,['R1']),/掷骰/);
   const steps=g.roll(room,who,card7.id);assert.ok(steps>=1&&steps<=6);
   assert.equal(room.diceRolls.at(-1).value,steps);

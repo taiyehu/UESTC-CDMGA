@@ -15,6 +15,7 @@ const mapPercent=([x,y])=>[(x-MAP_BOUNDS.x)/MAP_BOUNDS.width*100,(y-MAP_BOUNDS.y
 const animations={},animationTimers={};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const thumbImage=image=>image?.replace(/(\.(?:[a-f0-9]{12}))\.webp$/, '$1.thumb.webp')||image;
 const time=n=>new Date(n).toLocaleTimeString('zh-CN',{hour12:false});
 const diceFaceUrls=Array.from({length:6},(_,i)=>`/game-client/dice/${i+1}.svg`);
 for(const src of diceFaceUrls){const preload=new Image();preload.src=src;}
@@ -339,9 +340,9 @@ function renderTurnControls(){
   if(snapshot.endgame?.result){$('turnControls').innerHTML='<div class="turnState">比赛已结束，房间仅供查看</div>';return;}
   if(snapshot.pendingAction){$('turnControls').innerHTML='<div class="turnState">请先在待处理区完成厄运结算</div>';return;}
   const t=snapshot.teams[snapshot.teamId];
-  if(t.pendingDiscard){$('turnControls').innerHTML=`<div class="turnState">选择 ${esc(t.pendingDiscard)} 队要丢弃的手牌<div class="defenderChoices">${(t.pendingDiscardCards||[]).map(c=>`<button data-target-card="${esc(c.id)}"><img src="${esc(c.image)}" alt=""><span>${esc(c.name)}</span></button>`).join('')}</div></div>`;document.querySelectorAll('[data-target-card]').forEach(el=>el.onclick=()=>action('discard-target-card',{cardId:el.dataset.targetCard}));return;}
-  if(t.pendingRedraw){$('turnControls').innerHTML=`<div class="turnState">six seven：选择一张手牌丢弃并重新抽取<div class="defenderChoices">${t.hand.map(c=>`<button data-redraw-card="${esc(c.id)}"><img src="${esc(c.image)}" alt=""><span>${esc(c.name)}</span></button>`).join('')}</div></div>`;document.querySelectorAll('[data-redraw-card]').forEach(el=>el.onclick=()=>action('redraw-card',{cardId:el.dataset.redrawCard}));return;}
-  if(t.pendingCopy){$('turnControls').innerHTML=`<div class="turnState">双人成行：选择一张手牌复制到抽牌堆顶部<div class="defenderChoices">${t.hand.map(c=>`<button data-copy-card="${esc(c.id)}"><img src="${esc(c.image)}" alt=""><span>${esc(c.name)}</span></button>`).join('')}</div></div>`;document.querySelectorAll('[data-copy-card]').forEach(el=>el.onclick=()=>action('copy-card',{cardId:el.dataset.copyCard}));return;}
+  if(t.pendingDiscard){$('turnControls').innerHTML=`<div class="turnState">选择 ${esc(t.pendingDiscard)} 队要丢弃的手牌<div class="defenderChoices">${(t.pendingDiscardCards||[]).map(c=>`<button data-target-card="${esc(c.id)}"><img src="${esc(thumbImage(c.image))}" alt=""><span>${esc(c.name)}</span></button>`).join('')}</div></div>`;document.querySelectorAll('[data-target-card]').forEach(el=>el.onclick=()=>action('discard-target-card',{cardId:el.dataset.targetCard}));return;}
+  if(t.pendingRedraw){$('turnControls').innerHTML=`<div class="turnState">six seven：选择一张手牌丢弃并重新抽取<div class="defenderChoices">${t.hand.map(c=>`<button data-redraw-card="${esc(c.id)}"><img src="${esc(thumbImage(c.image))}" alt=""><span>${esc(c.name)}</span></button>`).join('')}</div></div>`;document.querySelectorAll('[data-redraw-card]').forEach(el=>el.onclick=()=>action('redraw-card',{cardId:el.dataset.redrawCard}));return;}
+  if(t.pendingCopy){$('turnControls').innerHTML=`<div class="turnState">双人成行：选择一张手牌复制到抽牌堆顶部<div class="defenderChoices">${t.hand.map(c=>`<button data-copy-card="${esc(c.id)}"><img src="${esc(thumbImage(c.image))}" alt=""><span>${esc(c.name)}</span></button>`).join('')}</div></div>`;document.querySelectorAll('[data-copy-card]').forEach(el=>el.onclick=()=>action('copy-card',{cardId:el.dataset.copyCard}));return;}
   const forced=snapshot.battles.find(b=>b.forced&&b.status==='待选人'&&[b.first,b.second].some(id=>snapshot.records.some(r=>r.id===id&&r.team===snapshot.teamId&&!r.defender)));
   if(forced&&t.eligibleMembers?.length){const record=snapshot.records.find(r=>[forced.first,forced.second].includes(r.id)&&r.team===snapshot.teamId);$('turnControls').innerHTML=`<div class="turnState">第 ${forced.round} 回合战斗：选择出战队员 <button id="chooseDefender">选择队员</button></div>`;$('chooseDefender').onclick=()=>openDefenderPicker(true,record);return;}
   if(snapshot.tutorial?.completed){$('turnControls').innerHTML='<div class="turnState">教程完成！你可以返回桌游列表，或从头再练一次。</div>';return;}
@@ -380,7 +381,7 @@ function renderCards(){
   const own=snapshot.role==='team'&&!snapshot.tutorial?.completed?snapshot.teams[snapshot.teamId]:null;
   if(!own){selected=null;pendingRoute=null;$('cards').innerHTML='';clearRouteChoices();return;}
   if(selected&&!own.hand.some(c=>c.id===selected.id)){selected=null;pendingRoute=null;}
-  $('cards').innerHTML=own.hand.map(c=>{const playable=own.awaitingEnd&&!own.cardActionDone&&!own.pendingChallenge&&!own.pendingTeleport&&!own.pendingExtraMove&&!own.pendingTarget&&!own.pendingRedraw&&!own.pendingCopy&&!own.pendingReroll&&!snapshot.pendingAction&&!snapshot.pendingCardReaction&&cardUsable(own,c);return `<div class="card ${selected?.id===c.id?'selected':''} ${playable?'playable':''} ${drawingCardIds.has(c.id)?'drawing':''}" role="button" tabindex="0" data-card="${c.id}" title="${esc(c.name)}：${esc(c.effect)}"><img src="${c.image}" alt="${esc(c.name)}"><span class="cardBadge">${esc(c.name)} · ${c.move===7?'?':c.move} 步</span></div>`;}).join('');
+  $('cards').innerHTML=own.hand.map(c=>{const playable=own.awaitingEnd&&!own.cardActionDone&&!own.pendingChallenge&&!own.pendingTeleport&&!own.pendingTarget&&!own.pendingRedraw&&!own.pendingCopy&&!own.pendingReroll&&!snapshot.pendingAction&&!snapshot.pendingCardReaction&&cardUsable(own,c);return `<div class="card ${selected?.id===c.id?'selected':''} ${playable?'playable':''} ${drawingCardIds.has(c.id)?'drawing':''}" role="button" tabindex="0" data-card="${c.id}" title="${esc(c.name)}：${esc(c.effect)}"><img src="${esc(thumbImage(c.image))}" alt="${esc(c.name)}"><span class="cardBadge">${esc(c.name)} · ${c.move===7?'?':c.move} 步</span></div>`;}).join('');
   document.querySelectorAll('[data-card]').forEach(el=>{const choose=()=>{
     if(moving)return;
     const mode=snapshot.pendingCardReaction||snapshot.pendingAction||own.pendingCopy?'view':own.pendingExtraMove?'extra':!own.awaitingEnd?'move':!own.cardActionDone&&!own.pendingChallenge&&!own.pendingTeleport&&!own.pendingTarget&&!own.pendingRedraw&&!own.pendingReroll?'use':own.canDiscard?'discard':'view';
@@ -434,7 +435,7 @@ function renderPiles(){
   $('deckCount').textContent=own.deckCount;$('discardCount').textContent=own.discardCount;
   $('deckPile').classList.toggle('empty',own.deckCount===0);
   $('discardPile').classList.toggle('empty',own.discardCount===0);
-  $('discardFace').innerHTML=own.discardTop?`<img src="${esc(own.discardTop.image)}" alt="${esc(own.discardTop.name)}">`:'—';
+  $('discardFace').innerHTML=own.discardTop?`<img src="${esc(thumbImage(own.discardTop.image))}" alt="${esc(own.discardTop.name)}">`:'—';
   $('deckPile').onclick=()=>{pileView='deck';pileScrollTop=0;preview=null;detailPreview=null;renderPreview();};
   $('discardPile').onclick=()=>{pileView='discard';pileScrollTop=0;preview=null;detailPreview=null;renderPreview();};
 }
@@ -444,7 +445,7 @@ function renderPreview(){
     const cards=snapshot.teams[snapshot.teamId][pileView==='deck'?'deckCards':'discardCards']||[];
     const title=pileView==='deck'?'抽牌堆':'弃牌堆';
     pileScrollTop=$('cardPreview').querySelector('.pileViewerGrid')?.scrollTop??pileScrollTop;
-    $('cardPreview').innerHTML=`<div class="pileViewerBody" role="dialog" aria-label="${title}"><div class="pileViewerHeader"><h2>${title} · ${cards.length} 张</h2><button id="closePileViewer">取消</button></div>${cards.length?`<div class="pileViewerGrid">${cards.map((card,index)=>`<button data-pile-card="${index}" type="button" aria-label="查看 ${esc(card.id)} ${esc(card.name)}"><img src="${esc(card.image)}" alt=""><span>${esc(card.id)} · ${esc(card.name)}</span></button>`).join('')}</div>`:'<div class="pileViewerEmpty">暂无卡牌</div>'}</div>`;
+    $('cardPreview').innerHTML=`<div class="pileViewerBody" role="dialog" aria-label="${title}"><div class="pileViewerHeader"><h2>${title} · ${cards.length} 张</h2><button id="closePileViewer">取消</button></div>${cards.length?`<div class="pileViewerGrid">${cards.map((card,index)=>`<button data-pile-card="${index}" type="button" aria-label="查看 ${esc(card.id)} ${esc(card.name)}"><img src="${esc(thumbImage(card.image))}" alt="" loading="lazy"><span>${esc(card.id)} · ${esc(card.name)}</span></button>`).join('')}</div>`:'<div class="pileViewerEmpty">暂无卡牌</div>'}</div>`;
     $('cardPreview').classList.add('show');$('closePileViewer').onclick=()=>{pileView=null;pileScrollTop=0;renderPreview();};
     if($('cardPreview').querySelector('.pileViewerGrid'))$('cardPreview').querySelector('.pileViewerGrid').scrollTop=pileScrollTop;
     document.querySelectorAll('[data-pile-card]').forEach(el=>el.onclick=()=>{pileScrollTop=$('cardPreview').querySelector('.pileViewerGrid').scrollTop;detailPreview=cards[Number(el.dataset.pileCard)];renderPreview();});
@@ -469,7 +470,7 @@ function renderTable(){
   $('filterNote').textContent=snapshot.role==='host'?'显示所有轮次和到达记录。':`仅显示不晚于本队当前回合（第 ${snapshot.teams[snapshot.teamId].round} 回合）且已到达的记录。`;
   const rounds=[...new Set(snapshot.records.map(r=>r.round))].sort((a,b)=>b-a);
   const previews=[];
-  const cardButton=(card,label,detail)=>{if(!card?.image)return `<span>${esc(label)}</span>`;const index=previews.push({image:card.image,name:card.name,effect:detail||card.effect||''})-1;return `<button class="tableCard" data-table-card="${index}"><img src="${esc(card.image)}" alt="${esc(card.name)}"><span>${esc(label)}</span></button>`;};
+  const cardButton=(card,label,detail)=>{if(!card?.image)return `<span>${esc(label)}</span>`;const index=previews.push({image:card.image,name:card.name,effect:detail||card.effect||''})-1;return `<button class="tableCard" data-table-card="${index}"><img src="${esc(thumbImage(card.image))}" alt="${esc(card.name)}" loading="lazy"><span>${esc(label)}</span></button>`;};
   $('rows').innerHTML=rounds.length?rounds.map(round=>`<tr><td>第 ${round} 轮</td>${'ABC'.split('').map(id=>{
     const r=snapshot.records.find(x=>x.round===round&&x.team===id);
     if(!r)return '<td><span class="muted">—</span></td>';

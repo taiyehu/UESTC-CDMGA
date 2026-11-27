@@ -5,7 +5,7 @@ import './GameEncyclopediaPage.css'
 
 type CardKind = 'hand' | 'events' | 'misfortunes' | 'treasures'
 type Category = 'all' | CardKind
-type Card = { id: string; name: string; effect: string; condition?: string; move?: number; cost?: number; image: string; quantity?: number }
+type Card = { id: string; name: string; effect: string; condition?: string; move?: number; cost?: number; image: string; thumbnail?: string; quantity?: number }
 type Catalog = Record<CardKind, Card[]>
 type Entry = Card & { kind: CardKind }
 
@@ -75,7 +75,7 @@ export default function GameEncyclopediaPage() {
       <p className="encyclopedia-count">找到 {visible.length} 项内容</p>
       {visible.length ? <div className="encyclopedia-grid">
         {visible.map(card => <button className={`encyclopedia-card ${card.kind === 'treasures' ? 'encyclopedia-treasure' : ''}`} type="button" key={card.id} onClick={() => setSelected(card)} aria-label={`查看${kindName[card.kind]}「${card.name}」`}>
-          <img src={card.image} alt={`${card.name}${card.kind === 'treasures' ? '图片' : '卡面'}`} loading="lazy" />
+          <img src={card.thumbnail || card.image} alt={`${card.name}${card.kind === 'treasures' ? '图片' : '卡面'}`} loading="lazy" />
           <span className="encyclopedia-card-info"><span className="encyclopedia-kind">{kindName[card.kind]} · {card.id}</span><strong>{card.name}</strong>
             <small>{card.kind === 'hand' ? `${card.move === 7 ? '?' : card.move} 点 · ${card.cost} 金钱` : card.effect}</small></span>
         </button>)}

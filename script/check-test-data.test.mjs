@@ -37,6 +37,8 @@ for (const [path, content] of [
   ['game-service/content/events.csv', 'id,name\nevent1,synthetic event\n'],
   ['game-service/content/misfortunes.csv', 'id,name\nmis1,synthetic misfortune\n'],
   ['game-service/content/output/card1.png', 'synthetic PNG placeholder'],
+  ['game-service/content/output/card1.012345abcdef.webp', 'synthetic WebP placeholder'],
+  ['game-service/content/output/card1.012345abcdef.thumb.webp', 'synthetic thumbnail placeholder'],
 ]) {
   test(`allows published card asset ${path}`, () => {
     const directory = mkdtempSync(join(tmpdir(), 'cdmga-index-'))
