@@ -75,6 +75,9 @@ function cardValue(card, strategy) {
 
 function choose(room, seat, strategy, humanSeats) {
   const team = room.teams[seat];
+  if(!team.treasure){const preferred=strategy==='steady'?['compound','prototype','dividend','merchant','cashback']:['prototype','compound','archaeology','cashback'];const rank=id=>preferred.includes(id)?preferred.indexOf(id):99;return act('choose-treasure',{id:[...team.treasureChoices].sort((a,b)=>rank(a)-rank(b))[0]});}
+  if(team.pendingTreasureDig)return act('treasure-dig',{cardIds:[]});
+  if(team.pendingTreasureReroll)return act('treasure-reroll',{again:team.pendingTreasureReroll.firstRoll<=3});
   if(room.pendingCardReaction)return room.pendingCardReaction.responders[0]===seat?act('counter-response',{use:false}):null;
   const opponents = 'ABC'.split('').filter(id => id !== seat);
   const leader = opponents.sort((a, b) => room.teams[b].score - room.teams[a].score)[0];

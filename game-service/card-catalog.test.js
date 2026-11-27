@@ -20,13 +20,19 @@ test('登录用户可以查看完整卡牌百科，未登录用户不能读取�
     const response=await fetch(url,{headers:{cookie:'session=test'}});
     assert.equal(response.status,200);
     const cards=await response.json();
-    assert.deepEqual([cards.hand.length,cards.events.length,cards.misfortunes.length],[44,11,14]);
+    assert.deepEqual([cards.hand.length,cards.events.length,cards.misfortunes.length,cards.treasures.length],[44,11,14,11]);
     for(const pile of [cards.hand,cards.events,cards.misfortunes])for(const card of pile){
       assert.ok(card.id&&card.name&&card.effect&&card.image);
       assert.match(card.image,/^\/game-assets\/cards\/output\/[a-zA-Z0-9_-]+\.png/);
     }
     assert.equal(cards.hand.find(card=>card.id==='card22').cost,50);
     assert.equal(cards.events.find(card=>card.id==='event2').effect,'本队-1积分');
+    for(const treasure of cards.treasures){
+      assert.ok(treasure.id&&treasure.name&&treasure.effect&&treasure.image);
+      const image=await fetch(`http://127.0.0.1:${server.address().port}${treasure.image}`);
+      assert.equal(image.status,200);
+      assert.match(image.headers.get('content-type'),/^image\/jpeg/);
+    }
   }finally{
     await close(server);
     await pool.end();

@@ -8,7 +8,7 @@ let seenExTime=null,exTimeQueue=[],exTimeActive=false,exTimeTimer=null;
 let seenDice=null,diceQueue=[],diceActive=false,diceTimer=null,diceInterval=null;
 let cardFlowQueue=[],cardFlowBusy=false,cardFlowEpoch=0;const drawingCardIds=new Set();
 let bidDraft='0',bidAuctionId=null;
-let misfortuneDraftId=null,swapSourceId=null,swapOwnId=null,passCardIds=new Set();
+let misfortuneDraftId=null,swapSourceId=null,swapOwnId=null,passCardIds=new Set(),digCardIds=new Set();
 let mapZoom=1;
 const MAP_BOUNDS={x:-3350,y:-1800,width:7500,height:5000};
 const mapPercent=([x,y])=>[(x-MAP_BOUNDS.x)/MAP_BOUNDS.width*100,(y-MAP_BOUNDS.y)/MAP_BOUNDS.height*100];
@@ -247,7 +247,7 @@ function renderEndgame(){
   else if(endgame.result?.reason==='time_limit'||endgame.result?.reason==='manual')banner.textContent=`${endgame.result.reason==='time_limit'?'比赛时间到':'裁判结束比赛'} · ${endgame.result.ranking.map(row=>`第 ${row.rank} 名 ${row.team} 队 ${row.score} 分`).join(' · ')}`;
   else banner.textContent=`暂定达标：${endgame.provisional.map(row=>`${row.team} 队第 ${row.round} 轮达到 ${row.score} 分`).join('、')} · 等待相关轮次和战斗结清`;
 }
-function buffs(t){return [t.eventShield?`事件抵消 ×${t.eventShield}`:'',t.misfortuneShield?`厄运抵消 ×${t.misfortuneShield}`:'',t.debuffShield?`debuff 抵消 ×${t.debuffShield}`:'',t.nextIncomingBattleShield?`握手言和：抵消下次被发起战斗 ×${t.nextIncomingBattleShield}`:'',t.ambushPermanent?'狂战：路过对手占领格可停留开战':'',t.ambushCurrentCharges?`超时空警察：当前所在格伏击 ×${t.ambushCurrentCharges}`:'',t.skipNextTurn?'下一回合跳过':'',t.nextBattleModifier?`下次战斗 ${t.nextBattleModifier} 分`:'',t.nextBattleWinBonus?`下次战斗获胜 +${t.nextBattleWinBonus} 分`:'',t.battleRescue?`战斗落败保护 ×${t.battleRescue}`:'',t.freeSongBattle?`下次对战自选曲 ×${t.freeSongBattle}`:'',t.linkedTeamId?`彼岸双生 → ${t.linkedTeamId} 队（一次）`:'',t.chooseNextSteps?'下次移动自选 1–6 步':'',t.doubleEvent?'事件格抽两张':'',t.loanActive?'快速贷款还款':'',t.maxCardUses>1?'每回合可用 2 张牌':'',t.arcaeaVisitIncome?'造访 Arcaea 获得收入':'',t.fanshiVisitMoney?`造访范式 +${t.fanshiVisitMoney} 金钱`:'',t.discardAbility?'机械帮手弃牌':'',t.nextBattleDebuff?`debuff：下次战斗 ${t.nextBattleDebuff} 分`:'',t.nextTriggeredBattlePenalty?`对手阴招：本队触发的下次战斗本队 -1 分、对方 -100 金钱 ×${t.nextTriggeredBattlePenalty}`:'',...(t.debuffs||[]).map(d=>`debuff：${d.name}`)].filter(Boolean).join(' · ')||'无';}
+function buffs(t){return [t.treasure&&t.treasure!=='none'?`宝物：${snapshot.treasures?.find(x=>x.id===t.treasure)?.name||t.treasure}${t.treasureCharges?` ×${t.treasureCharges}`:''}`:'',t.firstMisfortuneProtected?'初次亮相：待抵消':'',t.eventShield?`事件抵消 ×${t.eventShield}`:'',t.misfortuneShield?`厄运抵消 ×${t.misfortuneShield}`:'',t.debuffShield?`debuff 抵消 ×${t.debuffShield}`:'',t.nextIncomingBattleShield?`握手言和：抵消下次被发起战斗 ×${t.nextIncomingBattleShield}`:'',t.ambushPermanent?'狂战：路过对手占领格可停留开战':'',t.ambushCurrentCharges?`超时空警察：当前所在格伏击 ×${t.ambushCurrentCharges}`:'',t.skipNextTurn?'下一回合跳过':'',t.nextBattleModifier?`下次战斗 ${t.nextBattleModifier} 分`:'',t.nextBattleWinBonus?`下次战斗获胜 +${t.nextBattleWinBonus} 分`:'',t.battleRescue?`战斗落败保护 ×${t.battleRescue}`:'',t.freeSongBattle?`下次对战自选曲 ×${t.freeSongBattle}`:'',t.linkedTeamId?`彼岸双生 → ${t.linkedTeamId} 队（一次）`:'',t.chooseNextSteps?'下次移动自选 1–6 步':'',t.doubleEvent?'事件格抽两张':'',t.loanActive?'快速贷款还款':'',t.maxCardUses>1?'每回合可用 2 张牌':'',t.arcaeaVisitIncome?'造访 Arcaea 获得收入':'',t.fanshiVisitMoney?`造访范式 +${t.fanshiVisitMoney} 金钱`:'',t.discardAbility?'机械帮手弃牌':'',t.nextBattleDebuff?`debuff：下次战斗 ${t.nextBattleDebuff} 分`:'',t.nextTriggeredBattlePenalty?`对手阴招：本队触发的下次战斗本队 -1 分、对方 -100 金钱 ×${t.nextTriggeredBattlePenalty}`:'',...(t.debuffs||[]).map(d=>`debuff：${d.name}`)].filter(Boolean).join(' · ')||'无';}
 function activeBattle(id){
   return snapshot.battles.find(b=>['待结算','待战'].includes(b.status)&&(snapshot.role==='host'||b.round===snapshot.teams[snapshot.teamId].round)&&
     [b.first,b.second].some(recordId=>snapshot.records.find(r=>r.id===recordId)?.team===id));
@@ -301,7 +301,8 @@ function renderMap(){
 }
 function showTeamInfo(id){
   const t=snapshot.teams[id];
-  $('teamInfo').innerHTML=`<div class="teamInfoBody"><button id="closeTeamInfo" aria-label="关闭">×</button><h2 class="${id.toLowerCase()}">${id} 队</h2><p>第 ${t.round} 回合 · ${esc(t.position)}</p><p>积分 ${t.score}${activeBattle(id)?' · 对战中':''}</p><p>已有 Buff：${esc(buffs(t))}</p></div>`;
+  const treasure=snapshot.treasures?.find(item=>item.id===t.treasure);
+  $('teamInfo').innerHTML=`<div class="teamInfoBody"><button id="closeTeamInfo" aria-label="关闭">×</button><h2 class="${id.toLowerCase()}">${id} 队</h2><p>第 ${t.round} 回合 · ${esc(t.position)}</p><p>积分 ${t.score}${activeBattle(id)?' · 对战中':''}</p>${treasure?`<div class="teamTreasure"><img src="${esc(treasure.image)}" alt="${esc(treasure.name)}"><span><b>宝物：${esc(treasure.name)}</b><small>${esc(treasure.effect)}</small></span></div>`:''}<p>已有 Buff：${esc(buffs(t))}</p></div>`;
   $('teamInfo').classList.add('show');$('closeTeamInfo').onclick=()=>{$('teamInfo').classList.remove('show');};
 }
 function openDefenderPicker(forced,record){
@@ -320,6 +321,10 @@ function openDefenderPicker(forced,record){
 }
 function renderTurnControls(){
   if(snapshot.role!=='team'){$('turnControls').innerHTML='';return;}
+  const treasureTeam=snapshot.teams[snapshot.teamId];
+  if(snapshot.treasures&&!treasureTeam.treasure){$('turnControls').innerHTML=`<div class="turnState"><b>选择初始宝物</b><div class="treasureChoices">${treasureTeam.treasureChoices.map(id=>{const item=snapshot.treasures.find(x=>x.id===id);return `<button data-treasure="${esc(id)}"><img src="${esc(item.image)}" alt=""><span><b>${esc(item.name)}</b><small>${esc(item.effect)}</small></span></button>`;}).join('')}</div></div>`;document.querySelectorAll('[data-treasure]').forEach(el=>el.onclick=()=>action('choose-treasure',{id:el.dataset.treasure}));return;}
+  if(treasureTeam.pendingTreasureDig){$('turnControls').innerHTML=`<div class="turnState"><b>挖宝</b><p>放弃本次收入，选择要弃掉并重抽的手牌；或领取收入。</p><div class="defenderChoices">${treasureTeam.hand.map(c=>`<button data-dig-card="${esc(c.id)}" aria-pressed="${digCardIds.has(c.id)}">${esc(c.name)}${digCardIds.has(c.id)?' ✓':''}</button>`).join('')}</div><button id="digConfirm" ${digCardIds.size?'':'disabled'}>弃 ${digCardIds.size} 张并抽牌</button> <button id="digIncome">领取 ${treasureTeam.income*2} 金钱</button></div>`;document.querySelectorAll('[data-dig-card]').forEach(el=>el.onclick=()=>{const id=el.dataset.digCard;if(digCardIds.has(id))digCardIds.delete(id);else digCardIds.add(id);renderTurnControls();});$('digConfirm').onclick=async()=>{if(await action('treasure-dig',{cardIds:[...digCardIds]}))digCardIds.clear();};$('digIncome').onclick=async()=>{if(await action('treasure-dig',{cardIds:[]}))digCardIds.clear();};return;}
+  if(treasureTeam.pendingTreasureReroll){$('turnControls').innerHTML=`<div class="turnState">考古：首掷 ${treasureTeam.pendingTreasureReroll.firstRoll}，是否重掷？只有最后结果算数。<button id="treasureKeep">保留</button> <button id="treasureAgain">重掷</button></div>`;$('treasureKeep').onclick=()=>action('treasure-reroll',{again:false});$('treasureAgain').onclick=()=>action('treasure-reroll',{again:true});return;}
   const reaction=snapshot.pendingCardReaction;
   if(reaction){
     const own=snapshot.teams[snapshot.teamId];
@@ -398,7 +403,8 @@ function renderCards(){
   const occupied=canAmbush&&own.ambushPermanent?snapshot.records.filter(r=>r.team!==snapshot.teamId&&r.round===own.round&&!r.forcedBattleOnly&&!r.defenderUnavailable&&!snapshot.teams[r.team].exTime)
     .map(r=>r.finalPosition||r.node).filter(node=>!snapshot.battles.some(b=>b.round===own.round&&!b.forced&&b.node===node)):[];
   const current=canAmbush&&own.ambushCurrentCharges>0?'ABC'.split('').filter(id=>id!==snapshot.teamId&&!snapshot.teams[id].exTime).map(id=>snapshot.ambushCurrentTargets?.[id]).filter(Boolean):[];
-  const earlyStops=[...new Set([...occupied,...current])].filter(node=>!snapshot.house.includes(node));
+  const slow=own.treasure==='slow_misfortune'&&own.treasureCharges>0&&selected.move<=2?['B']:[];
+  const earlyStops=[...new Set([...occupied,...current,...slow])].filter(node=>!snapshot.house.includes(node));
   const options=window.routes.reachable(snapshot.graph,snapshot.house,own.position,steps,earlyStops);
   if(pendingRoute&&(pendingRoute.cardId!==selected.id||pendingRoute.from!==own.position||!options.some(o=>o.node===pendingRoute.node&&o.route.join('|')===pendingRoute.route.join('|'))))pendingRoute=null;
   renderRoutePreview();

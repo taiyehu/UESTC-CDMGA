@@ -4,6 +4,7 @@ const path = require('node:path');
 const mysql = require('mysql2/promise');
 const game = require('./game');
 const {HAND,EVENTS,MISFORTUNES} = require('./catalog');
+const {TREASURES}=require('./treasures');
 const bot = require('./bot');
 const tutorial = require('./tutorial');
 
@@ -103,6 +104,9 @@ function publicRoom(room,who) {
     role:who.role,teamId:who.id||null,canAct:who.canAct};
 }
 const operations={roll:(r,w,b)=>game.roll(r,w,b.cardId,b.value),
+  'choose-treasure':(r,w,b)=>game.chooseTreasure(r,w,b.id),
+  'treasure-dig':(r,w,b)=>game.resolveTreasureDig(r,w,b.cardIds),
+  'treasure-reroll':(r,w,b)=>game.treasureReroll(r,w,b.again),
   'use-card':(r,w,b)=>game.useCard(r,w,b.cardId),
   'counter-response':(r,w,b)=>game.counterResponse(r,w,b.use,b.cardId),
   'skip-use':(r,w)=>game.skipUse(r,w),
@@ -123,7 +127,7 @@ const operations={roll:(r,w,b)=>game.roll(r,w,b.cardId,b.value),
   'misfortune-swap-target':(r,w,b)=>game.misfortuneSwapTarget(r,w,b.target),
   'misfortune-swap':(r,w,b)=>game.misfortuneSwap(r,w,b.accept,b.sourceCardId,b.ownCardId),
   'misfortune-pass-cards':(r,w,b)=>game.misfortunePassCards(r,w,b.cardIds),
-  move:(r,w,b)=>game.move(r,w,b.cardId,b.route),
+  move:(r,w,b)=>{if(w.role==='team'&&!r.teams[w.id].treasure)throw Error('请先选择宝物');return game.move(r,w,b.cardId,b.route);},
   'reserve-member':(r,w,b)=>game.reserveMember(r,w,b.memberId),
   'end-turn':(r,w)=>game.endTurn(r,w),
   'force-end-turn':(r,w,b)=>game.forceEndTurn(r,w,b.team),
@@ -136,11 +140,12 @@ function staticFile(req,res,url) {
   if(url.pathname==='/game-client/' || url.pathname==='/game-client')file=path.join(__dirname,'public/index.html');
   else if(/^\/game-client\/(app\.js|routes\.js|style\.css|movement\.css|map\.svg)$/.test(url.pathname))file=path.join(__dirname,'public',url.pathname.slice('/game-client/'.length));
   else if(/^\/game-client\/assets\/asset-\d{3}\.(png|jpg)$/.test(url.pathname))file=path.join(__dirname,'public','assets',path.basename(url.pathname));
+  else if(/^\/game-client\/assets\/treasure(?:[1-9]|10|11)\.(?:jpg|JPG)$/.test(url.pathname))file=path.join(__dirname,'public','assets',path.basename(url.pathname));
   else if(/^\/game-client\/dice\/[1-6]\.svg$/.test(url.pathname))file=path.join(__dirname,'public','dice',path.basename(url.pathname));
   else if(/^\/game-assets\/cards\/output\/[a-zA-Z0-9_-]+\.png$/.test(url.pathname))file=path.join(process.env.GAME_CONTENT_DIR || path.join(__dirname,'content'),'output',path.basename(url.pathname));
   else return false;
   const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg'};
-  fs.readFile(file,(err,data)=>{if(err){res.writeHead(404);res.end();return;}res.writeHead(200,{'content-type':types[path.extname(file)],'cache-control':['.html','.js','.css','.svg'].includes(path.extname(file))?'no-store':'public, max-age=3600'});res.end(data);});
+  fs.readFile(file,(err,data)=>{if(err){res.writeHead(404);res.end();return;}const ext=path.extname(file).toLowerCase();res.writeHead(200,{'content-type':types[ext],'cache-control':['.html','.js','.css','.svg'].includes(ext)?'no-store':'public, max-age=3600'});res.end(data);});
   return true;
 }
 const server=http.createServer(async(req,res)=>{
@@ -157,7 +162,7 @@ const server=http.createServer(async(req,res)=>{
     const user=await identity(req);
     if(req.method==='GET'&&url.pathname==='/game-api/cards'){
       const card=({id,name,effect,condition,move,cost,image,quantity})=>({id,name,effect,condition,move,cost,image,quantity});
-      return send(res,200,{hand:HAND.map(card),events:EVENTS.map(card),misfortunes:MISFORTUNES.map(card)});
+      return send(res,200,{hand:HAND.map(card),events:EVENTS.map(card),misfortunes:MISFORTUNES.map(card),treasures:TREASURES});
     }
     const tutorialMatch=url.pathname.match(/^\/game-api\/tutorial(?:\/(reset|[a-z-]+))?$/);
     if(tutorialMatch){
