@@ -29,12 +29,13 @@ test('新卡牌和卡面完整入库',()=>{
   for(let n=17;n<=44;n++){
     const card=HAND.find(row=>row.id===`card${n}`);
     assert.ok(card?.name);
-    assert.equal(card.image,`/game-assets/cards/output/card${n}.png${[17,18,22,35].includes(n)?'?v=rules-20261125':''}`);
+    assert.match(card.image,new RegExp(`^/game-assets/cards/output/card${n}\\.[a-f0-9]{12}\\.webp$`));
+    assert.equal(card.thumbnail,card.image.replace(/\.webp$/,'.thumb.webp'));
   }
   assert.equal(HAND.find(card=>card.id==='card22').cost,50);
   assert.equal(HAND.find(card=>card.id==='card35').cost,160);
   assert.equal(EVENTS.length,11);assert.equal(MISFORTUNES.length,14);
-  for(const id of ['event9','event10','event11','mis8'])assert.ok([...EVENTS,...MISFORTUNES].find(card=>card.id===id)?.image.endsWith(`${id}.png`));
+  for(const id of ['event9','event10','event11','mis8'])assert.match([...EVENTS,...MISFORTUNES].find(card=>card.id===id)?.image,new RegExp(`${id}\\.[a-f0-9]{12}\\.webp$`));
 });
 
 function ordinaryTurn(sourceId){

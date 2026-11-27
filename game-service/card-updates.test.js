@@ -25,7 +25,7 @@ test('三张旧牌的使用条件与成品卡保持对应',()=>{
   assert.equal(HAND.find(card=>card.id==='card1').condition,'游玩Rubbish Sorting IN难度达到full combo');
   assert.equal(HAND.find(card=>card.id==='card5').condition,'游玩Breach of Faith BYD难度达到980w分');
   assert.equal(HAND.find(card=>card.id==='card6').condition,'游玩Turning Point MSV难度达到1007500');
-  for(const id of ['card1','card5','card6','card9','card44'])assert.match(HAND.find(card=>card.id===id).image,new RegExp(`${id}\\.png`));
+  for(const id of ['card1','card5','card6','card9','card44'])assert.match(HAND.find(card=>card.id===id).image,new RegExp(`${id}\\.[a-f0-9]{12}\\.webp$`));
 });
 
 test('魔幻饰品挑战成功后结算卡牌骰子，并跳过本次范式起源建筑效果',()=>{

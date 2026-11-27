@@ -30,6 +30,8 @@ jobs:
           git ls-files --error-unmatch -- \
             game-service/tutorial.js \
             game-service/treasures.js \
+            game-service/card-image-paths.js \
+            game-service/generate-card-images.js \
             game-service/node-types.csv \
             game-service/content/hand.csv \
             game-service/content/events.csv \
@@ -37,6 +39,8 @@ jobs:
           test -s game-service/node-types.csv
           test -s game-service/tutorial.js
           test -s game-service/treasures.js
+          test -s game-service/card-image-paths.js
+          test -s game-service/generate-card-images.js
           test -s game-service/content/hand.csv
           test -s game-service/content/events.csv
           test -s game-service/content/misfortunes.csv
@@ -55,7 +59,7 @@ jobs:
 
       - name: Package service and card assets
         run: |
-          tar -czf board-game.tar.gz -C game-service package.json package-lock.json server.js game.js bot.js tutorial.js treasures.js catalog.js map-data.js node-types.csv public content
+          tar -czf board-game.tar.gz -C game-service package.json package-lock.json server.js game.js bot.js tutorial.js treasures.js catalog.js card-image-paths.js generate-card-images.js map-data.js node-types.csv public content
           tar -xOzf board-game.tar.gz treasures.js > /dev/null
           for image in $(seq 1 11); do
             if [ "$image" -eq 11 ]; then suffix=JPG; else suffix=jpg; fi
