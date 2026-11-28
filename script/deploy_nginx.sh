@@ -12,6 +12,9 @@ if [[ ! $domain =~ ^[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$ ]] || [[ $domain =~ ^[0-9.]
     exit 1
 fi
 
+curl -fsS -o /dev/null --max-time 10 \
+    'http://100.81.22.111:18080/api/activity/list?size=1'
+
 sudo mkdir -p /etc/nginx/snippets /var/www/letsencrypt/.well-known/acme-challenge
 sudo install -m 644 "$source_dir/cdmga_assets.conf" /etc/nginx/snippets/cdmga_assets.conf
 sudo rm -f /etc/nginx/sites-enabled/default

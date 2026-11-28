@@ -34,11 +34,7 @@ jobs:
     - name: List JAR file
       run: ls -la target/*.jar
 
-    - name: Create backup timestamp
-      id: backup-time
-      run: echo "date=$(date +'%Y%m%d_%H%M%S')" >> $GITHUB_OUTPUT
-
-    - name: Deploy JAR to server via SCP
+    - name: Upload JAR to ECS relay
       uses: appleboy/scp-action@v1.0.0
       with:
         host: ${{ secrets.SSH_HOST }}
@@ -49,7 +45,7 @@ jobs:
         target: "/opt/webserver/upload/"
         strip_components: 2
 
-    - name: Deploy and restart service
+    - name: Deploy Java to Tailscale computer
       uses: appleboy/ssh-action@v1.2.5
       with:
         host: ${{ secrets.SSH_HOST }}
@@ -57,63 +53,13 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT || 22 }}
         script: |
-          # 确保服务账号能写入头像目录，Nginx 能读取已上传头像。
-          sudo install -d -o webserver -g www-data -m 2750 /var/webserver/avatars
-          sudo -u webserver test -w /var/webserver/avatars
-          sudo -u www-data test -r /var/webserver/avatars
-
-          # 停止服务
-          sudo systemctl stop webserver.service
-
-          # 备份旧版本
-          if [ -f "/opt/webserver/app/webpage-0.0.1-SNAPSHOT.jar" ]; then
-              sudo mv /opt/webserver/app/webpage-0.0.1-SNAPSHOT.jar "/opt/webserver/backup/webpage_${{ steps.backup-time.outputs.date }}.jar"
-          fi
-
-          # 按数量清理备份：仅保留最新6个，少于6个不清理
-          ls -1t /opt/webserver/backup/webpage_*.jar 2>/dev/null | tail -n +7 | xargs -r sudo rm -f
-          echo "Backup cleanup done: kept latest 6 files."
-
-          # 移动新版本
-          sudo mv /opt/webserver/upload/webpage-0.0.1-SNAPSHOT.jar /opt/webserver/app/
-
-          # 权限调整
-          sudo chown webserver:webserver /opt/webserver/app/webpage-0.0.1-SNAPSHOT.jar
-          sudo chmod 750 /opt/webserver/app/webpage-0.0.1-SNAPSHOT.jar
-
-          # 启动服务
-          sudo systemctl start webserver.service
-
-          # 检查服务
-          sleep 5
-          sudo systemctl status webserver.service --no-pager
-
-          echo "等待应用启动..."
-          success=0
-          # 冷启动可能超过 50 秒，这里最多等待 3 分钟
-          for i in {1..36}; do
-            if ! sudo systemctl is-active --quiet webserver.service; then
-              echo "第 $i 次检测，systemd 服务未处于 active，5秒后重试..."
-              sleep 5
-              continue
-            fi
-
-            # 优先用 ss 检查端口监听，lsof 作为兜底
-            if sudo ss -lnt "sport = :8080" | grep -q ":8080"; then
-              echo "应用启动成功!"
-              success=1
-              break
-            elif command -v lsof >/dev/null 2>&1 && sudo lsof -t -i:8080 > /dev/null 2>&1; then
-              echo "应用启动成功!"
-              success=1
-              break
-            else
-              echo "第 $i 次检测，服务进程已运行但端口未就绪，5秒后重试..."
-              sleep 5
-            fi
-          done
-          if [ "$success" -ne 1 ]; then
-            echo "警告: 应用在 3 分钟内未就绪，请检查日志"
-            sudo journalctl -u webserver.service -n 50 --no-pager
-            exit 1
-          fi
+          set -e
+          jar=/opt/webserver/upload/webpage-0.0.1-SNAPSHOT.jar
+          test -s "$jar"
+          test -s /home/webadmin/.ssh/cdmga_pc_deploy_ed25519
+          ssh -T -i /home/webadmin/.ssh/cdmga_pc_deploy_ed25519 \
+            -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            eighteen-wang@100.81.22.111 < "$jar"
+          rm -f "$jar"
+          curl -fsS -o /dev/null --max-time 10 \
+            'http://100.81.22.111:18080/api/activity/list?size=1'

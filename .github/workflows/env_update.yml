@@ -51,12 +51,10 @@ jobs:
       - name: Detect environment changes
         id: env_diff
         run: |
-          systemd=false
           nginx=false
           skip_comp=false
 
           if [ "${{ steps.deployed.outputs.last }}" = "NONE" ]; then
-            systemd=true
             nginx=true
             skip_comp=true
           else
@@ -66,19 +64,14 @@ jobs:
           if [ "$skip_comp" = "false" ]; then 
             echo "Diff range: $RANGE"
 
-            if ! git diff --quiet $RANGE -- script/webserver.service; then
-              systemd=true
-            fi
-
             if ! git diff --quiet $RANGE -- script/cdmga_nginx.conf script/cdmga_nginx_https.conf script/cdmga_assets.conf script/deploy_nginx.sh script/reload_nginx_after_renewal.sh; then
               nginx=true
             fi
           fi
 
-          echo "systemd_changed=$systemd" >> $GITHUB_OUTPUT
           echo "nginx_changed=$nginx" >> $GITHUB_OUTPUT
 
-          if [ "$systemd" = "false" ] && [ "$nginx" = "false" ]; then
+          if [ "$nginx" = "false" ]; then
             echo "No environment changes detected"
           fi
 
@@ -90,7 +83,7 @@ jobs:
       # Step 4: 仅在有变化时上传文件（SCP）
       # ----------------------------
       - name: Upload env files
-        if: steps.env_diff.outputs.systemd_changed == 'true' || steps.env_diff.outputs.nginx_changed == 'true'
+        if: steps.env_diff.outputs.nginx_changed == 'true'
         uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -102,26 +95,7 @@ jobs:
 
 
       # ----------------------------
-      # Step 5: Systemd 部署
-      # ----------------------------
-      - name: Deploy Systemd
-        if: steps.env_diff.outputs.systemd_changed == 'true'
-        uses: appleboy/ssh-action@v1.2.5
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_SUDO }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          script: |
-            echo "Deploying systemd service..."
-            sudo cp /opt/webserver/script/webserver.service /etc/systemd/system/
-            sudo systemctl daemon-reload
-            sudo systemctl enable webserver.service
-            sudo systemctl restart webserver.service
-            echo "Systemd deployed"
-
-      # ----------------------------
-      # Step 6: Nginx 部署
+      # Step 5: Nginx 部署
       # ----------------------------
       - name: Deploy Nginx
         if: steps.env_diff.outputs.nginx_changed == 'true'
@@ -144,6 +118,6 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
-            echo "${GITHUB_SHA}" > /opt/webserver/DEPLOYED_COMMIT
-            echo "Deployment marked at commit ${GITHUB_SHA}"
+            echo "${{ github.sha }}" > /opt/webserver/DEPLOYED_COMMIT
+            echo "Deployment marked at commit ${{ github.sha }}"
 

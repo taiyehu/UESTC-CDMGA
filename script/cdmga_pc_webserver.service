@@ -1,0 +1,14 @@
+[Unit]
+Description=CDMGA Java backend on Tailscale computer
+
+[Service]
+Type=simple
+WorkingDirectory=/home/eighteen-wang/cdmga-backend
+EnvironmentFile=/home/eighteen-wang/cdmga-backend/webserver.env
+ExecStart=/usr/bin/java -Xms64m -Xmx512m -jar /home/eighteen-wang/cdmga-backend/app.jar --server.address=100.81.22.111 --server.port=18080 --course.upload.directory=/home/eighteen-wang/cdmga-backend/data/images/ --score.upload.directory=/home/eighteen-wang/cdmga-backend/data/scores/ --avatar.upload.directory=/home/eighteen-wang/cdmga-backend/data/avatars/ --activity.upload.banner-directory=/home/eighteen-wang/cdmga-backend/data/banners/ --activity.upload.file-directory=/home/eighteen-wang/cdmga-backend/data/files/ --forum.upload.directory=/home/eighteen-wang/cdmga-backend/data/forum/
+Restart=on-failure
+RestartSec=10
+MemoryMax=1G
+
+[Install]
+WantedBy=default.target

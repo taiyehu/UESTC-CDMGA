@@ -7,6 +7,7 @@ on:
 
 jobs:
   update_env:
+    needs: update_mvn
     uses: ./.github/workflows/env_update.yml
     secrets:
       SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -16,7 +17,6 @@ jobs:
       SSH_DOMIAN: ${{ secrets.SSH_DOMIAN }}
       CERTBOT_EMAIL: ${{ secrets.CERTBOT_EMAIL }}
   update_mvn:
-    needs: update_env
     uses: ./.github/workflows/mvn_update.yml
     secrets:
       SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -24,7 +24,7 @@ jobs:
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       SSH_PORT: ${{ secrets.SSH_PORT }}
   update_game:
-    needs: update_mvn
+    needs: update_env
     uses: ./.github/workflows/game_update.yml
     secrets:
       SSH_HOST: ${{ secrets.SSH_HOST }}
