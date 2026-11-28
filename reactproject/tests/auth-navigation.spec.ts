@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 test('login registration link opens the registration form and submits credentials', async ({ page }) => {
   await page.goto('http://localhost:5174/login')
@@ -18,4 +18,59 @@ test('login registration link opens the registration form and submits credential
   })
   await page.getByRole('button', { name: '提交', exact: true }).click()
   await expect(page).toHaveURL(/\/login$/)
+})
+
+const user = { id: 35, account: 'tester', role: 'admin' }
+
+test('protected navigation reuses the verified session', async ({ page }) => {
+  let checks = 0
+  await page.route('**/api/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ code: 0, data: [], list: [] }) }))
+  await page.route('**/api/identity/me', async (route) => {
+    checks += 1
+    await new Promise((resolve) => setTimeout(resolve, 250))
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ code: 0, data: user }) })
+  })
+
+  await page.goto('http://localhost:5174/links')
+  await expect(page.getByRole('heading', { name: '正在进入页面' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '链接' })).toBeVisible()
+  const initialChecks = checks
+
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '课题' }).click()
+  await expect(page).toHaveURL(/\/task$/)
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '活动' }).click()
+  await expect(page).toHaveURL(/\/activity$/)
+  await page.getByRole('button', { name: '打开用户菜单' }).click()
+  await page.getByRole('link', { name: '管理', exact: true }).click()
+  await expect(page).toHaveURL(/\/admin$/)
+  expect(checks).toBe(initialChecks)
+})
+
+test('temporary verification failure keeps the local session and offers retry', async ({ page }) => {
+  await page.addInitScript(() => sessionStorage.setItem('userInfo', JSON.stringify({ id: 35, role: 'admin' })))
+  let allowVerification = false
+  await page.route('**/api/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }))
+  await page.route('**/api/identity/me', (route) => {
+    return route.fulfill({
+      status: allowVerification ? 200 : 503,
+      contentType: 'application/json',
+      body: allowVerification ? JSON.stringify({ code: 0, data: user }) : '{}',
+    })
+  })
+
+  await page.goto('http://localhost:5174/links')
+  await expect(page.getByRole('heading', { name: '暂时无法验证登录状态' })).toBeVisible()
+  expect(await page.evaluate(() => sessionStorage.getItem('userInfo'))).not.toBeNull()
+  allowVerification = true
+  await page.getByRole('button', { name: '重试' }).click()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '链接' })).toBeVisible()
+})
+
+test('expired session still redirects to login', async ({ page }) => {
+  await page.addInitScript(() => sessionStorage.setItem('userInfo', JSON.stringify(user)))
+  await page.route('**/api/identity/me', (route) => route.fulfill({ status: 401, contentType: 'application/json', body: '{}' }))
+
+  await page.goto('http://localhost:5174/links')
+  await expect(page).toHaveURL(/\/login$/)
+  expect(await page.evaluate(() => sessionStorage.getItem('userInfo'))).toBeNull()
 })

@@ -1,35 +1,60 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { api } from '../api'
+import AuthLoadingPage from './AuthLoadingPage'
+
+type VerifiedUser = { id: number; role?: string }
+type SessionState =
+  | { status: 'checking' }
+  | { status: 'authenticated'; user: VerifiedUser }
+  | { status: 'anonymous' }
+  | { status: 'error' }
 
 export default function RequireAuth() {
   const location = useLocation()
-  const [state, setState] = useState<'checking' | 'authenticated' | 'anonymous'>('checking')
-  const [checkedPath, setCheckedPath] = useState('')
+  const [session, setSession] = useState<SessionState>({ status: 'checking' })
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     let active = true
-    api.get('/identity/me').then((res) => {
-      const user = res.data?.data ?? res.data
-      if (!user?.id) throw new Error('Invalid session')
+    const controller = new AbortController()
+
+    api.get('/identity/me', { signal: controller.signal }).then((res) => {
+      if (!active) return
+      const user = (res.data?.data ?? res.data) as VerifiedUser | null
+      if (!user?.id) {
+        sessionStorage.removeItem('userInfo')
+        sessionStorage.removeItem('role')
+        setSession({ status: 'anonymous' })
+        return
+      }
       sessionStorage.setItem('userInfo', JSON.stringify(user))
       sessionStorage.setItem('role', JSON.stringify(user.role ?? 'user'))
-      if (active) {
-        setState('authenticated')
-        setCheckedPath(location.pathname)
-      }
-    }).catch(() => {
-      sessionStorage.removeItem('userInfo')
-      sessionStorage.removeItem('role')
-      if (active) {
-        setState('anonymous')
-        setCheckedPath(location.pathname)
+      setSession({ status: 'authenticated', user })
+    }).catch((error: { response?: { status?: number } }) => {
+      if (!active) return
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        sessionStorage.removeItem('userInfo')
+        sessionStorage.removeItem('role')
+        setSession({ status: 'anonymous' })
+      } else {
+        setSession({ status: 'error' })
       }
     })
-    return () => { active = false }
-  }, [location.pathname])
 
-  if (state === 'checking' || checkedPath !== location.pathname) return <div role="status" className="route-auth-loading">正在验证登录状态…</div>
-  if (state === 'anonymous') return <Navigate to="/login" replace state={{ from: location.pathname }} />
-  return <Outlet />
+    return () => {
+      active = false
+      controller.abort()
+    }
+  }, [attempt])
+
+  if (session.status === 'checking') return <AuthLoadingPage />
+  if (session.status === 'error') {
+    return <AuthLoadingPage error onRetry={() => {
+      setSession({ status: 'checking' })
+      setAttempt((value) => value + 1)
+    }} />
+  }
+  if (session.status === 'anonymous') return <Navigate to="/login" replace state={{ from: location.pathname }} />
+  return <Outlet context={{ user: session.user }} />
 }

@@ -1,0 +1,13 @@
+.auth-loading-page{position:relative;min-height:100dvh;display:grid;place-items:center;padding:24px;isolation:isolate}
+.auth-loading-card{position:relative;z-index:1;width:min(420px,100%);padding:34px 32px 38px;text-align:center;border:1px solid rgba(255,255,255,.24);border-radius:24px;background:rgba(8,18,30,.72);box-shadow:0 28px 80px rgba(0,0,0,.32);backdrop-filter:blur(22px)}
+.auth-loading-brand{display:flex;align-items:center;justify-content:center;gap:11px;color:#eaf9ff;font-size:13px;font-weight:700;letter-spacing:.15em}
+.auth-loading-brand img{width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,.35)}
+.auth-loading-indicator{width:64px;height:64px;margin:30px auto 24px;display:grid;place-items:center;border:2px solid rgba(110,225,255,.18);border-top-color:var(--cyan);border-radius:50%;animation:auth-loading-spin 1s linear infinite}
+.auth-loading-indicator span{width:35px;height:35px;border-radius:50%;background:radial-gradient(circle,rgba(110,225,255,.28),transparent 70%)}
+.auth-loading-card h1{margin:0;color:#f2fbff;font-size:21px;line-height:1.4}
+.auth-loading-card p{margin:10px 0 0;color:#a9c5d4;font-size:13px;line-height:1.6}
+.auth-loading-card button{margin-top:24px;padding:10px 26px;border:1px solid rgba(110,225,255,.65);border-radius:999px;background:rgba(110,225,255,.15);color:#eaf9ff;font-size:13px;font-weight:700}
+.auth-loading-card button:hover{background:rgba(110,225,255,.25)}
+@keyframes auth-loading-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.auth-loading-indicator{animation:none}}
+@media (max-width:480px){.auth-loading-card{padding:30px 22px 34px}}
