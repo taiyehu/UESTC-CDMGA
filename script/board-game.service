@@ -1,7 +1,7 @@
 [Unit]
 Description=CDMGA Board Game Service
-After=network-online.target webserver.service
-Wants=network-online.target
+After=network-online.target tailscaled.service
+Wants=network-online.target tailscaled.service
 
 [Service]
 Type=simple
@@ -12,7 +12,7 @@ EnvironmentFile=/etc/webserver.env
 Environment=NODE_ENV=production
 Environment=GAME_HOST=127.0.0.1
 Environment=GAME_PORT=3001
-Environment=GAME_IDENTITY_URL=http://127.0.0.1:8080/api/identity/me
+Environment=GAME_IDENTITY_URL=http://100.81.22.111:18080/api/identity/me
 Environment=GAME_CONTENT_DIR=/var/webserver/game/current
 ExecStart=/usr/bin/node /opt/webserver/game-service/current/server.js
 Restart=on-failure

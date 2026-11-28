@@ -23,7 +23,7 @@ test('existing score history exposes update flow', async ({ page }) => {
   await page.route('**/api/score/history*', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ teamId: null, hasTeam: true, list: [{ id: 9, uploadTime: '2026-11-03T12:00:00', image: '', remark: '旧备注', isScored: true, score: 10 }] }),
+    body: JSON.stringify({ teamId: null, hasTeam: true, list: [{ id: 9, uploadTime: '2026-11-03T12:00:00', image: '/scores/previous.jpg', remark: '旧备注', isScored: true, score: 10 }] }),
   }))
   await page.goto('http://localhost:5174/login')
   await page.getByPlaceholder('请输入用户名').fill('tester')
@@ -38,4 +38,8 @@ test('existing score history exposes update flow', async ({ page }) => {
   await expect(dialog).toBeVisible()
   await expect(dialog.getByPlaceholder('可选，填写补充说明')).toHaveValue('旧备注')
   await expect(dialog.getByRole('button', { name: '确认更新' })).toBeVisible()
+  await page.route('**/api/score/update/9', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ code: 0, data: null }) }))
+  const update = page.waitForRequest((request) => request.url().endsWith('/api/score/update/9') && request.method() === 'PUT')
+  await dialog.getByRole('button', { name: '确认更新' }).click()
+  expect((await update).postDataJSON()).toMatchObject({ image: '/scores/previous.jpg', point: 0, is_scored: false })
 })

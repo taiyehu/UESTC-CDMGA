@@ -94,11 +94,12 @@ export default function TaskDetailPage() {
     if (!course.award && !scoreImage && !history[0]?.image) { setScoreFeedback('请先上传成绩图片'); return }
     const d = new Date(); const p = (n: number) => String(n).padStart(2, '0')
     const uploadTime = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
+    const submissionImage = course.award ? course.image || '' : scoreImage || history[0]?.image || ''
     setSubmitting(true); setScoreFeedback('')
     try {
       const res = submitted && scoreId
-        ? await api.put(`/score/update/${scoreId}`, { upload_time: uploadTime, image: scoreImage, remark: scoreRemark })
-        : await api.post('/score/post', { course_id: course.id, identity_id: identityId, upload_time: uploadTime, image: course.award ? course.image || '' : scoreImage, remark: scoreRemark })
+        ? await api.put(`/score/update/${scoreId}`, { upload_time: uploadTime, image: submissionImage, point: 0, is_scored: false, remark: scoreRemark })
+        : await api.post('/score/post', { course_id: course.id, identity_id: identityId, upload_time: uploadTime, image: submissionImage, remark: scoreRemark })
       if (res.data?.code !== 0) throw new Error(res.data?.message || '提交失败')
       setScoreFeedback(course.award ? '兑换申请已提交' : (submitted ? '成绩已更新' : '成绩提交成功'))
       setScoreImage(''); setScoreRemark(''); await loadScoreState(course.id)

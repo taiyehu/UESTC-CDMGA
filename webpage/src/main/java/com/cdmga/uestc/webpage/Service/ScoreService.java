@@ -328,10 +328,10 @@ public class ScoreService {
             }
 
             score.setUploadTime(effectiveUploadTime);
-            score.setImage(image);
+            score.setImage(image != null && !image.isBlank() ? image : score.getImage());
             score.setScore(finalPoint);
-            score.setIsScored(is_scored);
-            score.setIssueId(award ? null : issue_id);
+            score.setIsScored(Boolean.TRUE.equals(is_scored));
+            score.setIssueId(award ? null : effectiveIssueId);
             score.setRemark(remark);
             LocalDateTime updatedAt = LocalDateTime.now();
             score.setUpdatedAt(updatedAt);

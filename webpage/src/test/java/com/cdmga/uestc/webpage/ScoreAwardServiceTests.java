@@ -51,6 +51,25 @@ class ScoreAwardServiceTests {
     private ScoreService scoreService;
 
     @Test
+    void resubmissionWithoutScoredFlagKeepsPendingStatusAndExistingEvidence() {
+        Course course = new Course();
+        course.setCategory("regular");
+        Score pending = new Score();
+        pending.setCourse(course);
+        pending.setIsScored(false);
+        pending.setIssueId(7);
+        pending.setImage("/scores/previous.jpg");
+        when(scoreRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(pending));
+        when(scoreRepository.save(pending)).thenReturn(pending);
+
+        Score updated = scoreService.updateScore(1L, null, null, 0f, null, "更新说明", null);
+
+        assertEquals(false, updated.getIsScored());
+        assertEquals(7, updated.getIssueId());
+        assertEquals("/scores/previous.jpg", updated.getImage());
+    }
+
+    @Test
     void rejectsRedemptionWhenBalanceIsBelowCost() {
         Score pending = pendingAward();
         when(scoreRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(pending));

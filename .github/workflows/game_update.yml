@@ -124,8 +124,13 @@ jobs:
             if sudo systemctl restart board-game.service; then
               for i in $(seq 1 20); do
                 if curl --fail --silent --show-error --max-time 3 http://127.0.0.1:3001/game-api/health >/dev/null; then
-                  HEALTHY=true
-                  break
+                  AUTH_STATUS=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+                    --max-time 3 --header 'Cookie: JSESSIONID=invalid' \
+                    http://127.0.0.1:3001/game-api/rooms || true)
+                  if [ "$AUTH_STATUS" = 401 ]; then
+                    HEALTHY=true
+                    break
+                  fi
                 fi
                 sleep 3
               done
